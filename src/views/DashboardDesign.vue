@@ -14,7 +14,7 @@
         <ProjectDetailHeader
             title="IoT Adherence Analytics for Caregivers: Dashboard Design"
             client="Kin Technology"
-            period="2026 - Ongoing"
+            period="2026"
         />
 
         <div class="project-body">
