@@ -142,9 +142,11 @@
                         English and Chinese. Speak a bit of Spanish. Love a good conversation. Can't help
                         learning new things all the time.
                         <br><br>
-                        For the nerds: a <a href="https://journals.biologists.com/dev/article/151/24/dev204256/363461/Short-range-Fgf-signalling-patterns-hindbrain" class="about-link">link</a> to my past life in
-                        developmental neurobiology
-                        (research paper).
+                        <span ref="nerdsLine" class="about-nerds">
+                            For the nerds: a <a href="https://journals.biologists.com/dev/article/151/24/dev204256/363461/Short-range-Fgf-signalling-patterns-hindbrain" class="about-link">link</a> to my past life in
+                            developmental neurobiology
+                            (research paper).
+                        </span>
                     </p>
                 </div>
                 <div class="about-actions">
@@ -157,6 +159,12 @@
                     <a href="#" class="about-action-btn">CV</a>
                 </div>
             </div>
+            <span
+                ref="aboutBall"
+                class="about-ball"
+                :class="{ 'about-ball--settled': aboutBallPhase === 'settled' }"
+                aria-hidden="true"
+            />
         </section>
 
         <PortfolioSiteFooter />
@@ -184,6 +192,7 @@ export default {
             aboutPhoto,
             lineAnimation,
             lineAnimationTall,
+            aboutBallPhase: 'idle',
         }
     },
     mounted() {
@@ -212,12 +221,82 @@ export default {
         this.syncHeroDecorHeight()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
         document.fonts?.ready?.then(() => this.syncHeroDecorHeight())
+        this.observeNerdsLine()
     },
     beforeUnmount() {
         this.heroDecorObserver?.disconnect()
+        this.nerdsLineObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
     },
     methods: {
+        observeNerdsLine() {
+            const nerdsLine = this.$refs.nerdsLine
+            if (!nerdsLine || typeof IntersectionObserver === 'undefined') return
+
+            this.nerdsLineObserver = new IntersectionObserver(
+                ([entry]) => {
+                    if (!entry?.isIntersecting || this.aboutBallPhase !== 'idle') return
+                    this.nerdsLineObserver?.disconnect()
+                    this.startAboutBallDrop()
+                },
+                {
+                    threshold: 0.15,
+                    rootMargin: '0px 0px -12% 0px',
+                }
+            )
+            this.nerdsLineObserver.observe(nerdsLine)
+        },
+        startAboutBallDrop() {
+            const ball = this.$refs.aboutBall
+            const about = this.$el?.querySelector('.about')
+            if (!ball || !about || this.aboutBallPhase !== 'idle') return
+
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                this.aboutBallPhase = 'settled'
+                return
+            }
+
+            this.aboutBallPhase = 'dropping'
+
+            const size = ball.offsetHeight || 56
+            const bottomPad =
+                parseFloat(getComputedStyle(about).getPropertyValue('--about-bottom-pad')) || 180
+            const restOffset = Math.min(120, Math.max(48, bottomPad * 0.35))
+            const endTop = Math.max(size, about.getBoundingClientRect().bottom - restOffset - size)
+            const startTop = -size
+
+            ball.style.position = 'fixed'
+            ball.style.left = '50%'
+            ball.style.top = `${startTop}px`
+            ball.style.bottom = 'auto'
+            ball.style.opacity = '1'
+            ball.style.transform = 'translateX(-50%)'
+
+            const animation = ball.animate(
+                [
+                    { top: `${startTop}px` },
+                    { top: `${endTop}px`, offset: 0.78 },
+                    { top: `${endTop - 18}px`, offset: 0.86 },
+                    { top: `${endTop + 6}px`, offset: 0.93 },
+                    { top: `${endTop}px` },
+                ],
+                {
+                    duration: 1650,
+                    easing: 'cubic-bezier(0.45, 0.05, 0.55, 0.95)',
+                    fill: 'forwards',
+                }
+            )
+
+            animation.onfinish = () => {
+                ball.style.removeProperty('position')
+                ball.style.removeProperty('left')
+                ball.style.removeProperty('top')
+                ball.style.removeProperty('bottom')
+                ball.style.removeProperty('opacity')
+                ball.style.removeProperty('transform')
+                this.aboutBallPhase = 'settled'
+            }
+        },
         onHeroDecorResize() {
             requestAnimationFrame(() => this.syncHeroDecorHeight())
         },
@@ -712,6 +791,32 @@ export default {
 
 .about-link {
     color: var(--brand);
+}
+
+.about-ball {
+    --about-ball-size: 56px;
+    --about-ball-rest-bottom: clamp(48px, calc(var(--about-bottom-pad) * 0.35), 120px);
+    position: absolute;
+    left: 50%;
+    bottom: var(--about-ball-rest-bottom);
+    z-index: 5;
+    width: var(--about-ball-size);
+    height: var(--about-ball-size);
+    border-radius: 50%;
+    background: var(--brand);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-50%);
+}
+
+.about-ball--settled {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .about-ball--settled {
+        opacity: 1;
+    }
 }
 
 .about-actions {
