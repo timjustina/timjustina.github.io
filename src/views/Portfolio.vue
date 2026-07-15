@@ -6,12 +6,22 @@
             <section class="hero">
                 <div class="hero-intro-wrap">
                     <div class="hero-decor" aria-hidden="true">
-                        <img class="hero-decor-line" :src="lineAnimation" alt="" />
+                        <picture>
+                            <source
+                                media="(min-width: 998px)"
+                                :srcset="lineAnimationTall"
+                            />
+                            <source
+                                media="(max-width: 997px)"
+                                :srcset="lineAnimationTall"
+                            />
+                            <img class="hero-decor-line" :src="lineAnimation" alt="" />
+                        </picture>
                     </div>
                     <p class="hero-intro">
-                        <strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
+                        <span class="hero-intro-lead">Tim Justina Yeung is a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
                         Deeply enjoy understanding complex problems and providing creative solutions
-                        <strong class="hero-intro-em">for people :)</strong>
+                        <strong class="hero-intro-em hero-intro-em--keep">for people :)</strong>
                     </p>
                 </div>
                 <a class="cta-button" href="mailto:design@timjustina.com">Drop me a line</a>
@@ -19,25 +29,28 @@
 
             <section id="work" class="work">
                 <article id="work-first" class="project project--featured">
-                    <router-link to="/project/MedicationDashboard" class="project-image-link">
+                    <router-link to="/work/DashboardDesign" class="project-image-link">
                         <img
                             class="project-image"
                             :src="dashboardHero"
+                            width="2400"
+                            height="1352"
+                            decoding="async"
+                            fetchpriority="high"
                             alt="IoT Adherence Analytics for Caregivers: Dashboard Design"
                         />
                     </router-link>
                     <div class="project-caption">
                         <div class="project-caption-header">
                             <h2 class="project-title">
-                                <router-link to="/project/MedicationDashboard" class="project-title-link">
+                                <router-link to="/work/DashboardDesign" class="project-title-link">
                                     IoT Adherence Analytics for Caregivers: Dashboard Design
                                 </router-link>
                             </h2>
                             <span class="project-year">2026</span>
                         </div>
                         <p class="project-description">
-                            0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account,
-                            helping caregivers better understand their client's needs
+                            0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
                         </p>
                     </div>
                 </article>
@@ -60,8 +73,7 @@
                             <span class="project-year">2024</span>
                         </div>
                         <p class="project-description">
-                            Redesigned workflows, human-machine interface, web + mobile app features of an IoT
-                            medication adherence platform
+                            Redesigned workflows, human-machine interface, web + mobile app features of an IoT medication adherence platform
                         </p>
                     </div>
                 </article>
@@ -102,20 +114,20 @@
                         alt="Tim Justina Yeung"
                     />
                     <div v-else class="about-photo about-photo--placeholder" />
+                </div>
+                <div id="about-bio" class="about-text-column">
+                    <h2 class="about-heading">About Tim ( 湉 )</h2>
                     <p class="about-location">
                         <span class="about-location-icon-wrap" aria-hidden="true">
-                            <svg class="about-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none">
+                            <svg class="about-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
                                 <path
                                     d="M6.5 0C2.91 0 0 2.91 0 6.5C0 11.38 6.5 20 6.5 20S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0ZM6.5 8.75C5.26 8.75 4.25 7.74 4.25 6.5C4.25 5.26 5.26 4.25 6.5 4.25C7.74 4.25 8.75 5.26 8.75 6.5C8.75 7.74 7.74 8.75 6.5 8.75Z"
-                                    fill="#928A81"
+                                    fill="#B9B4AE"
                                 />
                             </svg>
                         </span>
                         <span class="about-location-text">London / Barcelona</span>
                     </p>
-                </div>
-                <div id="about-bio" class="about-text-column">
-                    <h2 class="about-heading">About Tim ( 湉 )</h2>
                     <p class="about-bio">
                         Started in the east, ended up in the west. Started in academia, ended up in the
                         real world. Started as a curious child, ended up a very curious adult. Trained to
@@ -147,25 +159,23 @@
             </div>
         </section>
 
-        <footer class="site-footer">
-            <a href="mailto:design@timjustina.com" class="footer-email">design@timjustina.com</a>
-            <span class="footer-divider" aria-hidden="true" />
-            <span class="footer-copy">© 2026 Tim Justina Yeung</span>
-        </footer>
+        <PortfolioSiteFooter />
     </div>
 </template>
 
 <script>
-import dashboardHero from '../assets/0_dashboard_hero.jpg'
-import multiplatformHero from '../assets/0_multiplateform_hero.jpg'
-import marketplaceHero from '../assets/0_marketplace_hero.jpg'
+import dashboardHero from '../assets/1_dashboard/0_dashboard_hero_detail-2400.jpg'
+import multiplatformHero from '../assets/2_multiplatform/0_multiplatform_hero.jpg'
+import marketplaceHero from '../assets/3_marketplace/0_marketplace_hero.jpg'
 import aboutPhoto from '../assets/portrait.jpg'
 import lineAnimation from '../assets/line_animation.svg'
+import lineAnimationTall from '../assets/line_animation_tall.svg'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
+import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 
 export default {
     name: 'Portfolio',
-    components: { PortfolioTopBar },
+    components: { PortfolioTopBar, PortfolioSiteFooter },
     data() {
         return {
             dashboardHero,
@@ -173,7 +183,79 @@ export default {
             marketplaceHero,
             aboutPhoto,
             lineAnimation,
+            lineAnimationTall,
         }
+    },
+    mounted() {
+        this.heroDecorObserver = new ResizeObserver(() => {
+            requestAnimationFrame(() => this.syncHeroDecorHeight())
+        })
+
+        const main = this.$el?.querySelector('.portfolio-main')
+        const workFirst = this.$el?.querySelector('#work-first')
+        const heroIntro = this.$el?.querySelector('.hero-intro')
+        if (main) {
+            this.heroDecorObserver.observe(main)
+        }
+        if (workFirst) {
+            this.heroDecorObserver.observe(workFirst)
+        }
+        if (heroIntro) {
+            this.heroDecorObserver.observe(heroIntro)
+        }
+
+        const heroImage = workFirst?.querySelector('.project-image')
+        if (heroImage && !heroImage.complete) {
+            heroImage.addEventListener('load', () => this.syncHeroDecorHeight(), { once: true })
+        }
+
+        this.syncHeroDecorHeight()
+        window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
+        document.fonts?.ready?.then(() => this.syncHeroDecorHeight())
+    },
+    beforeUnmount() {
+        this.heroDecorObserver?.disconnect()
+        window.removeEventListener('resize', this.onHeroDecorResize)
+    },
+    methods: {
+        onHeroDecorResize() {
+            requestAnimationFrame(() => this.syncHeroDecorHeight())
+        },
+        syncHeroDecorHeight() {
+            const decor = this.$el?.querySelector('.hero-decor')
+            const heroIntro = this.$el?.querySelector('.hero-intro')
+            const workFirstImage = this.$el?.querySelector('#work-first .project-image-link')
+            if (!decor || !heroIntro || !workFirstImage) return
+
+            if (window.getComputedStyle(decor).display === 'none') return
+
+            const isWide = window.matchMedia('(min-width: 998px)').matches
+            const wrap = decor.parentElement
+            const imageTop = workFirstImage.getBoundingClientRect().top
+            const offset =
+                parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-bottom-offset')) || 0
+
+            let clipTop
+
+            if (isWide) {
+                const introAnchor = heroIntro.querySelector('.hero-intro-em') ?? heroIntro
+                const introTop = introAnchor.getBoundingClientRect().top
+                const wrapTop = wrap.getBoundingClientRect().top
+                const topOffset =
+                    parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-top-offset')) || 0
+                clipTop = introTop + topOffset
+                decor.style.top = `${Math.round(clipTop - wrapTop)}px`
+            } else {
+                decor.style.removeProperty('top')
+                clipTop = decor.getBoundingClientRect().top
+            }
+
+            const height = Math.round(imageTop - clipTop) + offset
+
+            if (height > 0) {
+                decor.style.setProperty('--hero-decor-height', `${height}px`)
+            }
+        },
     },
 }
 </script>
@@ -187,12 +269,15 @@ export default {
     --muted: #757575;
     --title: #4d4d4d;
     --about-muted: #928a81;
+    --about-location-color: #928a81;
+    --about-location-icon-fill: #b9b4ae;
     --about-bg: #f4f2f1;
     --font-weight-scale: 0.98;
     --page-max: 1454px;
     --page-pad: clamp(100px, calc(100px + (100vw - 997px) * 40 / 457), 140px);
     --project-w: min(798px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 20 / 457), 140px);
+    --top-bar-height: 120px;
 
     position: relative;
     width: 100%;
@@ -205,13 +290,14 @@ export default {
     position: relative;
     max-width: var(--page-max);
     margin: 0 auto;
-    padding: 120px var(--page-pad) 0;
+    padding: var(--top-bar-height) var(--page-pad) 0;
     box-sizing: border-box;
 }
 
 .hero {
     position: relative;
     z-index: 1;
+    --hero-cta-gap: 90px;
     margin-bottom: clamp(231px, calc(238px - (100vw - 997px) * 7 / 457), 238px);
 }
 
@@ -222,27 +308,88 @@ export default {
 }
 
 .hero-decor {
-    --hero-line-lift: 33px;
+    --hero-line-lift: 100px;
+    --hero-line-bounce-1: 2.2*40px;
+    --hero-line-bounce-2: 2.2*17px;
+    --hero-line-bounce-3: 2.2*7px;
+    --hero-line-bounce-4: 2.2*3px;
+    --hero-line-bounce-duration: 1.2s;
+    --hero-line-return-duration: 0.35s;
+    --hero-decor-height: 532px;
+    --hero-decor-bottom-offset: 50px;
+    --hero-decor-top-offset: 6px;
+    --hero-decor-line-natural-height: 818px;
     position: absolute;
     top: 6px;
     right: calc(100% + 42px);
     z-index: 0;
     width: 56px;
-    height: 532px;
+    height: var(--hero-decor-height);
     overflow: hidden;
     pointer-events: none;
 }
 
+.hero-decor picture {
+    display: contents;
+}
+
 .hero-decor-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     display: block;
     width: 56px;
-    height: 518px;
-    transition: transform 0.45s ease;
+    min-width: 56px;
+    max-width: 56px;
+    height: var(--hero-decor-line-natural-height);
+    min-height: var(--hero-decor-line-natural-height);
+    object-fit: none;
+    object-position: left bottom;
+    transition: transform var(--hero-line-return-duration) ease-out;
 }
 
 .portfolio-main:has(.project--featured:hover) .hero-decor-line,
 .portfolio-main:has(.project--featured:focus-within) .hero-decor-line {
-    transform: translateY(calc(-1 * var(--hero-line-lift)));
+    transition: none;
+    animation: hero-line-bounce-up var(--hero-line-bounce-duration) forwards;
+}
+
+@keyframes hero-line-bounce-up {
+    0% {
+        transform: translateY(0);
+    }
+
+    22% {
+        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-1)));
+    }
+
+    38% {
+        transform: translateY(calc(-1 * var(--hero-line-lift)));
+    }
+
+    49% {
+        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-2)));
+    }
+
+    60% {
+        transform: translateY(calc(-1 * var(--hero-line-lift)));
+    }
+
+    67% {
+        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-3)));
+    }
+
+    73% {
+        transform: translateY(calc(-1 * var(--hero-line-lift)));
+    }
+
+    78% {
+        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-4)));
+    }
+
+    100% {
+        transform: translateY(calc(-1 * var(--hero-line-lift)));
+    }
 }
 
 .hero-intro {
@@ -264,11 +411,19 @@ export default {
     font-weight: calc(600 * var(--font-weight-scale));
 }
 
+.hero-intro-em--keep {
+    white-space: nowrap;
+}
+
+.hero-intro-lead {
+    display: none;
+}
+
 .cta-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-top: 90px;
+    margin-top: var(--hero-cta-gap);
     margin-left: min(
         clamp(565px, calc(565px + (100vw - 997px) * 192 / 457), 757px),
         max(0px, calc(100% - 233px))
@@ -317,7 +472,7 @@ export default {
 .project--featured {
     width: var(--project-w);
     max-width: 100%;
-    scroll-margin-top: 120px;
+    scroll-margin-top: var(--top-bar-height);
 }
 
 .project--offset {
@@ -340,6 +495,11 @@ export default {
     text-decoration: none;
 }
 
+.project-image-link picture {
+    display: block;
+    width: 100%;
+}
+
 .project-image {
     position: relative;
     z-index: 1;
@@ -355,6 +515,11 @@ export default {
 .project:hover .project-image,
 .project:focus-within .project-image {
     border-radius: 700px 700px 20px 20px;
+}
+
+.project:last-child:hover .project-image,
+.project:last-child:focus-within .project-image {
+    border-radius: 10000px 10000px 300px 300px;
 }
 
 .project-caption {
@@ -415,16 +580,19 @@ export default {
     position: relative;
     width: 100%;
     --about-gap: 340px;
+    --about-image-text-gap: clamp(32px, calc(32px + (100vw - 997px) * 32 / 457), 64px);
+    --about-bottom-pad: clamp(180px, calc(180px + (100vw - 997px) * 180 / 457), 360px);
+    --about-top-pad: 80px;
     margin-top: var(--about-gap);
-    padding: 80px 0 clamp(90px, calc(90px + (100vw - 997px) * 90 / 457), 180px);
+    padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     background: var(--about-bg);
     box-sizing: border-box;
     overflow: visible;
-    scroll-margin-top: 120px;
+    scroll-margin-top: var(--top-bar-height);
 }
 
 #about-bio {
-    scroll-margin-top: 120px;
+    scroll-margin-top: var(--top-bar-height);
 }
 
 .about-inner {
@@ -478,9 +646,8 @@ export default {
     flex-direction: row;
     align-items: center;
     gap: 4px;
-    width: 208px;
-    height: 30px;
-    margin: 64px 0 0 clamp(-20px, calc(-20px - (100vw - 997px) * 14 / 457), -34px);
+    width: auto;
+    margin: 0 0 32px;
     padding: 0;
     box-sizing: border-box;
     flex: none;
@@ -503,15 +670,19 @@ export default {
     flex: none;
 }
 
+.about-location-icon :deep(path) {
+    fill: var(--about-location-icon-fill);
+}
+
 .about-location-text {
     width: 174px;
     height: 27px;
     font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 16px;
     font-style: normal;
-    font-weight: calc(400 * var(--font-weight-scale));
-    font-size: 18px;
+    font-weight: 400;
     line-height: 27px;
-    color: var(--about-muted);
+    color: var(--about-location-color);
     flex: none;
 }
 
@@ -520,13 +691,14 @@ export default {
 }
 
 .about-heading {
-    margin: 0 0 64px;
+    margin: 0 0 32px;
     font-family: 'Be Vietnam Pro', sans-serif;
     font-size: 18px;
-    font-weight: calc(400 * var(--font-weight-scale));
+    font-style: normal;
+    font-weight: 400;
     line-height: 27px;
-    letter-spacing: -0.02em;
-    color: var(--about-muted);
+    letter-spacing: -0.36px;
+    color: #928a81;
 }
 
 .about-bio {
@@ -547,41 +719,6 @@ export default {
     display: none;
 }
 
-.site-footer {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 20px;
-    height: 120px;
-    padding-top: 54px;
-    padding-bottom: 0;
-    box-sizing: border-box;
-    background: #fff;
-}
-
-.footer-email,
-.footer-copy {
-    font-family: 'Be Vietnam Pro', sans-serif;
-    font-size: 14px;
-    font-weight: calc(300 * var(--font-weight-scale));
-    line-height: 21px;
-    color: var(--muted);
-}
-
-.footer-email {
-    text-decoration: none;
-}
-
-.footer-email:hover {
-    color: var(--brand);
-}
-
-.footer-divider {
-    width: 1px;
-    height: 21px;
-    background: var(--muted);
-}
-
 /* ≥1454px: Final content artboard spacing */
 @media (min-width: 1454px) {
     .hero-intro-wrap {
@@ -598,7 +735,7 @@ export default {
     }
 
     .cta-button {
-        margin-top: 90px;
+        margin-top: var(--hero-cta-gap);
         margin-left: min(757px, max(0px, calc(100% - 233px)));
         width: 233px;
         min-width: 0;
@@ -620,8 +757,9 @@ export default {
 
     .about {
         --about-gap: 340px;
+        --about-bottom-pad: 360px;
         margin-top: 340px;
-        padding: 80px 0 180px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-inner {
@@ -645,7 +783,7 @@ export default {
     }
 
     .about-heading {
-        margin: 0 0 64px;
+        margin: 0 0 39px;
     }
 
     .about-bio {
@@ -654,40 +792,34 @@ export default {
     }
 
     .about-location {
-        margin-top: 64px;
-        margin-left: -34px;
-    }
-
-    .site-footer {
-        align-items: flex-start;
-        padding-top: 54px;
-        padding-bottom: 0;
-    }
-
-    .footer-divider {
-        height: 21px;
+        margin: 0 0 39px;
     }
 }
 
 /* ≤997px: 997px artboard lock before tablet layout */
 @media (max-width: 997px) {
+    .portfolio-page {
+        --hero-logo-gap: 98px;
+        /* Logo sits above the bar bottom: (120px bar − 50px nav block) / 2 */
+        --top-bar-logo-inset: 35px;
+    }
+
     .hero {
-        margin-bottom: 238px;
+        margin-bottom: calc(2 * var(--hero-cta-gap));
     }
 
     .hero-intro-wrap {
         max-width: 100%;
-        margin: 98px 0 0;
+        margin: var(--hero-logo-gap) 0 0;
     }
 
     .hero-decor {
-        top: calc(100% + 84px);
+        top: calc(100% + var(--hero-cta-gap));
         right: auto;
-        left: 122px;
+        left: 61px;
     }
 
     .cta-button {
-        margin-top: 90px;
         margin-left: min(565px, max(0px, calc(100% - 233px)));
     }
 
@@ -706,8 +838,9 @@ export default {
 
     .about {
         --about-gap: 340px;
+        --about-bottom-pad: 180px;
         margin-top: 340px;
-        padding: 80px 0 90px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-inner {
@@ -730,16 +863,13 @@ export default {
         height: 402px;
     }
 
-    .about-location {
-        margin: 64px 0 0 -20px;
-    }
-
     .about-text-column {
         padding-top: 100px;
+        padding-right: var(--about-image-text-gap);
     }
 
     .about-heading {
-        margin: 0 0 64px;
+        margin: 0 0 32px;
     }
 
     .about-bio {
@@ -751,30 +881,26 @@ export default {
 
 /* Tablet: ≤767px (768px artboard) */
 @media (max-width: 767px) {
+    .portfolio-page {
+        --hero-logo-gap: 80px;
+    }
+
     .hero-intro-wrap {
         max-width: min(629px, 100%);
-        margin: 80px 0 0;
     }
 
     .hero-decor {
         --hero-line-lift: 31px;
-        --hero-squiggle-cta-gap: 125px;
-        top: calc(100% + 42px);
         right: auto;
-        left: max(
-            calc(233px + var(--hero-squiggle-cta-gap)),
-            calc(100% - 114px - 56px)
-        );
-        height: 318px;
+        left: calc(100% - 40px - 56px);
     }
 
     .hero {
         min-height: 0;
-        margin-bottom: 80px;
     }
 
     .cta-button {
-        margin-top: 90px;
+        margin-top: var(--hero-cta-gap);
         margin-left: 0;
         min-width: 233px;
         width: fit-content;
@@ -808,98 +934,166 @@ export default {
 
     .about {
         margin-top: 80px;
-        padding: 80px 0 138px;
+        --about-bottom-pad: 276px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-inner {
-        grid-template-columns: 1fr;
-        position: relative;
-        padding: 0 var(--page-pad);
-    }
-
-    .about-photo-column {
+        display: flex;
+        flex-direction: column;
         align-items: flex-start;
-        padding-left: 0;
+        --about-side-pad: var(--page-pad);
+        padding: 0 var(--about-side-pad);
     }
 
-    .about-photo,
-    .about-photo--placeholder {
-        width: 201px;
-        height: auto;
-        aspect-ratio: 348 / 498;
+    .about-photo-column,
+    .about-text-column {
+        display: contents;
     }
 
     .about-line {
         display: none;
     }
 
-    .about-text-column {
-        padding-top: 32px;
+    .about-heading {
+        order: 2;
+        margin: var(--about-top-pad) 0 32px;
     }
 
-    .about-heading {
-        margin: 0 0 32px;
+    .about-photo,
+    .about-photo--placeholder {
+        order: 1;
+        width: 201px;
+        height: 288px;
+    }
+
+    .about-location {
+        order: 3;
+        box-sizing: border-box;
+        width: calc(100% + 2 * var(--about-side-pad));
+        max-width: 100vw;
+        margin: 0 0 0 calc(-1 * var(--about-side-pad));
+        padding-left: var(--about-side-pad);
+    }
+
+    .about-location-icon-wrap {
+        width: 13px;
+        height: 20px;
+        justify-content: flex-start;
+    }
+
+    .about-location-text {
+        color: var(--about-location-color);
+    }
+
+    .about-location-icon :deep(path) {
+        fill: var(--about-location-icon-fill);
     }
 
     .about-bio {
-        margin-left: 0;
-        max-width: none;
+        order: 4;
+        margin-top: 32px;
+        max-width: 100%;
+        font-size: 16px;
+        line-height: 25px;
     }
 
     .about-actions {
+        order: 5;
         display: flex;
-        grid-column: 1 / -1;
-        gap: 40px;
-        margin-top: 48px;
-        padding-left: 57px;
+        gap: 31px;
+        margin-top: 96px;
+        padding-left: 0;
     }
 
     .about-action-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 12px 24px;
         height: 54px;
+        padding: 12px 24px;
         border-radius: 60px;
         background: var(--brand);
         font-family: 'Be Vietnam Pro', sans-serif;
-        font-size: 18px;
+        font-size: 20px;
         font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 27px;
+        line-height: 30px;
         color: #fff;
         text-decoration: none;
         box-sizing: border-box;
     }
-
-    .site-footer {
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        padding-bottom: 40px;
-    }
-
-    .footer-divider {
-        width: 30px;
-        height: 1px;
-    }
 }
 
-@media (max-width: 480px) {
-    .portfolio-main {
-        padding: 120px 24px 0;
-    }
-
+@media (max-width: 620px) {
     .hero-decor {
         display: none;
     }
+}
 
-    .about-inner {
-        padding: 0 24px;
+@media (max-width: 560px) {
+    .portfolio-page {
+        --page-pad: 20px;
+        --top-bar-height: 100px;
+        --hero-logo-gap: 22px;
+        /* Logo top 20px + 46px tall in the 100px bar */
+        --top-bar-logo-inset: 34px;
     }
 
-    .about-actions {
-        padding-left: 0;
-        flex-wrap: wrap;
+    .hero {
+        --hero-cta-gap: 60px;
     }
+
+    .portfolio-main {
+        padding: var(--top-bar-height) 20px 0;
+    }
+
+    .hero-intro-wrap {
+        max-width: 100%;
+    }
+
+    .hero-intro {
+        max-width: 100%;
+        font-size: 22px;
+        line-height: 33px;
+    }
+
+    .cta-button {
+        width: 225px;
+        height: 49px;
+        min-height: 49px;
+        margin-left: 0;
+        padding: 8px 20px;
+        font-size: 22px;
+        line-height: 33px;
+    }
+
+    .work {
+        gap: 80px;
+    }
+
+    .project-caption {
+        margin-top: 20px;
+    }
+
+    .project-caption-header {
+        padding-top: 0;
+    }
+
+    .project-title {
+        font-size: 18px;
+        line-height: 27px;
+    }
+
+    .project-description {
+        margin-top: 16px;
+        font-size: 16px;
+        line-height: 25px;
+    }
+
+    .project-year {
+        font-size: 18px;
+        line-height: 27px;
+    }
+
 }
 </style>

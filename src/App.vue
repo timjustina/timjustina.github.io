@@ -21,6 +21,8 @@ html {
   padding: 0;
   height: 100%;
   background-color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #app {

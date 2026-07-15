@@ -22,7 +22,7 @@
       >
         <button type="button" class="lightbox-close" aria-label="Close" @click.stop="close">×</button>
         <div class="lightbox-stage" @click="close">
-          <img :src="src" :alt="alt" class="lightbox-img" @load="onLightboxLoad" />
+          <img :src="zoomSrc || src" :alt="alt" class="lightbox-img" @load="onLightboxLoad" />
         </div>
       </div>
     </Teleport>
@@ -34,6 +34,7 @@ export default {
   name: 'ZoomableImage',
   props: {
     src: { type: String, required: true },
+    zoomSrc: { type: String, default: '' },
     alt: { type: String, required: true },
     caption: { type: String, default: '' },
   },
@@ -143,7 +144,7 @@ export default {
   font-size: 14px;
   color: #757575;
   margin-top: 12px;
-  text-align: center;
+  text-align: left;
 }
 
 .lightbox {

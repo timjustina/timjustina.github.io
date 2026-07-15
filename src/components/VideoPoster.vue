@@ -101,6 +101,6 @@ export default {
   font-size: 14px;
   color: #757575;
   margin-top: 12px;
-  text-align: center;
+  text-align: left;
 }
 </style>

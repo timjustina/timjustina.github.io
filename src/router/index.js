@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Portfolio from '../views/Portfolio.vue'
-import { getAboutScrollTop } from '../utils/scrollToAbout.js'
+import { getAboutScrollTop, smoothScrollTo } from '../utils/scrollToAbout.js'
+
+function getElementScrollTop(hash) {
+    const el = document.querySelector(hash)
+    if (!el) return null
+    return Math.max(0, el.getBoundingClientRect().top + window.scrollY - 120)
+}
 
 const routes = [
     {
@@ -9,9 +15,9 @@ const routes = [
         component: Portfolio
     },
     {
-        path: '/project/MedicationDashboard',
-        name: 'MedicationDashboard',
-        component: () => import('../views/MedicationDashboard.vue')
+        path: '/work/DashboardDesign',
+        name: 'DashboardDesign',
+        component: () => import('../views/DashboardDesign.vue')
     },
     {
         path: '/project/MultiplatformSolution',
@@ -32,18 +38,18 @@ const router = createRouter({
             return new Promise((resolve) => {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        if (to.hash === '#about') {
-                            const top = getAboutScrollTop()
-                            if (top !== null) {
-                                resolve({ top })
-                                return
-                            }
+                        const top =
+                            to.hash === '#about'
+                                ? getAboutScrollTop()
+                                : getElementScrollTop(to.hash)
+
+                        if (top !== null) {
+                            smoothScrollTo(top)
+                            resolve(false)
+                            return
                         }
 
-                        resolve({
-                            el: to.hash,
-                            top: 120,
-                        })
+                        resolve({ el: to.hash, top: 120 })
                     })
                 })
             })
