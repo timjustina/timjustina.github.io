@@ -587,19 +587,6 @@ export default {
     color: var(--muted);
 }
 
-.project--offset .project-title,
-.project:last-child .project-title {
-    flex-basis: 510px;
-    font-size: 20px;
-    line-height: 30px;
-}
-
-.project--offset .project-year,
-.project:last-child .project-year {
-    font-size: 20px;
-    line-height: 30px;
-}
-
 .about {
     position: relative;
     width: 100%;
@@ -1156,22 +1143,19 @@ export default {
     .project-title {
         flex: 1 1 auto;
         max-width: none;
+        font-family: 'Be Vietnam Pro', sans-serif;
         font-size: 18px;
+        font-weight: calc(500 * var(--font-weight-scale));
         line-height: 27px;
         color: #4d4d4d;
-    }
-
-    .project--offset .project-title,
-    .project:last-child .project-title {
-        flex-basis: auto;
-        font-size: 18px;
-        line-height: 27px;
     }
 
     .project-description {
         margin-top: 11px;
         max-width: 100%;
+        font-family: 'Fira Code', monospace;
         font-size: 16px;
+        font-weight: calc(400 * var(--font-weight-scale));
         line-height: 25px;
         color: #757575;
     }
@@ -1179,15 +1163,11 @@ export default {
     .project-year {
         margin-left: auto;
         flex-shrink: 0;
+        font-family: 'Fira Code', monospace;
         font-size: 18px;
+        font-weight: calc(500 * var(--font-weight-scale));
         line-height: 27px;
         color: #757575;
-    }
-
-    .project--offset .project-year,
-    .project:last-child .project-year {
-        font-size: 18px;
-        line-height: 27px;
     }
 
 }
