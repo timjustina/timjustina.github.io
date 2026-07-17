@@ -138,13 +138,14 @@ export default {
 
 .main :global(.project-body h3) {
   margin: 48px 0 0;
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-weight: calc(300 * var(--font-weight-scale));
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
+  font-weight: calc(400 * var(--font-weight-scale));
   font-style: normal;
-  font-size: 26px;
-  line-height: 39px;
-  letter-spacing: -2%;
+  font-size: 30px;
+  line-height: 45px;
+  letter-spacing: -0.02em;
   color: #2c2c2c;
+  vertical-align: middle;
 }
 
 .main :global(.project-body h3 + p) {

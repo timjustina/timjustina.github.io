@@ -32,7 +32,9 @@ export default {
 <style scoped>
 .project-header {
     width: min(896px, calc(100% - 40px));
-    margin: 0 auto 100px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 100px;
     text-align: center;
     display: flex;
     flex-direction: column;
