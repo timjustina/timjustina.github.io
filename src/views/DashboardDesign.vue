@@ -57,9 +57,7 @@
                     materials, I summarised the findings in a <strong>hybrid affinity‑interrelationship
                     diagram</strong> by synthesising user interview insights with product features, encompassing
                     details on functionality, primary user datasets, metrics, and end‑user needs. This helped to
-                    identify dashboard contents that are most relevant to our users.</p>
-
-                <p>Although the project was set out to mainly show <strong>simple adherence‑related analytics</strong>
+                    identify dashboard contents that are most relevant to our users. Although the project was set out to mainly show <strong>simple adherence‑related analytics</strong>
                     for caregivers, the user research revealed <strong>two main expectations</strong> on the
                     functionality of the dashboard:</p>
 

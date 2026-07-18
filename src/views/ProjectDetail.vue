@@ -119,7 +119,7 @@ export default {
 }
 
 .main :global(.project-body h2) {
-  margin: 0;
+  margin: 0 0 0 -52px;
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
   font-style: normal;
@@ -130,7 +130,7 @@ export default {
 }
 
 .main :global(.project-body h3) {
-  margin: 48px 0 0;
+  margin: 100px 0 0;
   font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
   font-weight: calc(400 * var(--font-weight-scale));
   font-style: normal;
@@ -139,6 +139,10 @@ export default {
   letter-spacing: -0.02em;
   color: #2c2c2c;
   vertical-align: middle;
+}
+
+.main :global(.project-body h2 + h3) {
+  margin-top: 48px;
 }
 
 .main :global(.project-body h3 + p) {
@@ -161,7 +165,7 @@ export default {
 .main :global(.project-body ul),
 .main :global(.project-body ol) {
   margin: 32px 0;
-  padding: 0 0 0 32px;
+  padding: 0 52px 0 52px;
   list-style-position: outside;
 }
 
@@ -179,6 +183,10 @@ export default {
 
 .main :global(.project-body li + li) {
   margin-top: 0;
+}
+
+.main :global(.project-body ol > li + li) {
+  margin-top: 37px;
 }
 
 .main :global(.project-body li::marker) {
@@ -351,7 +359,7 @@ export default {
   }
 
   .main :global(.project-body h3) {
-    margin-top: 32px;
+    margin-top: 52px;
     font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
     font-weight: calc(400 * var(--font-weight-scale));
     font-size: 22px;
@@ -360,10 +368,18 @@ export default {
     color: #2c2c2c;
   }
 
+  .main :global(.project-body h2 + h3) {
+    margin-top: 32px;
+  }
+
   .main :global(.project-body p) {
     margin: 0 0 24px;
     font-size: 16px;
     line-height: 24px;
+  }
+
+  .main :global(.project-body ol > li + li) {
+    margin-top: 24px;
   }
 
   .main :global(.project-body p:last-child) {
