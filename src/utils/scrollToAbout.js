@@ -1,5 +1,5 @@
 const ABOUT_EXTRA_OFFSET = 85
-const SMALL_SCREEN_QUERY = '(max-width: 767px)'
+const SMALL_SCREEN_QUERY = '(max-width: 600px)'
 
 function getHeaderOffset() {
     const topBarInner = document.querySelector('.top-bar-inner')

@@ -63,9 +63,11 @@
                     for caregivers, the user research revealed <strong>two main expectations</strong> on the
                     functionality of the dashboard:</p>
 
-                <p>(1) <strong>Behavioural insights of primary user</strong><br>
-                    (2) <strong>Quick access to the key operational statuses</strong> such as the remote device status
-                    and medication stock.</p>
+                <ol>
+                    <li><strong>Behavioural insights of primary user</strong></li>
+                    <li><strong>Quick access to the key operational statuses</strong> such as the remote device status
+                        and medication stock.</li>
+                </ol>
 
                 <p>Point 1 was anticipated. Point 2 makes sense in hindsight – as the dashboard is the home screen,
                     users would expect to find operational information there also. These two distinct expectations
@@ -171,14 +173,15 @@
                     going to be <strong>heavily dominated by one category</strong>. In this case, the <strong>circular
                     chart type trumps the bar chart</strong> for two reasons:</p>
 
-                <p>(1) In the sense of aesthetics and practical UX, a circular chart leaves <strong>no empty
-                    spaces</strong> that might give the impression of incompleteness when the dataset is dominated by
-                    one category. This provides a more <strong>intuitive, compact, and harmonious
-                    visualisation</strong> than a bar chart.</p>
-
-                <p>(2) For highlighting edge cases, <strong>elements that disrupt a circle or continuous
-                    ring</strong>, combined with high‑contrast colours, are <strong>far more visually striking</strong>
-                    than short blocks that rise above the axis in a bar chart.</p>
+                <ol>
+                    <li>In the sense of aesthetics and practical UX, a circular chart leaves <strong>no empty
+                        spaces</strong> that might give the impression of incompleteness when the dataset is dominated by
+                        one category. This provides a more <strong>intuitive, compact, and harmonious
+                        visualisation</strong> than a bar chart.</li>
+                    <li>For highlighting edge cases, <strong>elements that disrupt a circle or continuous
+                        ring</strong>, combined with high‑contrast colours, are <strong>far more visually striking</strong>
+                        than short blocks that rise above the axis in a bar chart.</li>
+                </ol>
 
                 <p>Therefore, it is more effective in conveying the narrative we aimed for. As to whether a pie or
                     donut chart is preferred, the <strong>donut</strong> has the advantage of enabling better
@@ -234,23 +237,27 @@
 
                 <p>I explored several approaches. For data visualisation, I implemented the following:</p>
 
-                <p>(1) <strong>Division of the day into six time bins</strong>, which simplifies presentation and
-                    aligns with typical daily routines.<br>
-                    (2) Inclusion of <strong>Scheduled Dispense data as a baseline</strong> for comparison with missed
-                    doses.<br>
-                    (3) Use of <strong>dynamic text labels</strong> to highlight key takeaways.</p>
+                <ol>
+                    <li><strong>Division of the day into six time bins</strong>, which simplifies presentation and
+                        aligns with typical daily routines.</li>
+                    <li>Inclusion of <strong>Scheduled Dispense data as a baseline</strong> for comparison with missed
+                        doses.</li>
+                    <li>Use of <strong>dynamic text labels</strong> to highlight key takeaways.</li>
+                </ol>
 
                 <p>For interactivity, I added the following features:</p>
 
-                <p>(1) A <strong>toggle</strong> to show or hide Missed‑dose Dispense data, enabling users to explore
-                    the relationship between datasets.<br>
-                    (2) <strong>Expandable tooltips</strong> to clarify unfamiliar variables and reduce confusion.<br>
-                    (3) <strong>Hover‑activated data labels</strong> that provide precise quantitative information on
-                    specific data segments.</p>
+                <ol>
+                    <li>A <strong>toggle</strong> to show or hide Missed‑dose Dispense data, enabling users to explore
+                        the relationship between datasets.</li>
+                    <li><strong>Expandable tooltips</strong> to clarify unfamiliar variables and reduce confusion.</li>
+                    <li><strong>Hover‑activated data labels</strong> that provide precise quantitative information on
+                        specific data segments.</li>
+                </ol>
 
                 <h3>6. Divide and conquer</h3>
                 <p>Early in discovery, I identified <strong>two distinct user goals</strong> when engaging with the
-                    dashboard: (1) <strong>gaining insights into client behaviour</strong>, and (2) checking
+                    dashboard: 1. <strong>gaining insights into client behaviour</strong>, and 2. checking
                     <strong>key operational statuses</strong> of the remote device. These two goals required a
                     <strong>clear division of content</strong> to minimise friction that users could experience while
                     seeking for information.</p>
@@ -326,25 +333,31 @@
                 <p>There are also several crucial aspects to consider for further development ahead regarding
                     <strong>scalability, adaptability, and data‑driven iteration</strong>:</p>
 
-                <p><strong>(1) Usability testing for enterprise customisation.</strong></p>
-                <p>The feedback session validated the core design, but <strong>structured usability testing</strong>
-                    is crucial for the next phase. The reality check would allow us to evaluate <strong>how well the
-                    dashboard fits with the workflows</strong> of the caregiving enterprise, and thus helps determine
-                    the requirements of <strong>subsequent iterations</strong> depending on the customers' needs.</p>
-
-                <p><strong>(2) Extending the design system.</strong></p>
-                <p>A <strong>preliminary colour system</strong> was established at this stage, but a <strong>more
-                    comprehensive design system</strong> will be essential, especially regarding <strong>data
-                    visualisation</strong>. This should include guidelines for <strong>chart types, data density,
-                    accessibility and interactions</strong>. This ensures that any new charts maintain a
-                    <strong>consistent look, feel, and usability standard</strong>.</p>
-
-                <p><strong>(3) Usage‑based prioritisation.</strong></p>
-                <p>For further UX improvement, future iterations could implement an <strong>adaptive UI</strong> that
-                    automatically reconfigures based on <strong>tracked engagement data</strong>.
-                    <strong>High‑engagement widgets</strong> could be surfaced more prominently, while
-                    <strong>lower‑engagement ones</strong> could be deprioritised, allowing the dashboard to
-                    <strong>adapt dynamically</strong> to real‑world usage patterns.</p>
+                <ol>
+                    <li>
+                        <strong>Usability testing for enterprise customisation.</strong>
+                        <p>The feedback session validated the core design, but <strong>structured usability testing</strong>
+                            is crucial for the next phase. The reality check would allow us to evaluate <strong>how well the
+                            dashboard fits with the workflows</strong> of the caregiving enterprise, and thus helps determine
+                            the requirements of <strong>subsequent iterations</strong> depending on the customers' needs.</p>
+                    </li>
+                    <li>
+                        <strong>Extending the design system.</strong>
+                        <p>A <strong>preliminary colour system</strong> was established at this stage, but a <strong>more
+                            comprehensive design system</strong> will be essential, especially regarding <strong>data
+                            visualisation</strong>. This should include guidelines for <strong>chart types, data density,
+                            accessibility and interactions</strong>. This ensures that any new charts maintain a
+                            <strong>consistent look, feel, and usability standard</strong>.</p>
+                    </li>
+                    <li>
+                        <strong>Usage‑based prioritisation.</strong>
+                        <p>For further UX improvement, future iterations could implement an <strong>adaptive UI</strong> that
+                            automatically reconfigures based on <strong>tracked engagement data</strong>.
+                            <strong>High‑engagement widgets</strong> could be surfaced more prominently, while
+                            <strong>lower‑engagement ones</strong> could be deprioritised, allowing the dashboard to
+                            <strong>adapt dynamically</strong> to real‑world usage patterns.</p>
+                    </li>
+                </ol>
             </section>
         </div>
     </ProjectDetail>

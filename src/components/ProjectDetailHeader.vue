@@ -83,7 +83,7 @@ export default {
     flex-shrink: 0;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
     .project-header {
         width: min(318px, calc(100% - 40px));
         gap: 20px;

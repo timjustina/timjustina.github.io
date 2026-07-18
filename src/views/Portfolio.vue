@@ -175,9 +175,13 @@
                     <a href="#" class="about-action-btn">CV</a>
                 </div>
             </div>
-            <span
+            <img
                 class="about-ball"
                 :class="{ 'about-ball--dropped': aboutBallDropped }"
+                :src="aboutSquiggle"
+                alt=""
+                width="59"
+                height="56"
                 aria-hidden="true"
             />
         </section>
@@ -193,6 +197,7 @@ import marketplaceHero from '../assets/3_marketplace/0_marketplace_hero.jpg'
 import aboutPhoto from '../assets/portrait.jpg'
 import lineAnimation from '../assets/line_animation.svg'
 import lineAnimationTall from '../assets/line_animation_tall.svg'
+import aboutSquiggle from '../assets/squiggle_3.svg'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 
@@ -207,6 +212,7 @@ export default {
             aboutPhoto,
             lineAnimation,
             lineAnimationTall,
+            aboutSquiggle,
             aboutBallDropped: false,
             heroLinePhase: 'rest',
         }
@@ -235,11 +241,24 @@ export default {
         }
 
         this.syncHeroDecorHeight()
+        this.syncAboutBallPosition()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
-        document.fonts?.ready?.then(() => this.syncHeroDecorHeight())
+        document.fonts?.ready?.then(() => {
+            this.syncHeroDecorHeight()
+            this.syncAboutBallPosition()
+        })
+
+        const aboutBio = this.$el?.querySelector('.about-bio')
+        if (aboutBio) {
+            this.aboutBallObserver = new ResizeObserver(() => {
+                requestAnimationFrame(() => this.syncAboutBallPosition())
+            })
+            this.aboutBallObserver.observe(aboutBio)
+        }
     },
     beforeUnmount() {
         this.heroDecorObserver?.disconnect()
+        this.aboutBallObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
     },
@@ -302,10 +321,32 @@ export default {
         },
         startAboutBallDrop() {
             if (this.aboutBallDropped) return
+            this.syncAboutBallPosition()
             this.aboutBallDropped = true
         },
+        syncAboutBallPosition() {
+            const about = this.$el?.querySelector('.about')
+            const bio = this.$el?.querySelector('.about-bio')
+            if (!about || !bio) return
+
+            const aboutRect = about.getBoundingClientRect()
+            const bioRect = bio.getBoundingClientRect()
+            const styles = getComputedStyle(about)
+            const ballSize =
+                parseFloat(styles.getPropertyValue('--about-ball-size')) || 56
+            const gap = 16
+            const maxX = about.clientWidth - ballSize - 16
+            const x = Math.max(
+                16,
+                Math.min(bioRect.right - aboutRect.left + gap, maxX)
+            )
+            about.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
+        },
         onHeroDecorResize() {
-            requestAnimationFrame(() => this.syncHeroDecorHeight())
+            requestAnimationFrame(() => {
+                this.syncHeroDecorHeight()
+                this.syncAboutBallPosition()
+            })
         },
         syncHeroDecorHeight() {
             const decor = this.$el?.querySelector('.hero-decor')
@@ -384,14 +425,19 @@ export default {
     position: relative;
     z-index: 1;
     --hero-cta-gap: 98px;
+    --hero-squiggle-left: 121px;
+    --hero-squiggle-width: 56px;
+    --hero-cta-width: 233px;
+    --hero-cta-left: calc(var(--hero-squiggle-left) + 696px);
     margin-bottom: clamp(231px, calc(238px - (100vw - 997px) * 7 / 457), 238px);
 }
 
 .hero-intro-wrap {
+    --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     position: relative;
-    max-width: min(840px, calc(100% - 244px));
+    max-width: min(840px, calc(100% - var(--hero-intro-left)));
     margin: clamp(98px, calc(98px + (100vw - 997px) * 15 / 457), 113px) 0 0
-        clamp(180px, calc(180px + (100vw - 997px) * 64 / 457), 244px);
+        var(--hero-intro-left);
 }
 
 .hero-decor {
@@ -408,9 +454,10 @@ export default {
     --hero-decor-line-natural-height: 818px;
     position: absolute;
     top: 7px;
-    right: calc(100% + 23px);
+    right: auto;
+    left: calc(var(--hero-squiggle-left) - var(--hero-intro-left));
     z-index: 0;
-    width: 56px;
+    width: var(--hero-squiggle-width);
     height: var(--hero-decor-height);
     overflow: hidden;
     pointer-events: none;
@@ -517,11 +564,11 @@ export default {
     justify-content: center;
     margin-top: var(--hero-cta-gap);
     margin-left: min(
-        clamp(565px, calc(565px + (100vw - 997px) * 229 / 457), 794px),
-        max(0px, calc(100% - 233px))
+        var(--hero-cta-left),
+        max(0px, calc(100% - var(--hero-cta-width)))
     );
     padding: 12px 24px;
-    width: 233px;
+    width: var(--hero-cta-width);
     max-width: 100%;
     min-width: 0;
     height: 57px;
@@ -853,18 +900,19 @@ export default {
 }
 
 .about-ball {
-    --about-ball-size: 56px;
+    --about-ball-size: 59px;
+    --about-ball-height: 56px;
     position: absolute;
-    left: 50%;
+    left: var(--about-ball-x, 50%);
     bottom: 0;
     z-index: 5;
     width: var(--about-ball-size);
-    height: var(--about-ball-size);
-    border-radius: 50%;
-    background: var(--brand);
+    height: var(--about-ball-height);
+    display: block;
     pointer-events: none;
     opacity: 0;
-    transform: translate3d(-50%, -1100px, 0);
+    transform: translate3d(0, -1100px, 0) rotate(0deg);
+    transform-origin: center center;
 }
 
 .about-ball--dropped {
@@ -879,12 +927,11 @@ export default {
 @media (min-width: 1454px) {
     .hero-intro-wrap {
         max-width: 840px;
-        margin: 113px 0 0 244px;
+        margin: 113px 0 0 var(--hero-intro-left);
     }
 
     .hero-decor {
         top: 7px;
-        right: calc(100% + 23px);
     }
 
     .hero {
@@ -893,8 +940,7 @@ export default {
 
     .cta-button {
         margin-top: var(--hero-cta-gap);
-        margin-left: min(794px, max(0px, calc(100% - 233px)));
-        width: 233px;
+        width: var(--hero-cta-width);
         min-width: 0;
         height: 57px;
     }
@@ -1041,36 +1087,60 @@ export default {
     }
 }
 
-/* Tablet: ≤767px (768px artboard) */
-@media (max-width: 767px) {
+@media (max-width: 600px) {
     .portfolio-page {
-        --hero-logo-gap: 80px;
-    }
-
-    .hero-intro-wrap {
-        max-width: min(629px, 100%);
-    }
-
-    .hero-decor {
-        --hero-line-lift: 31px;
-        right: auto;
-        left: calc(100% - 40px - 56px);
+        --page-pad: 20px;
+        --top-bar-height: 86px;
+        --hero-logo-gap: 64px;
+        /* Logo top 20px + 46px tall in the 86px bar */
+        --top-bar-logo-inset: 20px;
     }
 
     .hero {
+        --hero-cta-gap: 84px;
         min-height: 0;
     }
 
+    .hero-decor {
+        display: none;
+    }
+
+    .portfolio-main {
+        padding: var(--top-bar-height) var(--page-pad) 0;
+        box-sizing: border-box;
+    }
+
+    .hero-intro-wrap {
+        max-width: 100%;
+        width: 100%;
+        margin: var(--hero-logo-gap) 0 0;
+    }
+
+    .hero-intro {
+        max-width: 100%;
+        font-size: 22px;
+        line-height: 33px;
+    }
+
+    .hero-intro-lead {
+        display: inline;
+    }
+
     .cta-button {
-        margin-top: var(--hero-cta-gap);
-        margin-left: 0;
-        min-width: 233px;
-        width: fit-content;
-        height: 57px;
+        --hero-cta-width: 225px;
+        width: var(--hero-cta-width);
+        height: 49px;
+        min-height: 49px;
+        min-width: var(--hero-cta-width);
+        margin-left: max(0px, calc(100% - var(--hero-cta-width)));
+        padding: 8px 20px;
+        font-size: 22px;
+        line-height: 33px;
     }
 
     .work {
         gap: 80px;
+        width: 100%;
     }
 
     .project,
@@ -1079,19 +1149,58 @@ export default {
     .project:last-child {
         width: 100%;
         max-width: 100%;
-    }
-
-    .project--offset,
-    .project:last-child {
         margin-top: 0;
         margin-left: 0;
     }
 
-    .project-image,
-    .project--featured .project-image,
-    .project--offset .project-image,
-    .project:last-child .project-image {
+    .project-image-link,
+    .project-image-wrap,
+    .project-image {
+        width: 100%;
+        max-width: 100%;
         height: auto;
+    }
+
+    .project-caption {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 28px;
+    }
+
+    .project-caption-header {
+        padding-top: 0;
+        gap: 0;
+        width: 100%;
+    }
+
+    .project-title {
+        flex: 1 1 auto;
+        max-width: none;
+        font-family: 'Be Vietnam Pro', sans-serif;
+        font-size: 18px;
+        font-weight: calc(500 * var(--font-weight-scale));
+        line-height: 27px;
+        color: #4d4d4d;
+    }
+
+    .project-description {
+        margin-top: 11px;
+        max-width: 100%;
+        font-family: 'Fira Code', monospace;
+        font-size: 16px;
+        font-weight: calc(400 * var(--font-weight-scale));
+        line-height: 25px;
+        color: #757575;
+    }
+
+    .project-year {
+        margin-left: auto;
+        flex-shrink: 0;
+        font-family: 'Fira Code', monospace;
+        font-size: 18px;
+        font-weight: calc(500 * var(--font-weight-scale));
+        line-height: 27px;
+        color: #757575;
     }
 
     .about {
@@ -1184,120 +1293,6 @@ export default {
         text-decoration: none;
         box-sizing: border-box;
     }
-}
-
-@media (max-width: 620px) {
-    .hero-decor {
-        display: none;
-    }
-}
-
-@media (max-width: 560px) {
-    .portfolio-page {
-        --page-pad: 20px;
-        --top-bar-height: 86px;
-        --hero-logo-gap: 64px;
-        /* Logo top 20px + 46px tall in the 86px bar */
-        --top-bar-logo-inset: 20px;
-    }
-
-    .hero {
-        --hero-cta-gap: 84px;
-    }
-
-    .portfolio-main {
-        padding: var(--top-bar-height) var(--page-pad) 0;
-        box-sizing: border-box;
-    }
-
-    .hero-intro-wrap {
-        max-width: 100%;
-        width: 100%;
-        margin: var(--hero-logo-gap) 0 0;
-    }
-
-    .hero-intro {
-        max-width: 100%;
-        font-size: 22px;
-        line-height: 33px;
-    }
-
-    .hero-intro-lead {
-        display: inline;
-    }
-
-    .cta-button {
-        width: 225px;
-        height: 49px;
-        min-height: 49px;
-        min-width: 225px;
-        margin-left: min(94px, max(0px, calc(100% - 225px)));
-        padding: 8px 20px;
-        font-size: 22px;
-        line-height: 33px;
-    }
-
-    .work {
-        gap: 80px;
-        width: 100%;
-    }
-
-    .project,
-    .project--featured,
-    .project--offset,
-    .project:last-child {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .project-image-link,
-    .project-image-wrap,
-    .project-image {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .project-caption {
-        width: 100%;
-        max-width: 100%;
-        margin-top: 28px;
-    }
-
-    .project-caption-header {
-        padding-top: 0;
-        gap: 0;
-        width: 100%;
-    }
-
-    .project-title {
-        flex: 1 1 auto;
-        max-width: none;
-        font-family: 'Be Vietnam Pro', sans-serif;
-        font-size: 18px;
-        font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 27px;
-        color: #4d4d4d;
-    }
-
-    .project-description {
-        margin-top: 11px;
-        max-width: 100%;
-        font-family: 'Fira Code', monospace;
-        font-size: 16px;
-        font-weight: calc(400 * var(--font-weight-scale));
-        line-height: 25px;
-        color: #757575;
-    }
-
-    .project-year {
-        margin-left: auto;
-        flex-shrink: 0;
-        font-family: 'Fira Code', monospace;
-        font-size: 18px;
-        font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 27px;
-        color: #757575;
-    }
 
 }
 </style>
@@ -1309,65 +1304,62 @@ export default {
 }
 
 @keyframes about-ball-fall {
-    /* Glass-marble fall + 4 decaying bounces, drifting ~70px right */
+    /* Fall + 4 decaying bounces left, rolling counter-clockwise */
     0% {
         opacity: 1;
-        transform: translate3d(calc(-50% + 0px), -1100px, 0);
+        transform: translate3d(0, -1100px, 0) rotate(0deg);
         animation-timing-function: cubic-bezier(0.55, 0.05, 0.8, 0.4);
     }
 
-    /* First impact — still centered; sideways starts on the rebound */
+    /* First impact */
     40% {
-        transform: translate3d(calc(-50% + 0px), 0, 0);
+        transform: translate3d(0, 0, 0) rotate(-460deg);
         animation-timing-function: ease-out;
     }
 
-    /* Bounce 1 (~29px right over this hop) */
+    /* Bounce 1 */
     49% {
-        transform: translate3d(calc(-50% + 15px), -78px, 0);
+        transform: translate3d(-15px, -78px, 0) rotate(-510deg);
         animation-timing-function: ease-in;
     }
 
     57% {
-        transform: translate3d(calc(-50% + 29px), 0, 0);
+        transform: translate3d(-29px, 0, 0) rotate(-550deg);
         animation-timing-function: ease-out;
     }
 
-    /* Bounce 2 (~20px) */
+    /* Bounce 2 */
     64% {
-        transform: translate3d(calc(-50% + 39px), -34px, 0);
+        transform: translate3d(-39px, -34px, 0) rotate(-585deg);
         animation-timing-function: ease-in;
     }
 
     71% {
-        transform: translate3d(calc(-50% + 49px), 0, 0);
+        transform: translate3d(-49px, 0, 0) rotate(-615deg);
         animation-timing-function: ease-out;
     }
 
-    /* Bounce 3 (~13px) */
+    /* Bounce 3 */
     77% {
-        transform: translate3d(calc(-50% + 55px), -15px, 0);
+        transform: translate3d(-55px, -15px, 0) rotate(-640deg);
         animation-timing-function: ease-in;
     }
 
     83% {
-        transform: translate3d(calc(-50% + 62px), 0, 0);
+        transform: translate3d(-62px, 0, 0) rotate(-660deg);
         animation-timing-function: ease-out;
     }
 
-    /* Bounce 4 (~8px) → 70px total */
+    /* Bounce 4 → settle */
     88% {
-        transform: translate3d(calc(-50% + 66px), -6px, 0);
+        transform: translate3d(-66px, -6px, 0) rotate(-675deg);
         animation-timing-function: ease-in;
     }
 
-    93% {
-        transform: translate3d(calc(-50% + 70px), 0, 0);
-    }
-
+    93%,
     100% {
         opacity: 1;
-        transform: translate3d(calc(-50% + 70px), 0, 0);
+        transform: translate3d(-70px, 0, 0) rotate(-690deg);
     }
 }
 </style>

@@ -31,6 +31,8 @@ export default {
   --project-content-w: 668px;
   --project-content-offset: 22.5px;
   --project-media-gap: 100px;
+  /* Match portfolio about → footer spacing */
+  --project-bottom-pad: clamp(180px, calc(180px + (100vw - 997px) * 100 / 457), 280px);
   --top-bar-height: 120px;
   background: #fff;
   color: #3c3f41;
@@ -42,7 +44,13 @@ export default {
 .main {
   max-width: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 var(--project-bottom-pad);
+}
+
+/* Avoid stacking media gap on top of the page bottom pad */
+.main :global(.project-body > section:last-child > .full-image:last-child),
+.main :global(.project-body > section:last-child > .video-pair:last-child) {
+  margin-bottom: 0;
 }
 
 .main :global(.project-body) {
@@ -110,21 +118,6 @@ export default {
   margin-top: 48px;
 }
 
-.main :global(.project-body .project-role ul) {
-  margin: 34px 0 0;
-  padding-left: 1.1em;
-  list-style-type: disc;
-  list-style-position: outside;
-}
-
-.main :global(.project-body .project-role li) {
-  padding-left: 0.15em;
-}
-
-.main :global(.project-body .project-role li::marker) {
-  color: #3c3f41;
-}
-
 .main :global(.project-body h2) {
   margin: 0;
   font-family: 'Fira Code', monospace;
@@ -160,14 +153,48 @@ export default {
   margin-bottom: 0;
 }
 
-.main :global(.project-body ul) {
-  margin: 0 0 34px;
-  padding: 0;
-  list-style: none;
+.main :global(.project-body p:has(+ ul)),
+.main :global(.project-body p:has(+ ol)) {
+  margin-bottom: 0;
 }
 
-.main :global(.project-body ul li + li) {
+.main :global(.project-body ul),
+.main :global(.project-body ol) {
+  margin: 32px 0;
+  padding: 0 0 0 32px;
+  list-style-position: outside;
+}
+
+.main :global(.project-body ul) {
+  list-style-type: disc;
+}
+
+.main :global(.project-body ol) {
+  list-style-type: decimal;
+}
+
+.main :global(.project-body li) {
+  padding-left: 6px;
+}
+
+.main :global(.project-body li + li) {
   margin-top: 0;
+}
+
+.main :global(.project-body li::marker) {
+  color: #3c3f41;
+}
+
+.main :global(.project-body li > p) {
+  margin: 0 0 34px;
+}
+
+.main :global(.project-body li > p:last-child) {
+  margin-bottom: 0;
+}
+
+.main :global(.project-body li > strong:first-child) {
+  display: inline;
 }
 
 .main :global(.full-image) {
@@ -262,6 +289,12 @@ export default {
   color: #f20606;
 }
 
+@media (max-width: 997px) {
+  .page {
+    --project-bottom-pad: 180px;
+  }
+}
+
 @media (max-width: 480px) {
   .page {
     --page-pad: 24px;
@@ -269,12 +302,13 @@ export default {
 }
 
 /* Phone layout — after desktop rules so type/spacing aren’t overridden */
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .page {
     --project-content-offset: 0px;
     --top-bar-height: 86px;
     --page-pad: 20px;
     --project-media-gap: 52px;
+    --project-bottom-pad: 276px;
   }
 
   .main :global(.project-header) {

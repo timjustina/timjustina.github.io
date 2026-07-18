@@ -58,7 +58,7 @@ export default {
     background: var(--muted);
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
     .site-footer {
         position: relative;
         display: block;

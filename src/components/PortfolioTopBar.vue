@@ -257,14 +257,12 @@ export default {
     display: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 600px) {
     .nav-link--linkedin,
     .nav-link--cv {
         display: none;
     }
-}
 
-@media (max-width: 560px) {
     .portfolio-top-bar {
         --top-bar-height: 86px;
     }
