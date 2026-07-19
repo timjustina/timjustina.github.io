@@ -425,19 +425,22 @@ export default {
     position: relative;
     z-index: 1;
     --hero-cta-gap: 98px;
+    --hero-cta-height: 57px;
     --hero-squiggle-left: 121px;
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
     /* 696px from the left edge of the first project image (content left) */
     --hero-cta-left: 696px;
-    margin-bottom: clamp(231px, calc(238px - (100vw - 997px) * 7 / 457), 238px);
+    /* Text bottom → first image = cta gap + cta height + this margin */
+    --hero-text-to-image: 357px;
+    margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
 }
 
 .hero-intro-wrap {
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     position: relative;
     max-width: min(840px, calc(100% - var(--hero-intro-left)));
-    margin: clamp(98px, calc(98px + (100vw - 997px) * 15 / 457), 113px) 0 0
+    margin: 90px 0 0
         var(--hero-intro-left);
 }
 
@@ -572,7 +575,7 @@ export default {
     width: var(--hero-cta-width);
     max-width: 100%;
     min-width: 0;
-    height: 57px;
+    height: var(--hero-cta-height);
     border-radius: 100px;
     background: var(--brand);
     font-family: 'Fira Code', monospace;
@@ -928,22 +931,18 @@ export default {
 @media (min-width: 1454px) {
     .hero-intro-wrap {
         max-width: 840px;
-        margin: 113px 0 0 var(--hero-intro-left);
+        margin: 90px 0 0 var(--hero-intro-left);
     }
 
     .hero-decor {
         top: 7px;
     }
 
-    .hero {
-        margin-bottom: 220px;
-    }
-
     .cta-button {
         margin-top: var(--hero-cta-gap);
         width: var(--hero-cta-width);
         min-width: 0;
-        height: 57px;
+        height: var(--hero-cta-height);
     }
 
     .work {
