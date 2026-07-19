@@ -76,7 +76,7 @@
                     :src="svg1Cover"
                     :zoom-src="svg1"
                     alt="Affinity-Interrelationship Diagram"
-                    caption="Affinity-Interrelationship Diagram based on user research findings"
+                    caption="Hybrid affinity-interrelationship diagram based on user research findings"
                 />
 
                 <h3>2. Define the narrative</h3>
@@ -120,8 +120,8 @@
                         loading="lazy"
                         decoding="async"
                     />
-                    <p class="caption">On the left: mockups of primary user's mobile dashboard. On the right:
-                        wireframes for caregiver-facing dashboard.</p>
+                    <p class="caption">Wireframes for the caregiver-facing dashboard's widgets juxtaposed with
+                        mockups of the primary user's mobile dashboard</p>
                 </div>
 
                 <h3>2. Design for accessibility</h3>
@@ -216,7 +216,7 @@
                 <VideoPair
                     :left-src="vid5"
                     :right-src="vid6"
-                    caption="Prototype of Missed Dose Insights"
+                    caption="Designs of Adherence Trend and Missed Dose Insights widgets"
                 />
 
                 <h3>5. From logs to insights</h3>
@@ -284,6 +284,7 @@
                         muted
                         playsinline
                     />
+                    <p class="caption">Caregiver-facing dashboard demo</p>
                 </div>
             </section>
 

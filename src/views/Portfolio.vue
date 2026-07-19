@@ -231,8 +231,7 @@ import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 
 const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
-const LOADING_MAX_ITERATIONS = 4
-const LOADING_MIN_ITERATIONS = 4
+const LOADING_MAX_ITERATIONS = 6
 
 export default {
     name: 'Portfolio',
@@ -339,13 +338,8 @@ export default {
         scheduleLoadingAdvance() {
             this.clearLoadingTimer()
             this.loadingTimer = setTimeout(() => {
-                // Always run the configured minimum cycles; then leave at the end of
-                // frame 1 once the main page images are ready.
-                if (
-                    this.loadingFrameIndex === 0 &&
-                    this.loadingIteration > LOADING_MIN_ITERATIONS &&
-                    this.areMainPageImagesLoaded()
-                ) {
+                // After frame 1: enter as soon as the main page is ready
+                if (this.loadingFrameIndex === 0 && this.areMainPageImagesLoaded()) {
                     this.finishLoadingSplash()
                     return
                 }
@@ -373,16 +367,20 @@ export default {
                 })
             })
 
-            // Rotate 500ms, pause, then loading 1 upright again
+            // Rotate 500ms, pause, then check / next cycle
             this.loadingTimer = setTimeout(() => {
                 this.loadingRotating = false
 
-                if (this.loadingIteration >= LOADING_MAX_ITERATIONS) {
-                    this.finishLoadingSplash()
-                    return
-                }
-
                 this.loadingTimer = setTimeout(() => {
+                    // End of cycle: enter if ready, or after max cycles
+                    if (
+                        this.areMainPageImagesLoaded() ||
+                        this.loadingIteration >= LOADING_MAX_ITERATIONS
+                    ) {
+                        this.finishLoadingSplash()
+                        return
+                    }
+
                     this.$nextTick(() => {
                         this.loadingRotationDeg = 0
                         this.loadingIteration += 1
