@@ -224,9 +224,7 @@ import lineAnimation from '../assets/line_animation.svg'
 import lineAnimationTall from '../assets/line_animation_tall.svg'
 import aboutSquiggle from '../assets/squiggle_3.svg'
 import loading1 from '../assets/loading/loading 1.svg'
-import loading2 from '../assets/loading/loading 2.svg'
-import loading3 from '../assets/loading/loading 3.svg'
-import loading4 from '../assets/loading/loading 4.svg'
+import loadingRoundCorner from '../assets/loading/loading round corner.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
@@ -248,7 +246,7 @@ export default {
             lineAnimation,
             lineAnimationTall,
             aboutSquiggle,
-            loadingFrames: [loading1, loading2, loading3, loading4],
+            loadingFrames: [loading1, loadingRoundCorner],
             cvUrl,
             showLoadingSplash: true,
             loadingFrameIndex: 0,
@@ -352,27 +350,30 @@ export default {
                     return
                 }
 
-                // After frame 4 holds, rotate it 90° CCW, then continue
-                if (this.loadingFrameIndex === 3) {
-                    this.rotateAfterFrame4()
+                // After round-corner hold, rotate 90° CCW, then continue
+                if (this.loadingFrameIndex === 1) {
+                    this.rotateLoadingRoundCorner()
                     return
                 }
 
-                // Sequence is frame 1 → frame 4 (skip 2 and 3)
-                this.loadingFrameIndex = 3
+                // loading 1 → round corner (already +90° CW), then rotate
+                this.loadingRotating = false
+                this.loadingRotationDeg = 90
+                this.loadingFrameIndex = 1
                 this.scheduleLoadingAdvance()
             }, LOADING_FRAME_MS)
         },
-        rotateAfterFrame4() {
+        rotateLoadingRoundCorner() {
             this.clearLoadingTimer()
             this.loadingRotating = true
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
+                    // From +90° CW → 0° (90° counterclockwise)
                     this.loadingRotationDeg -= 90
                 })
             })
 
-            // Rotate 500ms, pause 100ms, then frame 1 upright again
+            // Rotate 500ms, pause, then loading 1 upright again
             this.loadingTimer = setTimeout(() => {
                 this.loadingRotating = false
 
@@ -382,7 +383,6 @@ export default {
                 }
 
                 this.loadingTimer = setTimeout(() => {
-                    // Snap back upright (no transition) before the next cycle
                     this.$nextTick(() => {
                         this.loadingRotationDeg = 0
                         this.loadingIteration += 1

@@ -129,7 +129,7 @@ export default {
 
 @media (max-width: 997px) {
   .video-pair-videos {
-    --stack-overlap: 25px;
+    --stack-overlap: 10px;
     flex-direction: column;
     align-items: flex-start;
   }

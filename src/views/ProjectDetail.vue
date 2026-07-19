@@ -211,7 +211,7 @@ export default {
 .main :global(.project-body ul),
 .main :global(.project-body ol) {
   margin: 32px 0;
-  padding: 0 52px 0 52px;
+  padding: 0 0 0 52px;
   list-style-position: outside;
   list-style-type: disc;
 }
@@ -240,8 +240,9 @@ export default {
   margin-bottom: 0;
 }
 
-.main :global(.project-body li > strong:first-child) {
+.main :global(.project-body li > strong:first-child:has(+ p)) {
   display: inline;
+  font-style: italic;
 }
 
 .main :global(.full-image) {

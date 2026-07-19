@@ -333,14 +333,14 @@
 
                 <ul>
                     <li>
-                        <strong>Usability testing for enterprise customisation.</strong>
+                        <strong>Usability testing for enterprise customisation</strong>
                         <p>The feedback session validated the core design, but <strong>structured usability testing</strong>
                             is crucial for the next phase. The reality check would allow us to evaluate <strong>how well the
                             dashboard fits with the workflows</strong> of the caregiving enterprise, and thus helps determine
                             the requirements of <strong>subsequent iterations</strong> depending on the customers' needs.</p>
                     </li>
                     <li>
-                        <strong>Extending the design system.</strong>
+                        <strong>Extending the design system</strong>
                         <p>A <strong>preliminary colour system</strong> was established at this stage, but a <strong>more
                             comprehensive design system</strong> will be essential, especially regarding <strong>data
                             visualisation</strong>. This should include guidelines for <strong>chart types, data density,
@@ -348,7 +348,7 @@
                             <strong>consistent look, feel, and usability standard</strong>.</p>
                     </li>
                     <li>
-                        <strong>Usage‑based prioritisation.</strong>
+                        <strong>Usage‑based prioritisation</strong>
                         <p>For further UX improvement, future iterations could implement an <strong>adaptive UI</strong> that
                             automatically reconfigures based on <strong>tracked engagement data</strong>.
                             <strong>High‑engagement widgets</strong> could be surfaced more prominently, while
