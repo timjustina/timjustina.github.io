@@ -76,6 +76,52 @@ export default {
   overflow: visible;
 }
 
+/* Vertical rule beside body text + h3 subtitles (not h2 titles or media) */
+.main :global(.project-body section > h3),
+.main :global(.project-body section > p:not(.caption)),
+.main :global(.project-body section > ul),
+.main :global(.project-body section > ol) {
+  position: relative;
+}
+
+.main :global(.project-body section > h3)::before,
+.main :global(.project-body section > p:not(.caption))::before,
+.main :global(.project-body section > ul)::before,
+.main :global(.project-body section > ol)::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 11px;
+  bottom: 5px;
+  width: 1px;
+  background: #bababa;
+  pointer-events: none;
+}
+
+/* Bridge gaps between consecutive text blocks so the rule reads continuous.
+   Extra 11px so the bridge meets the next block’s top inset. */
+.main :global(.project-body section > h3:has(+ p:not(.caption)))::before {
+  bottom: -49px;
+}
+
+.main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {
+  bottom: -45px;
+}
+
+.main :global(.project-body section > p:not(.caption):has(+ ul))::before,
+.main :global(.project-body section > p:not(.caption):has(+ ol))::before {
+  bottom: -43px;
+}
+
+.main :global(.project-body section > ul:has(+ p:not(.caption)))::before,
+.main :global(.project-body section > ol:has(+ p:not(.caption)))::before,
+.main :global(.project-body section > ul:has(+ ul))::before,
+.main :global(.project-body section > ul:has(+ ol))::before,
+.main :global(.project-body section > ol:has(+ ul))::before,
+.main :global(.project-body section > ol:has(+ ol))::before {
+  bottom: -43px;
+}
+
 .main :global(.project-hero) {
   width: 100vw;
   max-width: 100vw;
@@ -167,14 +213,7 @@ export default {
   margin: 32px 0;
   padding: 0 52px 0 52px;
   list-style-position: outside;
-}
-
-.main :global(.project-body ul) {
   list-style-type: disc;
-}
-
-.main :global(.project-body ol) {
-  list-style-type: decimal;
 }
 
 .main :global(.project-body li) {
@@ -182,11 +221,11 @@ export default {
 }
 
 .main :global(.project-body li + li) {
-  margin-top: 0;
+  margin-top: 18px;
 }
 
-.main :global(.project-body ol > li + li) {
-  margin-top: 37px;
+.main :global(.project-body .project-role li + li) {
+  margin-top: 0;
 }
 
 .main :global(.project-body li::marker) {
@@ -378,8 +417,20 @@ export default {
     line-height: 24px;
   }
 
-  .main :global(.project-body ol > li + li) {
-    margin-top: 24px;
+  .main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {
+    bottom: -35px;
+  }
+
+  .main :global(.project-body section > h3:has(+ p:not(.caption)))::before {
+    bottom: -43px;
+  }
+
+  .main :global(.project-body li + li) {
+    margin-top: 12px;
+  }
+
+  .main :global(.project-body .project-role li + li) {
+    margin-top: 0;
   }
 
   .main :global(.project-body p:last-child) {
