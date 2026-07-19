@@ -428,7 +428,8 @@ export default {
     --hero-squiggle-left: 121px;
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
-    --hero-cta-left: calc(var(--hero-squiggle-left) + 696px);
+    /* 696px from the left edge of the first project image (content left) */
+    --hero-cta-left: 696px;
     margin-bottom: clamp(231px, calc(238px - (100vw - 997px) * 7 / 457), 238px);
 }
 
