@@ -80,16 +80,15 @@
                 />
 
                 <h3>2. Define the narrative</h3>
-                <p>With the framework set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
+                <p>With the framework set, I turned to the <strong>narrative.</strong> Without a strategic narrative,
                     users can experience fatigue or miss key insights. It is also an opportunity to <strong>highlight
-                    and reinforce features</strong> that contribute to the product's value proposition.</p>
-
-                <p>Take the primary user's mobile app that I had previously made as an example. It functions as a
+                    and reinforce features</strong> that contribute to the product's value proposition. For example,
+                    the dashboard of the primary user's mobile app that I had previously designed functions as a
                     <strong>progress hub</strong> at the home screen. Its <strong>encouragement narrative</strong>
                     uses simple data presentation to trigger immediate impression and action. For instance,
                     cumulative adherence appears as a <strong>heart‑shaped progress graphic</strong> leveraging the
-                    <strong>cognitive tension from unfinished tasks</strong>. A dispense streak leverages <strong>loss
-                    aversion</strong>. Both encourage adherence behaviour.</p>
+                    <strong>cognitive tension from unfinished tasks.</strong> A dispense streak leverages
+                    <strong>loss aversion.</strong> Both encourage adherence behaviour.</p>
 
                 <p>Based on user research, the caregiver dashboard needs a <strong>synopsis narrative</strong>.
                     Caregivers have more capacity to explore data than primary users, but they are <strong>not

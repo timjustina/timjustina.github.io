@@ -33,6 +33,9 @@ export default {
   --project-media-gap: 100px;
   /* Match portfolio about → footer spacing */
   --project-bottom-pad: clamp(180px, calc(180px + (100vw - 997px) * 100 / 457), 280px);
+  --project-edge-pad: 20px;
+  --project-title-hang: 52px;
+  --project-rule-inset: 24px;
   --top-bar-height: 120px;
   background: #fff;
   color: #3c3f41;
@@ -54,9 +57,28 @@ export default {
 }
 
 .main :global(.project-body) {
-  width: min(var(--project-content-w), calc(100vw - 40px));
+  /* Use vw (not %) so hang math stays viewport-relative on h2.
+     Keep room for edge pad + gray-rule gap so line↔text spacing stays 24px. */
+  --project-body-left: max(
+    calc(var(--project-edge-pad) + var(--project-rule-inset)),
+    calc(50vw - var(--project-content-w) / 2 + var(--project-content-offset))
+  );
+  --project-space-left: max(
+    0px,
+    calc(var(--project-body-left) - var(--project-edge-pad))
+  );
+  --project-rule-offset: var(--project-rule-inset);
+  --project-title-offset: clamp(
+    var(--project-rule-inset),
+    var(--project-space-left),
+    var(--project-title-hang)
+  );
+  width: min(
+    var(--project-content-w),
+    calc(100vw - var(--project-body-left) - var(--project-edge-pad))
+  );
   max-width: var(--project-content-w);
-  margin-left: max(20px, calc(50% - var(--project-content-w) / 2 + var(--project-content-offset)));
+  margin-left: var(--project-body-left);
   margin-right: auto;
   overflow: visible;
   font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
@@ -90,7 +112,7 @@ export default {
 .main :global(.project-body section > ol)::before {
   content: '';
   position: absolute;
-  left: -24px;
+  left: calc(-1 * var(--project-rule-offset));
   top: 11px;
   bottom: 5px;
   width: 1px;
@@ -165,7 +187,8 @@ export default {
 }
 
 .main :global(.project-body h2) {
-  margin: 0 0 0 -52px;
+  /* Hang left up to 52px; tuck in with the gray rule, never past edge padding */
+  margin: 0 0 0 calc(-1 * var(--project-title-offset));
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
   font-style: normal;
@@ -329,7 +352,7 @@ export default {
   font-weight: calc(400 * var(--font-weight-scale));
   font-size: 14px;
   color: #757575;
-  margin-top: 12px;
+  margin-top: 22px;
   text-align: left;
 }
 
@@ -373,10 +396,24 @@ export default {
   }
 
   .main :global(.project-body) {
+    /* vw-only — % here would resolve against the text column on h2 hang math */
+    --project-body-width: min(320px, calc(100vw - 40px));
+    --project-body-outer: max(0px, calc((100vw - var(--project-body-width)) / 2));
+    --project-body-left: calc(var(--project-body-outer) + var(--project-edge-pad));
+    --project-space-left: max(
+      0px,
+      calc(var(--project-body-left) - var(--project-edge-pad))
+    );
+    --project-rule-offset: min(var(--project-rule-inset), var(--project-space-left));
+    --project-title-offset: clamp(
+      var(--project-rule-offset),
+      var(--project-space-left),
+      var(--project-title-hang)
+    );
     margin-left: auto;
     margin-right: auto;
     padding: 0 20px;
-    width: min(320px, calc(100% - 40px));
+    width: var(--project-body-width);
     max-width: 320px;
     font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
     font-weight: calc(400 * var(--font-weight-scale));
@@ -391,13 +428,6 @@ export default {
     letter-spacing: -0.02em;
   }
 
-  .main :global(.project-body section h2 + *),
-  .main :global(.project-body .project-role h2 + p),
-  .main :global(.project-body h2 + h3),
-  .main :global(.project-body h3 + p) {
-    margin-top: 32px;
-  }
-
   .main :global(.project-body h3) {
     margin-top: 52px;
     font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
@@ -408,14 +438,25 @@ export default {
     color: #2c2c2c;
   }
 
-  .main :global(.project-body h2 + h3) {
+  .main :global(.project-body p:not(.caption)) {
+    margin-bottom: 24px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  /* After p rule so margin-top isn’t zeroed by a margin shorthand */
+  .main :global(.project-body section h2 + *),
+  .main :global(.project-body .project-role h2 + p),
+  .main :global(.project-body h2 + h3),
+  .main :global(.project-body h3 + p) {
     margin-top: 32px;
   }
 
-  .main :global(.project-body p) {
-    margin: 0 0 24px;
-    font-size: 16px;
-    line-height: 24px;
+  /* Same caption:body ratio as desktop (14/22) */
+  .main :global(.project-body .caption),
+  .main :global(.caption) {
+    font-size: calc(16px * 14 / 22);
+    line-height: calc(24px * 14 / 22);
   }
 
   .main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {

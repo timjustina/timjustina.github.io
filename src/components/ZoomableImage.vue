@@ -143,7 +143,7 @@ export default {
 .caption {
   font-size: 14px;
   color: #757575;
-  margin-top: 12px;
+  margin-top: 22px;
   text-align: left;
 }
 
