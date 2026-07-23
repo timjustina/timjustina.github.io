@@ -482,10 +482,12 @@ export default {
         },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
+            const footer = this.$el?.querySelector('.site-footer')
+            const threshold = footer?.offsetHeight || 120
             const doc = document.documentElement
             const remaining =
                 doc.scrollHeight - (window.scrollY + window.innerHeight)
-            if (remaining <= 48) {
+            if (remaining <= threshold) {
                 this.startAboutBallDrop()
             }
         },
