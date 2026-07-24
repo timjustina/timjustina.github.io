@@ -342,7 +342,7 @@
                             the requirements of subsequent iterations depending on the customers' needs.</p>
                     </li>
                     <li>
-                        <em>Extending the design system</em>
+                        <em>Extending the design system for data visualisation</em>
                         <p>A preliminary colour system was established at this stage, but a more comprehensive design
                             system will be essential, especially regarding data visualisation. This should include
                             guidelines for <strong>chart types, data density,</strong> accessibility and interactions.
