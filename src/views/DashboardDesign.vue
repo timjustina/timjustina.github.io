@@ -325,7 +325,7 @@
                     prototypes as quickly as possible for demo purposes in pitches, I would have taken more time to
                     <strong>better define the interaction logic</strong> of the modules at the
                     <strong>low‑fidelity stage</strong>. This would have allowed for <strong>faster iteration</strong>
-                    on interaction without being bogged down by pixels. While a comprehensive design documentation
+                    on interaction without being bogged down by pixels. While a comprehensive
                     suite would not be feasible at this 0‑to‑1 stage, <strong>lean documentation</strong> capturing
                     key design decisions, such as data considerations, accessibility, UI states, and interaction
                     specs, would provide a clearer <strong>foundation for the next phase</strong> of development.</p>
