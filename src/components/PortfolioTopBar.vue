@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import logo from '../assets/TJY logo 2 w84.svg'
+import logo from '../assets/TjyCutoutLogo.svg'
 import menuHover from '../assets/menu_hover.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import { scrollToAbout } from '../utils/scrollToAbout.js'
