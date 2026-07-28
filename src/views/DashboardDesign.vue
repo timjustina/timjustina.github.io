@@ -68,7 +68,7 @@
                 </ul>
 
                 <p> First point was anticipated. Second point makes sense in hindsight – as the dashboard is the home screen,
-                    users would expect to find operational information there also. These two distinct expectations
+                    users would expect to find operational information there also. These two expectations
                     became both the <strong>rationale and the blueprint</strong> for a layout that <strong>separates
                     components by function</strong>.</p>
 
@@ -94,7 +94,7 @@
                     Caregivers have more capacity to explore data than primary users, but they are <strong>not
                     analysts</strong> – nor do they necessarily have the time for data discovery in their daily work.
                     Therefore, while they can handle multivariate plots, the data visualisation should be
-                    <strong>simple</strong> and highlight <strong>straightforward patterns and trends</strong>. For
+                    <strong>simple</strong> ;highlight <strong>straightforward patterns and trends</strong>. For
                     example, a <strong>daily adherence trend</strong> that also shows missed doses that were later
                     compensated by an <strong>ad‑hoc dispense</strong>; a chart showing <strong>when missed doses
                     most often occur</strong>. The aim is data visualisation that provides <strong>constructive
@@ -127,22 +127,23 @@
                 <h3>2. Design for accessibility</h3>
                 <p>Working within the constraints of the existing design system, I updated the colour system of the
                     product by <strong>adding new accent colours</strong> to accommodate the dashboard design.
-                    Consistent with the rest of the product, I optimised the design according to <strong>WCAG criteria
-                    of accessibility</strong>. To improve distinguishability, colour contrast for text and graphics
-                    was <strong>audited using WebAIM</strong> and adjusted to meet <strong>WCAG 2.1 AA</strong>. When
+                    Consistent with the rest of the product, I improved accessibility the design according to WCAG.</p>
+                    
+                <p>To improve distinguishability, I <strong>audited</strong> colour contrast for text and graphics
+                    was using <strong>WebAIM</strong> and adjusted to meet <strong>WCAG 2.1 AA</strong>. When
                     colour contrast was deemed insufficient, I used <strong>borders</strong> to improve accessibility
                     of graphics. <strong>Interactive dynamic features</strong> were incorporated in charts to enable
                     <strong>isolating datasets</strong> for clarity.</p>
 
-                <p>For understandability, <strong>every chart includes data labels</strong>. This ensures
-                    comprehension is not reliant on plotting style alone – supporting both novice users and those
-                    with <strong>reduced colour perception</strong>.</p>
+                <p>I also ensured there is a <strong>consistent association between categorical variables
+                    and colours used</strong>. This not only important for visual coherence across the interface but 
+                    can also improve data comprehension as the <strong>human brain processes colours much faster than
+                    words</strong>.</p>
 
-                <p>Alongside text labels, I also ensured <strong>consistent association between categorical variables
-                    and distinctive colours</strong> within the constraints of the colour palette. This not only
-                    provides interface consistency but can also improve data comprehension by <strong>leveraging the
-                    brain's ability to process colours much faster than words</strong>.</p>
-
+                <p>To improve understandability, I included <strong>interactive data labels</strong> for the chars so 
+                    that comprehension is not solely reliant on plotting style. This is also crucial for <strong>accessibility</strong>
+                    of those with <strong>colour vision deficiency</strong>.</p>
+               
                 <div class="full-image">
                     <img
                         :src="img3"
