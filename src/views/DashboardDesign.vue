@@ -339,7 +339,7 @@
                         <p>The feedback session validated the core design, but <strong>structured usability testing</strong>
                             is crucial for the next phase. A reality check would allow us to evaluate how well the
                             dashboard fits with the workflows of the caregiving enterprise, and thus helps determine
-                            the requirements of subsequent iterations depending on the customers' needs.</p>
+                            the requirements of subsequent iterations depending on the customers' needs.</p> 
                     </li>
                    
                     <li>
