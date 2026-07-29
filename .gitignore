@@ -1,2 +1,8 @@
 node_modules/
 dist/
+
+# Built site (deployed by GitHub Actions from dist/)
+/assets/
+/404.html
+/tab-logo.svg
+/CNAME
