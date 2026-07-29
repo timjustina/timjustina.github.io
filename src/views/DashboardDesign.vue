@@ -331,32 +331,20 @@
                     key design decisions, such as data considerations, accessibility, UI states, and interaction
                     specs, would provide a clearer <strong>foundation for the next phase</strong> of development.</p>
 
-                <p>There are also several crucial aspects to consider for further development ahead regarding
-                    <strong>scalability, adaptability, and data‑driven iteration</strong>:</p>
+                <p>For future development, <strong>customisation</strong> and <strong>personalisation</strong> could bring value to the product:</p>
 
                 <ul>
                     <li>
                         <em>Usability testing for enterprise customisation</em>
                         <p>The feedback session validated the core design, but <strong>structured usability testing</strong>
-                            is crucial for the next phase. The reality check would allow us to evaluate how well the
+                            is crucial for the next phase. A reality check would allow us to evaluate how well the
                             dashboard fits with the workflows of the caregiving enterprise, and thus helps determine
                             the requirements of subsequent iterations depending on the customers' needs.</p>
                     </li>
+                   
                     <li>
-                        <em>Extending the design system for data visualisation</em>
-                        <p>A preliminary colour system was established at this stage, but a more comprehensive design
-                            system will be essential, especially regarding data visualisation. This should include
-                            guidelines for <strong>chart types, data density,</strong> accessibility and interactions.
-                            This ensures that any new charts maintain a <strong>consistent look, feel, and usability
-                            standard</strong>.</p>
-                    </li>
-                    <li>
-                        <em>Usage‑based prioritisation</em>
-                        <p>For further UX improvement, future iterations could implement an <strong>adaptive UI</strong>
-                            that automatically reconfigures based on <strong>tracked engagement data</strong>.
-                            High‑engagement widgets could be surfaced more prominently, while lower‑engagement ones
-                            could be deprioritised, allowing the dashboard to adapt dynamically to real‑world usage
-                            patterns.</p>
+                        <em>Data-driven personalisation</em>
+                        <p>Pushing the UX boundaries, an <strong>adaptive UI</strong> can be implemented in future iterations; automatically reconfigure the dashboard based on <strong>tracked engagement data</strong>, surface high engagement widgets, and deprioritise those with lower engagement. The <strong>feedback loop</strong> between behavioural data and interface design allows the dashboard to become more <strong>personalised</strong>, giving the product a <strong>competitive edge</strong>.</p>
                     </li>
                 </ul>
             </section>
