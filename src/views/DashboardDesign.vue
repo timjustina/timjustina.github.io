@@ -11,7 +11,8 @@
         <div class="project-body">
             <section>
                 <h2>The Challenge</h2>
-                <p>Kin needed to showcase the full digital experience of its product to secure <strong>future
+                <p>Kin is a heatlcare startup that needed to showcase the full digital experience of its product to
+                    secure <strong>future
                         investments and partnerships</strong>, particularly in <strong>healthcare sectors</strong>. One
                     thing we wanted to demonstrate in pitches is how <strong>user data</strong> collected from our
                     <strong>IoT medication adherence platform</strong> can be transformed into <strong>easy‑to‑digest
@@ -24,7 +25,7 @@
 
             <section class="project-role">
                 <h2>My role</h2>
-                <p>Sole designer on this project.<br>Responsible for:</p>
+                <p>Sole designer on this project. Reported directly to the head of product.<br>Responsible for:</p>
                 <ul>
                     <li><strong>UX</strong></li>
                     <li><strong>UI</strong></li>
@@ -43,17 +44,22 @@
 
                 <h3>1. Identify the scope of content</h3>
                 <p>The caregiver user group here and their corresponding business context provide an important
-                    constraint on the type of dashboard to aim for – a <strong>slightly data‑rich consumer
-                        dashboard</strong>. <strong>User research</strong> was crucial for us in narrowing down the
-                    scope
-                    of relevant content in the discovery phase. Taking a holistic approach in exploring the available
-                    materials, I summarised the findings in a <strong>hybrid affinity‑interrelationship
-                        diagram</strong> by synthesising user interview insights with product features, encompassing
-                    details on functionality, primary user datasets, metrics, and end‑user needs. This helped to
-                    identify dashboard contents that are most relevant to our users. Although the project was set out to
-                    mainly show <strong>simple adherence‑related analytics</strong>
-                    for caregivers, the user research revealed <strong>two main expectations</strong> on the
-                    functionality of the dashboard:</p>
+                    <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
+                        consumer dashboard</strong>. In order
+                    to identify the scope of content relevant to such a dashboard, I turned to the <strong>user
+                        research</strong>
+                    material available at hand. Taking a holistic approach, I summarised the findings in a
+                    <strong>hybrid
+                        affinity-interrelationship diagram</strong> by synthesising <strong>user interview
+                        insights</strong> with <strong>product features</strong>,
+                    encompassing details on functionality, primary user datasets, metrics, and end user needs. This
+                    helped to identify dashboard contents that are most relevant to our users
+                </p>
+
+                <p>Although the project was set out to mainly show <strong>simple adherence related analytics</strong>
+                    for caregivers,
+                    the <strong>analysis</strong> revealed <strong>two main expectations</strong> on the functionality
+                    of the dashboard:</p>
 
                 <ul>
                     <li><strong>Behavioural insights of primary user</strong></li>
@@ -61,11 +67,12 @@
                         and medication stock.</li>
                 </ul>
 
-                <p> First point was anticipated. Second point makes sense in hindsight – as the dashboard is the home
-                    screen,
-                    users would expect to find operational information there also. These two expectations
-                    became both the <strong>rationale and the blueprint</strong> for a layout that <strong>separates
-                        components by function</strong>.</p>
+                <p> The first point was anticipated. The second point makes sense in hindsight – as the dashboard is the
+                    home screen, users would expect to find <strong>operational information</strong> there also. These
+                    two expectations
+                    became both the <strong>rationale and the blueprint</strong> for a layout that
+                    <strong>separates components by function.</strong>
+                </p>
 
                 <ZoomableImage :src="svg1Cover" :zoom-src="svg1" alt="Affinity-Interrelationship Diagram"
                     caption="Hybrid affinity-interrelationship diagram based on user research findings" />
@@ -87,7 +94,7 @@
                         analysts</strong> – nor do they necessarily have the time for data discovery in their daily
                     work.
                     Therefore, while they can handle multivariate plots, the data visualisation should be
-                    <strong>simple</strong> ;highlight <strong>straightforward patterns and trends</strong>. For
+                    <strong>simple</strong>; highlight <strong>straightforward patterns and trends</strong>. For
                     example, a <strong>daily adherence trend</strong> that also shows missed doses that were later
                     compensated by an <strong>ad‑hoc dispense</strong>; a chart showing <strong>when missed doses
                         most often occur</strong>. The aim is data visualisation that provides <strong>constructive
@@ -98,12 +105,22 @@
             <section>
                 <h2>Design</h2>
 
-                <h3>1. Plot first, compose later</h3>
+                <h3>1. Prompts for stakeholders and AI</h3>
                 <p>I began by <strong>sketching a range of data visualisation widgets</strong> without worrying
                     about screen layout. Some charts were discarded early; others moved into <strong>high‑fidelity
                         wireframes and prototypes</strong>. This allowed the best solutions to emerge before I committed
                     to composition. It also gave me <strong>early artifacts</strong> to share with stakeholders,
                     <strong>speeding up iterations</strong>.
+                </p>
+                <p>In my design workflow, I also used these wireframes as <strong>image prompts</strong> in
+                    <strong>Figma Make</strong> to generate
+                    mockups. I reasoned that while the <strong>AI-generated artifacts</strong> were far from
+                    production-ready, they could
+                    <strong>accelerate decision-making</strong> by serving as a crude baseline for <strong>design
+                        audits</strong>. The process
+                    helped me identify reusable <strong>UI ideas</strong> and potential <strong>friction points</strong>
+                    before diving into high-fidelity
+                    prototyping.
                 </p>
 
                 <div class="full-image">
@@ -115,10 +132,12 @@
                 <h3>2. Design for accessibility</h3>
                 <p>Working within the constraints of the existing design system, I updated the colour system of the
                     product by <strong>adding new accent colours</strong> to accommodate the dashboard design.
-                    Consistent with the rest of the product, I improved accessibility the design according to WCAG.</p>
+                    Consistent with the rest of the product, I improved accessibility the design according to
+                    <strong>WCAG</strong>.
+                </p>
 
                 <p>To improve distinguishability, I <strong>audited</strong> colour contrast for text and graphics
-                    was using <strong>WebAIM</strong> and adjusted to meet <strong>WCAG 2.1 AA</strong>. When
+                    was using <strong>WebAIM</strong> and adjusted to meet WCAG 2.1 AA. When
                     colour contrast was deemed insufficient, I used <strong>borders</strong> to improve accessibility
                     of graphics. <strong>Interactive dynamic features</strong> were incorporated in charts to enable
                     <strong>isolating datasets</strong> for clarity.
@@ -132,7 +151,8 @@
                 <p>To improve understandability, I included <strong>interactive data labels</strong> for the chars so
                     that comprehension is not solely reliant on plotting style. This is also crucial for
                     <strong>accessibility</strong>
-                    of those with <strong>colour vision deficiency</strong>.</p>
+                    of those with <strong>colour vision deficiency</strong>.
+                </p>
 
                 <div class="full-image">
                     <img :src="img3" alt="Colour system" width="2882" height="1623" loading="lazy" decoding="async" />
@@ -141,20 +161,24 @@
                 </div>
 
                 <h3>3. Optimising visual perception for the narrative</h3>
-                <p>To optimise comprehension of multivariate data, I prioritised <strong>familiar chart types, such
-                        as bar, pie, and line</strong>, as they are already stored in our collective psyche.
-                    Nonetheless,
-                    choosing the right graph for a particular dataset requires holistic consideration of
-                    <strong>context, narrative, aesthetics, and practical UX</strong>.
+                <p>To <strong>optimise comprehension</strong> of multivariate data, I prioritised <strong>familiar chart
+                        types</strong>, such as bar, pie,
+                    and line, as they are already stored in our collective psyche. Nonetheless, choosing the suitable
+                    graph for a particular dataset requires <strong>holistic consideration</strong> of the context,
+                    narrative,
+                    aesthetics, and practical UX.
                 </p>
 
-                <p>For example, it is feasible to present the summary of the type and punctuality of dispenses,
-                    which are made up of distinct data categories, in either a bar chart, pie chart, or donut chart.
-                    The goal of this particular data visualisation is to <strong>show the proportions of the
-                        categories in order to highlight edge cases</strong>, some of which are undesirable behaviour
-                    outcomes of primary users. A priori is that, with optimal usage of our product, the dataset is
-                    going to be <strong>heavily dominated by one category</strong>. In this case, the <strong>circular
-                        chart type trumps the bar chart</strong> for two reasons:</p>
+                <p>For example, it is feasible to present the summary of the type and punctuality of dispenses, which
+                    are made up of distinct data categories, in either a bar chart, pie chart, or donut chart. The goal
+                    of this particular data visualisation is to <strong>show the proportions of the categories in order
+                        to
+                        highlight edge cases</strong>s, some of which are undesirable behaviour outcomes of primary
+                    users. A priori,
+                    with optimal usage of our product, I anticipated that the dataset would be <strong>heavily skewed
+                        towards
+                        one category</strong>. In this case, the <strong>circular chart type trumps the bar
+                        chart</strong> for two reasons:</p>
 
                 <ul>
                     <li>In the sense of aesthetics and practical UX, a circular chart leaves <strong>no empty
@@ -333,7 +357,8 @@
                                 data</strong>, surface high engagement widgets, and deprioritise those with lower
                             engagement. The <strong>feedback loop</strong> between behavioural data and interface design
                             allows the dashboard to become more <strong>personalised</strong>, giving the product a
-                            <strong>competitive edge</strong>.</p>
+                            <strong>competitive edge</strong>.
+                        </p>
                     </li>
                 </ul>
             </section>
