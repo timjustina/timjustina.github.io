@@ -11,7 +11,7 @@
         <div class="project-body">
             <section>
                 <h2>The Challenge</h2>
-                <p>Kin is a heatlcare startup that needed to showcase the full digital experience of its product to
+                <p>Kin is a healthcare startup that needed to showcase the full digital experience of its product to
                     secure <strong>future
                         investments and partnerships</strong>, particularly in <strong>healthcare sectors</strong>. One
                     thing we wanted to demonstrate in pitches is how <strong>user data</strong> collected from our
