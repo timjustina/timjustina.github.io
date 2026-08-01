@@ -56,7 +56,7 @@
                     helped to identify dashboard contents that are most relevant to our users
                 </p>
 
-                <p>Although the project was set out to mainly show <strong>simple adherence related analytics</strong>
+                <p>Although the project was set out to mainly show <strong>simple adherence-related analytics</strong>
                     for caregivers,
                     the <strong>analysis</strong> revealed <strong>two main expectations</strong> on the functionality
                     of the dashboard:</p>
@@ -78,28 +78,40 @@
                     caption="Hybrid affinity-interrelationship diagram based on user research findings" />
 
                 <h3>2. Define the narrative</h3>
-                <p>With the framework set, I turned to the <strong>narrative.</strong> Without a strategic narrative,
-                    users can experience fatigue or miss key insights. It is also an opportunity to <strong>highlight
-                        and reinforce features</strong> that contribute to the product's value proposition. For example,
-                    the dashboard of the primary user's mobile app that I had previously designed functions as a
-                    <strong>progress hub</strong> at the home screen. Its <strong>encouragement narrative</strong>
-                    uses simple data presentation to trigger immediate impression and action. For instance,
-                    cumulative adherence appears as a <strong>heart‑shaped progress graphic</strong> leveraging the
-                    <strong>cognitive tension from unfinished tasks.</strong> A dispense streak leverages
-                    <strong>loss aversion.</strong> Both encourage adherence behaviour.
+                <p>With the framework set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
+                    users can
+                    experience fatigue or miss key insights. It is also an opportunity to <strong>highlight and
+                        reinforce
+                        features</strong> that contribute to the product's value proposition. For example, the primary
+                    user's mobile
+                    app that I had previously designed functions as a <strong>progress hub</strong> at the home screen.
+                    It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation to
+                    trigger immediate impression – cumulative
+                    adherence
+                    appears as a <strong>heart-shaped progress graphic</strong> leveraging the <strong>cognitive tension
+                        from unfinished tasks</strong>; a
+                    dispense <strong>streak</strong> leverages <strong>loss aversion</strong>. Both encourage adherence
+                    behaviour.
                 </p>
 
-                <p>Based on user research, the caregiver dashboard needs a <strong>synopsis narrative</strong>.
-                    Caregivers have more capacity to explore data than primary users, but they are <strong>not
-                        analysts</strong> – nor do they necessarily have the time for data discovery in their daily
-                    work.
-                    Therefore, while they can handle multivariate plots, the data visualisation should be
-                    <strong>simple</strong>; highlight <strong>straightforward patterns and trends</strong>. For
-                    example, a <strong>daily adherence trend</strong> that also shows missed doses that were later
-                    compensated by an <strong>ad‑hoc dispense</strong>; a chart showing <strong>when missed doses
-                        most often occur</strong>. The aim is data visualisation that provides <strong>constructive
-                        feedback</strong> to drive positive behaviour for both caregiver and client.
+                <p>For the caregiver dashboard, a narrative of <strong><em>synopsis</em></strong> is needed, providing
+                    <strong>feedback across the three-part
+                        system</strong> of caregiver, client and the IoT platform to drive <strong>positive
+                        actions</strong> that help improve the
+                    clients’ medication adherence. For example, having a daily adherence trend that also shows missed
+                    doses that were later compensated by an ad hoc dispense; a chart showing when missed doses most
+                    often occur.
                 </p>
+
+                <p>Based on user research, although the caregivers have more <strong>ability</strong> to explore data
+                    than their clients,
+                    they do not necessarily have the time for lengthy data discovery in their daily work. Therefore,
+                    while they can handle multivariate plots, the data visualisation should be simple, highlight
+                    <strong>straightforward patterns and trends</strong>, and show a <strong>limited number of
+                        widgets</strong> compared to typical
+                    analytical dashboard.
+                </p>
+
             </section>
 
             <section>
@@ -181,21 +193,21 @@
                         chart</strong> for two reasons:</p>
 
                 <ul>
-                    <li>In the sense of aesthetics and practical UX, a circular chart leaves <strong>no empty
-                            spaces</strong> that might give the impression of incompleteness when the dataset is
-                        dominated by
-                        one category. This provides a more <strong>intuitive, compact, and harmonious
-                            visualisation</strong> than a bar chart.</li>
-                    <li>For highlighting edge cases, <strong>elements that disrupt a circle or continuous
-                            ring</strong>, combined with high‑contrast colours, are <strong>far more visually
-                            striking</strong>
-                        than short blocks that rise above the axis in a bar chart.</li>
+                    <li>It avoids the impression of incomplete data when the dataset is dominated by one category since
+                        the visual nature of a circular chart leaves <strong>no empty spaces</strong>. Thus, it provides
+                        a more <strong>compact
+                            and harmonious visualisation</strong> than a bar chart.</li>
+                    <li>It makes edge cases far more visually striking since they are presented as <strong>elements that
+                            disrupt</strong>
+                        a circle. In combination with high contrast colours, it is highly effective for highlighting
+                        edge cases that need attention.</li>
                 </ul>
 
-                <p>Therefore, it is more effective in conveying the narrative we aimed for. As to whether a pie or
-                    donut chart is preferred, the <strong>donut</strong> has the advantage of enabling better
-                    perception of the proportions of the wedges: <strong>the human brain is biased toward reading
-                        lengths (the arc) more accurately than areas or angles</strong>.</p>
+                <p>Therefore, circular charts are more aligned with the narrative we aimed for. As to whether a pie or
+                    donut chart is preferred, the <strong>donut</strong> has the advantage of enabling better perception
+                    of the
+                    proportions of the wedges: the <strong>human brain is biased toward reading lengths (the arc) more
+                        accurately than areas or angles.</strong></p>
 
                 <div class="full-image">
                     <img :src="img4" alt="Design iterations" width="2617" height="647" loading="lazy"
@@ -213,78 +225,115 @@
                     result of the primary user's interaction with the IoT platform. <strong>Caregiver intervention via
                         remote ad‑hoc dispense</strong> of missed dose (Missed‑dose Dispense) also influences the
                     adherence outcome. Showing both together gives users an <strong>integrated view of
-                        behaviour</strong> which also directly addresses needs that emerged in user research.
+                        behaviour</strong> which also directly addresses needs that emerged in user research, helping
+                    caregivers identify when their <strong>intervention changes the adherence outcome</strong>.
                 </p>
 
-                <p>However, overlaying variables is <strong>double‑edged</strong>. The visual comparison helps users,
-                    but the complexity can be confusing. I addressed this by adding <strong>toggles</strong> that
-                    allow users to select the variables they wished to display. I also included a <strong>hover data
-                        label</strong> that summarises all variables at a specific time point, helping users interpret
-                    the
-                    graph <strong>without guesswork</strong>.</p>
+                <p>However, <strong>overlaying variables is double edged</strong>. The visual comparison helps users,
+                    but the complexity
+                    can be confusing. I addressed this by adding toggles that allow users to <strong>isolate the
+                        variables</strong> they
+                    wished to display. I also included a <strong>hover-activated data label</strong> that summarises all
+                    variables at a
+                    specific time point to <strong>eliminate guesswork</strong>.</p>
 
                 <VideoPair :left-src="vid5" :right-src="vid6"
                     caption="Designs of Adherence Trend and Missed Dose Insights widgets" />
 
                 <h3>5. From logs to insights</h3>
-                <p>Another aspect of the project involved exploring <strong>log data</strong> that users may not
-                    readily recognise but that offers meaningful insight into client behaviour. For example, users
-                    wanted to know more about missed doses, specifically <strong>what time of day they usually
-                        happen</strong>. This led me to present the log of when primary users first miss a dose during a
-                    <strong>previously scheduled dispense (Scheduled Dispense)</strong>.
+                <p>I have also <strong>anticipated the log data</strong> that can be used to generate insights on client
+                    behaviour. For
+                    example, the caregivers wanted to know more about <strong>when their clients usually miss
+                        medications</strong>. The
+                    answer to this is <strong>twofold</strong>. The features of the IoT system enable missed doses from
+                    a previously
+                    scheduled dispense (Scheduled Dispense) to be <strong>compensated later</strong> via an ad-hoc
+                    dispense (Missed-dose
+                    Dispense) within a pharmacologically suitable timeframe. Therefore, it is feasible for a scheduled
+                    dispense event to have a final status of <em>dispensed</em> with a <strong>historical
+                        status</strong> of <em>medications missed</em>.
+                    Thus, the <strong>initial missed doses do not always correspond to the final missed doses</strong>.
+                    To provide
+                    behaviour insights, <strong>both the datasets are of equal importance</strong>. I therefore needed
+                    to present them
+                    both together in a way that allows users to perceive their relationship and differences with
+                    <strong>minimal
+                        cognitive effort</strong>.
                 </p>
 
-                <p>The timing and quantity of <strong>initial missed doses</strong> are informative, though they do
-                    not always correspond to <strong>final missed doses</strong>, as some are later corrected via
-                    <strong>Missed‑dose Dispense</strong>. I therefore needed to present both datasets in a way that
-                    allows users to perceive their relationship and differences with <strong>minimal cognitive
-                        effort</strong>.
+                <p><strong>Interactivity</strong> plays an important role. A simple <strong>toggle</strong> that allows
+                    users to isolate the two datasets
+                    would enable them to <strong>intuitively learn their relationship</strong>. Since I’m introducing to
+                    the users a <strong>new concept</strong> around missed-dose data – gross missed doses that have not
+                    been
+                    corrected by
+                    compensatory Missed-dose
+                    Dispense – it is important to clarify it by including expandable tooltips.
                 </p>
 
-                <p>I explored several approaches. For data visualisation, I implemented the following:</p>
+                <p>In terms of data visualisation, to help simplify the presentation of time, I have divided a day into
+                    <strong>six bins</strong>. This also has the advantage of being <strong>aligned with typical human
+                        daily routines</strong>. To help
+                    users get <strong>a sense of proportion</strong> of the missed doses, I used Scheduled Dispense data
+                    as a <strong>baseline
+                        backdrop</strong> for comparison. Although the simplicity of the data visualisation should speak
+                    for itself,
+                    it is useful to explicitly spell out the insights. I included <strong>dynamic descriptive
+                        text</strong> that
+                    highlights key takeaways and updates based on the datasets isolated by users.
+                </p>
 
-                <ul>
-                    <li><strong>Division of the day into six time bins</strong>, which simplifies presentation and
-                        aligns with typical daily routines.</li>
-                    <li>Inclusion of <strong>Scheduled Dispense data as a baseline</strong> for comparison with missed
-                        doses.</li>
-                    <li>Use of <strong>dynamic text labels</strong> to highlight key takeaways.</li>
-                </ul>
 
-                <p>For interactivity, I added the following features:</p>
+                <p>Crucially, the juxtaposition of the two datasets has also helped highlight the positive effect of
+                    <strong>caregiver intervention</strong> on clients’ adherence <strong>via our IoT system</strong>.
+                </p>
 
-                <ul>
-                    <li>A <strong>toggle</strong> to show or hide Missed‑dose Dispense data, enabling users to explore
-                        the relationship between datasets.</li>
-                    <li><strong>Expandable tooltips</strong> to clarify unfamiliar variables and reduce confusion.</li>
-                    <li><strong>Hover‑activated data labels</strong> that provide precise quantitative information on
-                        specific data segments.</li>
-                </ul>
 
                 <h3>6. Divide and conquer</h3>
-                <p>Early in discovery, I identified <strong>two distinct user goals</strong> when engaging with the
-                    dashboard: 1. <strong>gaining insights into client behaviour</strong>, and 2. checking
-                    <strong>key operational statuses</strong> of the remote device. These two goals required a
-                    <strong>clear division of content</strong> to minimise friction that users could experience while
-                    seeking for information.
+                <p>Earlier in discovery, I identified <strong>two distinct user goals</strong> when engaging with the
+                    dashboard:
+                </p>
+                <ul>
+                    <li>
+                        • <strong>Gaining insights into client behaviour</strong> - this consists of widgets of data
+                        visualisation of
+                        processed user data. They are providing <strong>longer-term feedback</strong> to the users. The
+                        analysis timeframe is often of
+                        scale from <strong>a week to months</strong>.
+                    </li>
+                    <li>
+                        • <strong>Checking key operational statuses</strong> - this consists of widgets of status report
+                        such as snippets
+                        of latest events, the conditions of the remote device, medication stocks. They are
+                        <strong>real-time
+                            feedback</strong>.
+                    </li>
+                </ul>
+
+                <p>Therefore, these two goals required a <strong>clear division of content</strong> to minimise
+                    <strong>friction for both the
+                        users and the system.</strong>
                 </p>
 
-                <p>I addressed this by introducing a <strong>retractable sidebar</strong> to contain operational
-                    status widgets – a feature that is distinct from the dashboard but <strong>visually
-                        integrated</strong> as part of it. The enforced perceptual grouping, as the result of creating
-                    boundaries between the two sets of content, makes their distinct purposes <strong>immediately
-                        clear</strong>.</p>
+                <p>I addressed this by introducing a <strong>retractable sidebar</strong> to contain operational status
+                    widgets – a
+                    feature that is distinct from the dashboard but visually integrated as part of it. The enforced
+                    <strong>perceptual grouping</strong>, as the result of creating boundaries between the two sets of
+                    content, makes
+                    their distinct purposes immediately clear.
+                </p>
 
-                <p>Given the <strong>time‑sensitive nature</strong> of the sidebar content, this isolated section
-                    supports a <strong>higher auto‑refresh rate</strong> than the rest of the dashboard, so users
-                    always see the latest operational data. In the edge case of connection lost, a
-                    <strong>timestamp</strong> appears to clarify that the data is not live, helping instil
-                    <strong>user confidence</strong> in the application's reliability.
+                <p>Given the time sensitive nature of the sidebar content, this isolated section supports a
+                    <strong>higher auto-refresh rate</strong> than the rest of the dashboard, so users always see the
+                    latest operational data. In the
+                    edge case of connection lost, a <strong>timestamp</strong> appears to clarify that the data is not
+                    live, helping
+                    instil <strong>user confidence</strong> in the application's reliability.
                 </p>
 
                 <p>I also took care to keep the sidebar content <strong>concise</strong>, showing only important
-                    snippets so they don't overshadow the main app features where users can find more detailed
-                    information.</p>
+                    snippets so they don't
+                    overshadow the main app features where users can find more detailed information.</p>
 
                 <figure class="full-image full-image--captioned">
                     <div class="full-image-media">
@@ -297,20 +346,29 @@
             <section>
                 <h2>Results</h2>
                 <p>The dashboard design was a <strong>crucial part of the company's investor pitch</strong>,
-                    demonstrating how IoT data could be translated into <strong>easily digestible and actionable
-                        insights for caregivers</strong>. It was well received by investors, who noted clear
-                    consideration
-                    of the specific context of the healthcare sector and attention to the target user's needs.</p>
+                    demonstrating how IoT data
+                    could be translated into easily digestible and actionable insights for caregivers. It was
+                    <strong>well
+                        received by investors</strong>, who noted clear consideration of the specific <strong>context of
+                        the healthcare
+                        sector</strong> and attention to the target <strong>user's needs.</strong>
+                </p>
 
-                <p>In a feedback session with <strong>6 caregivers</strong>, all participants responded positively to
-                    the UX and visual design, and specifically highlighted the <strong>clarity of the data
-                        presentation</strong>. Most found the layout <strong>intuitive and easy to navigate</strong>,
-                    while a few found that a simple product tour could be beneficial given the number of widgets
-                    present. The design was also successful in <strong>highlighting features</strong> that contribute
-                    to the IoT product's value proposition, in particular the <strong>remote dispense function</strong>,
-                    for which caregivers are primary users. In general, the caregivers felt that the product feature
-                    could help improve the quality of care that they can deliver by <strong>lowering the
-                        effort</strong> required for monitoring and understanding their clients' behaviours.</p>
+                <p>In an <strong>interview feedback session</strong> with a small group of caregivers all participants
+                    <strong>responded
+                        positively</strong> to the design. The <strong>clarity of the data presentation</strong> was
+                    specifically highlighted. Most
+                    found the layout <strong>easy to comprehend and navigate</strong>. A few noted that a simple product
+                    tour could be
+                    beneficial given the number of widgets present. The design was also successful in highlighting
+                    features that contribute to the IoT product's <strong>value proposition</strong>, in particular the
+                    <strong>remote dispense
+                        function</strong>, which caregivers are primary users. In general, the caregivers felt that the
+                    product
+                    feature would help <strong>improve the quality of care</strong> that they can deliver by
+                    <strong>lowering the effort</strong> required
+                    for monitoring and understanding their clients' behaviours.
+                </p>
 
                 <p>From an <strong>engineering perspective</strong>, the prototypes established a clear path for
                     <strong>backend data structure and integration with the hardware solution</strong>. This was made
@@ -318,7 +376,7 @@
                         requirements and hardware constraints</strong>.
                 </p>
 
-                <p>Overall, the project succeeded in achieving its <strong>0‑to‑1 objectives</strong>, considering
+                <p>Overall, the project succeeded in achieving its <strong>0‑to‑1 objectives</strong>, considered
                     both <strong>business and user needs</strong>, and laid the groundwork for <strong>subsequent
                         design and development initiatives</strong>.</p>
             </section>
