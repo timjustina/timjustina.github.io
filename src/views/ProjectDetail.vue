@@ -414,6 +414,7 @@ export default {
     --page-pad: 20px;
     --project-media-gap: 52px;
     --project-bottom-pad: 276px;
+    --project-type-scale: 1.25;
   }
 
   .main :global(.project-header) {
@@ -430,10 +431,18 @@ export default {
   }
 
   .main :global(.project-body) {
-    /* vw-only — % here would resolve against the text column on h2 hang math */
-    --project-body-width: min(320px, calc(100vw - 40px));
-    --project-body-outer: max(0px, calc((100vw - var(--project-body-width)) / 2));
-    --project-body-left: calc(var(--project-body-outer) + var(--project-edge-pad));
+    /* Same geometry as desktop: gray-line↔left-edge === text↔right-edge.
+       Rule sits in the left inset; text column is capped at 320px and the
+       (rule + text) block is centered when the viewport is wider. */
+    --project-text-width: min(
+      320px,
+      calc(100vw - 2 * var(--project-edge-pad) - var(--project-rule-inset))
+    );
+    --project-side: max(
+      var(--project-edge-pad),
+      calc((100vw - var(--project-text-width) - var(--project-rule-inset)) / 2)
+    );
+    --project-body-left: calc(var(--project-side) + var(--project-rule-inset));
     --project-space-left: max(
       0px,
       calc(var(--project-body-left) - var(--project-edge-pad))
@@ -444,15 +453,15 @@ export default {
       var(--project-space-left),
       var(--project-title-hang)
     );
-    margin-left: auto;
+    margin-left: var(--project-body-left);
     margin-right: auto;
-    padding: 0 20px;
-    width: var(--project-body-width);
+    padding: 0;
+    width: var(--project-text-width);
     max-width: 320px;
     font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
     font-weight: calc(400 * var(--font-weight-scale));
-    font-size: 16px;
-    line-height: 24px;
+    font-size: calc(16px * var(--project-type-scale));
+    line-height: calc(24px * var(--project-type-scale));
     color: #3c3f41;
   }
 
@@ -466,16 +475,16 @@ export default {
     margin-top: 52px;
     font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
     font-weight: calc(400 * var(--font-weight-scale));
-    font-size: 22px;
-    line-height: 27px;
+    font-size: 24px;
+    line-height: calc(27px * 24 / 22);
     letter-spacing: -0.02em;
     color: #2c2c2c;
   }
 
   .main :global(.project-body p:not(.caption)) {
     margin-bottom: 24px;
-    font-size: 16px;
-    line-height: 24px;
+    font-size: calc(16px * var(--project-type-scale));
+    line-height: calc(24px * var(--project-type-scale));
   }
 
   /* After p rule so margin-top isn’t zeroed by a margin shorthand */
@@ -489,8 +498,8 @@ export default {
   /* Same caption:body ratio as desktop (14/22) */
   .main :global(.project-body .caption),
   .main :global(.caption) {
-    font-size: calc(16px * 14 / 22);
-    line-height: calc(24px * 14 / 22);
+    font-size: calc(16px * 14 / 22 * var(--project-type-scale));
+    line-height: calc(24px * 14 / 22 * var(--project-type-scale));
   }
 
   .main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {
@@ -516,8 +525,8 @@ export default {
   .main :global(.project-body strong) {
     font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
     font-weight: calc(700 * var(--font-weight-scale));
-    font-size: 16px;
-    line-height: 24px;
+    font-size: calc(16px * var(--project-type-scale));
+    line-height: calc(24px * var(--project-type-scale));
   }
 
   .main :global(.project-body section + section) {

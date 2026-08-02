@@ -295,14 +295,14 @@
                 </p>
                 <ul>
                     <li>
-                        • <strong>Gaining insights into client behaviour</strong> - this consists of widgets of data
+                        <strong>Gaining insights into client behaviour</strong> - this consists of widgets of data
                         visualisation of
                         processed user data. They are providing <strong>longer-term feedback</strong> to the users. The
                         analysis timeframe is often of
                         scale from <strong>a week to months</strong>.
                     </li>
                     <li>
-                        • <strong>Checking key operational statuses</strong> - this consists of widgets of status report
+                        <strong>Checking key operational statuses</strong> - this consists of widgets of status report
                         such as snippets
                         of latest events, the conditions of the remote device, medication stocks. They are
                         <strong>real-time
