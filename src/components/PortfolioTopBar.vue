@@ -145,6 +145,7 @@ export default {
 <style scoped>
 .portfolio-top-bar {
     --brand: #000aaa;
+    --brand-active: #000444;
     --font-weight-scale: 0.95;
     --page-max: 1454px;
     --page-pad: clamp(100px, calc(100px + (100vw - 997px) * 40 / 457), 140px);
@@ -214,6 +215,10 @@ export default {
     line-height: 27px;
     color: var(--brand);
     text-decoration: none;
+}
+
+.nav-link:active {
+    color: var(--brand-active);
 }
 
 .nav-link--stacked {

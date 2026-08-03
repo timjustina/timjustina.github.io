@@ -794,6 +794,7 @@ export default {
 
 .cta-button:active {
     background: var(--brand-active);
+    transition: none;
 }
 
 .work {
@@ -1503,6 +1504,10 @@ export default {
         color: #fff;
         text-decoration: none;
         box-sizing: border-box;
+    }
+
+    .about-action-btn:active {
+        background: var(--brand-active);
     }
 
 }

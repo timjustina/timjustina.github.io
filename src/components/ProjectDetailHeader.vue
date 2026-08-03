@@ -97,7 +97,7 @@ export default {
         font-weight: calc(300 * var(--font-weight-scale));
         font-size: 20px;
         line-height: 30px;
-        letter-spacing: -0.02em;
+        letter-spacing: 0;
         text-align: center;
         color: #3c3f41;
     }
@@ -105,7 +105,7 @@ export default {
     .project-header-meta {
         font-family: 'Fira Code', monospace;
         font-weight: calc(400 * var(--font-weight-scale));
-        font-size: 14px;
+        font-size: 16px;
         line-height: 21px;
         letter-spacing: -0.02em;
         gap: 16px;
