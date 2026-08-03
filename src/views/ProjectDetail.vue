@@ -272,15 +272,20 @@ export default {
 }
 
 .main :global(.full-image) {
+  /* Break out of the text column and center on the viewport so L/R margins match */
+  --project-media-width: min(1100px, calc(100vw - 40px));
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
+  left: auto;
+  width: var(--project-media-width);
   max-width: 1100px;
-  width: min(1100px, calc(100vw - 40px));
   margin: var(--project-media-gap) 0;
+  margin-left: calc(
+    (100vw - var(--project-media-width)) / 2 - var(--project-body-left)
+  );
   padding: 0;
   border: 0;
   text-align: center;
+  transform: none;
 }
 
 .main :global(.full-image--captioned) {
@@ -323,20 +328,34 @@ export default {
 }
 
 .mainFullWidthImages :global(.full-image:not(.hero-image):not(.project-hero)) {
-  width: min(calc(var(--page-max) - 2 * var(--page-pad)), calc(100vw - 2 * var(--page-pad)));
+  --project-media-width: min(
+    calc(var(--page-max) - 2 * var(--page-pad)),
+    calc(100vw - 2 * var(--page-pad))
+  );
+  width: var(--project-media-width);
   max-width: calc(var(--page-max) - 2 * var(--page-pad));
-  left: 50%;
-  transform: translateX(-50%);
+  left: auto;
+  margin-left: calc(
+    (100vw - var(--project-media-width)) / 2 - var(--project-body-left)
+  );
+  transform: none;
 }
 
 .mainFullWidthImages :global(.project-body .full-image),
 .mainFullWidthImages :global(.project-body .video-pair) {
-  width: min(calc(var(--page-max) - 2 * var(--page-pad)), calc(100vw - 2 * var(--page-pad)));
+  --project-media-width: min(
+    calc(var(--page-max) - 2 * var(--page-pad)),
+    calc(100vw - 2 * var(--page-pad))
+  );
+  width: var(--project-media-width);
   max-width: calc(var(--page-max) - 2 * var(--page-pad));
   position: relative;
-  left: calc(50% - var(--project-content-offset));
-  transform: translate3d(-50%, 0, 0);
+  left: auto;
   margin: var(--project-media-gap) 0;
+  margin-left: calc(
+    (100vw - var(--project-media-width)) / 2 - var(--project-body-left)
+  );
+  transform: none;
 }
 
 .main :global(.full-image > video),
@@ -500,6 +519,16 @@ export default {
   .main :global(.caption) {
     font-size: calc(16px * 14 / 22 * var(--project-type-scale));
     line-height: calc(24px * 14 / 22 * var(--project-type-scale));
+    margin-top: 16px;
+  }
+
+  /* Captioned figures use gap, not margin — keep margin cleared after the rule above */
+  .main :global(.full-image--captioned) {
+    gap: 17px;
+  }
+
+  .main :global(.full-image--captioned .caption) {
+    margin-top: 0;
   }
 
   .main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {
