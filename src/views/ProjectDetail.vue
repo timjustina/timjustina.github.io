@@ -174,6 +174,34 @@ export default {
   margin-top: 84px;
 }
 
+.main :global(.project-body .project-tldr-list) {
+  margin: 0;
+  padding: 0;
+  list-style: disc;
+  list-style-position: outside;
+}
+
+.main :global(.project-body .project-tldr-list li) {
+  padding-left: 0;
+}
+
+.main :global(.project-body .project-tldr-list li + li) {
+  margin-top: 26px;
+}
+
+.main :global(.project-body .project-tldr-list strong),
+.main :global(.project-body .project-tldr-note strong) {
+  font-family: 'Fira Code', monospace;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: inherit;
+  letter-spacing: -0.02em;
+}
+
+.main :global(.project-body #results) {
+  scroll-margin-top: calc(var(--top-bar-height, 120px) + 24px);
+}
+
 .main :global(.project-body section h2 + *) {
   margin-top: 48px;
 }

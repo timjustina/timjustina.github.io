@@ -9,6 +9,8 @@
         </div>
 
         <div class="project-body">
+            <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />
+
             <section>
                 <h2>The Challenge</h2>
                 <p>Kin is a healthcare startup that needed to showcase the full digital experience of its product to
@@ -343,7 +345,7 @@
                 </figure>
             </section>
 
-            <section>
+            <section id="results">
                 <h2>Results</h2>
                 <p>The dashboard design was a <strong>crucial part of the company's investor pitch</strong>,
                     demonstrating how IoT data
@@ -427,8 +429,10 @@
 <script>
 import ProjectDetail from './ProjectDetail.vue'
 import ProjectDetailHeader from '../components/ProjectDetailHeader.vue'
+import ProjectTldrButton from '../components/ProjectTldrButton.vue'
 import ZoomableImage from '../components/ZoomableImage.vue'
 import VideoPair from '../components/VideoPair.vue'
+import tldrMarkdown from '../data/dashboardDesignCaseStudy.md?raw'
 import {
     dashboardHero,
     svg1Cover,
@@ -441,9 +445,28 @@ import {
     vid7,
 } from '../data/dashboardDesignMedia.js'
 
+const tldrSummaryItems = [
+    {
+        lead: 'Sole designer',
+        body: '0-to-1 design of a customer-facing dashboard of the web app of an IoT medication platform.',
+    },
+    {
+        lead: 'Turned user research into architecture',
+        body: 'Identified two sets of user needs (behavioural insights + operational status) to drive the dashboard layout.',
+    },
+    {
+        lead: 'Anticipated and visualised complex data',
+        body: 'Defined data requirements before data pipeline existed. Translated logs, events, and device statuses into simple data visualisation.',
+    },
+    {
+        lead: 'Achieved user validation and investor buy-in',
+        body: 'Delivered pitch-ready prototype with 100% user satisfaction in interview feedback sessions.',
+    },
+]
+
 export default {
     name: 'DashboardDesign',
-    components: { ProjectDetail, ProjectDetailHeader, ZoomableImage, VideoPair },
+    components: { ProjectDetail, ProjectDetailHeader, ProjectTldrButton, ZoomableImage, VideoPair },
     data() {
         return {
             dashboardHero,
@@ -455,6 +478,8 @@ export default {
             vid5,
             vid6,
             vid7,
+            tldrSummaryItems,
+            tldrMarkdown,
         }
     },
 }
