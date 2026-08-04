@@ -9,56 +9,69 @@
     >
       <span class="project-tldr-label">TL;DR</span>
       <span class="project-tldr-icon" aria-hidden="true">
-        <svg
-          class="project-tldr-chevron"
-          width="12"
-          height="7"
-          viewBox="0 0 12 7"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M1 1.5L6 5.5L11 1.5"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <img
+          class="project-tldr-chevron project-tldr-chevron--default"
+          :src="chevronDefault"
+          alt=""
+          width="44"
+          height="44"
+        />
+        <img
+          class="project-tldr-chevron project-tldr-chevron--hover"
+          :src="chevronHover"
+          alt=""
+          width="44"
+          height="44"
+        />
+        <img
+          class="project-tldr-chevron project-tldr-chevron--clicked"
+          :src="chevronClicked"
+          alt=""
+          width="44"
+          height="44"
+        />
       </span>
     </button>
 
     <div
-      v-show="open"
-      id="project-tldr-panel"
-      class="project-tldr-panel"
-      role="region"
-      aria-label="Case study summary"
+      class="project-tldr-panel-slot"
+      :class="{ 'project-tldr-panel-slot--open': open }"
     >
-      <div class="project-tldr-panel-inner">
-        <div class="project-tldr-block">
-          <div class="project-tldr-heading">In summary,</div>
-          <ul class="project-tldr-list">
-            <li v-for="(item, index) in summaryItems" :key="index">
-              <strong>{{ item.lead }}</strong> – {{ item.body }}
-            </li>
-          </ul>
-        </div>
+      <div class="project-tldr-panel-slot-inner">
+        <div
+          id="project-tldr-panel"
+          class="project-tldr-panel"
+          role="region"
+          aria-label="Case study summary"
+          :aria-hidden="open ? 'false' : 'true'"
+        >
+          <div class="project-tldr-panel-inner">
+            <div class="project-tldr-block">
+              <div class="project-tldr-heading">In summary,</div>
+              <ul class="project-tldr-list">
+                <li v-for="(item, index) in summaryItems" :key="index">
+                  <strong>{{ item.lead }}</strong> – {{ item.body }}
+                </li>
+              </ul>
+            </div>
 
-        <div class="project-tldr-block project-tldr-block--also">
-          <div class="project-tldr-heading">Also,</div>
-          <div class="project-tldr-note">
-            here’s the case study formatted in
-            <strong>AI-friendly Markdown</strong> – ready for plugging into the
-            AI tool of your choice.
+            <div class="project-tldr-block project-tldr-block--also">
+              <div class="project-tldr-heading">Also,</div>
+              <div class="project-tldr-note">
+                here’s the case study formatted in
+                <strong>AI-friendly Markdown</strong> – ready for plugging into
+                the AI tool of your choice.
+              </div>
+              <button
+                type="button"
+                class="project-tldr-copy"
+                :tabindex="open ? 0 : -1"
+                @click="copyMarkdown"
+              >
+                Copy case study
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            class="project-tldr-copy"
-            @click="copyMarkdown"
-          >
-            Copy case study
-          </button>
         </div>
       </div>
     </div>
@@ -77,6 +90,10 @@
 </template>
 
 <script>
+import chevronDefault from '../assets/tldr-chevron-default.svg'
+import chevronHover from '../assets/tldr-chevron-hover.svg'
+import chevronClicked from '../assets/tldr-chevron-clicked.svg'
+
 export default {
   name: 'ProjectTldrButton',
   props: {
@@ -94,6 +111,9 @@ export default {
       open: false,
       copied: false,
       copyResetTimer: null,
+      chevronDefault,
+      chevronHover,
+      chevronClicked,
     }
   },
   beforeUnmount() {
@@ -126,7 +146,7 @@ export default {
 
 @media (min-width: 601px) {
   .project-tldr {
-    --project-tldr-trigger-height: 36px;
+    --project-tldr-trigger-height: 44px;
     --project-tldr-panel-nudge: 10px;
     position: relative;
     display: block;
@@ -141,8 +161,7 @@ export default {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 16px;
-    width: 110px;
+    gap: 12px;
     height: var(--project-tldr-trigger-height);
     margin-left: auto;
     padding: 0;
@@ -168,25 +187,71 @@ export default {
   }
 
   .project-tldr-icon {
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    width: 36px;
-    height: 36px;
-    border: 2px solid currentColor;
-    border-radius: 20px;
+    position: relative;
+    display: block;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
   }
 
   .project-tldr-chevron {
+    position: absolute;
+    inset: 0;
     display: block;
-    transition: transform 0.2s ease;
+    width: 44px;
+    height: 44px;
+    opacity: 0;
+    transition:
+      opacity 0.15s ease,
+      transform 0.2s ease;
+    pointer-events: none;
+  }
+
+  .project-tldr-chevron--default {
+    opacity: 1;
+  }
+
+  .project-tldr-trigger:hover .project-tldr-chevron--default,
+  .project-tldr-trigger:active .project-tldr-chevron--default {
+    opacity: 0;
+  }
+
+  .project-tldr-trigger:hover .project-tldr-chevron--hover {
+    opacity: 1;
+  }
+
+  .project-tldr-trigger:active .project-tldr-chevron--hover {
+    opacity: 0;
+  }
+
+  .project-tldr-trigger:active .project-tldr-chevron--clicked {
+    opacity: 1;
   }
 
   .project-tldr--open .project-tldr-chevron {
     transform: rotate(180deg);
+  }
+
+  .project-tldr-panel-slot {
+    display: grid;
+    grid-template-rows: 0fr;
+    /* Include title hang in the clip box so left edge isn’t cropped */
+    width: calc(100% + var(--project-title-offset));
+    margin-left: calc(-1 * var(--project-title-offset));
+    transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .project-tldr-panel-slot--open {
+    grid-template-rows: 1fr;
+  }
+
+  .project-tldr-panel-slot-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .project-tldr-panel-slot:not(.project-tldr-panel-slot--open) .project-tldr-copy {
+    visibility: hidden;
   }
 
   .project-tldr-panel {
@@ -195,10 +260,9 @@ export default {
     margin-top: calc(
       -1 * (var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge))
     );
-    /* Body text width + section title hang, hanging left with the titles */
-    left: calc(-1 * var(--project-title-offset));
-    width: calc(100% + var(--project-title-offset));
-    /* trigger overlap + 32px to “In summary,”; 64px below copy button */
+    left: 0;
+    width: 100%;
+    /* hang inset + trigger overlap + 32px to “In summary,”; 64px below copy */
     padding: calc(
         var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
       )
@@ -211,6 +275,12 @@ export default {
       #f2f2f2 100%
     );
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .project-tldr-panel-slot--open .project-tldr-panel {
+    opacity: 1;
   }
 
   .project-tldr-panel-inner {
@@ -219,6 +289,10 @@ export default {
     align-items: flex-start;
     gap: 64px;
     width: 100%;
+    pointer-events: none;
+  }
+
+  .project-tldr-panel-slot--open .project-tldr-panel-inner {
     pointer-events: auto;
   }
 
