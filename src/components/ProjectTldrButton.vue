@@ -186,7 +186,9 @@ export default {
   --project-tldr-chevron-size: 36px;
   position: relative;
   display: block;
-  width: 100%;
+  /* On mobile, don’t inherit the body 320px cap — span to the page edge pad */
+  width: calc(100vw - var(--project-body-left) - var(--project-edge-pad));
+  max-width: none;
   margin: 0 0 52px;
   z-index: 2;
 }
@@ -300,7 +302,7 @@ export default {
   padding: calc(
       var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
     )
-    0 64px var(--project-title-offset, 0px);
+    var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
   box-sizing: border-box;
   border-radius: 12px;
   background: linear-gradient(
@@ -435,6 +437,7 @@ export default {
   .project-tldr {
     --project-tldr-trigger-height: 44px;
     --project-tldr-chevron-size: 44px;
+    width: 100%;
     margin: 0 0 120px;
   }
 
