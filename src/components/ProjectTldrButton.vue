@@ -125,16 +125,54 @@ export default {
     toggle() {
       this.open = !this.open
     },
-    async copyMarkdown() {
+    showCopiedToast() {
+      this.copied = true
+      clearTimeout(this.copyResetTimer)
+      this.copyResetTimer = setTimeout(() => {
+        this.copied = false
+      }, 2000)
+    },
+    copyWithFallback(text) {
+      const el = document.createElement('textarea')
+      el.value = text
+      el.setAttribute('readonly', '')
+      el.style.position = 'fixed'
+      el.style.top = '0'
+      el.style.left = '0'
+      el.style.width = '1px'
+      el.style.height = '1px'
+      el.style.padding = '0'
+      el.style.border = 'none'
+      el.style.outline = 'none'
+      el.style.boxShadow = 'none'
+      el.style.background = 'transparent'
+      el.style.opacity = '0'
+      document.body.appendChild(el)
+      el.focus()
+      el.select()
+      el.setSelectionRange(0, el.value.length)
+      let ok = false
       try {
-        await navigator.clipboard.writeText(this.markdown)
-        this.copied = true
-        clearTimeout(this.copyResetTimer)
-        this.copyResetTimer = setTimeout(() => {
-          this.copied = false
-        }, 2000)
+        ok = document.execCommand('copy')
       } catch {
-        /* ignore — clipboard may be blocked */
+        ok = false
+      }
+      document.body.removeChild(el)
+      return ok
+    },
+    async copyMarkdown() {
+      const text = this.markdown
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text)
+          this.showCopiedToast()
+          return
+        }
+      } catch {
+        /* fall through to legacy copy */
+      }
+      if (this.copyWithFallback(text)) {
+        this.showCopiedToast()
       }
     },
   },
@@ -233,6 +271,7 @@ export default {
 .project-tldr-panel-slot {
   display: grid;
   grid-template-rows: 0fr;
+  /* Left: gray-line overhang; right: flush with project body */
   width: calc(100% + var(--project-title-offset, 0px));
   margin-left: calc(-1 * var(--project-title-offset, 0px));
   transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
@@ -440,8 +479,8 @@ export default {
 .project-tldr-toast {
   position: fixed;
   left: 50%;
-  bottom: 30px;
-  z-index: 10000;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+  z-index: 2147483646;
   display: flex;
   flex-direction: row;
   justify-content: center;
