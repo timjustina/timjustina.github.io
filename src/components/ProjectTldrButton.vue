@@ -77,14 +77,16 @@
     </div>
 
     <Teleport to="body">
-      <div
-        v-if="copied"
-        class="project-tldr-toast"
-        role="status"
-        aria-live="polite"
-      >
-        Copied to clipboard :)
-      </div>
+      <Transition name="project-tldr-toast">
+        <div
+          v-if="copied"
+          class="project-tldr-toast"
+          role="status"
+          aria-live="polite"
+        >
+          Copied to clipboard :)
+        </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -399,7 +401,7 @@ export default {
 .project-tldr-toast {
   position: fixed;
   left: 50%;
-  top: 66.666vh;
+  bottom: 30px;
   z-index: 10000;
   display: flex;
   flex-direction: row;
@@ -410,10 +412,10 @@ export default {
   padding: 12px 24px;
   gap: 10px;
   box-sizing: border-box;
-  background: #1a1a1a;
+  background: rgba(26, 26, 26, 0.85);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.25);
   border-radius: 8px;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 400;
@@ -422,5 +424,15 @@ export default {
   letter-spacing: -0.02em;
   color: #fff;
   pointer-events: none;
+}
+
+.project-tldr-toast-enter-active,
+.project-tldr-toast-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.project-tldr-toast-enter-from,
+.project-tldr-toast-leave-to {
+  opacity: 0;
 }
 </style>
