@@ -193,7 +193,7 @@ export default {
 .main :global(.project-body .project-tldr-note strong) {
   font-family: 'Fira Code', monospace;
   font-weight: 700;
-  font-size: 16px;
+  font-size: inherit;
   line-height: inherit;
   letter-spacing: -0.02em;
 }
