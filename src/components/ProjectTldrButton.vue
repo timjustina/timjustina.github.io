@@ -186,8 +186,7 @@ export default {
   --project-tldr-chevron-size: 36px;
   position: relative;
   display: block;
-  /* On mobile, don’t inherit the body 320px cap — span to the page edge pad */
-  width: calc(100vw - var(--project-body-left) - var(--project-edge-pad));
+  width: 100%;
   max-width: none;
   margin: 0 0 52px;
   z-index: 2;
@@ -273,9 +272,10 @@ export default {
 .project-tldr-panel-slot {
   display: grid;
   grid-template-rows: 0fr;
-  /* Left: gray-line overhang; right: flush with project body */
-  width: calc(100% + var(--project-title-offset, 0px));
-  margin-left: calc(-1 * var(--project-title-offset, 0px));
+  /* Full viewport — break out of the body column on both sides */
+  width: 100vw;
+  max-width: none;
+  margin-left: calc(-1 * var(--project-body-left));
   transition: grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -299,10 +299,11 @@ export default {
   );
   left: 0;
   width: 100%;
+  max-width: none;
   padding: calc(
       var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
     )
-    var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
+    var(--project-body-left) 52px var(--project-body-left);
   box-sizing: border-box;
   border-radius: 12px;
   background: linear-gradient(
@@ -323,7 +324,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 64px;
+  gap: 52px;
   width: 100%;
   pointer-events: none;
 }
@@ -346,10 +347,11 @@ export default {
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 500;
-  font-size: 20px;
-  line-height: 30px;
+  font-size: 22px;
+  line-height: 33px;
   letter-spacing: -0.02em;
   color: #000aaa;
+  vertical-align: middle;
 }
 
 .project-tldr-list {
@@ -361,10 +363,11 @@ export default {
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 400;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: 16px;
+  line-height: 24px;
   letter-spacing: -0.02em;
   color: #2c2c2c;
+  vertical-align: middle;
 }
 
 .project-tldr-list li {
@@ -373,17 +376,18 @@ export default {
 }
 
 .project-tldr-list li + li {
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
 .project-tldr-list strong,
 .project-tldr-note strong {
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: inherit;
   line-height: inherit;
   letter-spacing: inherit;
   color: inherit;
+  vertical-align: middle;
 }
 
 .project-tldr-note {
@@ -392,10 +396,11 @@ export default {
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 400;
-  font-size: 14px;
-  line-height: 21px;
+  font-size: 16px;
+  line-height: 24px;
   letter-spacing: -0.02em;
   color: #2c2c2c;
+  vertical-align: middle;
 }
 
 .project-tldr-copy {
@@ -415,12 +420,13 @@ export default {
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 500;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 18px;
+  line-height: 27px;
   letter-spacing: -0.02em;
   color: #fff;
   cursor: pointer;
   box-sizing: border-box;
+  vertical-align: middle;
   transition: background 0.2s ease;
 }
 
@@ -454,6 +460,14 @@ export default {
   .project-tldr-heading {
     font-size: 24px;
     line-height: 36px;
+  }
+
+  .project-tldr-panel {
+    padding-bottom: 64px;
+  }
+
+  .project-tldr-panel-inner {
+    gap: 64px;
   }
 
   .project-tldr-list {
@@ -493,7 +507,7 @@ export default {
   padding: 12px 24px;
   gap: 10px;
   box-sizing: border-box;
-  background: rgba(26, 26, 26, 0.85);
+  background: rgba(26, 26, 26, 0.9);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.25);
   border-radius: 8px;
   transform: translateX(-50%);

@@ -185,14 +185,10 @@ export default {
   padding-left: 0;
 }
 
-.main :global(.project-body .project-tldr-list li + li) {
-  margin-top: 26px;
-}
-
 .main :global(.project-body .project-tldr-list strong),
 .main :global(.project-body .project-tldr-note strong) {
   font-family: 'Fira Code', monospace;
-  font-weight: 700;
+  font-weight: 600;
   font-size: inherit;
   line-height: inherit;
   letter-spacing: -0.02em;
