@@ -356,20 +356,20 @@
                         sector</strong> and attention to the target <strong>user's needs.</strong>
                 </p>
 
-                <p>In an <strong>interview feedback session</strong> with caregivers (n=6), <strong>100% responded
+                <p>In an <strong>interview feedback session</strong> with caregivers (n=6), <strong>v100% responded
                         positively</strong> to the design. The
                     <strong>clarity of the data presentation</strong> was specifically highlighted. Most found the
                     layout <strong>easy to
-                        comprehend and navigate</strong>. A few noted that a simple product tour could be beneficial
-                    given the number
-                    of widgets present. The design was also successful in highlighting features that contribute to the
-                    IoT product's <strong>value proposition</strong>, in particular the <strong>remote dispense
-                        function</strong>, for which caregivers
-                    are the primary users. In general, the caregivers felt that the product feature would help
-                    <strong>improve
-                        the quality of care</strong> that they can deliver by <strong>lowering the effort</strong>
-                    required for monitoring and
-                    understanding their clients' behaviours.
+                        comprehend and navigate</strong>. One user noted that a simple product tour could be beneficial
+                    given the
+                    number of widgets present. In general, they felt that the product feature would help <strong>improve
+                        the
+                        quality of care</strong> that they can deliver by <strong>lowering the effort</strong> required
+                    for monitoring and
+                    understanding their clients' behaviours. The design was also successful in highlighting features
+                    that contribute to the IoT product's <strong>value proposition</strong>, in particular the
+                    <strong>remote dispense function</strong>,
+                    for which caregivers are the primary users.
                 </p>
 
                 <p>From an <strong>engineering perspective</strong>, the prototypes established a clear path for
