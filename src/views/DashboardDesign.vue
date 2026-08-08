@@ -80,7 +80,7 @@
                     caption="Hybrid affinity-interrelationship diagram based on user research findings" />
 
                 <h3>2. Define the narrative</h3>
-                <p>With the framework set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
+                <p>With the requirements set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
                     users can
                     experience fatigue or miss key insights. It is also an opportunity to <strong>highlight and
                         reinforce
