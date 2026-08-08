@@ -52,8 +52,8 @@
                         research</strong>
                     material available at hand. Taking a holistic approach, I summarised the findings in a
                     <strong>hybrid
-                        affinity-interrelationship diagram</strong> by synthesising <strong>user interview
-                        insights</strong> with <strong>product features</strong>,
+                        affinity-interrelationship diagram</strong> by synthesising <strong>user interview</strong>
+                    and <strong>user observation</strong> insights with <strong>product features</strong>,
                     encompassing details on functionality, primary user datasets, metrics, and end user needs. This
                     helped to identify dashboard contents that are most relevant to our users
                 </p>
@@ -460,7 +460,7 @@ const tldrSummaryItems = [
     },
     {
         lead: 'Achieved user validation and investor buy-in',
-        body: 'Delivered a pitch‑ready prototype with 100% positive feedback from caregivers in interview sessions.',
+        body: 'Delivered a pitch‑ready prototype with 100% positive feedback from caregivers (n=6) in interview sessions.',
     },
 ]
 
