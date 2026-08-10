@@ -1,5 +1,5 @@
 <template>
-    <div class="portfolio-page">
+    <div class="portfolio-page" :class="{ 'portfolio-page--reveal': pageRevealed }">
         <div
             v-if="showLoadingSplash"
             class="loading-splash"
@@ -24,7 +24,7 @@
         <main class="portfolio-main">
             <section class="hero">
                 <div class="hero-intro-wrap">
-                    <div class="hero-decor" aria-hidden="true">
+                    <div class="hero-decor portfolio-fly portfolio-fly--from-right" aria-hidden="true">
                         <picture>
                             <source
                                 media="(min-width: 998px)"
@@ -46,19 +46,19 @@
                             />
                         </picture>
                     </div>
-                    <p class="hero-intro">
+                    <p class="hero-intro portfolio-fly portfolio-fly--from-right">
                         <span class="hero-intro-lead">Tim Justina Yeung is a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
                         She deeply enjoys understanding complex problems and providing creative solutions
                         <strong class="hero-intro-em hero-intro-em--keep">for people :)</strong>
                     </p>
                 </div>
-                <a class="cta-button" href="mailto:design@timjustina.com">Drop me a line</a>
+                <a class="cta-button portfolio-fly portfolio-fly--from-left" href="mailto:design@timjustina.com">Drop me a line</a>
             </section>
 
             <section id="work" class="work">
                 <article
                     id="work-first"
-                    class="project project--featured"
+                    class="project project--featured portfolio-fly portfolio-fly--from-right"
                     @mouseenter="liftHeroLine"
                     @mouseleave="dropHeroLine"
                     @focusin="liftHeroLine"
@@ -90,7 +90,7 @@
                     </div>
                 </article>
 
-                <article class="project project--offset project--upcoming">
+                <article class="project project--offset project--upcoming portfolio-fly portfolio-fly--from-left">
                     <div class="project-image-wrap">
                         <img
                             class="project-image"
@@ -114,7 +114,7 @@
                     </div>
                 </article>
 
-                <article class="project project--upcoming">
+                <article class="project project--upcoming portfolio-fly portfolio-fly--from-right">
                     <div class="project-image-wrap">
                         <img
                             class="project-image"
@@ -253,6 +253,7 @@ export default {
             loadingTimer: null,
             loadingRotationDeg: 0,
             loadingRotating: false,
+            pageRevealed: false,
             aboutBallDropped: false,
             heroLinePhase: 'rest',
             firstProjectPrefetchStarted: false,
@@ -335,6 +336,10 @@ export default {
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
                 this.syncAboutBallPosition()
+                // Next frame so the splash is gone before fly-ins start
+                requestAnimationFrame(() => {
+                    this.pageRevealed = true
+                })
             })
         },
         scheduleLoadingAdvance() {
@@ -579,12 +584,93 @@ export default {
     --project-w-wide: min(876px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
+    --fly-distance: min(42vw, 360px);
+    --fly-duration: 1.25s;
+    --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
     position: relative;
     width: 100%;
     min-height: 100vh;
     background: #fff;
     color: var(--text);
+    overflow-x: clip;
+}
+
+.portfolio-fly {
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+.portfolio-fly--from-right {
+    transform: translate3d(var(--fly-distance), 0, 0);
+}
+
+.portfolio-fly--from-left {
+    transform: translate3d(calc(-1 * var(--fly-distance)), 0, 0);
+}
+
+.portfolio-page--reveal .hero-decor.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.02s both;
+}
+
+.portfolio-page--reveal .hero-intro.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.08s both;
+}
+
+.portfolio-page--reveal .cta-button.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.14s both;
+}
+
+.portfolio-page--reveal .project--featured.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.22s both;
+}
+
+.portfolio-page--reveal .project--offset.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.34s both;
+}
+
+.portfolio-page--reveal .project--upcoming:not(.project--offset).portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.46s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portfolio-fly,
+    .portfolio-page--reveal .portfolio-fly {
+        opacity: 1;
+        transform: none;
+        animation: none;
+        will-change: auto;
+    }
+
+    .hero-decor-line,
+    .portfolio-page--reveal .hero-decor-line {
+        clip-path: none;
+        transition: transform var(--hero-line-return-duration) ease;
+    }
+}
+
+@keyframes portfolio-fly-from-right {
+    from {
+        opacity: 0;
+        transform: translate3d(var(--fly-distance, 220px), 0, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes portfolio-fly-from-left {
+    from {
+        opacity: 0;
+        transform: translate3d(calc(-1 * var(--fly-distance, 220px)), 0, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
 }
 
 .loading-splash {
@@ -684,7 +770,16 @@ export default {
     object-fit: none;
     object-position: left bottom;
     transform: translateY(0);
+    /* Hide the bottom knot so the shaft reads as a straight line while flying in */
+    clip-path: inset(0 0 45px 0);
     transition: transform var(--hero-line-return-duration) ease;
+}
+
+.portfolio-page--reveal .hero-decor-line {
+    clip-path: inset(0);
+    transition:
+        transform var(--hero-line-return-duration) ease,
+        clip-path 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.35s;
 }
 
 .hero-decor-line--bouncing {
