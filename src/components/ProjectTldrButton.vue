@@ -272,7 +272,7 @@ export default {
 .project-tldr-panel-slot {
   display: grid;
   grid-template-rows: 0fr;
-  /* Full viewport — break out of the body column on both sides */
+  /* Mobile: full viewport — break out of the body column on both sides */
   width: 100vw;
   max-width: none;
   margin-left: calc(-1 * var(--project-body-left));
@@ -462,8 +462,18 @@ export default {
     line-height: 36px;
   }
 
+  /* Desktop: text column + title hang (not full page) */
+  .project-tldr-panel-slot {
+    width: calc(100% + var(--project-title-offset, 0px));
+    max-width: none;
+    margin-left: calc(-1 * var(--project-title-offset, 0px));
+  }
+
   .project-tldr-panel {
-    padding-bottom: 64px;
+    padding: calc(
+        var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
+      )
+      var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
   }
 
   .project-tldr-panel-inner {
