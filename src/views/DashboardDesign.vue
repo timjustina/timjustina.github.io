@@ -123,8 +123,10 @@
                 <p>The contents take priority here. I began by <strong>sketching a range of data visualisation
                         widgets</strong> without worrying
                     about screen layout. Some charts were discarded early; others moved into <strong>high‑fidelity
-                        wireframes and prototypes</strong>. This allowed the best solutions to emerge before I committed
-                    to the layout. It also gave me <strong>early artifacts</strong> to share with stakeholders,
+                        wireframes and prototypes</strong>. This allowed the best solutions to emerge before I
+                    established <strong>hierarchy</strong> and committed
+                    to the layout. It also gave me <strong>early artifacts</strong> to share
+                    with stakeholders,
                     <strong>speeding up iterations</strong>.
                 </p>
                 <p>In my design workflow, I also used these wireframes as <strong>image prompts</strong> in
