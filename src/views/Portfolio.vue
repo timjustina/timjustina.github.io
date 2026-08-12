@@ -237,8 +237,6 @@ const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
 const LOADING_ROTATE_MS = 800
 const LOADING_MAX_ITERATIONS = 6
-// TEMP: force N full loading rounds even when assets are ready (undo later)
-const FORCE_LOADING_ROUNDS = 4
 
 export default {
     name: 'Portfolio',
@@ -403,14 +401,10 @@ export default {
                 // Only leave while on normal — right before folded would appear,
                 // so the last thing shown is always the logo.
                 if (this.loadingFrameIndex === 0) {
-                    const forcedDone =
-                        FORCE_LOADING_ROUNDS > 0 &&
-                        this.loadingIteration >= FORCE_LOADING_ROUNDS
-                    const normalDone =
-                        !FORCE_LOADING_ROUNDS &&
-                        (this.areMainPageImagesLoaded() ||
-                            this.loadingIteration >= LOADING_MAX_ITERATIONS)
-                    if (forcedDone || normalDone) {
+                    if (
+                        this.areMainPageImagesLoaded() ||
+                        this.loadingIteration >= LOADING_MAX_ITERATIONS
+                    ) {
                         this.finishLoadingSplash()
                         return
                     }
