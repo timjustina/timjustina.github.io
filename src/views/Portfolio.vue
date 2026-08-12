@@ -140,10 +140,14 @@
             </section>
         </main>
 
-        <section id="about" class="about" :class="{ 'about--reveal': aboutRevealed }">
-            <span class="about-line portfolio-fly portfolio-fly--from-left" aria-hidden="true" />
+        <section
+            id="about"
+            class="about"
+            :class="{ 'about--reveal': aboutRevealed, 'about--settled': aboutEntranceDone }"
+        >
+            <span class="about-line portfolio-fly portfolio-fly--from-right" aria-hidden="true" />
             <div class="about-inner">
-                <div class="about-photo-column portfolio-fly portfolio-fly--from-right">
+                <div class="about-photo-column portfolio-fly portfolio-fly--from-left">
                     <img
                         v-if="aboutPhoto"
                         class="about-photo"
@@ -152,9 +156,9 @@
                     />
                     <div v-else class="about-photo about-photo--placeholder" />
                 </div>
-                <div id="about-bio" class="about-text-column portfolio-fly portfolio-fly--from-left">
-                    <h2 class="about-heading">About Tim ( 湉 )</h2>
-                    <p class="about-location">
+                <div id="about-bio" class="about-text-column">
+                    <h2 class="about-heading portfolio-fly portfolio-fly--from-left">About Tim ( 湉 )</h2>
+                    <p class="about-location portfolio-fly portfolio-fly--from-right">
                         <span class="about-location-icon-wrap" aria-hidden="true">
                             <svg class="about-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
                                 <path
@@ -165,7 +169,7 @@
                         </span>
                         <span class="about-location-text">London / Barcelona</span>
                     </p>
-                    <p class="about-bio">
+                    <p class="about-bio portfolio-fly portfolio-fly--from-left">
                         Started in the east, ended up in the west. Started in academia, ended up in the
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
@@ -255,6 +259,8 @@ export default {
             loadingRotating: false,
             pageRevealed: false,
             aboutRevealed: false,
+            aboutEntranceDone: false,
+            pendingAboutBallDrop: false,
             aboutBallDropped: false,
             heroLinePhase: 'rest',
             firstProjectPrefetchStarted: false,
@@ -309,6 +315,7 @@ export default {
     },
     beforeUnmount() {
         this.clearLoadingTimer()
+        clearTimeout(this.aboutEntranceTimer)
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
         this.aboutBallObserver?.disconnect()
@@ -324,6 +331,7 @@ export default {
         setupAboutReveal() {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 this.aboutRevealed = true
+                this.aboutEntranceDone = true
                 return
             }
 
@@ -336,6 +344,7 @@ export default {
                     this.aboutRevealed = true
                     this.aboutRevealObserver?.disconnect()
                     this.aboutRevealObserver = null
+                    this.scheduleAboutEntranceEnd()
                 },
                 {
                     root: null,
@@ -344,6 +353,22 @@ export default {
                 }
             )
             this.aboutRevealObserver.observe(about)
+        },
+        scheduleAboutEntranceEnd() {
+            clearTimeout(this.aboutEntranceTimer)
+            const page = this.$el
+            const durationMs =
+                (parseFloat(getComputedStyle(page).getPropertyValue('--fly-duration')) || 1.25) *
+                1000
+            // Longest about stagger is photo at 0.18s
+            this.aboutEntranceTimer = setTimeout(() => {
+                this.aboutEntranceDone = true
+                this.syncAboutBallPosition()
+                if (this.pendingAboutBallDrop) {
+                    this.pendingAboutBallDrop = false
+                    this.startAboutBallDrop()
+                }
+            }, durationMs + 200)
         },
         clearLoadingTimer() {
             if (this.loadingTimer != null) {
@@ -526,11 +551,20 @@ export default {
         startAboutBallDrop() {
             if (this.aboutBallDropped) return
             if (window.matchMedia('(max-width: 600px)').matches) return
+            // Don't start the drop while the about slide-in is still moving
+            if (this.aboutRevealed && !this.aboutEntranceDone) {
+                this.pendingAboutBallDrop = true
+                return
+            }
             this.syncAboutBallPosition()
             this.aboutBallDropped = true
             window.removeEventListener('scroll', this.onAboutBallScroll)
         },
         syncAboutBallPosition() {
+            // Skip while about fly-ins are running — mutating those elements
+            // to measure was restarting the entrance animations.
+            if (this.aboutRevealed && !this.aboutEntranceDone) return
+
             const about = this.$el?.querySelector('.about')
             const bio = this.$el?.querySelector('.about-bio')
             if (!about || !bio) return
@@ -660,20 +694,40 @@ export default {
     animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.46s both;
 }
 
-.about--reveal .about-line.portfolio-fly--from-left {
-    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.02s both;
+.about-heading.portfolio-fly--from-left {
+    --fly-distance: min(56vw, 480px);
 }
 
-.about--reveal .about-text-column.portfolio-fly--from-left {
-    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.1s both;
+.about--reveal .about-line.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right 0.95s var(--fly-ease) -0.12s both;
 }
 
-.about--reveal .about-actions.portfolio-fly--from-left {
+.about--reveal .about-heading.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left 0.95s var(--fly-ease) -0.12s both;
+}
+
+.about--reveal .about-location.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.12s both;
+}
+
+.about--reveal .about-bio.portfolio-fly--from-left {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.16s both;
 }
 
-.about--reveal .about-photo-column.portfolio-fly--from-right {
-    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.18s both;
+.about--reveal .about-actions.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.2s both;
+}
+
+.about--reveal .about-photo-column.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.18s both;
+}
+
+/* Lock final pose so later layout syncs can't replay the entrance */
+.about--settled .portfolio-fly {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
