@@ -227,15 +227,18 @@ import aboutPhoto from '../assets/portrait.jpg'
 import lineAnimation from '../assets/line_animation.svg'
 import lineAnimationTall from '../assets/line_animation_tall.svg'
 import aboutSquiggle from '../assets/squiggle_3.svg'
-import loading1 from '../assets/loading/loading 1.svg'
-import loadingRoundCorner from '../assets/loading/loading round corner.svg'
+import loadingNormal from '../assets/loading/loading_normal.svg'
+import loadingFolded from '../assets/loading/loading_folded.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 
 const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
+const LOADING_ROTATE_MS = 800
 const LOADING_MAX_ITERATIONS = 6
+// TEMP: force N full loading rounds even when assets are ready (undo later)
+const FORCE_LOADING_ROUNDS = 4
 
 export default {
     name: 'Portfolio',
@@ -249,11 +252,11 @@ export default {
             lineAnimation,
             lineAnimationTall,
             aboutSquiggle,
-            loadingFrames: [loading1, loadingRoundCorner],
+            loadingFrames: [loadingNormal, loadingFolded],
             cvUrl,
             showLoadingSplash: true,
             loadingFrameIndex: 0,
-            loadingIteration: 1,
+            loadingIteration: 0,
             loadingTimer: null,
             loadingRotationDeg: 0,
             loadingRotating: false,
@@ -397,57 +400,54 @@ export default {
         scheduleLoadingAdvance() {
             this.clearLoadingTimer()
             this.loadingTimer = setTimeout(() => {
-                // After frame 1: enter as soon as the main page is ready
-                if (this.loadingFrameIndex === 0 && this.areMainPageImagesLoaded()) {
-                    this.finishLoadingSplash()
-                    return
-                }
-
-                // After round-corner hold, rotate 90° CCW, then continue
-                if (this.loadingFrameIndex === 1) {
-                    this.rotateLoadingRoundCorner()
-                    return
-                }
-
-                // loading 1 → round corner (already +90° CW), then rotate
-                this.loadingRotating = false
-                this.loadingRotationDeg = 90
-                this.loadingFrameIndex = 1
-                this.scheduleLoadingAdvance()
-            }, LOADING_FRAME_MS)
-        },
-        rotateLoadingRoundCorner() {
-            this.clearLoadingTimer()
-            this.loadingRotating = true
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    // From +90° CW → 0° (90° counterclockwise)
-                    this.loadingRotationDeg -= 90
-                })
-            })
-
-            // Rotate 500ms, pause, then check / next cycle
-            this.loadingTimer = setTimeout(() => {
-                this.loadingRotating = false
-
-                this.loadingTimer = setTimeout(() => {
-                    // End of cycle: enter if ready, or after max cycles
-                    if (
-                        this.areMainPageImagesLoaded() ||
-                        this.loadingIteration >= LOADING_MAX_ITERATIONS
-                    ) {
+                // Only leave while on normal — right before folded would appear,
+                // so the last thing shown is always the logo.
+                if (this.loadingFrameIndex === 0) {
+                    const forcedDone =
+                        FORCE_LOADING_ROUNDS > 0 &&
+                        this.loadingIteration >= FORCE_LOADING_ROUNDS
+                    const normalDone =
+                        !FORCE_LOADING_ROUNDS &&
+                        (this.areMainPageImagesLoaded() ||
+                            this.loadingIteration >= LOADING_MAX_ITERATIONS)
+                    if (forcedDone || normalDone) {
                         this.finishLoadingSplash()
                         return
                     }
 
+                    // normal → folded
+                    this.loadingRotating = false
+                    this.loadingFrameIndex = 1
+                    this.scheduleLoadingAdvance()
+                    return
+                }
+
+                // After folded hold, full 360° spin, then back to normal
+                this.rotateLoadingFullTurn()
+            }, LOADING_FRAME_MS)
+        },
+        rotateLoadingFullTurn() {
+            this.clearLoadingTimer()
+            this.loadingRotating = true
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // Full turn counterclockwise
+                    this.loadingRotationDeg -= 360
+                })
+            })
+
+            // Spin, pause, then return to normal (exit check happens there)
+            this.loadingTimer = setTimeout(() => {
+                this.loadingRotating = false
+
+                this.loadingTimer = setTimeout(() => {
                     this.$nextTick(() => {
-                        this.loadingRotationDeg = 0
                         this.loadingIteration += 1
                         this.loadingFrameIndex = 0
                         this.scheduleLoadingAdvance()
                     })
                 }, LOADING_PAUSE_MS)
-            }, LOADING_FRAME_MS)
+            }, LOADING_ROTATE_MS)
         },
         waitForImage(img) {
             if (!img || img.complete) return Promise.resolve()
@@ -789,7 +789,7 @@ export default {
 }
 
 .loading-splash-frame--rotating {
-    transition: transform 500ms linear;
+    transition: transform 800ms linear;
 }
 
 :global(html.portfolio-booting),

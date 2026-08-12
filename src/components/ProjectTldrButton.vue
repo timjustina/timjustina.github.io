@@ -305,7 +305,7 @@ export default {
     )
     var(--project-body-left) 52px var(--project-body-left);
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: 0;
   background: linear-gradient(
     180deg,
     rgba(242, 242, 242, 0) 33.75%,
@@ -474,6 +474,7 @@ export default {
         var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
       )
       var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
+    border-radius: 12px;
   }
 
   .project-tldr-panel-inner {
