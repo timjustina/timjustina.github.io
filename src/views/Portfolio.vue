@@ -140,10 +140,10 @@
             </section>
         </main>
 
-        <section id="about" class="about">
-            <span class="about-line" aria-hidden="true" />
+        <section id="about" class="about" :class="{ 'about--reveal': aboutRevealed }">
+            <span class="about-line portfolio-fly portfolio-fly--from-left" aria-hidden="true" />
             <div class="about-inner">
-                <div class="about-photo-column">
+                <div class="about-photo-column portfolio-fly portfolio-fly--from-right">
                     <img
                         v-if="aboutPhoto"
                         class="about-photo"
@@ -152,7 +152,7 @@
                     />
                     <div v-else class="about-photo about-photo--placeholder" />
                 </div>
-                <div id="about-bio" class="about-text-column">
+                <div id="about-bio" class="about-text-column portfolio-fly portfolio-fly--from-left">
                     <h2 class="about-heading">About Tim ( 湉 )</h2>
                     <p class="about-location">
                         <span class="about-location-icon-wrap" aria-hidden="true">
@@ -184,7 +184,7 @@
                         (research paper).
                     </p>
                 </div>
-                <div class="about-actions">
+                <div class="about-actions portfolio-fly portfolio-fly--from-left">
                     <a
                         href="https://www.linkedin.com/in/timjustinayeung"
                         class="about-action-btn"
@@ -254,6 +254,7 @@ export default {
             loadingRotationDeg: 0,
             loadingRotating: false,
             pageRevealed: false,
+            aboutRevealed: false,
             aboutBallDropped: false,
             heroLinePhase: 'rest',
             firstProjectPrefetchStarted: false,
@@ -302,6 +303,7 @@ export default {
             this.aboutBallObserver.observe(aboutBio)
         }
 
+        this.setupAboutReveal()
         this.scheduleFirstProjectPrefetch()
         this.scheduleLoadingAdvance()
     },
@@ -310,6 +312,7 @@ export default {
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
         this.aboutBallObserver?.disconnect()
+        this.aboutRevealObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
@@ -318,6 +321,30 @@ export default {
         }
     },
     methods: {
+        setupAboutReveal() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                this.aboutRevealed = true
+                return
+            }
+
+            const about = this.$el?.querySelector('#about')
+            if (!about) return
+
+            this.aboutRevealObserver = new IntersectionObserver(
+                (entries) => {
+                    if (!entries.some((entry) => entry.isIntersecting)) return
+                    this.aboutRevealed = true
+                    this.aboutRevealObserver?.disconnect()
+                    this.aboutRevealObserver = null
+                },
+                {
+                    root: null,
+                    threshold: 0.2,
+                    rootMargin: '0px 0px -12% 0px',
+                }
+            )
+            this.aboutRevealObserver.observe(about)
+        },
         clearLoadingTimer() {
             if (this.loadingTimer != null) {
                 clearTimeout(this.loadingTimer)
@@ -633,9 +660,26 @@ export default {
     animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.46s both;
 }
 
+.about--reveal .about-line.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.02s both;
+}
+
+.about--reveal .about-text-column.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.1s both;
+}
+
+.about--reveal .about-actions.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.16s both;
+}
+
+.about--reveal .about-photo-column.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.18s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .portfolio-fly,
-    .portfolio-page--reveal .portfolio-fly {
+    .portfolio-page--reveal .portfolio-fly,
+    .about--reveal .portfolio-fly {
         opacity: 1;
         transform: none;
         animation: none;
