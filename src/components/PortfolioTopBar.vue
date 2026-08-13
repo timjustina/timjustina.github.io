@@ -54,6 +54,9 @@ import menuHover from '../assets/menu_hover.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
+const SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
+const SECTION_JUMP_EVENT = 'portfolio-section-jump'
+
 export default {
     name: 'PortfolioTopBar',
     data() {
@@ -69,9 +72,16 @@ export default {
             scrollTicking: false,
         }
     },
+    created() {
+        // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
+        if (SECTION_HASHES.has(this.$route.hash)) {
+            this.topBarHidden = true
+        }
+    },
     mounted() {
         this.lastScrollY = window.scrollY
         window.addEventListener('scroll', this.onScroll, { passive: true })
+        window.addEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
 
         this.$nextTick(() => {
             this.updateNavCompact()
@@ -84,9 +94,14 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('scroll', this.onScroll)
+        window.removeEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
         this.navGapObserver?.disconnect()
     },
     methods: {
+        onSectionJump() {
+            this.topBarHidden = true
+            this.lastScrollY = window.scrollY
+        },
         onScroll() {
             if (this.scrollTicking) return
             this.scrollTicking = true

@@ -362,6 +362,8 @@ export default {
     methods: {
         jumpToSectionHash(hash) {
             scrollToPortfolioHash(hash, { duration: 0 })
+            // Keep top bar hidden after the instant jump (no scroll delta to trigger it).
+            window.dispatchEvent(new Event('portfolio-section-jump'))
             if (hash !== '#about' || this.aboutRevealed) return
 
             // Start the about slide-in after the jump so it animates into place.
@@ -704,28 +706,16 @@ export default {
     transform: translate3d(calc(-1 * var(--fly-distance)), 0, 0);
 }
 
-.portfolio-page--reveal .hero-decor.portfolio-fly--from-right {
-    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.02s both;
-}
-
-.portfolio-page--reveal .hero-intro.portfolio-fly--from-right {
+.portfolio-page--reveal .hero-decor.portfolio-fly--from-right,
+.portfolio-page--reveal .hero-intro.portfolio-fly--from-right,
+.portfolio-page--reveal .project--featured.portfolio-fly--from-right,
+.portfolio-page--reveal .project--upcoming:not(.project--offset).portfolio-fly--from-right {
     animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.08s both;
 }
 
-.portfolio-page--reveal .cta-button.portfolio-fly--from-left {
-    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.14s both;
-}
-
-.portfolio-page--reveal .project--featured.portfolio-fly--from-right {
-    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.22s both;
-}
-
+.portfolio-page--reveal .cta-button.portfolio-fly--from-left,
 .portfolio-page--reveal .project--offset.portfolio-fly--from-left {
-    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.34s both;
-}
-
-.portfolio-page--reveal .project--upcoming:not(.project--offset).portfolio-fly--from-right {
-    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.46s both;
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.08s both;
 }
 
 .about-heading.portfolio-fly--from-left {
