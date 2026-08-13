@@ -76,8 +76,13 @@
                     <strong>separates components by function.</strong>
                 </p>
 
-                <ZoomableImage :src="svg1Cover" :zoom-src="svg1" alt="Affinity-Interrelationship Diagram"
-                    caption="Hybrid affinity-interrelationship diagram based on user research findings" />
+                <ZoomableImage
+                    class="affinity-figure"
+                    :src="svg1Cover"
+                    :zoom-src="svg1"
+                    alt="Affinity-Interrelationship Diagram"
+                    caption="Hybrid affinity-interrelationship diagram based on user research findings"
+                />
 
                 <h3>2. Define the narrative</h3>
                 <p>With the requirements set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
@@ -487,3 +492,9 @@ export default {
     },
 }
 </script>
+
+<style>
+.full-image.affinity-figure .caption {
+    margin-top: 35px;
+}
+</style>

@@ -1,11 +1,40 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Portfolio from '../views/Portfolio.vue'
-import { getAboutScrollTop, smoothScrollTo } from '../utils/scrollToAbout.js'
+import { getAboutScrollTop, getWorkScrollTop, smoothScrollTo } from '../utils/scrollToAbout.js'
 
-function getElementScrollTop(hash) {
+function getHashScrollTop(hash) {
+    if (hash === '#about') return getAboutScrollTop()
+    if (hash === '#work-first' || hash === '#work') return getWorkScrollTop()
+
     const el = document.querySelector(hash)
     if (!el) return null
-    return Math.max(0, el.getBoundingClientRect().top + window.scrollY - 120)
+    const topBarInner = document.querySelector('.top-bar-inner')
+    const headerOffset = topBarInner?.offsetHeight ?? 120
+    return Math.max(0, el.getBoundingClientRect().top + window.scrollY - headerOffset)
+}
+
+function waitForHashTarget(hash, { attempts = 40 } = {}) {
+    return new Promise((resolve) => {
+        let left = attempts
+
+        const tick = () => {
+            const top = getHashScrollTop(hash)
+            if (top !== null) {
+                resolve(top)
+                return
+            }
+
+            left -= 1
+            if (left <= 0) {
+                resolve(null)
+                return
+            }
+
+            requestAnimationFrame(tick)
+        }
+
+        tick()
+    })
 }
 
 const routes = [
@@ -29,29 +58,28 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes,
-    scrollBehavior(to, _from, savedPosition) {
+    scrollBehavior(to, from, savedPosition) {
         if (savedPosition) {
             return savedPosition
         }
 
+        // Home hash targets are scrolled by Portfolio after the page is ready
+        // (loading splash / layout). Avoid fighting that with an early scroll.
+        if (to.path === '/' && (to.hash === '#about' || to.hash === '#work-first' || to.hash === '#work')) {
+            if (from.path === '/' && from.fullPath === to.fullPath) {
+                return false
+            }
+            // Coming from another route: stay at top until Portfolio scrolls.
+            return { top: 0 }
+        }
+
         if (to.hash) {
-            return new Promise((resolve) => {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        const top =
-                            to.hash === '#about'
-                                ? getAboutScrollTop()
-                                : getElementScrollTop(to.hash)
-
-                        if (top !== null) {
-                            smoothScrollTo(top)
-                            resolve(false)
-                            return
-                        }
-
-                        resolve({ el: to.hash, top: 120 })
-                    })
-                })
+            return waitForHashTarget(to.hash).then((top) => {
+                if (top !== null) {
+                    smoothScrollTo(top)
+                    return false
+                }
+                return { el: to.hash, top: 120 }
             })
         }
 

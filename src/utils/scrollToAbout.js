@@ -24,6 +24,13 @@ export function getAboutScrollTop() {
     return Math.max(0, top + ABOUT_EXTRA_OFFSET)
 }
 
+export function getWorkScrollTop() {
+    const el = document.getElementById('work-first') || document.getElementById('work')
+    if (!el) return null
+    const headerOffset = getHeaderOffset()
+    return Math.max(0, el.getBoundingClientRect().top + window.scrollY - headerOffset)
+}
+
 const DEFAULT_SCROLL_DURATION = 450
 
 let activeScrollAnimation = null
@@ -73,4 +80,19 @@ export function scrollToAbout(options = {}) {
 
     smoothScrollTo(top, options)
     return true
+}
+
+export function scrollToWork(options = {}) {
+    const top = getWorkScrollTop()
+    if (top === null) return false
+
+    smoothScrollTo(top, options)
+    return true
+}
+
+/** Scroll to the portfolio section for a home-page hash, if any. */
+export function scrollToPortfolioHash(hash, options = {}) {
+    if (hash === '#about') return scrollToAbout(options)
+    if (hash === '#work-first' || hash === '#work') return scrollToWork(options)
+    return false
 }

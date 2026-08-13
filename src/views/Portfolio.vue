@@ -232,11 +232,14 @@ import loadingFolded from '../assets/loading/loading_folded.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
+import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
 
 const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
 const LOADING_ROTATE_MS = 800
 const LOADING_MAX_ITERATIONS = 6
+
+const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 
 export default {
     name: 'Portfolio',
@@ -269,7 +272,18 @@ export default {
         }
     },
     mounted() {
-        document.documentElement.classList.add('portfolio-booting')
+        const sectionHash = PORTFOLIO_SECTION_HASHES.has(this.$route.hash)
+            ? this.$route.hash
+            : ''
+
+        // Arriving from a case study (or deep link) with Work/About: skip splash
+        // and jump straight to the section once layout is ready.
+        if (sectionHash) {
+            this.showLoadingSplash = false
+            this.pageRevealed = true
+        } else {
+            document.documentElement.classList.add('portfolio-booting')
+        }
 
         this.heroDecorObserver = new ResizeObserver(() => {
             requestAnimationFrame(() => this.syncHeroDecorHeight())
@@ -300,6 +314,9 @@ export default {
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
             this.syncAboutBallPosition()
+            if (sectionHash) {
+                this.jumpToSectionHash(sectionHash)
+            }
         })
 
         const aboutBio = this.$el?.querySelector('.about-bio')
@@ -310,9 +327,23 @@ export default {
             this.aboutBallObserver.observe(aboutBio)
         }
 
-        this.setupAboutReveal()
+        // Work jumps use the normal IO reveal; About jumps start the slide-in after scroll.
+        if (sectionHash !== '#about') {
+            this.setupAboutReveal()
+        }
         this.scheduleFirstProjectPrefetch()
-        this.scheduleLoadingAdvance()
+
+        if (sectionHash) {
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    this.syncHeroDecorHeight()
+                    this.syncAboutBallPosition()
+                    this.jumpToSectionHash(sectionHash)
+                })
+            })
+        } else {
+            this.scheduleLoadingAdvance()
+        }
     },
     beforeUnmount() {
         this.clearLoadingTimer()
@@ -329,6 +360,14 @@ export default {
         }
     },
     methods: {
+        jumpToSectionHash(hash) {
+            scrollToPortfolioHash(hash, { duration: 0 })
+            if (hash !== '#about' || this.aboutRevealed) return
+
+            // Start the about slide-in after the jump so it animates into place.
+            this.aboutRevealed = true
+            this.scheduleAboutEntranceEnd()
+        },
         setupAboutReveal() {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 this.aboutRevealed = true
@@ -392,6 +431,7 @@ export default {
                 // Next frame so the splash is gone before fly-ins start
                 requestAnimationFrame(() => {
                     this.pageRevealed = true
+                    scrollToPortfolioHash(this.$route.hash)
                 })
             })
         },

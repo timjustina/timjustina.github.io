@@ -10,6 +10,7 @@
                         <router-link
                             :to="{ path: '/', hash: '#work-first' }"
                             class="nav-link nav-link--stacked nav-link--work"
+                            @click="onWorkClick"
                         >
                             <span>Work</span>
                             <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
@@ -51,7 +52,7 @@
 import logo from '../assets/TjyCutoutLogo.svg'
 import menuHover from '../assets/menu_hover.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
-import { scrollToAbout } from '../utils/scrollToAbout.js'
+import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
 export default {
     name: 'PortfolioTopBar',
@@ -106,7 +107,20 @@ export default {
                 this.scrollTicking = false
             })
         },
+        onWorkClick(event) {
+            // From a case study, let the router navigate; Portfolio scrolls after ready.
+            if (this.$route.path !== '/') return
+
+            if (this.$route.hash === '#work-first' || this.$route.hash === '#work') {
+                event.preventDefault()
+            }
+
+            this.$nextTick(() => {
+                requestAnimationFrame(() => scrollToWork())
+            })
+        },
         onAboutClick(event) {
+            // From a case study, let the router navigate; Portfolio scrolls after ready.
             if (this.$route.path !== '/') return
 
             if (this.$route.hash === '#about') {
