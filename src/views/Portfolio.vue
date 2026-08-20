@@ -837,8 +837,8 @@ export default {
     --hero-squiggle-left: 121px;
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
-    /* 696px from the left edge of the first project image (content left) */
-    --hero-cta-left: 696px;
+    /* 746px from the left edge of the first project image (content left) */
+    --hero-cta-left: 746px;
     /* Text bottom → first image = cta gap + cta height + this margin */
     --hero-text-to-image: 357px;
     margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
@@ -847,7 +847,7 @@ export default {
 .hero-intro-wrap {
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     position: relative;
-    max-width: min(840px, calc(100% - var(--hero-intro-left)));
+    max-width: min(850px, calc(100% - var(--hero-intro-left)));
     margin: 110px 0 0
         var(--hero-intro-left);
 }
@@ -1353,7 +1353,7 @@ export default {
 /* ≥1454px: Final content artboard spacing */
 @media (min-width: 1454px) {
     .hero-intro-wrap {
-        max-width: 840px;
+        max-width: 850px;
         margin: 110px 0 0 var(--hero-intro-left);
     }
 
@@ -1451,7 +1451,7 @@ export default {
     }
 
     .cta-button {
-        margin-left: min(565px, max(0px, calc(100% - 233px)));
+        margin-left: min(615px, max(0px, calc(100% - 233px)));
     }
 
     .project--offset {
