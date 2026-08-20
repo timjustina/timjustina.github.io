@@ -43,6 +43,21 @@ html.image-expand-active .project-hero img {
   opacity: 0 !important;
 }
 
+/* Keep the top bar above the flyer and ease it in with the expand */
+html.image-expand-active .top-bar {
+  animation: image-expand-top-bar-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes image-expand-top-bar-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 html.image-expand-active .project-header,
 html.image-expand-active .project-body,
 html.image-expand-active .site-footer,
@@ -56,6 +71,6 @@ html.image-expand-settling.image-expand-revealed .project-header,
 html.image-expand-settling.image-expand-revealed .project-body,
 html.image-expand-settling.image-expand-revealed .site-footer {
   opacity: 1;
-  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 </style>

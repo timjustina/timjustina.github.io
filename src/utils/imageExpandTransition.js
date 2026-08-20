@@ -1,5 +1,7 @@
 const EXPAND_DURATION_MS = 700
 const EXPAND_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
+/* Start fading page chrome in before the flyer finishes */
+const REVEAL_LEAD_MS = 220
 
 let active = null
 
@@ -30,7 +32,8 @@ export function startImageExpand({ src, rect, borderRadius = '0px' }) {
     style.objectFit = 'cover'
     style.objectPosition = 'center top'
     style.borderRadius = borderRadius
-    style.zIndex = '10001'
+    // Below the fixed top bar (z-index 100) so nav stays visible over the expand
+    style.zIndex = '90'
     style.margin = '0'
     style.padding = '0'
     style.border = 'none'
@@ -43,12 +46,15 @@ export function startImageExpand({ src, rect, borderRadius = '0px' }) {
     document.body.appendChild(clone)
     document.documentElement.classList.add('image-expand-active')
 
-    active = { clone, src }
+    active = { clone, src, revealTimer: null }
     return active
 }
 
 export function cancelImageExpand() {
     if (!active) return
+    if (active.revealTimer != null) {
+        window.clearTimeout(active.revealTimer)
+    }
     active.clone.remove()
     document.documentElement.classList.remove(
         'image-expand-active',
@@ -83,6 +89,20 @@ function waitForLaidOut(img, { attempts = 60 } = {}) {
             requestAnimationFrame(tick)
         }
         tick()
+    })
+}
+
+function beginReveal(clone) {
+    if (!active || active.clone !== clone) return
+
+    const heroImg = document.querySelector('.project-hero img')
+    if (heroImg) heroImg.style.opacity = ''
+
+    document.documentElement.classList.remove('image-expand-active')
+    document.documentElement.classList.add('image-expand-settling')
+
+    requestAnimationFrame(() => {
+        document.documentElement.classList.add('image-expand-revealed')
     })
 }
 
@@ -130,6 +150,13 @@ export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_
     clone.style.height = `${to.height}px`
     clone.style.borderRadius = '0px'
 
+    // Crossfade page chrome in before the flyer finishes so the top bar
+    // never "pops" after a dead beat at the end.
+    const revealDelay = Math.max(0, duration - REVEAL_LEAD_MS)
+    active.revealTimer = window.setTimeout(() => {
+        if (active?.clone === clone) beginReveal(clone)
+    }, revealDelay)
+
     await new Promise((resolve) => {
         let settled = false
         const done = () => {
@@ -144,24 +171,28 @@ export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_
             done()
         }
         clone.addEventListener('transitionend', onEnd)
-        setTimeout(done, duration + 120)
+        setTimeout(done, duration + 80)
     })
 
     if (!active || active.clone !== clone) return
 
-    targetImg.style.opacity = ''
-    document.documentElement.classList.remove('image-expand-active')
-    document.documentElement.classList.add('image-expand-settling')
+    if (active.revealTimer != null) {
+        window.clearTimeout(active.revealTimer)
+        active.revealTimer = null
+    }
+    // Ensure reveal ran even if the lead timer was late.
+    if (!document.documentElement.classList.contains('image-expand-settling')) {
+        beginReveal(clone)
+    }
 
     requestAnimationFrame(() => {
         clone.remove()
         if (active?.clone === clone) active = null
-        document.documentElement.classList.add('image-expand-revealed')
         window.setTimeout(() => {
             document.documentElement.classList.remove(
                 'image-expand-settling',
                 'image-expand-revealed',
             )
-        }, 500)
+        }, 450)
     })
 }
