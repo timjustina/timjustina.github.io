@@ -848,7 +848,7 @@ export default {
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     position: relative;
     max-width: min(840px, calc(100% - var(--hero-intro-left)));
-    margin: 90px 0 0
+    margin: 110px 0 0
         var(--hero-intro-left);
 }
 
@@ -961,7 +961,7 @@ export default {
     font-style: normal;
     font-weight: calc(400 * var(--font-weight-scale));
     line-height: 33px;
-    letter-spacing: 0;
+    letter-spacing: -0.02em;
     color: var(--muted);
     font-synthesis: none;
 }
@@ -999,6 +999,7 @@ export default {
     font-size: 22px;
     font-weight: calc(500 * var(--font-weight-scale));
     line-height: 33px;
+    letter-spacing: -0.02em;
     color: #fff;
     text-decoration: none;
     box-sizing: border-box;
@@ -1119,6 +1120,7 @@ export default {
     font-weight: calc(500 * var(--font-weight-scale));
     font-size: 18px;
     line-height: 27px;
+    letter-spacing: -0.02em;
     color: #757575;
 }
 
@@ -1171,6 +1173,7 @@ export default {
     font-size: 16px;
     font-weight: calc(400 * var(--font-weight-scale));
     line-height: 25px;
+    letter-spacing: -0.02em;
     color: var(--muted);
 }
 
@@ -1181,6 +1184,7 @@ export default {
     font-size: 18px;
     font-weight: calc(500 * var(--font-weight-scale));
     line-height: 27px;
+    letter-spacing: -0.02em;
     color: var(--muted);
 }
 
@@ -1314,6 +1318,7 @@ export default {
     font-size: 16px;
     font-weight: calc(400 * var(--font-weight-scale));
     line-height: 26px;
+    letter-spacing: -0.02em;
     color: var(--text);
 }
 
@@ -1349,7 +1354,7 @@ export default {
 @media (min-width: 1454px) {
     .hero-intro-wrap {
         max-width: 840px;
-        margin: 90px 0 0 var(--hero-intro-left);
+        margin: 110px 0 0 var(--hero-intro-left);
     }
 
     .hero-decor {
@@ -1425,7 +1430,7 @@ export default {
 /* ≤997px: 997px artboard lock before tablet layout */
 @media (max-width: 997px) {
     .portfolio-page {
-        --hero-logo-gap: 98px;
+        --hero-logo-gap: 118px;
         /* Logo sits above the bar bottom: (120px bar − 50px nav block) / 2 */
         --top-bar-logo-inset: 35px;
     }
@@ -1615,6 +1620,7 @@ export default {
         font-size: 16px;
         font-weight: calc(400 * var(--font-weight-scale));
         line-height: 25px;
+        letter-spacing: -0.02em;
         color: #757575;
     }
 
@@ -1625,6 +1631,7 @@ export default {
         font-size: 18px;
         font-weight: calc(500 * var(--font-weight-scale));
         line-height: 27px;
+        letter-spacing: -0.02em;
         color: #757575;
     }
 

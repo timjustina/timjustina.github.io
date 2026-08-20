@@ -176,9 +176,12 @@ export default {
     --brand: #000aaa;
     --brand-active: #000444;
     --font-weight-scale: 0.95;
-    --page-max: 1454px;
-    --page-pad: clamp(100px, calc(100px + (100vw - 997px) * 40 / 457), 140px);
     --top-bar-height: 120px;
+    --top-bar-logo-height: 42px;
+    --top-bar-nav-height: 27px;
+    /* Left matches logo→top; right matches nav text→top */
+    --top-bar-edge-pad-left: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
+    --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
 }
 
 .top-bar {
@@ -202,10 +205,8 @@ export default {
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: var(--page-max);
     height: var(--top-bar-height);
-    margin: 0 auto;
-    padding: 0 var(--page-pad);
+    padding: 0 var(--top-bar-edge-pad-right) 0 var(--top-bar-edge-pad-left);
     box-sizing: border-box;
 }
 
@@ -306,11 +307,13 @@ export default {
 
     .portfolio-top-bar {
         --top-bar-height: 86px;
+        --top-bar-edge-pad-left: 20px;
+        --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
     }
 
     .top-bar-inner {
         align-items: stretch;
-        padding: 0 20px;
+        padding: 0 var(--top-bar-edge-pad-right) 0 var(--top-bar-edge-pad-left);
     }
 
     .top-bar-content {

@@ -428,6 +428,7 @@ export default {
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
   font-size: 14px;
+  letter-spacing: -0.02em;
   color: #757575;
   margin-top: 42px;
   text-align: left;
