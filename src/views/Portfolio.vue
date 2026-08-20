@@ -64,7 +64,11 @@
                     @focusin="liftHeroLine"
                     @focusout="onFeaturedFocusOut"
                 >
-                    <router-link to="/work/DashboardDesign" class="project-image-link">
+                    <router-link
+                        to="/work/DashboardDesign"
+                        class="project-image-link"
+                        @click="onFeaturedProjectNavigate"
+                    >
                         <img
                             class="project-image"
                             :src="dashboardHero"
@@ -78,7 +82,11 @@
                     <div class="project-caption">
                         <div class="project-caption-header">
                             <h2 class="project-title">
-                                <router-link to="/work/DashboardDesign" class="project-title-link">
+                                <router-link
+                                    to="/work/DashboardDesign"
+                                    class="project-title-link"
+                                    @click="onFeaturedProjectNavigate"
+                                >
                                     IoT Adherence Analytics for Caregivers: Dashboard Design
                                 </router-link>
                             </h2>
@@ -233,6 +241,11 @@ import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
+import {
+    cancelImageExpand,
+    prefersReducedMotion,
+    startImageExpand,
+} from '../utils/imageExpandTransition.js'
 
 const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
@@ -360,6 +373,35 @@ export default {
         }
     },
     methods: {
+        onFeaturedProjectNavigate(event) {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+            if (event.button != null && event.button !== 0) return
+            if (prefersReducedMotion()) return
+
+            const article = event.currentTarget.closest('.project')
+            const img = article?.querySelector('.project-image')
+            if (!img) return
+
+            event.preventDefault()
+
+            const rect = img.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) {
+                this.$router.push('/work/DashboardDesign')
+                return
+            }
+
+            startImageExpand({
+                src: img.currentSrc || img.src,
+                rect,
+                borderRadius: getComputedStyle(img).borderRadius || '12px',
+            })
+            img.style.opacity = '0'
+
+            this.$router.push('/work/DashboardDesign').catch(() => {
+                img.style.opacity = ''
+                cancelImageExpand()
+            })
+        },
         jumpToSectionHash(hash) {
             scrollToPortfolioHash(hash, { duration: 0 })
             // Keep top bar hidden after the instant jump (no scroll delta to trigger it).

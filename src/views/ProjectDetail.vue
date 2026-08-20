@@ -1,6 +1,6 @@
 <template>
-  <div :class="$style.page">
-    <PortfolioTopBar />
+  <div :class="[$style.page, overlayTopBar && $style.pageOverlayTopBar]">
+    <PortfolioTopBar :transparent="overlayTopBar" />
     <main :class="[$style.main, fullWidthImages && $style.mainFullWidthImages]">
       <slot />
     </main>
@@ -11,6 +11,10 @@
 <script>
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
+import {
+  finishImageExpand,
+  hasPendingImageExpand,
+} from '../utils/imageExpandTransition.js'
 
 export default {
   name: 'ProjectDetail',
@@ -20,6 +24,20 @@ export default {
       type: Boolean,
       default: false,
     },
+    overlayTopBar: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  mounted() {
+    if (!hasPendingImageExpand()) return
+
+    this.$nextTick(() => {
+      const heroImg = this.$el?.querySelector('.project-hero img')
+      if (heroImg) {
+        finishImageExpand(heroImg)
+      }
+    })
   },
 }
 </script>
@@ -92,6 +110,15 @@ export default {
 
 .main :global(.project-header) {
   margin-top: calc(var(--top-bar-height, 120px) + 160px);
+}
+
+/* Hero flush to viewport top; title sits below the image */
+.pageOverlayTopBar :global(.project-hero) {
+  margin-top: 0;
+}
+
+.pageOverlayTopBar :global(.project-hero + .project-header) {
+  margin-top: 160px;
 }
 
 .main :global(.project-body section) {
@@ -464,6 +491,10 @@ export default {
   .main :global(.project-header) {
     margin-top: calc(var(--top-bar-height) + 64px);
     margin-bottom: 52px;
+  }
+
+  .pageOverlayTopBar :global(.project-hero + .project-header) {
+    margin-top: 64px;
   }
 
   .main :global(.project-hero) {

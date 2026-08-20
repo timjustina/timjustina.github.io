@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Portfolio from '../views/Portfolio.vue'
 import { getAboutScrollTop, getWorkScrollTop, smoothScrollTo } from '../utils/scrollToAbout.js'
+import {
+    cancelImageExpand,
+    hasPendingImageExpand,
+} from '../utils/imageExpandTransition.js'
 
 function getHashScrollTop(hash) {
     if (hash === '#about') return getAboutScrollTop()
@@ -85,6 +89,13 @@ const router = createRouter({
 
         return { top: 0 }
     },
+})
+
+router.afterEach((to) => {
+    // Clean up a stranded flyer if we never handed off to a project hero.
+    if (to.name === 'Portfolio' && hasPendingImageExpand()) {
+        cancelImageExpand()
+    }
 })
 
 export default router

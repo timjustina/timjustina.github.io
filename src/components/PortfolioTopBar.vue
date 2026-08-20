@@ -1,6 +1,12 @@
 <template>
     <div class="portfolio-top-bar">
-        <header class="top-bar" :class="{ 'top-bar--hidden': topBarHidden }">
+        <header
+            class="top-bar"
+            :class="{
+                'top-bar--hidden': topBarHidden,
+                'top-bar--transparent': isTransparent,
+            }"
+        >
             <div class="top-bar-inner">
                 <div ref="topBarContent" class="top-bar-content">
                     <router-link to="/" class="logo-block">
@@ -59,6 +65,12 @@ const SECTION_JUMP_EVENT = 'portfolio-section-jump'
 
 export default {
     name: 'PortfolioTopBar',
+    props: {
+        transparent: {
+            type: Boolean,
+            default: false,
+        },
+    },
     data() {
         return {
             logo,
@@ -70,7 +82,13 @@ export default {
             topBarHidden: false,
             lastScrollY: 0,
             scrollTicking: false,
+            overHero: true,
         }
+    },
+    computed: {
+        isTransparent() {
+            return this.transparent && this.overHero
+        },
     },
     created() {
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
@@ -81,10 +99,13 @@ export default {
     mounted() {
         this.lastScrollY = window.scrollY
         window.addEventListener('scroll', this.onScroll, { passive: true })
+        window.addEventListener('resize', this.updateHeroOverlap, { passive: true })
         window.addEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
+        this.updateHeroOverlap()
 
         this.$nextTick(() => {
             this.updateNavCompact()
+            this.updateHeroOverlap()
             if (this.$refs.topBarContent) {
                 this.navGapObserver = new ResizeObserver(() => this.updateNavCompact())
                 this.navGapObserver.observe(this.$refs.topBarContent)
@@ -94,6 +115,7 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('scroll', this.onScroll)
+        window.removeEventListener('resize', this.updateHeroOverlap)
         window.removeEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
         this.navGapObserver?.disconnect()
     },
@@ -101,6 +123,7 @@ export default {
         onSectionJump() {
             this.topBarHidden = true
             this.lastScrollY = window.scrollY
+            this.updateHeroOverlap()
         },
         onScroll() {
             if (this.scrollTicking) return
@@ -118,9 +141,25 @@ export default {
                     this.topBarHidden = false
                 }
 
+                this.updateHeroOverlap()
                 this.lastScrollY = y
                 this.scrollTicking = false
             })
+        },
+        updateHeroOverlap() {
+            if (!this.transparent) {
+                this.overHero = false
+                return
+            }
+
+            const hero = document.querySelector('.project-hero')
+            if (!hero) {
+                this.overHero = false
+                return
+            }
+
+            // Transparent while any part of the hero still sits under the fixed bar.
+            this.overHero = hero.getBoundingClientRect().bottom > 0
         },
         onWorkClick(event) {
             // From a case study, let the router navigate; Portfolio scrolls after ready.
@@ -193,7 +232,13 @@ export default {
     width: 100%;
     background: #fff;
     transform: translateY(0);
-    transition: transform 0.3s ease;
+    transition:
+        transform 0.3s ease,
+        background-color 0.25s ease;
+}
+
+.top-bar--transparent {
+    background: transparent;
 }
 
 .top-bar--hidden {

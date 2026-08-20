@@ -1,12 +1,12 @@
 <template>
-    <ProjectDetail full-width-images>
-        <ProjectDetailHeader title="IoT Adherence Analytics for Caregivers: Dashboard Design" client="Kin Technology"
-            period="2026" />
-
+    <ProjectDetail full-width-images overlay-top-bar>
         <div class="project-hero">
             <img :src="dashboardHero" alt="Dashboard hero" width="2400" height="1352" decoding="async"
                 fetchpriority="high" />
         </div>
+
+        <ProjectDetailHeader title="IoT Adherence Analytics for Caregivers: Dashboard Design" client="Kin Technology"
+            period="2026" />
 
         <div class="project-body">
             <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />
