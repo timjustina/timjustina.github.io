@@ -122,8 +122,13 @@ export default {
     clearTimeout(this.copyResetTimer)
   },
   methods: {
-    toggle() {
+    toggle(event) {
       this.open = !this.open
+      // Drop sticky focus/hover so pressed chevron doesn’t linger on mobile
+      const trigger = event?.currentTarget
+      if (trigger && typeof trigger.blur === 'function') {
+        requestAnimationFrame(() => trigger.blur())
+      }
     },
     showCopiedToast() {
       this.copied = true
@@ -188,7 +193,8 @@ export default {
   display: block;
   width: 100%;
   max-width: none;
-  margin: 0 0 52px;
+  /* Match title → TL;DR spacing on mobile (DashboardDesign header margin-bottom) */
+  margin: 0 0 132px;
   z-index: 2;
 }
 
@@ -248,13 +254,9 @@ export default {
   opacity: 1;
 }
 
-.project-tldr-trigger:hover .project-tldr-chevron--default,
+/* Pressed state — clears on release (no sticky hover on touch) */
 .project-tldr-trigger:active .project-tldr-chevron--default {
   opacity: 0;
-}
-
-.project-tldr-trigger:hover .project-tldr-chevron--hover {
-  opacity: 1;
 }
 
 .project-tldr-trigger:active .project-tldr-chevron--hover {
@@ -263,6 +265,17 @@ export default {
 
 .project-tldr-trigger:active .project-tldr-chevron--clicked {
   opacity: 1;
+}
+
+/* Real hover only — avoids sticky “pressed” chevron after tap on mobile */
+@media (hover: hover) and (pointer: fine) {
+  .project-tldr-trigger:hover .project-tldr-chevron--default {
+    opacity: 0;
+  }
+
+  .project-tldr-trigger:hover .project-tldr-chevron--hover {
+    opacity: 1;
+  }
 }
 
 .project-tldr--open .project-tldr-chevron {
@@ -430,13 +443,15 @@ export default {
   transition: background 0.2s ease;
 }
 
-.project-tldr-copy:hover {
-  background: #1a2bff;
-}
-
 .project-tldr-copy:active {
   background: #000444;
   transition: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .project-tldr-copy:hover {
+    background: #1a2bff;
+  }
 }
 
 @media (min-width: 601px) {

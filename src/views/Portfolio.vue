@@ -1574,7 +1574,7 @@ export default {
         --page-pad: 20px;
         --top-bar-height: 86px;
         --hero-logo-gap: 64px;
-        /* Logo top 20px + 46px tall in the 86px bar */
+        /* Logo top 20px + 50.4px tall (20% bigger) in the 86px bar */
         --top-bar-logo-inset: 20px;
         /* Same gap: CTA → first image, and last project text → about */
         --mobile-block-gap: calc(2 * 84px - 25px - 20px - 15px);
