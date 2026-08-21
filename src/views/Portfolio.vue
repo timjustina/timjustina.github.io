@@ -1679,6 +1679,12 @@ export default {
         color: #4d4d4d;
     }
 
+    /* Thumbnail only — title tap must not navigate */
+    .project-title-link {
+        pointer-events: none;
+        cursor: default;
+    }
+
     .project-description {
         margin-top: 11px;
         max-width: 100%;
