@@ -468,7 +468,7 @@ import {
 } from '../data/dashboardDesignMedia.js'
 
 const DASHBOARD_TITLE =
-    'IoT Adherence Analytics for Caregivers:\nDashboard Design'
+    'IoT Adherence Analytics\nfor Caregivers:\nDashboard Design'
 
 const tldrSummaryItems = [
     {
@@ -558,9 +558,22 @@ export default {
         const title = this.getTitleEl()
         if (title) {
             title.style.fontSize = ''
+            title.style.removeProperty('font-size')
+            title.style.removeProperty('font-family')
+            title.style.removeProperty('letter-spacing')
+            title.style.removeProperty('max-width')
             title.style.whiteSpace = ''
             title.style.width = ''
             title.style.maxWidth = ''
+            title.classList.remove('is-one-line', 'is-two-line')
+            title.querySelectorAll('.project-header-title-line').forEach((line) => {
+                line.style.removeProperty('display')
+                line.style.removeProperty('width')
+                line.style.removeProperty('max-width')
+                line.style.removeProperty('white-space')
+                line.style.removeProperty('font-size')
+                line.style.removeProperty('line-height')
+            })
         }
     },
     methods: {
@@ -688,76 +701,160 @@ export default {
                 title.classList.toggle('is-two-line', mode === 'two')
             }
 
-            const maxLineWidth = () => {
-                if (!lines.length) return title.scrollWidth
-                return Math.max(...lines.map((line) => line.scrollWidth))
+            const visibleLines = () =>
+                lines.filter((line) => line.textContent.trim().length > 0)
+
+            const prepareLineForMeasure = (line) => {
+                line.style.setProperty('display', 'block', 'important')
+                line.style.setProperty('width', 'max-content', 'important')
+                line.style.setProperty('max-width', 'none', 'important')
+                line.style.setProperty('white-space', 'nowrap', 'important')
             }
 
-            // Pick the word break that makes the two lines closest in width
-            const balanceLineBreak = () => {
-                if (lines.length < 2) return
+            const maxLineWidth = () => {
+                const active = visibleLines()
+                if (!active.length) return title.scrollWidth
+                let max = 0
+                for (const line of active) {
+                    prepareLineForMeasure(line)
+                    max = Math.max(max, line.getBoundingClientRect().width)
+                }
+                return max
+            }
+
+            // Distribute words across `count` lines with the most even widths
+            const balanceLineBreak = (count) => {
+                if (lines.length < 2 || count < 2) return
                 const words = lines
                     .map((line) => line.textContent.trim())
                     .join(' ')
                     .split(/\s+/)
                     .filter(Boolean)
-                if (words.length < 2) return
+                if (words.length < count) return
 
-                const probe = 40
-                title.style.fontSize = `${probe}px`
+                title.style.setProperty('font-size', '40px', 'important')
                 setMode('two')
+                lines.forEach((line) => {
+                    line.style.removeProperty('display')
+                })
                 void title.offsetWidth
 
-                let bestSplit = Math.floor(words.length / 2)
-                let bestDiff = Infinity
-                for (let i = 1; i < words.length; i++) {
-                    lines[0].textContent = words.slice(0, i).join(' ')
-                    lines[1].textContent = words.slice(i).join(' ')
-                    void title.offsetWidth
-                    const diff = Math.abs(
-                        lines[0].scrollWidth - lines[1].scrollWidth
-                    )
-                    if (diff < bestDiff) {
-                        bestDiff = diff
-                        bestSplit = i
+                const applySplits = (splits) => {
+                    const ends = [...splits, words.length]
+                    let start = 0
+                    for (let i = 0; i < lines.length; i++) {
+                        if (i < count) {
+                            const end = ends[i]
+                            lines[i].textContent = words.slice(start, end).join(' ')
+                            lines[i].style.removeProperty('display')
+                            prepareLineForMeasure(lines[i])
+                            start = end
+                        } else {
+                            lines[i].textContent = ''
+                            lines[i].style.setProperty('display', 'none', 'important')
+                        }
                     }
                 }
 
-                lines[0].textContent = words.slice(0, bestSplit).join(' ')
-                lines[1].textContent = words.slice(bestSplit).join(' ')
+                let bestSplits = null
+                let bestDiff = Infinity
+
+                if (count === 2) {
+                    for (let i = 1; i < words.length; i++) {
+                        applySplits([i])
+                        void title.offsetWidth
+                        const widths = visibleLines().map(
+                            (line) => line.getBoundingClientRect().width
+                        )
+                        const diff = Math.max(...widths) - Math.min(...widths)
+                        if (diff < bestDiff) {
+                            bestDiff = diff
+                            bestSplits = [i]
+                        }
+                    }
+                } else if (count === 3) {
+                    for (let i = 1; i < words.length - 1; i++) {
+                        for (let j = i + 1; j < words.length; j++) {
+                            applySplits([i, j])
+                            void title.offsetWidth
+                            const widths = visibleLines().map(
+                                (line) => line.getBoundingClientRect().width
+                            )
+                            const diff = Math.max(...widths) - Math.min(...widths)
+                            if (diff < bestDiff) {
+                                bestDiff = diff
+                                bestSplits = [i, j]
+                            }
+                        }
+                    }
+                }
+
+                if (bestSplits) applySplits(bestSplits)
             }
 
-            const fitTwoLines = () => {
+            const fitMultiLines = (count) => {
                 setMode('two')
                 title.style.whiteSpace = ''
                 title.style.width = '100%'
-                title.style.maxWidth = 'none'
-                balanceLineBreak()
+                title.style.setProperty('font-family', "'Fira Code', monospace", 'important')
+                title.style.setProperty('letter-spacing', '-0.02em', 'important')
+                title.style.setProperty('max-width', 'none', 'important')
 
-                // Measure intrinsic text width (lines use width: max-content)
-                const probe = Math.max(minPx, 40)
-                title.style.fontSize = `${probe}px`
-                void title.offsetWidth
-                const probed = maxLineWidth()
-                if (probed <= 0) {
-                    this.onTitleExitScroll()
-                    return
-                }
+                balanceLineBreak(count)
 
-                // Grow until the longer line spans the full viewport
-                let size = Math.floor(probe * (targetWidth / probed))
-                size = Math.max(minPx, size)
-                title.style.fontSize = `${size}px`
-                void title.offsetWidth
+                const fitLineToViewport = (line) => {
+                    prepareLineForMeasure(line)
+                    const probe = 20
+                    line.style.setProperty('font-size', `${probe}px`, 'important')
+                    line.style.setProperty('line-height', '1.15', 'important')
+                    void line.offsetWidth
+                    const probed = line.getBoundingClientRect().width
+                    if (probed <= 0) return
 
-                // Fine-tune: largest size that still fits
-                if (maxLineWidth() < targetWidth - 1 || maxLineWidth() > targetWidth + 0.5) {
+                    const scaled = Math.ceil(probe * (targetWidth / probed))
                     let lo = minPx
-                    let hi = Math.max(size * 2, Math.ceil(targetWidth / 2))
+                    let hi = Math.max(scaled + 40, Math.ceil(targetWidth / 2))
                     let best = minPx
                     while (lo <= hi) {
                         const mid = (lo + hi) >> 1
-                        title.style.fontSize = `${mid}px`
+                        line.style.setProperty('font-size', `${mid}px`, 'important')
+                        void line.offsetWidth
+                        if (line.getBoundingClientRect().width <= targetWidth + 0.5) {
+                            best = mid
+                            lo = mid + 1
+                        } else {
+                            hi = mid - 1
+                        }
+                    }
+                    line.style.setProperty('font-size', `${best}px`, 'important')
+                }
+
+                if (count >= 3) {
+                    // Each line gets its own size so all three fill the viewport width
+                    title.style.removeProperty('font-size')
+                    visibleLines().forEach(fitLineToViewport)
+                } else {
+                    // Shared size: scale so the longest line fills the viewport
+                    const probe = 20
+                    title.style.setProperty('font-size', `${probe}px`, 'important')
+                    visibleLines().forEach((line) => {
+                        line.style.removeProperty('font-size')
+                        prepareLineForMeasure(line)
+                    })
+                    void title.offsetWidth
+                    const probed = maxLineWidth()
+                    if (probed <= 0) {
+                        this.onTitleExitScroll()
+                        return
+                    }
+
+                    const scaled = Math.ceil(probe * (targetWidth / probed))
+                    let lo = minPx
+                    let hi = Math.max(scaled + 40, Math.ceil(targetWidth / 2))
+                    let best = minPx
+                    while (lo <= hi) {
+                        const mid = (lo + hi) >> 1
+                        title.style.setProperty('font-size', `${mid}px`, 'important')
                         void title.offsetWidth
                         if (maxLineWidth() <= targetWidth + 0.5) {
                             best = mid
@@ -766,21 +863,29 @@ export default {
                             hi = mid - 1
                         }
                     }
-                    title.style.fontSize = `${best}px`
+                    title.style.setProperty('font-size', `${best}px`, 'important')
                 }
 
                 this.onTitleExitScroll()
             }
 
-            // Always exactly two nowrap lines on mobile; desktop uses two when one line won't fit at ≥40px
+            // Mobile: always three nowrap lines spanning the viewport width
             if (isMobile) {
-                fitTwoLines()
+                fitMultiLines(3)
                 return
             }
 
             if (lines.length > 1) {
                 // Desktop: prefer one line when it fits at ≥40px
                 setMode('one')
+                lines.forEach((line) => {
+                    line.style.removeProperty('display')
+                    line.style.removeProperty('font-size')
+                    line.style.removeProperty('line-height')
+                    line.style.removeProperty('width')
+                    line.style.removeProperty('max-width')
+                    line.style.removeProperty('white-space')
+                })
                 title.style.whiteSpace = 'nowrap'
                 title.style.width = 'max-content'
                 title.style.maxWidth = 'none'
@@ -788,7 +893,7 @@ export default {
                 void title.offsetWidth
 
                 if (title.scrollWidth > targetWidth + 0.5) {
-                    fitTwoLines()
+                    fitMultiLines(2)
                     return
                 }
 
@@ -913,7 +1018,7 @@ export default {
         width: 100% !important;
         max-width: none !important;
         margin-left: 0 !important;
-        margin-bottom: 82px;
+        margin-bottom: 132px;
         padding: 0 !important;
         gap: 0;
     }
@@ -931,7 +1036,7 @@ export default {
         font-weight: calc(400 * var(--font-weight-scale));
     }
 
-    /* Always two nowrap lines on mobile (even before JS adds .is-two-line) */
+    /* Always three nowrap lines on mobile (even before JS adds .is-two-line) */
     .dashboard-project-header.project-header
         h1.project-header-title
         .project-header-title-line {
