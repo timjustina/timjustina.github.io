@@ -1597,13 +1597,14 @@ export default {
     .cta-button {
         --hero-cta-width: 225px;
         width: var(--hero-cta-width);
-        height: 49px;
-        min-height: 49px;
+        height: 54px;
+        min-height: 54px;
         min-width: var(--hero-cta-width);
         margin-left: max(0px, calc(100% - var(--hero-cta-width)));
-        padding: 8px 20px;
-        font-size: 22px;
-        line-height: 33px;
+        padding: 12px 24px;
+        font-size: 20px;
+        line-height: 30px;
+        white-space: nowrap;
     }
 
     .work {
@@ -1626,11 +1627,20 @@ export default {
     }
 
     .project-image-link,
-    .project-image-wrap,
+    .project-image-wrap {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        border-radius: 12px;
+    }
+
     .project-image {
         width: 100%;
         max-width: 100%;
-        height: auto;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
     }
 
     .project-caption {
