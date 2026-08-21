@@ -1209,10 +1209,16 @@ export default {
 .project-title-link {
     color: inherit;
     text-decoration: none;
-    transition: color 0.25s ease;
+    /* Match thumbnail border-radius timing */
+    transition: color 0.45s ease;
 }
 
-/* Pointer devices only — avoid sticky brand color after tap on touch */
+/* Touch / press: blue while held, eases back on release (same as thumbnail) */
+.project:not(.project--upcoming):active .project-title-link {
+    color: var(--brand);
+}
+
+/* Pointer devices: hover / focus */
 @media (hover: hover) and (pointer: fine) {
     .project:hover .project-title-link,
     .project:focus-within .project-title-link {
@@ -1686,13 +1692,6 @@ export default {
     .project-title-link {
         pointer-events: none;
         cursor: default;
-        color: inherit;
-    }
-
-    .project:active .project-title-link,
-    .project:focus-within .project-title-link,
-    .project:hover .project-title-link {
-        color: inherit;
     }
 
     .project-description {
