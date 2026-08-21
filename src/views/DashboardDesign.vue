@@ -569,8 +569,8 @@ export default {
             }
 
             const heroBottom = hero.getBoundingClientRect().bottom
-            // Only start once ≤200px of the hero remains in the viewport
-            const startBottom = 200
+            // Only start once ≤300px of the hero remains in the viewport
+            const startBottom = 300
             if (heroBottom > startBottom) {
                 this.clearTitleExitStyles()
                 return
@@ -590,7 +590,7 @@ export default {
                 return
             }
 
-            const scale = 1 + progress * 1.15
+            const scale = 1 + progress * 2
             const opacity = 1 - progress
             title.style.transform = `scale(${scale})`
             title.style.opacity = String(opacity)
