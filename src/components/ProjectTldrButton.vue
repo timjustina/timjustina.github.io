@@ -215,10 +215,6 @@ export default {
   box-sizing: border-box;
 }
 
-.project-tldr-trigger:active {
-  color: #000444;
-}
-
 .project-tldr-label {
   font-family: 'Fira Code', monospace;
   font-style: normal;
