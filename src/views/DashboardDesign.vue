@@ -5,8 +5,10 @@
                 fetchpriority="high" />
         </div>
 
-        <ProjectDetailHeader title="IoT Adherence Analytics for Caregivers: Dashboard Design" client="Kin Technology"
-            period="2026" />
+        <ProjectDetailHeader
+            class="dashboard-project-header"
+            title="IoT Adherence Analytics for Caregivers: Dashboard Design"
+        />
 
         <div class="project-body">
             <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />
@@ -488,7 +490,92 @@ export default {
             vid7,
             tldrSummaryItems,
             tldrMarkdown,
+            titleFitRaf: null,
+            titleFitObserver: null,
         }
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.fitTitleToWidth()
+            document.fonts?.ready?.then(() => this.fitTitleToWidth())
+
+            const header = this.getTitleEl()?.closest('.dashboard-project-header')
+            if (typeof ResizeObserver !== 'undefined') {
+                this.titleFitObserver = new ResizeObserver(() => this.scheduleFitTitleToWidth())
+                if (header) this.titleFitObserver.observe(header)
+                this.titleFitObserver.observe(document.documentElement)
+            }
+            window.addEventListener('resize', this.scheduleFitTitleToWidth, { passive: true })
+        })
+    },
+    beforeUnmount() {
+        if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
+        this.titleFitObserver?.disconnect()
+        window.removeEventListener('resize', this.scheduleFitTitleToWidth)
+        const title = this.getTitleEl()
+        if (title) {
+            title.style.fontSize = ''
+            title.style.whiteSpace = ''
+            title.style.width = ''
+            title.style.maxWidth = ''
+        }
+    },
+    methods: {
+        getTitleEl() {
+            return this.$el?.querySelector?.('.dashboard-project-header .project-header-title') ?? null
+        },
+        scheduleFitTitleToWidth() {
+            if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
+            this.titleFitRaf = requestAnimationFrame(() => {
+                this.titleFitRaf = null
+                this.fitTitleToWidth()
+            })
+        },
+        fitTitleToWidth() {
+            const title = this.getTitleEl()
+            if (!title) return
+
+            // Mobile keeps a fixed size from CSS (may wrap)
+            if (window.matchMedia('(max-width: 600px)').matches) {
+                title.style.fontSize = ''
+                title.style.whiteSpace = ''
+                title.style.width = ''
+                return
+            }
+
+            const targetWidth = document.documentElement.clientWidth
+            if (targetWidth <= 0) return
+
+            // Measure intrinsic text width (not constrained by a narrow parent)
+            title.style.whiteSpace = 'nowrap'
+            title.style.width = 'max-content'
+            title.style.maxWidth = 'none'
+
+            const minPx = 12
+            const maxPx = Math.max(48, Math.floor(targetWidth / 6))
+            let lo = minPx
+            let hi = maxPx
+            let best = minPx
+
+            const fits = (size) => {
+                title.style.fontSize = `${size}px`
+                void title.offsetWidth
+                return title.scrollWidth <= targetWidth + 0.5
+            }
+
+            while (lo <= hi) {
+                const mid = (lo + hi) >> 1
+                if (fits(mid)) {
+                    best = mid
+                    lo = mid + 1
+                } else {
+                    hi = mid - 1
+                }
+            }
+
+            title.style.fontSize = `${best}px`
+            title.style.width = '100%'
+        },
     },
 }
 </script>
@@ -496,5 +583,53 @@ export default {
 <style>
 .full-image.affinity-figure .caption {
     margin-top: 35px;
+}
+
+.dashboard-project-header.project-header {
+    /* Beat scoped header max-width so the title can span the viewport */
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    /* Match TL;DR → next section spacing (.project-tldr margin-bottom) + 30px */
+    margin-bottom: 150px;
+    padding: 0 !important;
+    box-sizing: border-box;
+    text-align: left;
+    align-items: stretch !important;
+    gap: 0;
+}
+
+.dashboard-project-header.project-header h1.project-header-title {
+    width: 100% !important;
+    max-width: none !important;
+    font-family: 'Fira Code', monospace;
+    font-style: normal;
+    font-weight: calc(400 * var(--font-weight-scale));
+    font-size: 64px; /* fallback; JS fits to page width above mobile */
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-align: left;
+    color: #bababa;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .dashboard-project-header.project-header {
+        width: 100% !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-bottom: 82px;
+        padding: 0 !important;
+        gap: 0;
+    }
+
+    .dashboard-project-header.project-header h1.project-header-title {
+        width: 100% !important;
+        font-size: 40px;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        white-space: normal;
+    }
 }
 </style>

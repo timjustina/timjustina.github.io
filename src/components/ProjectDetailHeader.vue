@@ -1,10 +1,10 @@
 <template>
     <header class="project-header">
         <h1 class="project-header-title">{{ title }}</h1>
-        <div class="project-header-meta">
-            <span>{{ client }}</span>
-            <span class="project-header-meta-divider" aria-hidden="true" />
-            <span>{{ period }}</span>
+        <div v-if="client || period" class="project-header-meta">
+            <span v-if="client">{{ client }}</span>
+            <span v-if="client && period" class="project-header-meta-divider" aria-hidden="true" />
+            <span v-if="period">{{ period }}</span>
         </div>
     </header>
 </template>
@@ -19,11 +19,11 @@ export default {
         },
         client: {
             type: String,
-            required: true,
+            default: '',
         },
         period: {
             type: String,
-            required: true,
+            default: '',
         },
     },
 }

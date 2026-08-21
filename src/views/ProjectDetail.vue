@@ -118,7 +118,7 @@ export default {
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header) {
-  margin-top: 160px;
+  margin-top: 20px;
 }
 
 .main :global(.project-body section) {
@@ -494,7 +494,7 @@ export default {
   }
 
   .pageOverlayTopBar :global(.project-hero + .project-header) {
-    margin-top: 64px;
+    margin-top: 20px;
   }
 
   .main :global(.project-hero) {
