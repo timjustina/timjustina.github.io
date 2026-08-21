@@ -1,6 +1,15 @@
 <template>
     <header class="project-header">
-        <h1 class="project-header-title">{{ title }}</h1>
+        <h1 class="project-header-title">
+            <template v-if="titleLines.length > 1">
+                <span
+                    v-for="(line, index) in titleLines"
+                    :key="index"
+                    class="project-header-title-line"
+                >{{ line }}</span>
+            </template>
+            <template v-else>{{ title }}</template>
+        </h1>
         <div v-if="client || period" class="project-header-meta">
             <span v-if="client">{{ client }}</span>
             <span v-if="client && period" class="project-header-meta-divider" aria-hidden="true" />
@@ -24,6 +33,14 @@ export default {
         period: {
             type: String,
             default: '',
+        },
+    },
+    computed: {
+        titleLines() {
+            return String(this.title)
+                .split(/\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
         },
     },
 }

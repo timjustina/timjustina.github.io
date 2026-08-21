@@ -175,7 +175,10 @@ export default {
   width: 100vw;
   max-width: 100vw;
   margin: 0 calc(50% - 50vw);
-  text-align: center;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .main :global(.project-header + .project-hero) {
@@ -188,13 +191,18 @@ export default {
 
 .main :global(.project-hero picture) {
   display: block;
-  width: 100%;
+  flex-shrink: 0;
+  width: auto;
+  max-width: none;
 }
 
 .main :global(.project-hero img) {
-  width: 100%;
+  /* Keep intrinsic size; centre-crop when wider than the viewport */
+  width: auto;
+  max-width: none;
   height: auto;
   display: block;
+  flex-shrink: 0;
 }
 
 .main :global(.project-body section + section) {
@@ -501,6 +509,14 @@ export default {
 
   .main :global(.project-hero) {
     margin-top: 0;
+  }
+
+  .main :global(.project-hero picture),
+  .main :global(.project-hero img) {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    flex-shrink: 1;
   }
 
   .main :global(.project-hero + .project-body) {

@@ -7,7 +7,8 @@
 
         <ProjectDetailHeader
             class="dashboard-project-header"
-            title="IoT Adherence Analytics for Caregivers: Dashboard Design"
+            title="IoT Adherence Analytics for Caregivers:
+Dashboard Design"
         />
 
         <div class="project-body">
@@ -433,6 +434,17 @@
                 </ul>
             </section>
         </div>
+
+        <div class="dashboard-ball-stage" aria-hidden="true">
+            <img
+                class="about-ball"
+                :class="{ 'about-ball--dropped': aboutBallDropped }"
+                :src="aboutSquiggle"
+                alt=""
+                width="59"
+                height="56"
+            />
+        </div>
     </ProjectDetail>
 </template>
 
@@ -443,6 +455,7 @@ import ProjectTldrButton from '../components/ProjectTldrButton.vue'
 import ZoomableImage from '../components/ZoomableImage.vue'
 import VideoPair from '../components/VideoPair.vue'
 import tldrMarkdown from '../data/dashboardDesignCaseStudy.md?raw'
+import aboutSquiggle from '../assets/squiggle_3.svg'
 import {
     dashboardHero,
     svg1Cover,
@@ -490,10 +503,13 @@ export default {
             vid7,
             tldrSummaryItems,
             tldrMarkdown,
+            aboutSquiggle,
+            aboutBallDropped: false,
             titleFitRaf: null,
             titleFitObserver: null,
             titleExitRaf: null,
             reduceMotionMq: null,
+            ballPosObserver: null,
         }
     },
     mounted() {
@@ -513,14 +529,27 @@ export default {
             this.reduceMotionMq.addEventListener?.('change', this.onTitleExitScroll)
             window.addEventListener('scroll', this.onTitleExitScroll, { passive: true })
             this.onTitleExitScroll()
+
+            this.syncAboutBallPosition()
+            window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
+            window.addEventListener('resize', this.syncAboutBallPosition, { passive: true })
+            const body = this.$el?.querySelector?.('.project-body')
+            if (body && typeof ResizeObserver !== 'undefined') {
+                this.ballPosObserver = new ResizeObserver(() => this.syncAboutBallPosition())
+                this.ballPosObserver.observe(body)
+            }
+            this.onAboutBallScroll()
         })
     },
     beforeUnmount() {
         if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
         if (this.titleExitRaf != null) cancelAnimationFrame(this.titleExitRaf)
         this.titleFitObserver?.disconnect()
+        this.ballPosObserver?.disconnect()
         window.removeEventListener('resize', this.scheduleFitTitleToWidth)
         window.removeEventListener('scroll', this.onTitleExitScroll)
+        window.removeEventListener('scroll', this.onAboutBallScroll)
+        window.removeEventListener('resize', this.syncAboutBallPosition)
         this.reduceMotionMq?.removeEventListener?.('change', this.onTitleExitScroll)
         this.clearTitleExitStyles()
         const title = this.getTitleEl()
@@ -537,6 +566,9 @@ export default {
         },
         getHeroEl() {
             return this.$el?.querySelector?.('.project-hero') ?? null
+        },
+        getFooterEl() {
+            return this.$el?.querySelector?.('.site-footer') ?? null
         },
         scheduleFitTitleToWidth() {
             if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
@@ -595,42 +627,204 @@ export default {
             title.style.transform = `scale(${scale})`
             title.style.opacity = String(opacity)
         },
+        onAboutBallScroll() {
+            if (this.aboutBallDropped) return
+            if (window.matchMedia('(max-width: 600px)').matches) return
+            if (this.reduceMotionMq?.matches) return
+
+            const footer = this.getFooterEl()
+            if (!footer) return
+
+            // Trigger when the top edge of the bottom bar reaches the viewport bottom
+            if (footer.getBoundingClientRect().top <= window.innerHeight) {
+                this.startAboutBallDrop()
+            }
+        },
+        startAboutBallDrop() {
+            if (this.aboutBallDropped) return
+            if (window.matchMedia('(max-width: 600px)').matches) return
+            this.syncAboutBallPosition()
+            this.aboutBallDropped = true
+            window.removeEventListener('scroll', this.onAboutBallScroll)
+        },
+        syncAboutBallPosition() {
+            const stage = this.$el?.querySelector?.('.dashboard-ball-stage')
+            const body = this.$el?.querySelector?.('.project-body')
+            if (!stage || !body) return
+
+            const stageRect = stage.getBoundingClientRect()
+            const bodyRect = body.getBoundingClientRect()
+            const styles = getComputedStyle(stage)
+            const ballSize =
+                parseFloat(styles.getPropertyValue('--about-ball-size')) || 49
+            const gap = 16
+            const maxX = Math.max(16, stage.clientWidth - ballSize - 16)
+            // Nudge 100px right of the body edge
+            const x = Math.max(
+                16,
+                Math.min(bodyRect.right - stageRect.left + gap + 100, maxX)
+            )
+            stage.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
+        },
         fitTitleToWidth() {
             const title = this.getTitleEl()
             if (!title) return
 
-            // Mobile keeps a fixed size from CSS (may wrap)
-            if (window.matchMedia('(max-width: 600px)').matches) {
-                title.style.fontSize = ''
+            const targetWidth = document.documentElement.clientWidth
+            if (targetWidth <= 0) return
+
+            const lines = [
+                ...title.querySelectorAll('.project-header-title-line'),
+            ]
+            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            const minPx = isMobile ? 12 : 40
+            const maxPxOneLine = Math.max(minPx, Math.floor(targetWidth / 6))
+
+            const setMode = (mode) => {
+                title.classList.toggle('is-one-line', mode === 'one')
+                title.classList.toggle('is-two-line', mode === 'two')
+            }
+
+            const maxLineWidth = () => {
+                if (!lines.length) return title.scrollWidth
+                return Math.max(...lines.map((line) => line.scrollWidth))
+            }
+
+            // Pick the word break that makes the two lines closest in width
+            const balanceLineBreak = () => {
+                if (lines.length < 2) return
+                const words = lines
+                    .map((line) => line.textContent.trim())
+                    .join(' ')
+                    .split(/\s+/)
+                    .filter(Boolean)
+                if (words.length < 2) return
+
+                const probe = 40
+                title.style.fontSize = `${probe}px`
+                setMode('two')
+                void title.offsetWidth
+
+                let bestSplit = Math.floor(words.length / 2)
+                let bestDiff = Infinity
+                for (let i = 1; i < words.length; i++) {
+                    lines[0].textContent = words.slice(0, i).join(' ')
+                    lines[1].textContent = words.slice(i).join(' ')
+                    void title.offsetWidth
+                    const diff = Math.abs(
+                        lines[0].scrollWidth - lines[1].scrollWidth
+                    )
+                    if (diff < bestDiff) {
+                        bestDiff = diff
+                        bestSplit = i
+                    }
+                }
+
+                lines[0].textContent = words.slice(0, bestSplit).join(' ')
+                lines[1].textContent = words.slice(bestSplit).join(' ')
+            }
+
+            const fitTwoLines = () => {
+                setMode('two')
                 title.style.whiteSpace = ''
-                title.style.width = ''
+                title.style.width = '100%'
+                title.style.maxWidth = 'none'
+                balanceLineBreak()
+
+                // Measure intrinsic text width (lines use width: max-content)
+                const probe = Math.max(minPx, 40)
+                title.style.fontSize = `${probe}px`
+                void title.offsetWidth
+                const probed = maxLineWidth()
+                if (probed <= 0) {
+                    this.onTitleExitScroll()
+                    return
+                }
+
+                // Grow until the longer line spans the full viewport
+                let size = Math.floor(probe * (targetWidth / probed))
+                size = Math.max(minPx, size)
+                title.style.fontSize = `${size}px`
+                void title.offsetWidth
+
+                // Fine-tune: largest size that still fits
+                if (maxLineWidth() < targetWidth - 1 || maxLineWidth() > targetWidth + 0.5) {
+                    let lo = minPx
+                    let hi = Math.max(size * 2, Math.ceil(targetWidth / 2))
+                    let best = minPx
+                    while (lo <= hi) {
+                        const mid = (lo + hi) >> 1
+                        title.style.fontSize = `${mid}px`
+                        void title.offsetWidth
+                        if (maxLineWidth() <= targetWidth + 0.5) {
+                            best = mid
+                            lo = mid + 1
+                        } else {
+                            hi = mid - 1
+                        }
+                    }
+                    title.style.fontSize = `${best}px`
+                }
+
+                this.onTitleExitScroll()
+            }
+
+            // Mobile (and any forced two-line layout): exactly two nowrap lines
+            if (isMobile || lines.length > 1) {
+                if (isMobile) {
+                    fitTwoLines()
+                    return
+                }
+
+                // Desktop: prefer one line when it fits at ≥40px
+                setMode('one')
+                title.style.whiteSpace = 'nowrap'
+                title.style.width = 'max-content'
+                title.style.maxWidth = 'none'
+                title.style.fontSize = `${minPx}px`
+                void title.offsetWidth
+
+                if (title.scrollWidth > targetWidth + 0.5) {
+                    fitTwoLines()
+                    return
+                }
+
+                let lo = minPx
+                let hi = maxPxOneLine
+                let best = minPx
+                while (lo <= hi) {
+                    const mid = (lo + hi) >> 1
+                    title.style.fontSize = `${mid}px`
+                    void title.offsetWidth
+                    if (title.scrollWidth <= targetWidth + 0.5) {
+                        best = mid
+                        lo = mid + 1
+                    } else {
+                        hi = mid - 1
+                    }
+                }
+
+                title.style.fontSize = `${best}px`
+                title.style.whiteSpace = 'nowrap'
+                title.style.width = '100%'
                 this.onTitleExitScroll()
                 return
             }
 
-            const targetWidth = document.documentElement.clientWidth
-            if (targetWidth <= 0) return
-
-            // Measure intrinsic text width (not constrained by a narrow parent)
+            // Single-line titles (no explicit break)
+            setMode('one')
             title.style.whiteSpace = 'nowrap'
             title.style.width = 'max-content'
             title.style.maxWidth = 'none'
 
-            const minPx = 12
-            const maxPx = Math.max(48, Math.floor(targetWidth / 6))
             let lo = minPx
-            let hi = maxPx
+            let hi = maxPxOneLine
             let best = minPx
-
-            const fits = (size) => {
-                title.style.fontSize = `${size}px`
-                void title.offsetWidth
-                return title.scrollWidth <= targetWidth + 0.5
-            }
-
             while (lo <= hi) {
                 const mid = (lo + hi) >> 1
-                if (fits(mid)) {
+                title.style.fontSize = `${mid}px`
+                void title.offsetWidth
+                if (title.scrollWidth <= targetWidth + 0.5) {
                     best = mid
                     lo = mid + 1
                 } else {
@@ -682,6 +876,35 @@ export default {
     will-change: transform, opacity;
 }
 
+/* Explicit two-line layout: each line is nowrap so it never spills to 3+ */
+.dashboard-project-header.project-header h1.project-header-title.is-two-line {
+    white-space: normal;
+}
+
+.dashboard-project-header.project-header
+    h1.project-header-title.is-two-line
+    .project-header-title-line {
+    display: block;
+    white-space: nowrap;
+    /* Intrinsic width so we can scale text to fill the viewport */
+    width: max-content;
+    max-width: none;
+}
+
+.dashboard-project-header.project-header
+    h1.project-header-title.is-one-line
+    .project-header-title-line {
+    display: inline;
+    white-space: nowrap;
+}
+
+.dashboard-project-header.project-header
+    h1.project-header-title.is-one-line
+    .project-header-title-line
+    + .project-header-title-line::before {
+    content: ' ';
+}
+
 @media (max-width: 600px) {
     .dashboard-project-header.project-header {
         width: 100% !important;
@@ -694,10 +917,112 @@ export default {
 
     .dashboard-project-header.project-header h1.project-header-title {
         width: 100% !important;
-        font-size: 40px;
+        font-size: 40px; /* fallback; JS scales so both lines fit */
         line-height: 1.15;
         letter-spacing: -0.02em;
-        white-space: normal;
+    }
+
+    .dashboard-ball-stage {
+        display: none;
+    }
+}
+
+/* Floor at the bottom of the footer */
+.dashboard-ball-stage {
+    --about-ball-size: 49px;
+    --about-ball-height: 46px;
+    --site-footer-height: 120px;
+    position: relative;
+    width: 100%;
+    height: 0;
+    /* Through the main bottom pad, then to the footer's bottom edge */
+    top: calc(var(--project-bottom-pad, 180px) + var(--site-footer-height));
+    z-index: 5;
+    pointer-events: none;
+}
+
+.dashboard-ball-stage .about-ball {
+    position: absolute;
+    left: var(--about-ball-x, 50%);
+    bottom: 0;
+    z-index: 5;
+    width: var(--about-ball-size);
+    height: var(--about-ball-height);
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(0, -1100px, 0) rotate(0deg);
+    transform-origin: center center;
+}
+
+.dashboard-ball-stage .about-ball--dropped {
+    opacity: 1;
+}
+</style>
+
+<style>
+/* Unscoped so the keyframe name isn’t rewritten away from the animation. */
+.dashboard-ball-stage .about-ball.about-ball--dropped {
+    animation: about-ball-fall 1.4s linear forwards;
+}
+
+@keyframes about-ball-fall {
+    /* Fall + 4 decaying bounces left, rolling counter-clockwise */
+    0% {
+        opacity: 1;
+        transform: translate3d(0, -1100px, 0) rotate(0deg);
+        animation-timing-function: cubic-bezier(0.55, 0.05, 0.8, 0.4);
+    }
+
+    /* First impact */
+    40% {
+        transform: translate3d(0, 0, 0) rotate(-460deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 1 */
+    49% {
+        transform: translate3d(-15px, -78px, 0) rotate(-510deg);
+        animation-timing-function: ease-in;
+    }
+
+    57% {
+        transform: translate3d(-29px, 0, 0) rotate(-550deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 2 */
+    64% {
+        transform: translate3d(-39px, -34px, 0) rotate(-585deg);
+        animation-timing-function: ease-in;
+    }
+
+    71% {
+        transform: translate3d(-49px, 0, 0) rotate(-615deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 3 */
+    77% {
+        transform: translate3d(-55px, -15px, 0) rotate(-640deg);
+        animation-timing-function: ease-in;
+    }
+
+    83% {
+        transform: translate3d(-62px, 0, 0) rotate(-660deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 4 → settle */
+    88% {
+        transform: translate3d(-66px, -6px, 0) rotate(-675deg);
+        animation-timing-function: ease-in;
+    }
+
+    93%,
+    100% {
+        opacity: 1;
+        transform: translate3d(-70px, 0, 0) rotate(-690deg);
     }
 }
 </style>
