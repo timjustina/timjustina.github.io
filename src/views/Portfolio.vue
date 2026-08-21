@@ -1212,9 +1212,12 @@ export default {
     transition: color 0.25s ease;
 }
 
-.project:hover .project-title-link,
-.project:focus-within .project-title-link {
-    color: var(--brand);
+/* Pointer devices only — avoid sticky brand color after tap on touch */
+@media (hover: hover) and (pointer: fine) {
+    .project:hover .project-title-link,
+    .project:focus-within .project-title-link {
+        color: var(--brand);
+    }
 }
 
 .project-description {
@@ -1683,6 +1686,13 @@ export default {
     .project-title-link {
         pointer-events: none;
         cursor: default;
+        color: inherit;
+    }
+
+    .project:active .project-title-link,
+    .project:focus-within .project-title-link,
+    .project:hover .project-title-link {
+        color: inherit;
     }
 
     .project-description {
