@@ -379,12 +379,10 @@ export default {
 }
 
 .mainFullWidthImages :global(.full-image:not(.hero-image):not(.project-hero)) {
-  --project-media-width: min(
-    calc(var(--page-max) - 2 * var(--page-pad)),
-    calc(100vw - 2 * var(--page-pad))
-  );
+  --project-media-side-pad: 39px;
+  --project-media-width: calc(100vw - 2 * var(--project-media-side-pad));
   width: var(--project-media-width);
-  max-width: calc(var(--page-max) - 2 * var(--page-pad));
+  max-width: none;
   left: auto;
   margin-left: calc(
     (100vw - var(--project-media-width)) / 2 - var(--project-body-left)
@@ -394,12 +392,10 @@ export default {
 
 .mainFullWidthImages :global(.project-body .full-image),
 .mainFullWidthImages :global(.project-body .video-pair) {
-  --project-media-width: min(
-    calc(var(--page-max) - 2 * var(--page-pad)),
-    calc(100vw - 2 * var(--page-pad))
-  );
+  --project-media-side-pad: 39px;
+  --project-media-width: calc(100vw - 2 * var(--project-media-side-pad));
   width: var(--project-media-width);
-  max-width: calc(var(--page-max) - 2 * var(--page-pad));
+  max-width: none;
   position: relative;
   left: auto;
   margin: var(--project-media-gap) 0;
@@ -407,6 +403,12 @@ export default {
     (100vw - var(--project-media-width)) / 2 - var(--project-body-left)
   );
   transform: none;
+}
+
+.mainFullWidthImages :global(.project-body .full-image .caption),
+.mainFullWidthImages :global(.project-body .video-pair .caption) {
+  text-align: left;
+  box-sizing: border-box;
 }
 
 .main :global(.full-image > video),
