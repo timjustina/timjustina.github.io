@@ -412,7 +412,7 @@ export default {
 }
 
 .mainFullWidthImages :global(.full-image:not(.hero-image):not(.project-hero)) {
-  --project-media-side-pad: 39px;
+  --project-media-side-pad: 20px;
   --project-media-width: calc(100vw - 2 * var(--project-media-side-pad));
   width: var(--project-media-width);
   max-width: none;
@@ -425,7 +425,7 @@ export default {
 
 .mainFullWidthImages :global(.project-body .full-image),
 .mainFullWidthImages :global(.project-body .video-pair) {
-  --project-media-side-pad: 39px;
+  --project-media-side-pad: 20px;
   --project-media-width: calc(100vw - 2 * var(--project-media-side-pad));
   width: var(--project-media-width);
   max-width: none;
@@ -442,6 +442,11 @@ export default {
 .mainFullWidthImages :global(.project-body .video-pair .caption) {
   text-align: left;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .main :global(.full-image > video),
