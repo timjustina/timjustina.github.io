@@ -7,8 +7,7 @@
 
         <ProjectDetailHeader
             class="dashboard-project-header"
-            title="IoT Adherence Analytics for Caregivers:
-Dashboard Design"
+            :title="dashboardTitle"
         />
 
         <div class="project-body">
@@ -468,6 +467,9 @@ import {
     vid7,
 } from '../data/dashboardDesignMedia.js'
 
+const DASHBOARD_TITLE =
+    'IoT Adherence Analytics for Caregivers:\nDashboard Design'
+
 const tldrSummaryItems = [
     {
         lead: 'Sole designer',
@@ -503,6 +505,7 @@ export default {
             vid7,
             tldrSummaryItems,
             tldrMarkdown,
+            dashboardTitle: DASHBOARD_TITLE,
             aboutSquiggle,
             aboutBallDropped: false,
             titleFitRaf: null,
@@ -769,13 +772,13 @@ export default {
                 this.onTitleExitScroll()
             }
 
-            // Mobile (and any forced two-line layout): exactly two nowrap lines
-            if (isMobile || lines.length > 1) {
-                if (isMobile) {
-                    fitTwoLines()
-                    return
-                }
+            // Always exactly two nowrap lines on mobile; desktop uses two when one line won't fit at ≥40px
+            if (isMobile) {
+                fitTwoLines()
+                return
+            }
 
+            if (lines.length > 1) {
                 // Desktop: prefer one line when it fits at ≥40px
                 setMode('one')
                 title.style.whiteSpace = 'nowrap'
@@ -917,9 +920,25 @@ export default {
 
     .dashboard-project-header.project-header h1.project-header-title {
         width: 100% !important;
-        font-size: 40px; /* fallback; JS scales so both lines fit */
+        max-width: none !important;
+        font-size: 40px; /* fallback; JS scales so both lines fill the viewport */
         line-height: 1.15;
         letter-spacing: -0.02em;
+        white-space: normal !important;
+        text-align: left;
+        color: #bababa;
+        font-family: 'Fira Code', monospace;
+        font-weight: calc(400 * var(--font-weight-scale));
+    }
+
+    /* Always two nowrap lines on mobile (even before JS adds .is-two-line) */
+    .dashboard-project-header.project-header
+        h1.project-header-title
+        .project-header-title-line {
+        display: block !important;
+        white-space: nowrap !important;
+        width: max-content;
+        max-width: none;
     }
 
     .dashboard-ball-stage {
