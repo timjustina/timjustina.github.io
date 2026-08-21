@@ -165,18 +165,20 @@
                     <div v-else class="about-photo about-photo--placeholder" />
                 </div>
                 <div id="about-bio" class="about-text-column">
-                    <h2 class="about-heading portfolio-fly portfolio-fly--from-left">About Tim ( 湉 )</h2>
-                    <p class="about-location portfolio-fly portfolio-fly--from-right">
-                        <span class="about-location-icon-wrap" aria-hidden="true">
-                            <svg class="about-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
-                                <path
-                                    d="M6.5 0C2.91 0 0 2.91 0 6.5C0 11.38 6.5 20 6.5 20S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0ZM6.5 8.75C5.26 8.75 4.25 7.74 4.25 6.5C4.25 5.26 5.26 4.25 6.5 4.25C7.74 4.25 8.75 5.26 8.75 6.5C8.75 7.74 7.74 8.75 6.5 8.75Z"
-                                    fill="#B9B4AE"
-                                />
-                            </svg>
-                        </span>
-                        <span class="about-location-text">London / Barcelona</span>
-                    </p>
+                    <div class="about-intro">
+                        <h2 class="about-heading portfolio-fly portfolio-fly--from-left">About Tim ( 湉 )</h2>
+                        <p class="about-location portfolio-fly portfolio-fly--from-right">
+                            <span class="about-location-icon-wrap" aria-hidden="true">
+                                <svg class="about-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
+                                    <path
+                                        d="M6.5 0C2.91 0 0 2.91 0 6.5C0 11.38 6.5 20 6.5 20S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0ZM6.5 8.75C5.26 8.75 4.25 7.74 4.25 6.5C4.25 5.26 5.26 4.25 6.5 4.25C7.74 4.25 8.75 5.26 8.75 6.5C8.75 7.74 7.74 8.75 6.5 8.75Z"
+                                        fill="#B9B4AE"
+                                    />
+                                </svg>
+                            </span>
+                            <span class="about-location-text">London / Barcelona</span>
+                        </p>
+                    </div>
                     <p class="about-bio portfolio-fly portfolio-fly--from-left">
                         Started in the east, ended up in the west. Started in academia, ended up in the
                         real world. Started as a curious child, ended up a very curious adult. Trained to
@@ -1359,6 +1361,10 @@ export default {
     padding-top: 100px;
 }
 
+.about-intro {
+    display: contents;
+}
+
 .about-heading {
     margin: 0 0 39px;
     font-family: 'Be Vietnam Pro', sans-serif;
@@ -1718,46 +1724,76 @@ export default {
 
     .about {
         margin-top: var(--mobile-block-gap);
-        --about-bottom-pad: 276px;
+        --about-bottom-pad: 326px;
+        --about-photo-h: 288px;
+        --about-stack-gap: 32px;
+        --about-heading-location-gap: 32px;
+        --about-content-shift: 50px;
         padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-inner {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+        position: relative;
         --about-side-pad: var(--page-pad);
         padding: 0 var(--about-side-pad);
-    }
-
-    .about-photo-column,
-    .about-text-column {
-        display: contents;
     }
 
     .about-line {
         display: none;
     }
 
-    .about-heading {
-        order: 2;
-        margin: var(--about-top-pad) 0 32px;
+    /* Photo: right-aligned, behind heading/location */
+    .about-photo-column {
+        display: block;
+        position: absolute;
+        top: var(--about-content-shift);
+        right: var(--about-side-pad);
+        z-index: 0;
+        width: 201px;
+        height: var(--about-photo-h);
+        margin: 0;
+        padding: 0;
     }
 
     .about-photo,
     .about-photo--placeholder {
-        order: 1;
-        width: 201px;
-        height: 288px;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .about-text-column {
+        display: block;
+        position: relative;
+        z-index: 1;
+        padding-top: 0;
+    }
+
+    /* Heading + location overlay the photo; bio stays below it */
+    .about-intro {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        max-width: calc(100% - 100px);
+    }
+
+    .about-heading {
+        margin: 0 0 var(--about-heading-location-gap);
+        max-width: 100%;
     }
 
     .about-location {
-        order: 3;
         box-sizing: border-box;
-        width: calc(100% + 2 * var(--about-side-pad));
-        max-width: 100vw;
-        margin: 0 0 0 calc(-1 * var(--about-side-pad));
-        padding-left: var(--about-side-pad);
+        width: auto;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
     }
 
     .about-location-icon-wrap {
@@ -1774,16 +1810,15 @@ export default {
         fill: var(--about-location-icon-fill);
     }
 
+    /* Original spot: just below the photo */
     .about-bio {
-        order: 4;
-        margin-top: 32px;
+        margin-top: calc(var(--about-content-shift) + var(--about-photo-h) + var(--about-stack-gap));
         max-width: 100%;
         font-size: 16px;
         line-height: 25px;
     }
 
     .about-actions {
-        order: 5;
         display: flex;
         gap: 31px;
         margin-top: 96px;
