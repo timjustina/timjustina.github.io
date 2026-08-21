@@ -509,18 +509,21 @@ export default {
 
   .main :global(.project-hero) {
     margin-top: 0;
-    max-height: 75vh;
+    height: 125vh;
+    max-height: none;
     overflow: hidden;
   }
 
   .main :global(.project-hero picture),
   .main :global(.project-hero img) {
-    /* Scale with the phone so the hero bottom stays ≤ 3/4 of the viewport */
+    /* Always 1/4 taller than the viewport; centre-crop horizontally */
     width: auto;
-    height: auto;
-    max-height: 75vh;
+    height: 125vh;
+    max-height: none;
     max-width: none;
     flex-shrink: 0;
+    object-fit: cover;
+    object-position: center top;
   }
 
   .main :global(.project-hero + .project-body) {
