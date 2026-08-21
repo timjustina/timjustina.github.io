@@ -30,6 +30,11 @@ export default {
     },
   },
   mounted() {
+    // Lock mobile hero height to the initial viewport so URL-bar show/hide
+    // (vh changes on scroll) doesn't make the image look like it's zooming.
+    this.lockMobileHeroHeight()
+    window.addEventListener('orientationchange', this.onMobileHeroOrientation)
+
     if (!hasPendingImageExpand()) return
 
     this.$nextTick(() => {
@@ -38,6 +43,26 @@ export default {
         finishImageExpand(heroImg)
       }
     })
+  },
+  beforeUnmount() {
+    window.removeEventListener('orientationchange', this.onMobileHeroOrientation)
+    this.clearMobileHeroHeight()
+  },
+  methods: {
+    onMobileHeroOrientation() {
+      window.setTimeout(() => this.lockMobileHeroHeight(), 250)
+    },
+    lockMobileHeroHeight() {
+      if (!window.matchMedia('(max-width: 600px)').matches) {
+        this.clearMobileHeroHeight()
+        return
+      }
+      const px = Math.round(window.innerHeight * 1.25)
+      this.$el?.style?.setProperty('--project-hero-mobile-height', `${px}px`)
+    },
+    clearMobileHeroHeight() {
+      this.$el?.style?.removeProperty('--project-hero-mobile-height')
+    },
   },
 }
 </script>
@@ -509,7 +534,10 @@ export default {
 
   .main :global(.project-hero) {
     margin-top: 0;
+    /* Prefer locked px (set once on mount); svh avoids URL-bar scroll jump */
     height: 125vh;
+    height: 125svh;
+    height: var(--project-hero-mobile-height, 125svh);
     max-height: none;
     overflow: hidden;
   }
@@ -519,6 +547,8 @@ export default {
     /* Always 1/4 taller than the viewport; centre-crop horizontally */
     width: auto;
     height: 125vh;
+    height: 125svh;
+    height: var(--project-hero-mobile-height, 125svh);
     max-height: none;
     max-width: none;
     flex-shrink: 0;
