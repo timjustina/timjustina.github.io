@@ -492,6 +492,8 @@ export default {
             tldrMarkdown,
             titleFitRaf: null,
             titleFitObserver: null,
+            titleExitRaf: null,
+            reduceMotionMq: null,
         }
     },
     mounted() {
@@ -506,12 +508,21 @@ export default {
                 this.titleFitObserver.observe(document.documentElement)
             }
             window.addEventListener('resize', this.scheduleFitTitleToWidth, { passive: true })
+
+            this.reduceMotionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
+            this.reduceMotionMq.addEventListener?.('change', this.onTitleExitScroll)
+            window.addEventListener('scroll', this.onTitleExitScroll, { passive: true })
+            this.onTitleExitScroll()
         })
     },
     beforeUnmount() {
         if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
+        if (this.titleExitRaf != null) cancelAnimationFrame(this.titleExitRaf)
         this.titleFitObserver?.disconnect()
         window.removeEventListener('resize', this.scheduleFitTitleToWidth)
+        window.removeEventListener('scroll', this.onTitleExitScroll)
+        this.reduceMotionMq?.removeEventListener?.('change', this.onTitleExitScroll)
+        this.clearTitleExitStyles()
         const title = this.getTitleEl()
         if (title) {
             title.style.fontSize = ''
@@ -524,12 +535,65 @@ export default {
         getTitleEl() {
             return this.$el?.querySelector?.('.dashboard-project-header .project-header-title') ?? null
         },
+        getHeroEl() {
+            return this.$el?.querySelector?.('.project-hero') ?? null
+        },
         scheduleFitTitleToWidth() {
             if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
             this.titleFitRaf = requestAnimationFrame(() => {
                 this.titleFitRaf = null
                 this.fitTitleToWidth()
             })
+        },
+        onTitleExitScroll() {
+            if (this.titleExitRaf != null) return
+            this.titleExitRaf = requestAnimationFrame(() => {
+                this.titleExitRaf = null
+                this.updateTitleExit()
+            })
+        },
+        clearTitleExitStyles() {
+            const title = this.getTitleEl()
+            if (!title) return
+            title.style.transform = ''
+            title.style.opacity = ''
+        },
+        updateTitleExit() {
+            const title = this.getTitleEl()
+            const hero = this.getHeroEl()
+            if (!title || !hero) return
+
+            if (this.reduceMotionMq?.matches) {
+                this.clearTitleExitStyles()
+                return
+            }
+
+            const heroBottom = hero.getBoundingClientRect().bottom
+            // Only start once ≤200px of the hero remains in the viewport
+            const startBottom = 200
+            if (heroBottom > startBottom) {
+                this.clearTitleExitStyles()
+                return
+            }
+
+            const titleHeight = title.offsetHeight || 1
+            const endBottom = startBottom - Math.max(titleHeight * 1.5, 220)
+            const range = startBottom - endBottom
+            if (range <= 0) {
+                this.clearTitleExitStyles()
+                return
+            }
+
+            const progress = Math.min(1, Math.max(0, (startBottom - heroBottom) / range))
+            if (progress <= 0) {
+                this.clearTitleExitStyles()
+                return
+            }
+
+            const scale = 1 + progress * 1.15
+            const opacity = 1 - progress
+            title.style.transform = `scale(${scale})`
+            title.style.opacity = String(opacity)
         },
         fitTitleToWidth() {
             const title = this.getTitleEl()
@@ -540,6 +604,7 @@ export default {
                 title.style.fontSize = ''
                 title.style.whiteSpace = ''
                 title.style.width = ''
+                this.onTitleExitScroll()
                 return
             }
 
@@ -575,6 +640,7 @@ export default {
 
             title.style.fontSize = `${best}px`
             title.style.width = '100%'
+            this.onTitleExitScroll()
         },
     },
 }
@@ -612,6 +678,8 @@ export default {
     text-align: left;
     color: #bababa;
     white-space: nowrap;
+    transform-origin: center center;
+    will-change: transform, opacity;
 }
 
 @media (max-width: 600px) {

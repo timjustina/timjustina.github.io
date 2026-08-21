@@ -216,7 +216,7 @@ export default {
 .project-tldr-label {
   font-family: 'Fira Code', monospace;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 500;
   font-size: 16px;
   line-height: 30px;
   letter-spacing: -0.02em;
@@ -454,7 +454,7 @@ export default {
   .project-tldr-label {
     font-size: 20px;
     line-height: 30px;
-    font-weight: calc(400 * var(--font-weight-scale, 0.95));
+    font-weight: 500;
   }
 
   .project-tldr-heading {
