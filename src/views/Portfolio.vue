@@ -1122,9 +1122,17 @@ export default {
     transition: border-radius 0.45s ease;
 }
 
-.project:not(.project--upcoming):hover .project-image,
-.project:not(.project--upcoming):focus-within .project-image {
+/* Touch: press feedback — clears on release so the radius can ease back */
+.project:not(.project--upcoming):active .project-image {
     border-radius: 700px 700px 20px 20px;
+}
+
+/* Pointer devices: hover / focus (avoid sticky hover on touch) */
+@media (hover: hover) and (pointer: fine) {
+    .project:not(.project--upcoming):hover .project-image,
+    .project:not(.project--upcoming):focus-within .project-image {
+        border-radius: 700px 700px 20px 20px;
+    }
 }
 
 .project-upcoming-overlay {
@@ -1633,6 +1641,12 @@ export default {
         aspect-ratio: 1 / 1;
         overflow: hidden;
         border-radius: 12px;
+        transition: border-radius 0.45s ease;
+    }
+
+    .project:not(.project--upcoming):active .project-image-link,
+    .project:not(.project--upcoming):active .project-image-wrap {
+        border-radius: 700px 700px 20px 20px;
     }
 
     .project-image {
