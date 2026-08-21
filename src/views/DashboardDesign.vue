@@ -511,6 +511,7 @@ export default {
             titleFitRaf: null,
             titleFitObserver: null,
             titleExitRaf: null,
+            lastScrollY: 0,
             reduceMotionMq: null,
             ballPosObserver: null,
         }
@@ -530,6 +531,7 @@ export default {
 
             this.reduceMotionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
             this.reduceMotionMq.addEventListener?.('change', this.onTitleExitScroll)
+            this.lastScrollY = window.scrollY
             window.addEventListener('scroll', this.onTitleExitScroll, { passive: true })
             this.onTitleExitScroll()
 
@@ -611,7 +613,17 @@ export default {
             const hero = this.getHeroEl()
             if (!title || !hero) return
 
+            const scrollY = window.scrollY
+            const scrollingDown = scrollY > this.lastScrollY
+            this.lastScrollY = scrollY
+
             if (this.reduceMotionMq?.matches) {
+                this.clearTitleExitStyles()
+                return
+            }
+
+            // Scrolling up: restore the title to its normal appearance
+            if (!scrollingDown) {
                 this.clearTitleExitStyles()
                 return
             }
