@@ -372,8 +372,8 @@ export default {
     }
 
     .logo {
-        width: 100.8px;
-        height: 50.4px;
+        width: 111px;
+        height: 56px;
     }
 
     .nav-link {
