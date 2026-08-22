@@ -720,7 +720,8 @@ export default {
     --about-location-icon-fill: #b9b4ae;
     --about-bg: #f4f2f1;
     --page-max: 1454px;
-    --page-pad: clamp(100px, calc(100px + (100vw - 997px) * 40 / 457), 140px);
+    /* Cap pad at 100px; only drop toward 39px once content is 776px (offset slide exhausted) */
+    --page-pad: max(39px, min(100px, calc((100vw - 776px) / 2)));
     --project-w: min(776px, 100%);
     --project-w-wide: min(876px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
