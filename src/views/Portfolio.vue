@@ -1580,7 +1580,7 @@ export default {
     .portfolio-page {
         --page-pad: 20px;
         --top-bar-height: 86px;
-        --hero-logo-gap: 64px;
+        --hero-logo-gap: 74px;
         /* Logo top 20px + 50.4px tall (20% bigger) in the 86px bar */
         --top-bar-logo-inset: 20px;
         /* Same gap: CTA → first image, and last project text → about */
