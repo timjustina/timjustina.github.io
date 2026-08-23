@@ -1707,7 +1707,7 @@ export default {
     }
 
     .project-description {
-        margin-top: 11px;
+        margin-top: 20px;
         max-width: 100%;
         font-family: 'Fira Code', monospace;
         font-size: 16px;
