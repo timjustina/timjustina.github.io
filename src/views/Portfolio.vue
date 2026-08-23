@@ -1801,13 +1801,7 @@ export default {
         margin: 0;
         padding: 0;
         top: 10px;
-        left: 10px;
-    }
-
-    .about-location-icon-wrap {
-        width: 13px;
-        height: 20px;
-        justify-content: flex-start;
+        left: 5px;
     }
 
     .about-location-text {
