@@ -246,7 +246,7 @@ export default {
     --brand-active: #000444;
     --font-weight-scale: 0.95;
     --top-bar-height: 120px;
-    --top-bar-logo-height: 42px;
+    --top-bar-logo-height: 52px;
     --top-bar-nav-height: 27px;
     /* Left matches logo→top; right matches nav text→top */
     --top-bar-edge-pad-left: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
@@ -307,8 +307,8 @@ export default {
 }
 
 .logo {
-    width: 84px;
-    height: 42px;
+    width: 104px;
+    height: 52px;
     flex-shrink: 0;
 }
 
