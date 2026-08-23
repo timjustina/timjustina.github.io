@@ -3,8 +3,9 @@
         <header
             class="top-bar"
             :class="{
-                'top-bar--hidden': topBarHidden,
+                'top-bar--hidden': topBarHidden && !isStickyMobileHome,
                 'top-bar--transparent': isTransparent,
+                'top-bar--sticky': isStickyMobileHome,
             }"
         >
             <div class="top-bar-inner">
@@ -83,23 +84,33 @@ export default {
             lastScrollY: 0,
             scrollTicking: false,
             overHero: true,
+            isMobileViewport: false,
         }
     },
     computed: {
         isTransparent() {
             return this.transparent && this.overHero
         },
+        isStickyMobileHome() {
+            return this.$route.path === '/' && this.isMobileViewport
+        },
+    },
+    watch: {
+        '$route'() {
+            this.syncMobileTopBarState()
+        },
     },
     created() {
+        this.syncMobileTopBarState()
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
-        if (SECTION_HASHES.has(this.$route.hash)) {
+        if (SECTION_HASHES.has(this.$route.hash) && !this.isStickyMobileHome) {
             this.topBarHidden = true
         }
     },
     mounted() {
         this.lastScrollY = window.scrollY
         window.addEventListener('scroll', this.onScroll, { passive: true })
-        window.addEventListener('resize', this.updateHeroOverlap, { passive: true })
+        window.addEventListener('resize', this.onResize, { passive: true })
         window.addEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
         this.updateHeroOverlap()
 
@@ -115,12 +126,23 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('scroll', this.onScroll)
-        window.removeEventListener('resize', this.updateHeroOverlap)
+        window.removeEventListener('resize', this.onResize)
         window.removeEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
         this.navGapObserver?.disconnect()
     },
     methods: {
+        syncMobileTopBarState() {
+            this.isMobileViewport = window.matchMedia('(max-width: 600px)').matches
+            if (this.isStickyMobileHome) {
+                this.topBarHidden = false
+            }
+        },
+        onResize() {
+            this.syncMobileTopBarState()
+            this.updateHeroOverlap()
+        },
         onSectionJump() {
+            if (this.isStickyMobileHome) return
             this.topBarHidden = true
             this.lastScrollY = window.scrollY
             this.updateHeroOverlap()
@@ -130,6 +152,14 @@ export default {
             this.scrollTicking = true
 
             requestAnimationFrame(() => {
+                if (this.isStickyMobileHome) {
+                    this.topBarHidden = false
+                    this.updateHeroOverlap()
+                    this.lastScrollY = window.scrollY
+                    this.scrollTicking = false
+                    return
+                }
+
                 const y = window.scrollY
                 const delta = y - this.lastScrollY
 
@@ -243,6 +273,11 @@ export default {
 
 .top-bar--hidden {
     transform: translateY(-100%);
+}
+
+.top-bar--sticky {
+    transform: translateY(0);
+    transition: background-color 0.25s ease;
 }
 
 .top-bar-inner {
