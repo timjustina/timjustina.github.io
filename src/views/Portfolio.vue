@@ -1732,7 +1732,7 @@ export default {
         margin-top: var(--mobile-block-gap);
         --about-bottom-pad: 326px;
         --about-photo-h: 288px;
-        --about-stack-gap: 32px;
+        --about-stack-gap: 80px;
         --about-heading-location-gap: 32px;
         --about-content-shift: 50px;
         padding: var(--about-top-pad) 0 var(--about-bottom-pad);
