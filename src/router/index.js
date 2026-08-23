@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Portfolio from '../views/Portfolio.vue'
-import { getAboutScrollTop, getWorkScrollTop, smoothScrollTo } from '../utils/scrollToAbout.js'
+import { getAboutScrollTop, getHeaderOffset, getWorkScrollTop, smoothScrollTo } from '../utils/scrollToAbout.js'
 import {
     cancelImageExpand,
     hasPendingImageExpand,
@@ -12,8 +12,7 @@ function getHashScrollTop(hash) {
 
     const el = document.querySelector(hash)
     if (!el) return null
-    const topBarInner = document.querySelector('.top-bar-inner')
-    const headerOffset = topBarInner?.offsetHeight ?? 120
+    const headerOffset = getHeaderOffset()
     return Math.max(0, el.getBoundingClientRect().top + window.scrollY - headerOffset)
 }
 

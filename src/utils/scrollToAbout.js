@@ -2,9 +2,14 @@ const ABOUT_EXTRA_OFFSET = 85
 const SMALL_SCREEN_QUERY = '(max-width: 600px)'
 
 function getHeaderOffset() {
+    const topBar = document.querySelector('.top-bar')
+    if (topBar?.classList.contains('top-bar--in-flow')) return 0
+
     const topBarInner = document.querySelector('.top-bar-inner')
     return topBarInner?.offsetHeight ?? 120
 }
+
+export { getHeaderOffset }
 
 export function getAboutScrollTop() {
     const aboutSection = document.getElementById('about')

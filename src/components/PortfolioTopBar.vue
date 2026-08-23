@@ -3,9 +3,9 @@
         <header
             class="top-bar"
             :class="{
-                'top-bar--hidden': topBarHidden && !isStickyMobileHome,
+                'top-bar--hidden': topBarHidden && !isInFlowMobileHome,
                 'top-bar--transparent': isTransparent,
-                'top-bar--sticky': isStickyMobileHome,
+                'top-bar--in-flow': isInFlowMobileHome,
             }"
         >
             <div class="top-bar-inner">
@@ -91,7 +91,7 @@ export default {
         isTransparent() {
             return this.transparent && this.overHero
         },
-        isStickyMobileHome() {
+        isInFlowMobileHome() {
             return this.$route.path === '/' && this.isMobileViewport
         },
     },
@@ -103,7 +103,7 @@ export default {
     created() {
         this.syncMobileTopBarState()
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
-        if (SECTION_HASHES.has(this.$route.hash) && !this.isStickyMobileHome) {
+        if (SECTION_HASHES.has(this.$route.hash) && !this.isInFlowMobileHome) {
             this.topBarHidden = true
         }
     },
@@ -133,7 +133,7 @@ export default {
     methods: {
         syncMobileTopBarState() {
             this.isMobileViewport = window.matchMedia('(max-width: 600px)').matches
-            if (this.isStickyMobileHome) {
+            if (this.isInFlowMobileHome) {
                 this.topBarHidden = false
             }
         },
@@ -142,7 +142,7 @@ export default {
             this.updateHeroOverlap()
         },
         onSectionJump() {
-            if (this.isStickyMobileHome) return
+            if (this.isInFlowMobileHome) return
             this.topBarHidden = true
             this.lastScrollY = window.scrollY
             this.updateHeroOverlap()
@@ -152,7 +152,7 @@ export default {
             this.scrollTicking = true
 
             requestAnimationFrame(() => {
-                if (this.isStickyMobileHome) {
+                if (this.isInFlowMobileHome) {
                     this.topBarHidden = false
                     this.updateHeroOverlap()
                     this.lastScrollY = window.scrollY
@@ -275,9 +275,10 @@ export default {
     transform: translateY(-100%);
 }
 
-.top-bar--sticky {
-    transform: translateY(0);
-    transition: background-color 0.25s ease;
+.top-bar--in-flow {
+    position: static;
+    transform: none;
+    transition: none;
 }
 
 .top-bar-inner {

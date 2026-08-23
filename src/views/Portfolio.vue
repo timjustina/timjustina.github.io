@@ -1598,8 +1598,13 @@ export default {
     }
 
     .portfolio-main {
-        padding: var(--top-bar-height) var(--page-pad) 0;
+        padding: 0 var(--page-pad) 0;
         box-sizing: border-box;
+    }
+
+    .project--featured,
+    #about {
+        scroll-margin-top: 0;
     }
 
     .hero-intro-wrap {
@@ -1795,6 +1800,8 @@ export default {
         max-width: 100%;
         margin: 0;
         padding: 0;
+        top: 10px;
+        left: 10px;
     }
 
     .about-location-icon-wrap {
