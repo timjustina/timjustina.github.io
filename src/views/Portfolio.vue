@@ -630,7 +630,6 @@ export default {
         },
         startAboutBallDrop() {
             if (this.aboutBallDropped) return
-            if (window.matchMedia('(max-width: 600px)').matches) return
             // Don't start the drop while the about slide-in is still moving
             if (this.aboutRevealed && !this.aboutEntranceDone) {
                 this.pendingAboutBallDrop = true
@@ -646,8 +645,15 @@ export default {
             if (this.aboutRevealed && !this.aboutEntranceDone) return
 
             const about = this.$el?.querySelector('.about')
+            if (!about) return
+
+            if (window.matchMedia('(max-width: 600px)').matches) {
+                about.style.removeProperty('--about-ball-x')
+                return
+            }
+
             const bio = this.$el?.querySelector('.about-bio')
-            if (!about || !bio) return
+            if (!bio) return
 
             const aboutRect = about.getBoundingClientRect()
             const bioRect = bio.getBoundingClientRect()
@@ -1828,7 +1834,8 @@ export default {
     }
 
     .about-ball {
-        display: none;
+        left: auto;
+        right: 20px;
     }
 
     .about-action-btn {
