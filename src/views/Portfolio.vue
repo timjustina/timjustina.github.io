@@ -2430,8 +2430,8 @@ export default {
     .about-location-text--white {
         z-index: 2;
         position: relative;
-        color: #fffef2;
-        -webkit-text-fill-color: #fffef2;
+        color: #fff;
+        -webkit-text-fill-color: #fff;
     }
 
     .about-location-icon :deep(path) {
