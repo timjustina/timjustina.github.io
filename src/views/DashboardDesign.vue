@@ -623,7 +623,17 @@ export default {
             const heroBottom = hero.getBoundingClientRect().bottom
             const startBottom = 300
             const titleHeight = title.offsetHeight || 1
-            const endBottom = startBottom - Math.max(titleHeight * 1.5, 220)
+
+            // Don't finish the fade until the title itself has left the top of
+            // the viewport (layout box, ignore transform).
+            let offsetTop = 0
+            for (let el = title; el; el = el.offsetParent) {
+                offsetTop += el.offsetTop
+            }
+            const layoutBottom = offsetTop + titleHeight - window.scrollY
+            const scrolledPastStart = Math.max(0, startBottom - heroBottom)
+            const titleBottomAtStart = layoutBottom + scrolledPastStart
+            const endBottom = startBottom - Math.max(titleBottomAtStart, titleHeight * 2)
             const range = startBottom - endBottom
 
             if (range <= 0 || heroBottom > startBottom) {
