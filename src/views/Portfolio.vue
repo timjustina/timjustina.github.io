@@ -838,8 +838,8 @@ export default {
             })
         },
         /**
-         * Left-biased stagger with per-letter random jitter so the cascade
-         * isn't a tidy grid.
+         * Left-biased stagger with per-letter random jitter. Delays are scaled
+         * so the last letter finishes with the CTA button fly-in.
          */
         syncHeroIntroCharColumns() {
             if (!window.matchMedia('(max-width: 600px)').matches) return
@@ -850,6 +850,18 @@ export default {
 
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             if (!chars.length) return
+
+            const pageStyles = getComputedStyle(this.$el)
+            const introStyles = getComputedStyle(intro)
+            const flyDuration =
+                parseFloat(pageStyles.getPropertyValue('--fly-duration')) || 1.25
+            const ctaDelay = 0.08
+            const ctaEnd = ctaDelay + flyDuration
+            const charDuration =
+                parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
+                1.1
+            const minDelay = 0.04
+            const maxDelay = Math.max(minDelay, ctaEnd - charDuration)
 
             const introRect = intro.getBoundingClientRect()
             const positions = chars.map((el) => {
@@ -873,16 +885,21 @@ export default {
             if (colW <= 0) colW = 10
 
             const lineH =
-                parseFloat(getComputedStyle(intro).lineHeight) ||
-                Math.max(colW * 1.5, 20)
+                parseFloat(introStyles.lineHeight) || Math.max(colW * 1.5, 20)
+
+            const scores = positions.map((pos) => {
+                const col = Math.max(0, (pos.x - minX) / colW)
+                const line = Math.max(0, (pos.y - minY) / lineH)
+                return col * 0.85 + line * 0.35 + Math.random() * 3.2
+            })
+            const minScore = Math.min(...scores)
+            const maxScore = Math.max(...scores)
+            const scoreRange = maxScore - minScore || 1
 
             chars.forEach((el, idx) => {
-                const col = Math.max(0, (positions[idx].x - minX) / colW)
-                const line = Math.max(0, (positions[idx].y - minY) / lineH)
-                // Soft left→right bias, then scramble with a wide random offset.
-                const base = col * 0.85 + line * 0.35
-                const jitter = Math.random() * 3.2
-                el.style.setProperty('--i', (base + jitter).toFixed(3))
+                const t = (scores[idx] - minScore) / scoreRange
+                const delay = minDelay + t * (maxDelay - minDelay)
+                el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
             })
         },
         syncAboutLocationTextClip() {
@@ -1916,11 +1933,11 @@ export default {
     }
 
     /*
-     * Letter cascade: soft left bias + random per-letter delay (--i from JS).
+     * Letter cascade: soft left bias + random delays, scaled in JS so the
+     * last letter lands with the CTA (delay + --fly-duration).
      */
     .hero-intro.hero-intro--chars.portfolio-fly {
         --hero-intro-char-duration: 1.1s;
-        --hero-intro-char-stagger: 26ms;
         opacity: 1;
         transform: none;
         will-change: auto;
@@ -1933,7 +1950,7 @@ export default {
     }
 
     .hero-intro--chars .hero-intro-char {
-        --i: 0;
+        --hero-intro-char-delay: 0.04s;
         opacity: 0;
         transform: translate3d(var(--fly-distance), 0, 0);
         will-change: transform, opacity;
@@ -1941,7 +1958,7 @@ export default {
 
     .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
         animation: portfolio-fly-from-right var(--hero-intro-char-duration) var(--fly-ease)
-            calc(0.04s + (var(--i) * var(--hero-intro-char-stagger))) both;
+            var(--hero-intro-char-delay) both;
     }
 
     .cta-button {
