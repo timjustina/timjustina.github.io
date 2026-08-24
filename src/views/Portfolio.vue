@@ -46,10 +46,42 @@
                             />
                         </picture>
                     </div>
-                    <p class="hero-intro portfolio-fly portfolio-fly--from-right">
-                        <span class="hero-intro-lead">Tim Justina Yeung is a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
-                        She deeply enjoys understanding complex problems and providing creative solutions
-                        <strong class="hero-intro-em hero-intro-em--keep">for people :)</strong>
+                    <p
+                        class="hero-intro portfolio-fly portfolio-fly--from-right"
+                        :class="{ 'hero-intro--chars': heroIntroLetterMode }"
+                        :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
+                    >
+                        <template v-if="heroIntroLetterMode">
+                            <span class="hero-intro-chars" aria-hidden="true">
+                                <component
+                                    :is="part.em ? 'strong' : 'span'"
+                                    v-for="(part, partIndex) in heroIntroParts"
+                                    :key="partIndex"
+                                    :class="{
+                                        'hero-intro-em': part.em,
+                                        'hero-intro-em--keep': part.keep,
+                                    }"
+                                >
+                                    <template v-for="(token, tokenIndex) in part.tokens" :key="tokenIndex">
+                                        <span class="hero-intro-word">
+                                            <span
+                                                v-for="ch in token.chars"
+                                                :key="ch.i"
+                                                class="hero-intro-char"
+                                            >{{ ch.c }}</span><span
+                                                v-if="token.trailing"
+                                                class="hero-intro-word-space"
+                                            >{{ token.trailing }}</span>
+                                        </span>
+                                    </template>
+                                </component>
+                            </span>
+                        </template>
+                        <template v-else>
+                            <span class="hero-intro-lead">Tim Justina Yeung is a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
+                            She deeply enjoys understanding complex problems and providing creative solutions
+                            <strong class="hero-intro-em hero-intro-em--keep">for people :)</strong>
+                        </template>
                     </p>
                 </div>
                 <a class="cta-button portfolio-fly portfolio-fly--from-left" href="mailto:design@timjustina.com">Drop me a line</a>
@@ -265,6 +297,56 @@ const LOADING_MAX_ITERATIONS = 6
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 
+const HERO_INTRO_PARTS = [
+    { text: 'Tim Justina Yeung is a ', em: false },
+    { text: 'Product Designer', em: true },
+    {
+        text: ' with a background in Neuroscience and research. She deeply enjoys understanding complex problems and providing creative solutions ',
+        em: false,
+    },
+    { text: 'for people :)', em: true, keep: true },
+]
+
+function buildHeroIntroParts(parts) {
+    let i = 0
+    const built = parts.map((part) => ({
+        em: Boolean(part.em),
+        keep: Boolean(part.keep),
+        tokens: [],
+    }))
+
+    // Trailing spaces hang off the previous word so a wrap never starts with
+    // whitespace (avoids a leftover indent like before "and research").
+    let prevWord = null
+    parts.forEach((part, partIndex) => {
+        const chunks = String(part.text)
+            .split(/(\s+)/)
+            .filter((token) => token.length > 0)
+
+        for (const token of chunks) {
+            if (/^\s+$/.test(token)) {
+                if (prevWord) {
+                    prevWord.trailing += token
+                }
+                continue
+            }
+
+            const word = {
+                type: 'word',
+                chars: Array.from(token).map((c) => ({ c, i: i++ })),
+                trailing: '',
+            }
+            built[partIndex].tokens.push(word)
+            prevWord = word
+        }
+    })
+
+    return built
+}
+
+const HERO_INTRO_BUILT = buildHeroIntroParts(HERO_INTRO_PARTS)
+const HERO_INTRO_PLAIN = HERO_INTRO_PARTS.map((part) => part.text).join('')
+
 export default {
     name: 'Portfolio',
     components: { PortfolioTopBar, PortfolioSiteFooter },
@@ -294,6 +376,13 @@ export default {
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
+            heroIntroParts: HERO_INTRO_BUILT,
+            heroIntroPlain: HERO_INTRO_PLAIN,
+            // Letter cascade is mobile-only; desktop keeps the original block fly-in.
+            heroIntroLetterMode:
+                typeof window !== 'undefined' &&
+                window.matchMedia('(max-width: 600px)').matches &&
+                !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         }
     },
     mounted() {
@@ -309,6 +398,23 @@ export default {
         } else {
             document.documentElement.classList.add('portfolio-booting')
         }
+
+        this.heroIntroLetterMq = window.matchMedia('(max-width: 600px)')
+        this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
+        this.onHeroIntroLetterMqChange = () => {
+            const next =
+                this.heroIntroLetterMq.matches && !this.heroIntroReduceMq.matches
+            if (next === this.heroIntroLetterMode) return
+            this.heroIntroLetterMode = next
+            this.$nextTick(() => {
+                this.syncHeroDecorHeight()
+                if (next && !this.pageRevealed) {
+                    this.syncHeroIntroCharColumns()
+                }
+            })
+        }
+        this.heroIntroLetterMq.addEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
 
         this.heroDecorObserver = new ResizeObserver(() => {
             requestAnimationFrame(() => this.syncHeroDecorHeight())
@@ -341,6 +447,9 @@ export default {
             this.syncHeroDecorHeight()
             this.syncAboutBallPosition()
             this.syncAboutLocationTextClip()
+            if (!this.pageRevealed) {
+                this.syncHeroIntroCharColumns()
+            }
             if (sectionHash) {
                 this.jumpToSectionHash(sectionHash)
             }
@@ -392,6 +501,8 @@ export default {
         this.aboutRevealObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
+        this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -523,6 +634,7 @@ export default {
                 this.syncAboutLocationTextClip()
                 // Next frame so the splash is gone before fly-ins start
                 requestAnimationFrame(() => {
+                    this.syncHeroIntroCharColumns()
                     this.pageRevealed = true
                     scrollToPortfolioHash(this.$route.hash)
                 })
@@ -720,6 +832,57 @@ export default {
                 this.syncHeroDecorHeight()
                 this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
+                if (!this.pageRevealed) {
+                    this.syncHeroIntroCharColumns()
+                }
+            })
+        },
+        /**
+         * Left-biased stagger with per-letter random jitter so the cascade
+         * isn't a tidy grid.
+         */
+        syncHeroIntroCharColumns() {
+            if (!window.matchMedia('(max-width: 600px)').matches) return
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return
+
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            if (!chars.length) return
+
+            const introRect = intro.getBoundingClientRect()
+            const positions = chars.map((el) => {
+                const rect = el.getBoundingClientRect()
+                return {
+                    x: rect.left - introRect.left,
+                    y: rect.top - introRect.top,
+                }
+            })
+            const minX = Math.min(...positions.map((p) => p.x))
+            const minY = Math.min(...positions.map((p) => p.y))
+
+            let colW = 0
+            for (const el of chars) {
+                const w = el.getBoundingClientRect().width
+                if (w > 0) {
+                    colW = w
+                    break
+                }
+            }
+            if (colW <= 0) colW = 10
+
+            const lineH =
+                parseFloat(getComputedStyle(intro).lineHeight) ||
+                Math.max(colW * 1.5, 20)
+
+            chars.forEach((el, idx) => {
+                const col = Math.max(0, (positions[idx].x - minX) / colW)
+                const line = Math.max(0, (positions[idx].y - minY) / lineH)
+                // Soft left→right bias, then scramble with a wide random offset.
+                const base = col * 0.85 + line * 0.35
+                const jitter = Math.random() * 3.2
+                el.style.setProperty('--i', (base + jitter).toFixed(3))
             })
         },
         syncAboutLocationTextClip() {
@@ -846,11 +1009,18 @@ export default {
     transform: translate3d(calc(-1 * var(--fly-distance)), 0, 0);
 }
 
-.portfolio-page--reveal .hero-decor.portfolio-fly--from-right,
-.portfolio-page--reveal .hero-intro.portfolio-fly--from-right,
 .portfolio-page--reveal .project--featured.portfolio-fly--from-right,
 .portfolio-page--reveal .project--upcoming:not(.project--offset).portfolio-fly--from-right {
     animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.08s both;
+}
+
+/* Squiggle snappier; paragraph a touch slower — not in lockstep */
+.portfolio-page--reveal .hero-decor.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right 1.05s var(--fly-ease) 0.08s both;
+}
+
+.portfolio-page--reveal .hero-intro.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right 1.55s var(--fly-ease) 0.08s both;
 }
 
 .portfolio-page--reveal .cta-button.portfolio-fly--from-left,
@@ -897,7 +1067,9 @@ export default {
 @media (prefers-reduced-motion: reduce) {
     .portfolio-fly,
     .portfolio-page--reveal .portfolio-fly,
-    .about--reveal .portfolio-fly {
+    .about--reveal .portfolio-fly,
+    .hero-intro--chars .hero-intro-char,
+    .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
         opacity: 1;
         transform: none;
         animation: none;
@@ -1041,7 +1213,7 @@ export default {
     clip-path: inset(0);
     transition:
         transform var(--hero-line-return-duration) ease,
-        clip-path 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.35s;
+        clip-path 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.15s;
 }
 
 .hero-decor-line--bouncing {
@@ -1104,6 +1276,23 @@ export default {
     letter-spacing: -0.02em;
     color: var(--muted);
     font-synthesis: none;
+}
+
+.hero-intro-chars {
+    display: inline;
+}
+
+.hero-intro-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.hero-intro-char {
+    display: inline-block;
+}
+
+.hero-intro-word-space {
+    white-space: pre;
 }
 
 .hero-intro-em {
@@ -1726,8 +1915,33 @@ export default {
         line-height: 33px;
     }
 
-    .hero-intro-lead {
-        display: inline;
+    /*
+     * Letter cascade: soft left bias + random per-letter delay (--i from JS).
+     */
+    .hero-intro.hero-intro--chars.portfolio-fly {
+        --hero-intro-char-duration: 1.1s;
+        --hero-intro-char-stagger: 26ms;
+        opacity: 1;
+        transform: none;
+        will-change: auto;
+    }
+
+    .portfolio-page--reveal .hero-intro.hero-intro--chars.portfolio-fly--from-right {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .hero-intro--chars .hero-intro-char {
+        --i: 0;
+        opacity: 0;
+        transform: translate3d(var(--fly-distance), 0, 0);
+        will-change: transform, opacity;
+    }
+
+    .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
+        animation: portfolio-fly-from-right var(--hero-intro-char-duration) var(--fly-ease)
+            calc(0.04s + (var(--i) * var(--hero-intro-char-stagger))) both;
     }
 
     .cta-button {
