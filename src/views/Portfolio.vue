@@ -33,7 +33,7 @@
         <div
             class="portfolio-content"
             :class="{ 'portfolio-content--logo-handoff': logoHandoff }"
-            :aria-hidden="showLoadingSplash && !pageRevealed ? 'true' : undefined"
+            :aria-hidden="(showLoadingSplash || logoHandoff) && !pageRevealed ? 'true' : undefined"
         >
         <PortfolioTopBar />
 
@@ -694,9 +694,6 @@ export default {
             }
             this.logoHandoff = true
 
-            // Kick off page fly-ins with the logo move — no gap after it lands
-            this.beginPageReveal()
-
             this.clearLogoHandoffTimer()
             this.logoHandoffTimer = setTimeout(() => {
                 this.completeLoadingHandoff()
@@ -742,6 +739,7 @@ export default {
             this.logoHandoff = false
             this.logoHandoffStyle = null
             document.documentElement.classList.remove('portfolio-booting')
+            // Fly-ins start immediately after the logo lands (mobile handoff)
             this.beginPageReveal()
         },
         scheduleLoadingAdvance() {
@@ -957,14 +955,17 @@ export default {
 
             const pageStyles = getComputedStyle(this.$el)
             const introStyles = getComputedStyle(intro)
-            const flyDuration =
-                parseFloat(pageStyles.getPropertyValue('--fly-duration')) || 1.25
-            const ctaDelay = 0.08
-            const ctaEnd = ctaDelay + flyDuration
+            const ctaDelay =
+                parseFloat(pageStyles.getPropertyValue('--cta-fly-delay')) || 0.08
+            const ctaDuration =
+                parseFloat(pageStyles.getPropertyValue('--cta-fly-duration')) ||
+                parseFloat(pageStyles.getPropertyValue('--fly-duration')) ||
+                1.25
+            const ctaEnd = ctaDelay + ctaDuration
             const charDuration =
                 parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
-                1.1
-            const minDelay = 0.04
+                1.05
+            const minDelay = 0.06
             const maxDelay = Math.max(minDelay, ctaEnd - charDuration)
 
             const introRect = intro.getBoundingClientRect()
@@ -994,7 +995,8 @@ export default {
             const scores = positions.map((pos) => {
                 const col = Math.max(0, (pos.x - minX) / colW)
                 const line = Math.max(0, (pos.y - minY) / lineH)
-                return col * 0.85 + line * 0.35 + Math.random() * 3.2
+                // Stronger left→right read, with enough jitter to stay messy
+                return col * 1.35 + line * 0.45 + Math.random() * 2.4
             })
             const minScore = Math.min(...scores)
             const maxScore = Math.max(...scores)
@@ -1108,6 +1110,8 @@ export default {
     --fly-distance: min(42vw, 360px);
     --fly-duration: 1.25s;
     --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --cta-fly-delay: 0.08s;
+    --cta-fly-duration: var(--fly-duration);
 
     position: relative;
     width: 100%;
@@ -1147,6 +1151,11 @@ export default {
 .portfolio-page--reveal .cta-button.portfolio-fly--from-left,
 .portfolio-page--reveal .project--offset.portfolio-fly--from-left {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.08s both;
+}
+
+.portfolio-page--reveal .cta-button.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--cta-fly-duration) var(--fly-ease) var(--cta-fly-delay)
+        both;
 }
 
 .about-heading.portfolio-fly--from-left {
@@ -2021,6 +2030,9 @@ export default {
         --top-bar-logo-inset: 20px;
         /* Same gap: CTA → first image, and last project text → about */
         --mobile-block-gap: calc(2 * 84px - 25px - 20px - 15px);
+        /* Slightly slower CTA so letter stagger has room and still lands together */
+        --cta-fly-delay: 0.12s;
+        --cta-fly-duration: 1.65s;
     }
 
     .hero {
@@ -2056,11 +2068,10 @@ export default {
     }
 
     /*
-     * Letter cascade: soft left bias + random delays, scaled in JS so the
-     * last letter lands with the CTA (delay + --fly-duration).
+     * Letter cascade: slower overall, wider stagger still ending with the CTA.
      */
     .hero-intro.hero-intro--chars.portfolio-fly {
-        --hero-intro-char-duration: 1.1s;
+        --hero-intro-char-duration: 1.05s;
         opacity: 1;
         transform: none;
         will-change: auto;
