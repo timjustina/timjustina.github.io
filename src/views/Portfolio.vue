@@ -1,13 +1,15 @@
 <template>
     <div class="portfolio-page" :class="{ 'portfolio-page--reveal': pageRevealed }">
         <div
-            v-if="showLoadingSplash"
+            v-if="showLoadingSplash || logoHandoff"
             class="loading-splash"
+            :class="{ 'loading-splash--handoff': logoHandoff }"
             aria-busy="true"
             aria-live="polite"
             aria-label="Loading"
         >
             <img
+                v-show="!logoHandoff"
                 class="loading-splash-frame"
                 :class="{ 'loading-splash-frame--rotating': loadingRotating }"
                 :src="loadingFrames[loadingFrameIndex]"
@@ -16,9 +18,23 @@
                 width="84"
                 height="84"
             />
+            <img
+                v-if="logoHandoff"
+                class="loading-splash-handoff-logo"
+                :src="menuLogo"
+                :style="logoHandoffStyle"
+                alt=""
+                width="84"
+                height="42"
+                @transitionend="onLogoHandoffTransitionEnd"
+            />
         </div>
 
-        <div class="portfolio-content" :aria-hidden="showLoadingSplash ? 'true' : undefined">
+        <div
+            class="portfolio-content"
+            :class="{ 'portfolio-content--logo-handoff': logoHandoff }"
+            :aria-hidden="showLoadingSplash && !pageRevealed ? 'true' : undefined"
+        >
         <PortfolioTopBar />
 
         <main class="portfolio-main">
@@ -280,6 +296,7 @@ import lineAnimationTall from '../assets/line_animation_tall.svg'
 import aboutSquiggle from '../assets/squiggle_3.svg'
 import loadingNormal from '../assets/loading/loading_normal.svg'
 import loadingFolded from '../assets/loading/loading_folded.svg'
+import menuLogo from '../assets/TjyCutoutLogo.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
@@ -294,6 +311,8 @@ const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
 const LOADING_ROTATE_MS = 800
 const LOADING_MAX_ITERATIONS = 6
+const LOGO_HANDOFF_MS = 850
+const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 
@@ -360,8 +379,12 @@ export default {
             lineAnimationTall,
             aboutSquiggle,
             loadingFrames: [loadingNormal, loadingFolded],
+            menuLogo,
             cvUrl,
             showLoadingSplash: true,
+            logoHandoff: false,
+            logoHandoffStyle: null,
+            logoHandoffTimer: null,
             loadingFrameIndex: 0,
             loadingIteration: 0,
             loadingTimer: null,
@@ -492,6 +515,7 @@ export default {
     },
     beforeUnmount() {
         this.clearLoadingTimer()
+        this.clearLogoHandoffTimer()
         clearTimeout(this.aboutEntranceTimer)
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
@@ -619,6 +643,12 @@ export default {
                 this.loadingTimer = null
             }
         },
+        clearLogoHandoffTimer() {
+            if (this.logoHandoffTimer != null) {
+                clearTimeout(this.logoHandoffTimer)
+                this.logoHandoffTimer = null
+            }
+        },
         areMainPageImagesLoaded() {
             const imgs = [...this.$el.querySelectorAll('.portfolio-content img')]
             if (!imgs.length) return false
@@ -626,19 +656,93 @@ export default {
         },
         finishLoadingSplash() {
             this.clearLoadingTimer()
-            this.showLoadingSplash = false
-            document.documentElement.classList.remove('portfolio-booting')
+            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            if (!isMobile || prefersReducedMotion()) {
+                this.completeLoadingHandoff()
+                return
+            }
+            this.startLogoHandoff()
+        },
+        startLogoHandoff() {
+            const frame = this.$el?.querySelector('.loading-splash-frame')
+            const dest = this.$el?.querySelector('.portfolio-top-bar .logo')
+            if (!frame || !dest) {
+                this.completeLoadingHandoff()
+                return
+            }
+
+            const from = frame.getBoundingClientRect()
+            const to = dest.getBoundingClientRect()
+            if (from.width <= 0 || to.width <= 0 || to.height <= 0) {
+                this.completeLoadingHandoff()
+                return
+            }
+
+            // loading_normal sits in an 84×84 canvas with the mark in the top half
+            const startW = from.width
+            const startH = from.height / 2
+            const startL = from.left
+            const startT = from.top
+
+            this.logoHandoffStyle = {
+                left: `${startL}px`,
+                top: `${startT}px`,
+                width: `${startW}px`,
+                height: `${startH}px`,
+                transform: 'translate(0, 0) scale(1, 1)',
+                transition: 'none',
+            }
+            this.logoHandoff = true
+
+            // Kick off page fly-ins with the logo move — no gap after it lands
+            this.beginPageReveal()
+
+            this.clearLogoHandoffTimer()
+            this.logoHandoffTimer = setTimeout(() => {
+                this.completeLoadingHandoff()
+            }, LOGO_HANDOFF_MS + 120)
+
             requestAnimationFrame(() => {
-                this.syncHeroDecorHeight()
-                this.syncAboutBallPosition()
-                this.syncAboutLocationTextClip()
-                // Next frame so the splash is gone before fly-ins start
                 requestAnimationFrame(() => {
-                    this.syncHeroIntroCharColumns()
-                    this.pageRevealed = true
-                    scrollToPortfolioHash(this.$route.hash)
+                    if (!this.logoHandoff) return
+                    const dx = to.left - startL
+                    const dy = to.top - startT
+                    const sx = to.width / startW
+                    const sy = to.height / startH
+                    this.logoHandoffStyle = {
+                        left: `${startL}px`,
+                        top: `${startT}px`,
+                        width: `${startW}px`,
+                        height: `${startH}px`,
+                        transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`,
+                        transition: `transform ${LOGO_HANDOFF_MS}ms ${LOGO_HANDOFF_EASE}`,
+                    }
                 })
             })
+        },
+        onLogoHandoffTransitionEnd(event) {
+            if (event.propertyName !== 'transform') return
+            this.completeLoadingHandoff()
+        },
+        beginPageReveal() {
+            if (this.pageRevealed) return
+            document.documentElement.classList.remove('portfolio-booting')
+            this.syncHeroDecorHeight()
+            this.syncAboutBallPosition()
+            this.syncAboutLocationTextClip()
+            this.syncHeroIntroCharColumns()
+            this.pageRevealed = true
+            scrollToPortfolioHash(this.$route.hash)
+        },
+        completeLoadingHandoff() {
+            if (!this.showLoadingSplash && !this.logoHandoff) return
+            this.clearLoadingTimer()
+            this.clearLogoHandoffTimer()
+            this.showLoadingSplash = false
+            this.logoHandoff = false
+            this.logoHandoffStyle = null
+            document.documentElement.classList.remove('portfolio-booting')
+            this.beginPageReveal()
         },
         scheduleLoadingAdvance() {
             this.clearLoadingTimer()
@@ -1132,6 +1236,12 @@ export default {
     align-items: center;
     justify-content: center;
     background: #fff;
+    transition: background-color 0.55s ease;
+}
+
+.loading-splash--handoff {
+    background-color: transparent;
+    pointer-events: none;
 }
 
 .loading-splash-frame {
@@ -1143,6 +1253,19 @@ export default {
 
 .loading-splash-frame--rotating {
     transition: transform 800ms linear;
+}
+
+.loading-splash-handoff-logo {
+    position: fixed;
+    z-index: 10001;
+    display: block;
+    transform-origin: top left;
+    will-change: transform;
+    pointer-events: none;
+}
+
+.portfolio-content--logo-handoff :deep(.logo) {
+    opacity: 0;
 }
 
 :global(html.portfolio-booting),
