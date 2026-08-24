@@ -511,7 +511,6 @@ export default {
             titleFitRaf: null,
             titleFitObserver: null,
             titleExitRaf: null,
-            lastScrollY: 0,
             reduceMotionMq: null,
             ballPosObserver: null,
         }
@@ -531,7 +530,6 @@ export default {
 
             this.reduceMotionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
             this.reduceMotionMq.addEventListener?.('change', this.onTitleExitScroll)
-            this.lastScrollY = window.scrollY
             window.addEventListener('scroll', this.onTitleExitScroll, { passive: true })
             this.onTitleExitScroll()
 
@@ -607,53 +605,57 @@ export default {
             if (!title) return
             title.style.transform = ''
             title.style.opacity = ''
+            title.style.filter = ''
+            title.style.removeProperty('transform-origin')
         },
         updateTitleExit() {
             const title = this.getTitleEl()
             const hero = this.getHeroEl()
             if (!title || !hero) return
 
-            const scrollY = window.scrollY
-            const scrollingDown = scrollY > this.lastScrollY
-            this.lastScrollY = scrollY
-
             if (this.reduceMotionMq?.matches) {
                 this.clearTitleExitStyles()
                 return
             }
 
-            // Scrolling up: restore the title to its normal appearance
-            if (!scrollingDown) {
-                this.clearTitleExitStyles()
-                return
-            }
-
+            // Progress is tied only to hero position, so scroll-up is the exact
+            // reverse of scroll-down through the same enlarge + fade curve.
             const heroBottom = hero.getBoundingClientRect().bottom
-            // Only start once ≤300px of the hero remains in the viewport
             const startBottom = 300
-            if (heroBottom > startBottom) {
-                this.clearTitleExitStyles()
-                return
-            }
-
             const titleHeight = title.offsetHeight || 1
             const endBottom = startBottom - Math.max(titleHeight * 1.5, 220)
             const range = startBottom - endBottom
-            if (range <= 0) {
+
+            if (range <= 0 || heroBottom > startBottom) {
                 this.clearTitleExitStyles()
                 return
             }
 
             const progress = Math.min(1, Math.max(0, (startBottom - heroBottom) / range))
-            if (progress <= 0) {
-                this.clearTitleExitStyles()
-                return
-            }
-
             const scale = 1 + progress * 2
             const opacity = 1 - progress
+
+            // Blur only once type is already large; ramp hard so it reads on mobile
+            const blurStart = 0.22
+            const blurProgress =
+                progress <= blurStart ? 0 : (progress - blurStart) / (1 - blurStart)
+            const blurPx = blurProgress * blurProgress * 28
+
+            // Origin on the visual centre of the glyph block (layout box, not
+            // transformed bounds — otherwise origin drifts while scaling).
+            const lines = [...title.querySelectorAll('.project-header-title-line')].filter(
+                (line) => line.textContent.trim().length > 0
+            )
+            const textWidth = lines.length
+                ? Math.max(...lines.map((line) => line.offsetWidth))
+                : title.offsetWidth
+            const originX = textWidth / 2
+            const originY = title.offsetHeight / 2
+
+            title.style.transformOrigin = `${originX}px ${originY}px`
             title.style.transform = `scale(${scale})`
             title.style.opacity = String(opacity)
+            title.style.filter = blurPx > 0.05 ? `blur(${blurPx}px)` : 'none'
         },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
@@ -993,7 +995,7 @@ export default {
     color: #bababa;
     white-space: nowrap;
     transform-origin: center center;
-    will-change: transform, opacity;
+    will-change: transform, opacity, filter;
 }
 
 /* Explicit two-line layout: each line is nowrap so it never spills to 3+ */
