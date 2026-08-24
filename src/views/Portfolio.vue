@@ -2417,21 +2417,21 @@ export default {
 
     .about-location-text--soft {
         z-index: 1;
-        color: #fff;
-        -webkit-text-fill-color: #fff;
+        color: #fffef2;
+        -webkit-text-fill-color: #fffef2;
         /* Steep white falloff: softens the glyph edge, stays inside the dark rim */
-        filter: blur(0.45px);
+        filter: blur(0.28px);
         text-shadow:
-            0 0 0.35px rgba(255, 255, 255, 1),
-            0 0 0.75px rgba(255, 255, 255, 0.7),
-            0 0 1.25px rgba(255, 255, 255, 0.2);
+            0 0 0.2px rgba(255, 254, 242, 1),
+            0 0 0.45px rgba(255, 254, 242, 0.65),
+            0 0 0.7px rgba(255, 254, 242, 0.15);
     }
 
     .about-location-text--white {
         z-index: 2;
         position: relative;
-        color: #fff;
-        -webkit-text-fill-color: #fff;
+        color: #fffef2;
+        -webkit-text-fill-color: #fffef2;
     }
 
     .about-location-icon :deep(path) {
