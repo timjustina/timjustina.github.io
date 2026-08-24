@@ -2172,6 +2172,14 @@ export default {
         width: 100%;
     }
 
+    /* Thumbnails visible immediately — mobile browsers defer off-screen fly-ins until scroll */
+    .portfolio-page--reveal .project.portfolio-fly {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+        will-change: auto;
+    }
+
     .project,
     .project--featured,
     .project--offset,
