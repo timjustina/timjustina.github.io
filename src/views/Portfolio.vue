@@ -84,6 +84,9 @@
                                                 v-for="ch in token.chars"
                                                 :key="ch.i"
                                                 class="hero-intro-char"
+                                                :class="{
+                                                    'hero-intro-char--afterthought': ch.afterthought,
+                                                }"
                                             >{{ ch.c }}</span><span
                                                 v-if="token.trailing"
                                                 class="hero-intro-word-space"
@@ -312,6 +315,7 @@ const LOADING_PAUSE_MS = 250
 const LOADING_ROTATE_MS = 800
 const LOADING_MAX_ITERATIONS = 6
 const LOGO_HANDOFF_MS = 850
+const LOGO_HANDOFF_REVEAL_LEAD_MS = 140
 const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
@@ -323,7 +327,7 @@ const HERO_INTRO_PARTS = [
         text: ' with a background in Neuroscience and research. She deeply enjoys understanding complex problems and providing creative solutions ',
         em: false,
     },
-    { text: 'for people :)', em: true, keep: true },
+    { text: 'for people :)', em: true, keep: true, afterthoughtSuffix: ':)' },
 ]
 
 function buildHeroIntroParts(parts) {
@@ -350,9 +354,15 @@ function buildHeroIntroParts(parts) {
                 continue
             }
 
+            const isAfterthought =
+                Boolean(part.afterthoughtSuffix) && token === part.afterthoughtSuffix
             const word = {
                 type: 'word',
-                chars: Array.from(token).map((c) => ({ c, i: i++ })),
+                chars: Array.from(token).map((c) => ({
+                    c,
+                    i: i++,
+                    afterthought: isAfterthought,
+                })),
                 trailing: '',
             }
             built[partIndex].tokens.push(word)
@@ -385,6 +395,7 @@ export default {
             logoHandoff: false,
             logoHandoffStyle: null,
             logoHandoffTimer: null,
+            logoHandoffRevealTimer: null,
             loadingFrameIndex: 0,
             loadingIteration: 0,
             loadingTimer: null,
@@ -648,6 +659,10 @@ export default {
                 clearTimeout(this.logoHandoffTimer)
                 this.logoHandoffTimer = null
             }
+            if (this.logoHandoffRevealTimer != null) {
+                clearTimeout(this.logoHandoffRevealTimer)
+                this.logoHandoffRevealTimer = null
+            }
         },
         areMainPageImagesLoaded() {
             const imgs = [...this.$el.querySelectorAll('.portfolio-content img')]
@@ -697,7 +712,7 @@ export default {
             this.clearLogoHandoffTimer()
             this.logoHandoffTimer = setTimeout(() => {
                 this.completeLoadingHandoff()
-            }, LOGO_HANDOFF_MS + 120)
+            }, LOGO_HANDOFF_MS + 40)
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -714,6 +729,11 @@ export default {
                         transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`,
                         transition: `transform ${LOGO_HANDOFF_MS}ms ${LOGO_HANDOFF_EASE}`,
                     }
+
+                    const revealAt = Math.max(0, LOGO_HANDOFF_MS - LOGO_HANDOFF_REVEAL_LEAD_MS)
+                    this.logoHandoffRevealTimer = setTimeout(() => {
+                        this.beginPageReveal()
+                    }, revealAt)
                 })
             })
         },
@@ -739,8 +759,9 @@ export default {
             this.logoHandoff = false
             this.logoHandoffStyle = null
             document.documentElement.classList.remove('portfolio-booting')
-            // Fly-ins start immediately after the logo lands (mobile handoff)
-            this.beginPageReveal()
+            if (!this.pageRevealed) {
+                this.beginPageReveal()
+            }
         },
         scheduleLoadingAdvance() {
             this.clearLoadingTimer()
@@ -953,6 +974,13 @@ export default {
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             if (!chars.length) return
 
+            const mainChars = chars.filter(
+                (el) => !el.classList.contains('hero-intro-char--afterthought')
+            )
+            const afterthoughtChars = chars.filter((el) =>
+                el.classList.contains('hero-intro-char--afterthought')
+            )
+
             const pageStyles = getComputedStyle(this.$el)
             const introStyles = getComputedStyle(intro)
             const ctaDelay =
@@ -964,23 +992,21 @@ export default {
             const ctaEnd = ctaDelay + ctaDuration
             const charDuration =
                 parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
-                1.05
-            const minDelay = 0.06
+                0.85
+            const minDelay = 0.04
             const maxDelay = Math.max(minDelay, ctaEnd - charDuration)
 
             const introRect = intro.getBoundingClientRect()
-            const positions = chars.map((el) => {
+            const measure = (el) => {
                 const rect = el.getBoundingClientRect()
                 return {
                     x: rect.left - introRect.left,
                     y: rect.top - introRect.top,
                 }
-            })
-            const minX = Math.min(...positions.map((p) => p.x))
-            const minY = Math.min(...positions.map((p) => p.y))
+            }
 
             let colW = 0
-            for (const el of chars) {
+            for (const el of mainChars) {
                 const w = el.getBoundingClientRect().width
                 if (w > 0) {
                     colW = w
@@ -992,19 +1018,33 @@ export default {
             const lineH =
                 parseFloat(introStyles.lineHeight) || Math.max(colW * 1.5, 20)
 
-            const scores = positions.map((pos) => {
-                const col = Math.max(0, (pos.x - minX) / colW)
-                const line = Math.max(0, (pos.y - minY) / lineH)
-                // Stronger left→right read, with enough jitter to stay messy
-                return col * 1.35 + line * 0.45 + Math.random() * 2.4
-            })
-            const minScore = Math.min(...scores)
-            const maxScore = Math.max(...scores)
-            const scoreRange = maxScore - minScore || 1
+            if (mainChars.length) {
+                const positions = mainChars.map(measure)
+                const minX = Math.min(...positions.map((p) => p.x))
+                const minY = Math.min(...positions.map((p) => p.y))
 
-            chars.forEach((el, idx) => {
-                const t = (scores[idx] - minScore) / scoreRange
-                const delay = minDelay + t * (maxDelay - minDelay)
+                const scores = positions.map((pos) => {
+                    const col = Math.max(0, (pos.x - minX) / colW)
+                    const line = Math.max(0, (pos.y - minY) / lineH)
+                    // Soft left bias + strong scatter so arrivals feel like assembling
+                    return col * 0.9 + line * 0.35 + Math.random() * 5.5
+                })
+                const minScore = Math.min(...scores)
+                const maxScore = Math.max(...scores)
+                const scoreRange = maxScore - minScore || 1
+
+                mainChars.forEach((el, idx) => {
+                    const t = (scores[idx] - minScore) / scoreRange
+                    // Ease out so more letters trail in late (assemble / trickle)
+                    const shaped = 1 - (1 - t) ** 1.55
+                    const delay = minDelay + shaped * (maxDelay - minDelay)
+                    el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
+                })
+            }
+
+            // ":)" pops in after the CTA — a small beat later, like an afterthought
+            afterthoughtChars.forEach((el, idx) => {
+                const delay = ctaEnd + 0.22 + idx * 0.1 + Math.random() * 0.05
                 el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
             })
         },
@@ -1245,7 +1285,7 @@ export default {
     align-items: center;
     justify-content: center;
     background: #fff;
-    transition: background-color 0.55s ease;
+    transition: background-color 0.32s ease;
 }
 
 .loading-splash--handoff {
@@ -2030,9 +2070,9 @@ export default {
         --top-bar-logo-inset: 20px;
         /* Same gap: CTA → first image, and last project text → about */
         --mobile-block-gap: calc(2 * 84px - 25px - 20px - 15px);
-        /* Slightly slower CTA so letter stagger has room and still lands together */
-        --cta-fly-delay: 0.12s;
-        --cta-fly-duration: 1.65s;
+        /* Longer CTA window so letter assemble has room and still lands together */
+        --cta-fly-delay: 0.1s;
+        --cta-fly-duration: 2.05s;
     }
 
     .hero {
@@ -2068,10 +2108,11 @@ export default {
     }
 
     /*
-     * Letter cascade: slower overall, wider stagger still ending with the CTA.
+     * Letter cascade: wide stagger so glyphs trickle in like an assemble,
+     * last letter still landing with the CTA.
      */
     .hero-intro.hero-intro--chars.portfolio-fly {
-        --hero-intro-char-duration: 1.05s;
+        --hero-intro-char-duration: 0.85s;
         opacity: 1;
         transform: none;
         will-change: auto;
