@@ -994,7 +994,11 @@ export default {
                 parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
                 0.85
             const minDelay = 0.04
-            const maxDelay = Math.max(minDelay, ctaEnd - charDuration)
+            const slowestLineMult = 1.1
+            const maxDelay = Math.max(
+                minDelay,
+                ctaEnd - charDuration * slowestLineMult
+            )
 
             const introRect = intro.getBoundingClientRect()
             const measure = (el) => {
@@ -1018,16 +1022,28 @@ export default {
             const lineH =
                 parseFloat(introStyles.lineHeight) || Math.max(colW * 1.5, 20)
 
+            const lineDuration = (lineIndex, lineCount) => {
+                if (lineCount <= 1) return charDuration
+                const t = lineIndex / (lineCount - 1)
+                // First line quickest; later lines only slightly slower
+                const mult = 0.86 + t * (slowestLineMult - 0.86)
+                return charDuration * mult
+            }
+
             if (mainChars.length) {
                 const positions = mainChars.map(measure)
                 const minX = Math.min(...positions.map((p) => p.x))
                 const minY = Math.min(...positions.map((p) => p.y))
+                const lineIndices = positions.map((p) =>
+                    Math.max(0, Math.round((p.y - minY) / lineH))
+                )
+                const lineCount = Math.max(...lineIndices) + 1
 
-                const scores = positions.map((pos) => {
+                const scores = positions.map((pos, idx) => {
                     const col = Math.max(0, (pos.x - minX) / colW)
-                    const line = Math.max(0, (pos.y - minY) / lineH)
-                    // Soft left bias + strong scatter so arrivals feel like assembling
-                    return col * 0.9 + line * 0.35 + Math.random() * 5.5
+                    const line = lineIndices[idx]
+                    // Soft left bias + scatter; lower lines start earlier in the window
+                    return col * 0.9 + line * 0.45 + Math.random() * 5.5
                 })
                 const minScore = Math.min(...scores)
                 const maxScore = Math.max(...scores)
@@ -1035,9 +1051,10 @@ export default {
 
                 mainChars.forEach((el, idx) => {
                     const t = (scores[idx] - minScore) / scoreRange
-                    // Ease out so more letters trail in late (assemble / trickle)
                     const shaped = 1 - (1 - t) ** 1.55
                     const delay = minDelay + shaped * (maxDelay - minDelay)
+                    const duration = lineDuration(lineIndices[idx], lineCount)
+                    el.style.setProperty('--hero-intro-char-duration', `${duration.toFixed(3)}s`)
                     el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
                 })
             }
@@ -1045,6 +1062,7 @@ export default {
             // ":)" pops in after the CTA — a small beat later, like an afterthought
             afterthoughtChars.forEach((el, idx) => {
                 const delay = ctaEnd + 0.22 + idx * 0.1 + Math.random() * 0.05
+                el.style.removeProperty('--hero-intro-char-duration')
                 el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
             })
         },
@@ -2132,7 +2150,7 @@ export default {
     }
 
     .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
-        animation: portfolio-fly-from-right var(--hero-intro-char-duration) var(--fly-ease)
+        animation: portfolio-fly-from-right var(--hero-intro-char-duration, 0.85s) var(--fly-ease)
             var(--hero-intro-char-delay) both;
     }
 
