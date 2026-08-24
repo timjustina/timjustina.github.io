@@ -447,19 +447,39 @@ export default {
             const about = this.$el?.querySelector('#about')
             if (!about) return
 
+            const isMobile = window.matchMedia('(max-width: 600px)').matches
+
             this.aboutRevealObserver = new IntersectionObserver(
                 (entries) => {
-                    if (!entries.some((entry) => entry.isIntersecting)) return
+                    const entry = entries[0]
+                    if (!entry) return
+
+                    if (isMobile) {
+                        // Start once the beige about background fills 1/3 of the viewport
+                        const viewportHeight = entry.rootBounds?.height ?? 0
+                        const visibleHeight = entry.intersectionRect.height
+                        if (viewportHeight <= 0 || visibleHeight < viewportHeight / 3) return
+                    } else if (!entry.isIntersecting) {
+                        return
+                    }
+
                     this.aboutRevealed = true
                     this.aboutRevealObserver?.disconnect()
                     this.aboutRevealObserver = null
                     this.scheduleAboutEntranceEnd()
                 },
-                {
-                    root: null,
-                    threshold: 0.2,
-                    rootMargin: '0px 0px -12% 0px',
-                }
+                isMobile
+                    ? {
+                          root: null,
+                          // Dense steps so we can measure visible height as it scrolls in
+                          threshold: Array.from({ length: 21 }, (_, i) => i / 20),
+                          rootMargin: '0px',
+                      }
+                    : {
+                          root: null,
+                          threshold: 0.2,
+                          rootMargin: '0px 0px -12% 0px',
+                      }
             )
             this.aboutRevealObserver.observe(about)
         },
@@ -1676,7 +1696,7 @@ export default {
 
     .hero {
         --hero-cta-gap: 84px;
-        margin-bottom: var(--mobile-block-gap);
+        margin-bottom: calc(2 * var(--mobile-block-gap));
         min-height: 0;
     }
 
@@ -1816,7 +1836,7 @@ export default {
     }
 
     .about {
-        margin-top: var(--mobile-block-gap);
+        margin-top: calc(2 * var(--mobile-block-gap));
         --about-bottom-pad: 326px;
         --about-photo-h: 288px;
         --about-stack-gap: 50px;
@@ -2003,7 +2023,7 @@ export default {
 
     .about-ball {
         left: auto;
-        right: 20px;
+        right: 0;
     }
 
     .about-action-btn {
