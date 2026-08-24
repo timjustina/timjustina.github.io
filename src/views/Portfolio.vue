@@ -176,7 +176,11 @@
                                     />
                                 </svg>
                             </span>
-                            <span class="about-location-text">London / Barcelona</span>
+                            <span class="about-location-text-wrap">
+                                <span class="about-location-text about-location-text--glow" aria-hidden="true">London / Barcelona</span>
+                                <span class="about-location-text about-location-text--soft" aria-hidden="true">London / Barcelona</span>
+                                <span class="about-location-text">London / Barcelona</span>
+                            </span>
                         </p>
                     </div>
                     <p class="about-bio portfolio-fly portfolio-fly--from-left">
@@ -284,6 +288,7 @@ export default {
             heroLinePhase: 'rest',
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
+            aboutLocationClipRaf: null,
         }
     },
     mounted() {
@@ -324,11 +329,13 @@ export default {
 
         this.syncHeroDecorHeight()
         this.syncAboutBallPosition()
+        this.syncAboutLocationTextClip()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
         window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
             this.syncAboutBallPosition()
+            this.syncAboutLocationTextClip()
             if (sectionHash) {
                 this.jumpToSectionHash(sectionHash)
             }
@@ -342,6 +349,14 @@ export default {
             this.aboutBallObserver.observe(aboutBio)
         }
 
+        const aboutInner = this.$el?.querySelector('.about-inner')
+        if (aboutInner) {
+            this.aboutLocationClipObserver = new ResizeObserver(() => {
+                requestAnimationFrame(() => this.syncAboutLocationTextClip())
+            })
+            this.aboutLocationClipObserver.observe(aboutInner)
+        }
+
         // Work jumps use the normal IO reveal; About jumps start the slide-in after scroll.
         if (sectionHash !== '#about') {
             this.setupAboutReveal()
@@ -353,6 +368,7 @@ export default {
                 requestAnimationFrame(() => {
                     this.syncHeroDecorHeight()
                     this.syncAboutBallPosition()
+                    this.syncAboutLocationTextClip()
                     this.jumpToSectionHash(sectionHash)
                 })
             })
@@ -366,6 +382,8 @@ export default {
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
         this.aboutBallObserver?.disconnect()
+        this.aboutLocationClipObserver?.disconnect()
+        this.stopAboutLocationTextClipPoll()
         this.aboutRevealObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
@@ -447,9 +465,12 @@ export default {
                 (parseFloat(getComputedStyle(page).getPropertyValue('--fly-duration')) || 1.25) *
                 1000
             // Longest about stagger is photo at 0.18s
+            this.pollAboutLocationTextClip()
             this.aboutEntranceTimer = setTimeout(() => {
                 this.aboutEntranceDone = true
+                this.stopAboutLocationTextClipPoll()
                 this.syncAboutBallPosition()
+                this.syncAboutLocationTextClip()
                 if (this.pendingAboutBallDrop) {
                     this.pendingAboutBallDrop = false
                     this.startAboutBallDrop()
@@ -474,6 +495,7 @@ export default {
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
                 this.syncAboutBallPosition()
+                this.syncAboutLocationTextClip()
                 // Next frame so the splash is gone before fly-ins start
                 requestAnimationFrame(() => {
                     this.pageRevealed = true
@@ -672,7 +694,47 @@ export default {
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
                 this.syncAboutBallPosition()
+                this.syncAboutLocationTextClip()
             })
+        },
+        syncAboutLocationTextClip() {
+            const wrap = this.$el?.querySelector('.about-location-text-wrap')
+            const text = wrap?.querySelector(
+                '.about-location-text:not(.about-location-text--glow):not(.about-location-text--soft)'
+            )
+            const photo = this.$el?.querySelector('.about-photo-column')
+            if (!wrap || !text || !photo) return
+
+            if (!window.matchMedia('(max-width: 600px)').matches) {
+                wrap.style.removeProperty('--about-location-split')
+                return
+            }
+
+            const textRect = text.getBoundingClientRect()
+            const photoRect = photo.getBoundingClientRect()
+            if (textRect.width <= 0) return
+
+            const splitPx = photoRect.left - textRect.left
+            const splitPct = Math.min(100, Math.max(0, (splitPx / textRect.width) * 100))
+            wrap.style.setProperty('--about-location-split', `${splitPct}%`)
+        },
+        pollAboutLocationTextClip() {
+            this.stopAboutLocationTextClipPoll()
+            const tick = () => {
+                this.syncAboutLocationTextClip()
+                if (this.aboutRevealed && !this.aboutEntranceDone) {
+                    this.aboutLocationClipRaf = requestAnimationFrame(tick)
+                } else {
+                    this.aboutLocationClipRaf = null
+                }
+            }
+            tick()
+        },
+        stopAboutLocationTextClipPoll() {
+            if (this.aboutLocationClipRaf != null) {
+                cancelAnimationFrame(this.aboutLocationClipRaf)
+                this.aboutLocationClipRaf = null
+            }
         },
         syncHeroDecorHeight() {
             const decor = this.$el?.querySelector('.hero-decor')
@@ -1354,6 +1416,11 @@ export default {
     fill: var(--about-location-icon-fill);
 }
 
+.about-location-text-wrap {
+    position: relative;
+    flex: none;
+}
+
 .about-location-text {
     font-family: 'Be Vietnam Pro', sans-serif;
     font-size: 16px;
@@ -1362,6 +1429,11 @@ export default {
     line-height: 27px;
     color: var(--about-location-color);
     flex: none;
+}
+
+.about-location-text--glow,
+.about-location-text--soft {
+    display: none;
 }
 
 .about-text-column {
@@ -1738,7 +1810,7 @@ export default {
         margin-top: var(--mobile-block-gap);
         --about-bottom-pad: 326px;
         --about-photo-h: 288px;
-        --about-stack-gap: 80px;
+        --about-stack-gap: 50px;
         --about-heading-location-gap: 32px;
         --about-content-shift: 50px;
         padding: var(--about-top-pad) 0 var(--about-bottom-pad);
@@ -1810,8 +1882,57 @@ export default {
         left: 5px;
     }
 
-    .about-location-text {
-        color: var(--about-location-color);
+    .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft) {
+        position: relative;
+        z-index: 2;
+        background-image: linear-gradient(
+            to right,
+            var(--about-location-color) 0,
+            var(--about-location-color) var(--about-location-split, 100%),
+            #fff var(--about-location-split, 100%),
+            #fff 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+
+    /* Soft edge glow behind the white (photo-overlapping) glyphs */
+    .about-location-text--glow {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 0;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        /* Near-edge → wall wash (#CDC6BE): darker core fades into photo light */
+        text-shadow:
+            0 0 0.5px rgba(148, 140, 132, 0.9),
+            0 0 1.25px rgba(163, 156, 148, 0.75),
+            0 0 2.5px rgba(181, 174, 166, 0.55),
+            0 0 4px rgba(205, 198, 190, 0.45),
+            0 0 7px rgba(205, 198, 190, 0.28),
+            0 0 11px rgba(205, 198, 190, 0.14);
+        clip-path: inset(0 0 0 var(--about-location-split, 100%));
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* Slightly soften white glyph edges over the photo */
+    .about-location-text--soft {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 1;
+        color: #fff;
+        -webkit-text-fill-color: #fff;
+        filter: blur(0.55px);
+        clip-path: inset(0 0 0 var(--about-location-split, 100%));
+        pointer-events: none;
+        user-select: none;
     }
 
     .about-location-icon :deep(path) {
