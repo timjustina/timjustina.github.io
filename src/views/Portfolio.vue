@@ -177,9 +177,14 @@
                                 </svg>
                             </span>
                             <span class="about-location-text-wrap">
-                                <span class="about-location-text about-location-text--glow" aria-hidden="true">London / Barcelona</span>
-                                <span class="about-location-text about-location-text--soft" aria-hidden="true">London / Barcelona</span>
                                 <span class="about-location-text">London / Barcelona</span>
+                                <span class="about-location-text-white-stack" aria-hidden="true">
+                                    <span class="about-location-text-white-inner">
+                                        <span class="about-location-text about-location-text--glow">London / Barcelona</span>
+                                        <span class="about-location-text about-location-text--soft">London / Barcelona</span>
+                                        <span class="about-location-text about-location-text--white">London / Barcelona</span>
+                                    </span>
+                                </span>
                             </span>
                         </p>
                     </div>
@@ -700,13 +705,14 @@ export default {
         syncAboutLocationTextClip() {
             const wrap = this.$el?.querySelector('.about-location-text-wrap')
             const text = wrap?.querySelector(
-                '.about-location-text:not(.about-location-text--glow):not(.about-location-text--soft)'
+                '.about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white)'
             )
             const photo = this.$el?.querySelector('.about-photo-column')
             if (!wrap || !text || !photo) return
 
             if (!window.matchMedia('(max-width: 600px)').matches) {
                 wrap.style.removeProperty('--about-location-split')
+                wrap.style.removeProperty('--about-location-split-px')
                 return
             }
 
@@ -714,9 +720,10 @@ export default {
             const photoRect = photo.getBoundingClientRect()
             if (textRect.width <= 0) return
 
-            const splitPx = photoRect.left - textRect.left
-            const splitPct = Math.min(100, Math.max(0, (splitPx / textRect.width) * 100))
+            const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
+            const splitPct = (splitPx / textRect.width) * 100
             wrap.style.setProperty('--about-location-split', `${splitPct}%`)
+            wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
         },
         pollAboutLocationTextClip() {
             this.stopAboutLocationTextClipPoll()
@@ -1431,8 +1438,10 @@ export default {
     flex: none;
 }
 
+.about-location-text-white-stack,
 .about-location-text--glow,
-.about-location-text--soft {
+.about-location-text--soft,
+.about-location-text--white {
     display: none;
 }
 
@@ -1882,15 +1891,20 @@ export default {
         left: 5px;
     }
 
-    .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft) {
+    .about-location-text-wrap {
+        --about-location-white-scale: 1.07;
+    }
+
+    .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white) {
         position: relative;
-        z-index: 2;
+        z-index: 1;
+        /* Gray only on the left; white comes from the scaled photo-side stack */
         background-image: linear-gradient(
             to right,
             var(--about-location-color) 0,
             var(--about-location-color) var(--about-location-split, 100%),
-            #fff var(--about-location-split, 100%),
-            #fff 100%
+            transparent var(--about-location-split, 100%),
+            transparent 100%
         );
         -webkit-background-clip: text;
         background-clip: text;
@@ -1898,41 +1912,74 @@ export default {
         color: transparent;
     }
 
-    /* Soft edge glow behind the white (photo-overlapping) glyphs */
-    .about-location-text--glow {
+    /*
+     * White stack: clipped to the photo side, then scaled from the photo edge
+     * so every overlapping glyph (not just a cut letter) enlarges together.
+     * Top/right/bottom padding lets soft blur + edge glow bleed; left stays hard at the photo edge.
+     */
+    .about-location-text-white-stack {
+        --about-location-glow-pad: 12px;
+        display: block;
+        position: absolute;
+        left: var(--about-location-split-px, 100%);
+        top: calc(-1 * var(--about-location-glow-pad));
+        z-index: 2;
+        overflow: hidden;
+        padding: var(--about-location-glow-pad) var(--about-location-glow-pad) var(--about-location-glow-pad) 0;
+        box-sizing: content-box;
+        transform: scale(var(--about-location-white-scale));
+        transform-origin: left center;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .about-location-text-white-inner {
+        display: block;
+        position: relative;
+        margin-left: calc(-1 * var(--about-location-split-px, 0px));
+    }
+
+    .about-location-text--glow,
+    .about-location-text--soft,
+    .about-location-text--white {
         display: block;
         position: absolute;
         left: 0;
         top: 0;
+        white-space: nowrap;
+    }
+
+    .about-location-text--glow {
         z-index: 0;
         color: transparent;
         -webkit-text-fill-color: transparent;
         /* Near-edge → wall wash (#CDC6BE): darker core fades into photo light */
         text-shadow:
-            0 0 0.5px rgba(148, 140, 132, 0.9),
-            0 0 1.25px rgba(163, 156, 148, 0.75),
-            0 0 2.5px rgba(181, 174, 166, 0.55),
+            0 0 0.5px rgba(130, 122, 114, 0.95),
+            0 0 1.25px rgba(148, 140, 132, 0.8),
+            0 0 2.5px rgba(163, 156, 148, 0.6),
             0 0 4px rgba(205, 198, 190, 0.45),
             0 0 7px rgba(205, 198, 190, 0.28),
             0 0 11px rgba(205, 198, 190, 0.14);
-        clip-path: inset(0 0 0 var(--about-location-split, 100%));
-        pointer-events: none;
-        user-select: none;
     }
 
-    /* Slightly soften white glyph edges over the photo */
     .about-location-text--soft {
-        display: block;
-        position: absolute;
-        left: 0;
-        top: 0;
         z-index: 1;
         color: #fff;
         -webkit-text-fill-color: #fff;
-        filter: blur(0.55px);
-        clip-path: inset(0 0 0 var(--about-location-split, 100%));
-        pointer-events: none;
-        user-select: none;
+        /* Steep white falloff: softens the glyph edge, stays inside the dark rim */
+        filter: blur(0.45px);
+        text-shadow:
+            0 0 0.35px rgba(255, 255, 255, 1),
+            0 0 0.75px rgba(255, 255, 255, 0.7),
+            0 0 1.25px rgba(255, 255, 255, 0.2);
+    }
+
+    .about-location-text--white {
+        z-index: 2;
+        position: relative;
+        color: #fff;
+        -webkit-text-fill-color: #fff;
     }
 
     .about-location-icon :deep(path) {
