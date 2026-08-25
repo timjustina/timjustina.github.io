@@ -1267,12 +1267,14 @@ export default {
             const text = wrap?.querySelector(
                 '.about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white)'
             )
+            const location = this.$el?.querySelector('.about-location')
             const photo = this.$el?.querySelector('.about-photo-column')
-            if (!wrap || !text || !photo) return
+            if (!wrap || !text || !location || !photo) return
 
             if (!window.matchMedia('(max-width: 600px)').matches) {
                 wrap.style.removeProperty('--about-location-split')
                 wrap.style.removeProperty('--about-location-split-px')
+                location.style.removeProperty('--about-location-overlap-nudge')
                 return
             }
 
@@ -1280,7 +1282,37 @@ export default {
             const photoRect = photo.getBoundingClientRect()
             if (textRect.width <= 0) return
 
-            const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
+            const currentNudge =
+                parseFloat(getComputedStyle(location).getPropertyValue('--about-location-overlap-nudge')) || 0
+
+            let nudge = 0
+            // Shift location right when needed so overlap reaches at least mid-"o" in Barcelona
+            const label = text.textContent || ''
+            const oIndex = label.indexOf('Barcelona') + 6
+            const textNode = text.firstChild
+            if (textNode && textNode.nodeType === Node.TEXT_NODE && oIndex >= 6 && oIndex < label.length) {
+                const range = document.createRange()
+                range.setStart(textNode, oIndex)
+                range.setEnd(textNode, oIndex + 1)
+                const oRect = range.getBoundingClientRect()
+                range.detach?.()
+                if (oRect.width > 0) {
+                    // Undo any applied nudge so we target the natural mid-"o"
+                    const midO = oRect.left + oRect.width / 2 - currentNudge
+                    if (photoRect.left > midO) {
+                        nudge = photoRect.left - midO
+                    }
+                }
+            }
+
+            if (nudge > 0) {
+                location.style.setProperty('--about-location-overlap-nudge', `${nudge}px`)
+            } else {
+                location.style.removeProperty('--about-location-overlap-nudge')
+            }
+
+            const textLeft = textRect.left - currentNudge + nudge
+            const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textLeft))
             const splitPct = (splitPx / textRect.width) * 100
             wrap.style.setProperty('--about-location-split', `${splitPct}%`)
             wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
@@ -2586,7 +2618,7 @@ export default {
         margin: 0;
         padding: 0;
         top: 10px;
-        left: 5px;
+        left: calc(5px + var(--about-location-overlap-nudge, 0px));
     }
 
     .about-location-text-wrap {
