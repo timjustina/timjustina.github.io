@@ -836,11 +836,29 @@ export default {
             // Also settle the line knot as soon as its clip reveal ends
             this.scheduleHeroLineClipSettle()
 
-            // Longest hero entrance (mobile CTA ~2.15s). After this, fly-ins never replay on resize.
+            // Wait until the longest hero motion finishes — on mobile that's the
+            // ":)" afterthought (CTA end + beat + char fly), not just the CTA.
+            let settleMs = 2300
+            if (window.matchMedia('(max-width: 600px)').matches) {
+                const pageStyles = getComputedStyle(this.$el)
+                const intro = this.$el?.querySelector('.hero-intro')
+                const introStyles = intro ? getComputedStyle(intro) : pageStyles
+                const ctaDelay =
+                    parseFloat(pageStyles.getPropertyValue('--cta-fly-delay')) || 0.1
+                const ctaDuration =
+                    parseFloat(pageStyles.getPropertyValue('--cta-fly-duration')) || 2.05
+                const charDuration =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
+                    0.85
+                // Matches syncHeroIntroCharColumns: ctaEnd + 0.22 + idx*0.1 + jitter
+                const afterthoughtStart = ctaDelay + ctaDuration + 0.22 + 0.1 + 0.05
+                settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
+            }
+
             clearTimeout(this.pageEntranceSettleTimer)
             this.pageEntranceSettleTimer = setTimeout(() => {
                 this.markPageEntranceDone()
-            }, 2300)
+            }, settleMs)
         },
         markPageEntranceDone() {
             clearTimeout(this.pageEntranceSettleTimer)
@@ -1262,6 +1280,15 @@ export default {
                 el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
             })
         },
+        readElementTranslateX(el) {
+            const t = getComputedStyle(el).transform
+            if (!t || t === 'none') return 0
+            try {
+                return new DOMMatrixReadOnly(t).m41
+            } catch {
+                return 0
+            }
+        },
         syncAboutLocationTextClip() {
             const wrap = this.$el?.querySelector('.about-location-text-wrap')
             const text = wrap?.querySelector(
@@ -1284,6 +1311,9 @@ export default {
 
             const currentNudge =
                 parseFloat(getComputedStyle(location).getPropertyValue('--about-location-overlap-nudge')) || 0
+            // Strip fly-in translates so nudge targets the resting layout, not mid-animation poses
+            const locTx = this.readElementTranslateX(location)
+            const photoTx = this.readElementTranslateX(photo)
 
             let nudge = 0
             // Shift location right when needed so overlap reaches at least mid-"o" in Barcelona
@@ -1297,10 +1327,10 @@ export default {
                 const oRect = range.getBoundingClientRect()
                 range.detach?.()
                 if (oRect.width > 0) {
-                    // Undo any applied nudge so we target the natural mid-"o"
-                    const midO = oRect.left + oRect.width / 2 - currentNudge
-                    if (photoRect.left > midO) {
-                        nudge = photoRect.left - midO
+                    const midOResting = oRect.left + oRect.width / 2 - locTx - currentNudge
+                    const photoLeftResting = photoRect.left - photoTx
+                    if (photoLeftResting > midOResting) {
+                        nudge = photoLeftResting - midOResting
                     }
                 }
             }
@@ -1311,8 +1341,8 @@ export default {
                 location.style.removeProperty('--about-location-overlap-nudge')
             }
 
-            const textLeft = textRect.left - currentNudge + nudge
-            const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textLeft))
+            // Color split follows the live (possibly mid-flight) overlap
+            const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
             const splitPct = (splitPx / textRect.width) * 100
             wrap.style.setProperty('--about-location-split', `${splitPct}%`)
             wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
