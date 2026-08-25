@@ -1,5 +1,11 @@
 <template>
-    <div class="portfolio-page" :class="{ 'portfolio-page--reveal': pageRevealed }">
+    <div
+        class="portfolio-page"
+        :class="{
+            'portfolio-page--reveal': pageRevealed,
+            'portfolio-page--settled': pageEntranceDone,
+        }"
+    >
         <div
             v-if="showLoadingSplash || logoHandoff"
             class="loading-splash"
@@ -40,7 +46,11 @@
         <main class="portfolio-main">
             <section class="hero">
                 <div class="hero-intro-wrap">
-                    <div class="hero-decor portfolio-fly portfolio-fly--from-right" aria-hidden="true">
+                    <div
+                        class="hero-decor portfolio-fly portfolio-fly--from-right"
+                        :class="{ 'hero-decor--hidden': heroDecorHidden }"
+                        aria-hidden="true"
+                    >
                         <picture>
                             <source
                                 media="(min-width: 998px)"
@@ -402,11 +412,17 @@ export default {
             loadingRotationDeg: 0,
             loadingRotating: false,
             pageRevealed: false,
+            pageEntranceDone: false,
             aboutRevealed: false,
             aboutEntranceDone: false,
             pendingAboutBallDrop: false,
             aboutBallDropped: false,
             heroLinePhase: 'rest',
+            heroLineClipSettled: false,
+            // JS-owned so we can measure while hidden, then show after sync (avoids 600px flash)
+            heroDecorHidden:
+                typeof window !== 'undefined' &&
+                window.matchMedia('(max-width: 600px)').matches,
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
@@ -429,6 +445,8 @@ export default {
         if (sectionHash) {
             this.showLoadingSplash = false
             this.pageRevealed = true
+            this.pageEntranceDone = true
+            this.heroLineClipSettled = true
         } else {
             document.documentElement.classList.add('portfolio-booting')
         }
@@ -436,22 +454,17 @@ export default {
         this.heroIntroLetterMq = window.matchMedia('(max-width: 600px)')
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.onHeroIntroLetterMqChange = () => {
-            const next =
-                this.heroIntroLetterMq.matches && !this.heroIntroReduceMq.matches
-            if (next === this.heroIntroLetterMode) return
-            this.heroIntroLetterMode = next
-            this.$nextTick(() => {
-                this.syncHeroDecorHeight()
-                if (next && !this.pageRevealed) {
-                    this.syncHeroIntroCharColumns()
-                }
-            })
+            this.onMobileHeroLayoutChange()
         }
         this.heroIntroLetterMq.addEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
 
         this.heroDecorObserver = new ResizeObserver(() => {
-            requestAnimationFrame(() => this.syncHeroDecorHeight())
+            this.beginHeroDecorResizeClip()
+            requestAnimationFrame(() => {
+                this.syncHeroDecorHeight()
+                this.endHeroDecorResizeClip()
+            })
         })
 
         const main = this.$el?.querySelector('.portfolio-main')
@@ -509,6 +522,7 @@ export default {
         if (sectionHash !== '#about') {
             this.setupAboutReveal()
         }
+        this.setupProjectScrollFade(sectionHash)
         this.scheduleFirstProjectPrefetch()
 
         if (sectionHash) {
@@ -523,17 +537,31 @@ export default {
         } else {
             this.scheduleLoadingAdvance()
         }
+
+        if (this.pageRevealed) {
+            this.schedulePageEntranceSettle()
+            if (this.pageEntranceDone) {
+                this.$nextTick(() => {
+                    this.getHeroLineEl()?.classList.add('hero-decor-line--settled')
+                })
+            }
+        }
     },
     beforeUnmount() {
         this.clearLoadingTimer()
         this.clearLogoHandoffTimer()
         clearTimeout(this.aboutEntranceTimer)
+        clearTimeout(this.heroLineClipSettleTimer)
+        clearTimeout(this.pageEntranceSettleTimer)
+        clearTimeout(this.heroDecorResizeClipTimer)
+        this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
         this.aboutBallObserver?.disconnect()
         this.aboutLocationClipObserver?.disconnect()
         this.stopAboutLocationTextClipPoll()
         this.aboutRevealObserver?.disconnect()
+        this.projectFadeObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
@@ -577,11 +605,55 @@ export default {
             scrollToPortfolioHash(hash, { duration: 0 })
             // Keep top bar hidden after the instant jump (no scroll delta to trigger it).
             window.dispatchEvent(new Event('portfolio-section-jump'))
+            if (hash === '#work' || hash === '#work-first') {
+                this.revealAllProjects()
+            }
             if (hash !== '#about' || this.aboutRevealed) return
 
             // Start the about slide-in after the jump so it animates into place.
             this.aboutRevealed = true
             this.scheduleAboutEntranceEnd()
+        },
+        setupProjectScrollFade(sectionHash = '') {
+            const projects = [...(this.$el?.querySelectorAll('.work .project') ?? [])]
+            if (!projects.length) return
+
+            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            if (!isMobile || prefersReducedMotion()) {
+                this.revealAllProjects()
+                return
+            }
+
+            // Deep-link into work: show cards immediately (no fade after jump).
+            if (sectionHash === '#work' || sectionHash === '#work-first') {
+                this.revealAllProjects()
+                return
+            }
+
+            this.projectFadeObserver = new IntersectionObserver(
+                (entries) => {
+                    for (const entry of entries) {
+                        if (!entry.isIntersecting) continue
+                        entry.target.classList.add('project--in-view')
+                        this.projectFadeObserver?.unobserve(entry.target)
+                    }
+                },
+                {
+                    root: null,
+                    threshold: 0.12,
+                    rootMargin: '0px 0px -6% 0px',
+                }
+            )
+            for (const project of projects) {
+                this.projectFadeObserver.observe(project)
+            }
+        },
+        revealAllProjects() {
+            this.projectFadeObserver?.disconnect()
+            this.projectFadeObserver = null
+            for (const project of this.$el?.querySelectorAll('.work .project') ?? []) {
+                project.classList.add('project--in-view')
+            }
         },
         setupAboutReveal() {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -749,7 +821,129 @@ export default {
             this.syncAboutLocationTextClip()
             this.syncHeroIntroCharColumns()
             this.pageRevealed = true
+            this.schedulePageEntranceSettle()
             scrollToPortfolioHash(this.$route.hash)
+        },
+        schedulePageEntranceSettle() {
+            if (this.pageEntranceDone || this.pageEntranceSettleScheduled) return
+            this.pageEntranceSettleScheduled = true
+
+            if (prefersReducedMotion()) {
+                this.markPageEntranceDone()
+                return
+            }
+
+            // Also settle the line knot as soon as its clip reveal ends
+            this.scheduleHeroLineClipSettle()
+
+            // Longest hero entrance (mobile CTA ~2.15s). After this, fly-ins never replay on resize.
+            clearTimeout(this.pageEntranceSettleTimer)
+            this.pageEntranceSettleTimer = setTimeout(() => {
+                this.markPageEntranceDone()
+            }, 2300)
+        },
+        markPageEntranceDone() {
+            clearTimeout(this.pageEntranceSettleTimer)
+            this.pageEntranceSettleTimer = null
+            if (this.pageEntranceDone) return
+            this.pageEntranceDone = true
+            this.markHeroLineClipSettled()
+        },
+        scheduleHeroLineClipSettle() {
+            if (this.heroLineClipSettled || this.heroLineClipSettleScheduled) return
+            this.heroLineClipSettleScheduled = true
+
+            if (prefersReducedMotion()) {
+                this.markHeroLineClipSettled()
+                return
+            }
+
+            const line = this.getHeroLineEl()
+            if (!line) {
+                this.markHeroLineClipSettled()
+                return
+            }
+
+            this.onHeroLineClipSettleEnd = (event) => {
+                if (event.propertyName !== 'clip-path') return
+                line.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
+                this.markHeroLineClipSettled()
+            }
+            line.addEventListener('transitionend', this.onHeroLineClipSettleEnd)
+
+            // 1.15s delay + 0.7s clip reveal (+ buffer) — fallback if transitionend is skipped
+            clearTimeout(this.heroLineClipSettleTimer)
+            this.heroLineClipSettleTimer = setTimeout(() => {
+                line.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
+                this.markHeroLineClipSettled()
+            }, 2000)
+        },
+        markHeroLineClipSettled() {
+            clearTimeout(this.heroLineClipSettleTimer)
+            this.heroLineClipSettleTimer = null
+            if (this.heroLineClipSettled) return
+            this.heroLineClipSettled = true
+            this.getHeroLineEl()?.classList.add('hero-decor-line--settled')
+        },
+        beginHeroDecorResizeClip({ force = false } = {}) {
+            if (!force && !this.heroLineClipSettled) return
+            this.$el?.querySelector('.hero-decor')?.classList.add('hero-decor--resizing')
+            clearTimeout(this.heroDecorResizeClipTimer)
+        },
+        endHeroDecorResizeClip() {
+            clearTimeout(this.heroDecorResizeClipTimer)
+            // Debounce so continuous resize / breakpoint settles before showing the knot
+            this.heroDecorResizeClipTimer = setTimeout(() => {
+                this.$el?.querySelector('.hero-decor')?.classList.remove('hero-decor--resizing')
+                this.heroDecorResizeClipTimer = null
+            }, 150)
+        },
+        onMobileHeroLayoutChange() {
+            const isMobile = this.heroIntroLetterMq.matches
+            const nextLetter =
+                isMobile && !this.heroIntroReduceMq.matches
+            const letterChanged = nextLetter !== this.heroIntroLetterMode
+            const leavingMobile = this.heroDecorHidden && !isMobile
+
+            if (isMobile) {
+                this.heroDecorHidden = true
+                if (letterChanged) this.heroIntroLetterMode = nextLetter
+                return
+            }
+
+            if (letterChanged) this.heroIntroLetterMode = nextLetter
+
+            // Tablet↔desktop letter/motion-only: sync without hiding the line
+            if (!leavingMobile) {
+                this.beginHeroDecorResizeClip()
+                this.$nextTick(() => {
+                    this.syncHeroDecorHeight()
+                    if (this.heroIntroLetterMode && !this.pageRevealed) {
+                        this.syncHeroIntroCharColumns()
+                    }
+                    this.endHeroDecorResizeClip()
+                })
+                return
+            }
+
+            // Leaving mobile → tablet/desktop: keep line invisible until height matches layout
+            this.heroDecorHidden = true
+            this.beginHeroDecorResizeClip({ force: true })
+
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        this.syncHeroDecorHeight()
+                        this.syncAboutBallPosition()
+                        this.syncAboutLocationTextClip()
+                        if (this.heroIntroLetterMode && !this.pageRevealed) {
+                            this.syncHeroIntroCharColumns()
+                        }
+                        this.heroDecorHidden = false
+                        this.endHeroDecorResizeClip()
+                    })
+                })
+            })
         },
         completeLoadingHandoff() {
             if (!this.showLoadingSplash && !this.logoHandoff) return
@@ -951,6 +1145,7 @@ export default {
             about.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
         },
         onHeroDecorResize() {
+            this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
                 this.syncAboutBallPosition()
@@ -958,6 +1153,7 @@ export default {
                 if (!this.pageRevealed) {
                     this.syncHeroIntroCharColumns()
                 }
+                this.endHeroDecorResizeClip()
             })
         },
         /**
@@ -1216,6 +1412,34 @@ export default {
         both;
 }
 
+/* Lock hero/work fly-ins after first play — resize must not restart them */
+.portfolio-page--settled .portfolio-main .portfolio-fly:not(.project) {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+.portfolio-page--settled .portfolio-main .project.portfolio-fly {
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+    opacity: 1;
+}
+
+.portfolio-page--settled .hero-intro--chars .hero-intro-char {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+.portfolio-page--settled .hero-decor-line,
+.portfolio-page--settled .hero-decor-line.hero-decor-line--settled {
+    clip-path: inset(0);
+    transition: transform var(--hero-line-return-duration) ease;
+}
+
 .about-heading.portfolio-fly--from-left {
     --fly-distance: min(56vw, 480px);
 }
@@ -1351,15 +1575,15 @@ export default {
 .hero {
     position: relative;
     z-index: 1;
-    --hero-cta-gap: 98px;
+    --hero-cta-gap: 110px;
     --hero-cta-height: 57px;
     --hero-squiggle-left: 121px;
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
     /* 746px from the left edge of the first project image (content left) */
-    --hero-cta-left: 746px;
-    /* Text bottom → first image = cta gap + cta height + this margin */
-    --hero-text-to-image: 357px;
+    --hero-cta-left: 786px;
+    /* Text bottom → first image = cta gap + cta height + CTA→image margin */
+    --hero-text-to-image: 387px;
     margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
 }
 
@@ -1421,6 +1645,24 @@ export default {
     transition:
         transform var(--hero-line-return-duration) ease,
         clip-path 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.15s;
+}
+
+/* After entrance: lock knot visible with no clip-path transition (avoids replay on resize) */
+.portfolio-page--reveal .hero-decor-line.hero-decor-line--settled {
+    clip-path: inset(0);
+    transition: transform var(--hero-line-return-duration) ease;
+}
+
+/* While viewport/layout is syncing, hide the knot so it can’t flash in the CTA gap */
+.hero-decor.hero-decor--resizing .hero-decor-line {
+    clip-path: inset(0 0 45px 0);
+    transition: transform var(--hero-line-return-duration) ease;
+}
+
+/* Mobile / breakpoint handoff: invisible but still layout-measurable */
+.hero-decor.hero-decor--hidden {
+    visibility: hidden;
+    opacity: 0;
 }
 
 .hero-decor-line--bouncing {
@@ -2005,7 +2247,7 @@ export default {
     }
 
     .hero {
-        margin-bottom: calc(2 * var(--hero-cta-gap));
+        margin-bottom: 220px;
     }
 
     .hero-intro-wrap {
@@ -2099,10 +2341,6 @@ export default {
         min-height: 0;
     }
 
-    .hero-decor {
-        display: none;
-    }
-
     .portfolio-main {
         padding: 0 var(--page-pad) 0;
         box-sizing: border-box;
@@ -2172,11 +2410,19 @@ export default {
         width: 100%;
     }
 
-    /* Thumbnails visible immediately — mobile browsers defer off-screen fly-ins until scroll */
-    .portfolio-page--reveal .project.portfolio-fly {
-        opacity: 1;
+    /* Mobile: no fly-in; quick fade when each case study scrolls into view */
+    .portfolio-page--reveal .project.portfolio-fly,
+    .portfolio-page--settled .portfolio-main .project.portfolio-fly {
+        opacity: 0;
         transform: none;
         animation: none !important;
+        transition: opacity 0.55s ease-out;
+        will-change: opacity;
+    }
+
+    .portfolio-page--reveal .project.portfolio-fly.project--in-view,
+    .portfolio-page--settled .portfolio-main .project.portfolio-fly.project--in-view {
+        opacity: 1;
         will-change: auto;
     }
 
