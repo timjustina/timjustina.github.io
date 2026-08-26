@@ -366,7 +366,7 @@
                         sector</strong> and attention to the target <strong>user's needs.</strong>
                 </p>
 
-                <p>In an <strong>interview feedback session</strong> with caregivers (n=6), <strong>v100% responded
+                <p>In an <strong>interview feedback session</strong> with caregivers (n=6), <strong>100% responded
                         positively</strong> to the design. The
                     <strong>clarity of the data presentation</strong> was specifically highlighted. Most found the
                     layout <strong>easy to
