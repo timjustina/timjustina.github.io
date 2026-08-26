@@ -1431,9 +1431,12 @@ export default {
 
     position: relative;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     min-height: 100vh;
     background: #fff;
     color: var(--text);
+    overflow-x: hidden;
     overflow-x: clip;
 }
 
@@ -1628,6 +1631,7 @@ export default {
 
 .portfolio-main {
     position: relative;
+    width: 100%;
     max-width: var(--page-max);
     margin: 0 auto;
     padding: var(--top-bar-height) var(--page-pad) 0;
@@ -1869,6 +1873,7 @@ export default {
     z-index: 1;
     width: var(--project-w);
     max-width: 100%;
+    min-width: 0;
 }
 
 .project--featured {
@@ -1894,6 +1899,9 @@ export default {
     position: relative;
     z-index: 1;
     display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     text-decoration: none;
 }
 
@@ -1901,6 +1909,9 @@ export default {
     position: relative;
     z-index: 1;
     display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .project-image-link picture {
@@ -2388,6 +2399,8 @@ export default {
         --page-pad: 20px;
         --top-bar-height: 86px;
         --hero-logo-gap: 74px;
+        --project-w: 100%;
+        --project-w-wide: 100%;
         /* Logo top 20px + 50.4px tall (20% bigger) in the 86px bar */
         --top-bar-logo-inset: 20px;
         /* Same gap: CTA → first image, and last project text → about */
@@ -2395,6 +2408,18 @@ export default {
         /* Longer CTA window so letter assemble has room and still lands together */
         --cta-fly-delay: 0.1s;
         --cta-fly-duration: 2.05s;
+    }
+
+    .portfolio-content {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .portfolio-main {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
     }
 
     .hero {
@@ -2470,6 +2495,9 @@ export default {
     .work {
         gap: 0;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        align-items: stretch;
     }
 
     /* Mobile: no fly-in; quick fade when each case study scrolls into view */
@@ -2494,6 +2522,7 @@ export default {
     .project:last-child {
         width: 100%;
         max-width: 100%;
+        min-width: 0;
         margin-top: 0;
         margin-left: 0;
     }
