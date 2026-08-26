@@ -128,6 +128,9 @@
                     <router-link
                         to="/work/DashboardDesign"
                         class="project-image-link"
+                        @pointerdown="onFeaturedProjectPress"
+                        @pointerup="onFeaturedProjectPressEnd"
+                        @pointercancel="onFeaturedProjectPressEnd"
                         @click="onFeaturedProjectNavigate"
                     >
                         <img
@@ -146,6 +149,9 @@
                                 <router-link
                                     to="/work/DashboardDesign"
                                     class="project-title-link"
+                                    @pointerdown="onFeaturedProjectPress"
+                                    @pointerup="onFeaturedProjectPressEnd"
+                                    @pointercancel="onFeaturedProjectPressEnd"
                                     @click="onFeaturedProjectNavigate"
                                 >
                                     IoT Adherence Analytics for Caregivers: Dashboard Design
@@ -427,6 +433,10 @@ export default {
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
+            featuredExpandPending: false,
+            featuredExpandTimer: null,
+            featuredPressClearTimer: null,
+            featuredPressAt: 0,
             heroIntroParts: HERO_INTRO_BUILT,
             heroIntroPlain: HERO_INTRO_PLAIN,
             // Letter cascade is mobile-only; desktop keeps the original block fly-in.
@@ -555,6 +565,8 @@ export default {
         clearTimeout(this.heroLineClipSettleTimer)
         clearTimeout(this.pageEntranceSettleTimer)
         clearTimeout(this.heroDecorResizeClipTimer)
+        clearTimeout(this.featuredExpandTimer)
+        clearTimeout(this.featuredPressClearTimer)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
@@ -573,26 +585,58 @@ export default {
         }
     },
     methods: {
+        onFeaturedProjectPress(event) {
+            if (event.pointerType === 'mouse' && event.button !== 0) return
+            if (prefersReducedMotion()) return
+            if (!window.matchMedia('(max-width: 600px)').matches) return
+            const article = event.currentTarget.closest('.project')
+            clearTimeout(this.featuredPressClearTimer)
+            this.featuredPressClearTimer = null
+            // Keep round while pressed; release clears it unless a navigate starts
+            article?.classList.add('project--press-expand')
+            this.featuredPressAt = performance.now()
+        },
+        onFeaturedProjectPressEnd(event) {
+            if (!window.matchMedia('(max-width: 600px)').matches) return
+            // pointerup fires before click — delay the undo so a real tap can
+            // cancel it and keep the round for the expand.
+            if (this.featuredExpandPending) return
+            const article = event.currentTarget.closest('.project')
+            clearTimeout(this.featuredPressClearTimer)
+            this.featuredPressClearTimer = window.setTimeout(() => {
+                this.featuredPressClearTimer = null
+                if (this.featuredExpandPending) return
+                article?.classList.remove('project--press-expand')
+                this.featuredPressAt = 0
+            }, 80)
+        },
         onFeaturedProjectNavigate(event) {
             if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             if (event.button != null && event.button !== 0) return
             if (prefersReducedMotion()) return
+            if (this.featuredExpandPending) return
 
             const article = event.currentTarget.closest('.project')
             const img = article?.querySelector('.project-image')
             if (!img) return
 
             event.preventDefault()
+            clearTimeout(this.featuredPressClearTimer)
+            this.featuredPressClearTimer = null
 
             const beginExpand = () => {
+                this.featuredExpandPending = false
+                clearTimeout(this.featuredExpandTimer)
+                this.featuredExpandTimer = null
+                this.featuredPressAt = 0
+
                 const rect = img.getBoundingClientRect()
                 if (rect.width <= 0 || rect.height <= 0) {
+                    article?.classList.remove('project--press-expand')
                     this.$router.push('/work/DashboardDesign')
                     return
                 }
 
-                // Start from the full press-round — a quick tap often lands mid
-                // border-radius transition, which expanded before the top finished.
                 startImageExpand({
                     src: img.currentSrc || img.src,
                     rect,
@@ -602,24 +646,23 @@ export default {
 
                 this.$router.push('/work/DashboardDesign').catch(() => {
                     img.style.opacity = ''
+                    article?.classList.remove('project--press-expand')
                     cancelImageExpand()
                 })
             }
 
-            // Mobile: finish rounding on the card while portfolio content is still
-            // visible, then expand. (Don't hold after navigate — that blanks the
-            // case-study page under image-expand-active.)
+            // Mobile: stay on portfolio until press-round has had its full 0.45s
+            // from finger-down, plus a short beat at the fully-rounded pose.
             if (window.matchMedia('(max-width: 600px)').matches) {
-                const shell =
-                    article.querySelector('.project-image-link') ||
-                    article.querySelector('.project-image-wrap')
-                if (shell) {
-                    shell.style.transition = 'border-radius 0.28s ease'
-                    shell.style.borderRadius = PRESS_BORDER_RADIUS
-                }
-                img.style.transition = 'border-radius 0.28s ease'
-                img.style.borderRadius = PRESS_BORDER_RADIUS
-                window.setTimeout(beginExpand, 300)
+                this.featuredExpandPending = true
+                article.classList.add('project--press-expand')
+                if (!this.featuredPressAt) this.featuredPressAt = performance.now()
+
+                const ROUND_MS = 450
+                const HOLD_MS = 200
+                const elapsed = performance.now() - this.featuredPressAt
+                const wait = Math.max(0, ROUND_MS - elapsed) + HOLD_MS
+                this.featuredExpandTimer = window.setTimeout(beginExpand, wait)
                 return
             }
 
@@ -2566,7 +2609,10 @@ export default {
     }
 
     .project:not(.project--upcoming):active .project-image-link,
-    .project:not(.project--upcoming):active .project-image-wrap {
+    .project:not(.project--upcoming):active .project-image-wrap,
+    .project--press-expand .project-image-link,
+    .project--press-expand .project-image-wrap,
+    .project--press-expand .project-image {
         border-radius: 700px 700px 20px 20px;
     }
 
