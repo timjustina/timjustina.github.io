@@ -2,6 +2,10 @@ const EXPAND_DURATION_MS = 700
 const EXPAND_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 /* Start fading page chrome in before the flyer finishes */
 const REVEAL_LEAD_MS = 220
+/* Matches card :active / hover press-round on the portfolio thumbnails */
+export const PRESS_BORDER_RADIUS = '700px 700px 20px 20px'
+/* Mobile: hold the fully-rounded top before size expand begins */
+const ROUND_BEFORE_EXPAND_MS = 240
 
 let active = null
 
@@ -132,6 +136,17 @@ export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_
         targetImg.style.opacity = ''
         cancelImageExpand()
         return
+    }
+
+    // Mobile: finish the press-round so the top is fully rounded before expanding
+    if (window.matchMedia('(max-width: 600px)').matches) {
+        void clone.offsetWidth
+        clone.style.transition = `border-radius 0.2s ${EXPAND_EASE}`
+        clone.style.borderRadius = PRESS_BORDER_RADIUS
+        await new Promise((resolve) => {
+            window.setTimeout(resolve, ROUND_BEFORE_EXPAND_MS)
+        })
+        if (!active || active.clone !== clone) return
     }
 
     void clone.offsetWidth

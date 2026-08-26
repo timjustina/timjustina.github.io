@@ -317,6 +317,7 @@ import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
 import {
     cancelImageExpand,
     prefersReducedMotion,
+    PRESS_BORDER_RADIUS,
     startImageExpand,
 } from '../utils/imageExpandTransition.js'
 
@@ -589,10 +590,13 @@ export default {
                 return
             }
 
+            // Always start from the fully-rounded press pose — a quick tap
+            // often lands mid border-radius transition (0.45s), which made the
+            // flyer expand before the top finished rounding on mobile.
             startImageExpand({
                 src: img.currentSrc || img.src,
                 rect,
-                borderRadius: getComputedStyle(img).borderRadius || '12px',
+                borderRadius: PRESS_BORDER_RADIUS,
             })
             img.style.opacity = '0'
 
