@@ -36,26 +36,24 @@ html {
 
 /* Shared thumbnail → hero expand transition */
 html.image-expand-active {
+  /* Do NOT set overflow:hidden on html/body — iOS Safari then breaks
+     position:fixed, which made the mobile card→hero flyer invisible. */
+  overscroll-behavior: none;
+}
+
+html.image-expand-active #app {
   overflow: hidden;
+  height: 100%;
+  touch-action: none;
 }
 
 html.image-expand-active .project-hero img {
   opacity: 0 !important;
 }
 
-/* Keep the top bar above the flyer and ease it in with the expand */
+/* Top bar stays visible for the whole expand (flyer sits under it at z-index 90) */
 html.image-expand-active .top-bar {
-  animation: image-expand-top-bar-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes image-expand-top-bar-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  opacity: 1;
 }
 
 html.image-expand-active .project-header,

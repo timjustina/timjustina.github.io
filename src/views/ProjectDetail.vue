@@ -38,10 +38,10 @@ export default {
     if (!hasPendingImageExpand()) return
 
     this.$nextTick(() => {
-      const heroImg = this.$el?.querySelector('.project-hero img')
-      if (heroImg) {
-        finishImageExpand(heroImg)
-      }
+      const heroImg =
+        this.$el?.querySelector('.project-hero img') ||
+        document.querySelector('.project-hero img')
+      if (heroImg) finishImageExpand(heroImg)
     })
   },
   beforeUnmount() {
