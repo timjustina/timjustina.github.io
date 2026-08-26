@@ -1,9 +1,12 @@
 const EXPAND_DURATION_MS = 700
+const EXPAND_DURATION_MOBILE_MS = 1100
 const EXPAND_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 /* Start fading page chrome in before the flyer finishes */
 const REVEAL_LEAD_MS = 220
 /* Matches card :active / hover press-round on the portfolio thumbnails */
 export const PRESS_BORDER_RADIUS = '700px 700px 20px 20px'
+/* Mobile: keep the top fully rounded for the first part of the size expand */
+const MOBILE_RADIUS_DELAY_MS = 280
 
 let active = null
 
@@ -108,11 +111,14 @@ function beginReveal(clone) {
     })
 }
 
-export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_MS } = {}) {
+export async function finishImageExpand(targetImg, { duration } = {}) {
     if (!active || !targetImg) {
         cancelImageExpand()
         return
     }
+
+    const isMobile = window.matchMedia('(max-width: 600px)').matches
+    const expandMs = duration ?? (isMobile ? EXPAND_DURATION_MOBILE_MS : EXPAND_DURATION_MS)
 
     const { clone } = active
     targetImg.style.opacity = '0'
@@ -136,14 +142,26 @@ export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_
         return
     }
 
+    // Mobile: brief beat at the rounded card pose on the new page before growing
+    if (isMobile) {
+        clone.style.borderRadius = PRESS_BORDER_RADIUS
+        await new Promise((resolve) => {
+            window.setTimeout(resolve, 180)
+        })
+        if (!active || active.clone !== clone) return
+    }
+
     void clone.offsetWidth
 
+    const radiusDelay = isMobile ? MOBILE_RADIUS_DELAY_MS : 0
+    const radiusMs = Math.max(200, expandMs - radiusDelay)
+
     clone.style.transition = [
-        `top ${duration}ms ${EXPAND_EASE}`,
-        `left ${duration}ms ${EXPAND_EASE}`,
-        `width ${duration}ms ${EXPAND_EASE}`,
-        `height ${duration}ms ${EXPAND_EASE}`,
-        `border-radius ${duration}ms ${EXPAND_EASE}`,
+        `top ${expandMs}ms ${EXPAND_EASE}`,
+        `left ${expandMs}ms ${EXPAND_EASE}`,
+        `width ${expandMs}ms ${EXPAND_EASE}`,
+        `height ${expandMs}ms ${EXPAND_EASE}`,
+        `border-radius ${radiusMs}ms ${EXPAND_EASE} ${radiusDelay}ms`,
     ].join(', ')
 
     clone.style.top = `${to.top}px`
@@ -154,7 +172,7 @@ export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_
 
     // Crossfade page chrome in before the flyer finishes so the top bar
     // never "pops" after a dead beat at the end.
-    const revealDelay = Math.max(0, duration - REVEAL_LEAD_MS)
+    const revealDelay = Math.max(0, expandMs - REVEAL_LEAD_MS)
     active.revealTimer = window.setTimeout(() => {
         if (active?.clone === clone) beginReveal(clone)
     }, revealDelay)
@@ -173,7 +191,7 @@ export async function finishImageExpand(targetImg, { duration = EXPAND_DURATION_
             done()
         }
         clone.addEventListener('transitionend', onEnd)
-        setTimeout(done, duration + 80)
+        setTimeout(done, expandMs + 80)
     })
 
     if (!active || active.clone !== clone) return

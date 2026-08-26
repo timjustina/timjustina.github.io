@@ -511,6 +511,9 @@ export default {
             titleFitRaf: null,
             titleFitObserver: null,
             titleExitRaf: null,
+            titleExitActive: false,
+            titleExitOrigin: null,
+            titleFitDeferred: false,
             reduceMotionMq: null,
             ballPosObserver: null,
         }
@@ -587,6 +590,11 @@ export default {
             return this.$el?.querySelector?.('.site-footer') ?? null
         },
         scheduleFitTitleToWidth() {
+            // Refitting mid-exit reflows line widths and can flash a corner-scale frame.
+            if (this.titleExitActive) {
+                this.titleFitDeferred = true
+                return
+            }
             if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
             this.titleFitRaf = requestAnimationFrame(() => {
                 this.titleFitRaf = null
@@ -602,11 +610,37 @@ export default {
         },
         clearTitleExitStyles() {
             const title = this.getTitleEl()
-            if (!title) return
+            const wasActive = this.titleExitActive
+            this.titleExitActive = false
+            this.titleExitOrigin = null
+            if (!title) {
+                if (wasActive && this.titleFitDeferred) {
+                    this.titleFitDeferred = false
+                    this.scheduleFitTitleToWidth()
+                }
+                return
+            }
             title.style.transform = ''
             title.style.opacity = ''
             title.style.filter = ''
             title.style.removeProperty('transform-origin')
+            if (wasActive && this.titleFitDeferred) {
+                this.titleFitDeferred = false
+                this.scheduleFitTitleToWidth()
+            }
+        },
+        measureTitleExitOrigin(title) {
+            // Layout sizes only (offsetWidth ignores transform). Reject tiny
+            // readings from mid-reflow so we never lock onto a corner origin.
+            const lines = [...title.querySelectorAll('.project-header-title-line')].filter(
+                (line) => line.textContent.trim().length > 0
+            )
+            const textWidth = lines.length
+                ? Math.max(...lines.map((line) => line.offsetWidth))
+                : title.offsetWidth
+            const textHeight = title.offsetHeight
+            if (textWidth < 32 || textHeight < 8) return null
+            return { x: textWidth / 2, y: textHeight / 2 }
         },
         updateTitleExit() {
             const title = this.getTitleEl()
@@ -651,18 +685,19 @@ export default {
                 progress <= blurStart ? 0 : (progress - blurStart) / (1 - blurStart)
             const blurPx = blurProgress * blurProgress * 28
 
-            // Origin on the visual centre of the glyph block (layout box, not
-            // transformed bounds — otherwise origin drifts while scaling).
-            const lines = [...title.querySelectorAll('.project-header-title-line')].filter(
-                (line) => line.textContent.trim().length > 0
-            )
-            const textWidth = lines.length
-                ? Math.max(...lines.map((line) => line.offsetWidth))
-                : title.offsetWidth
-            const originX = textWidth / 2
-            const originY = title.offsetHeight / 2
+            // Lock origin for the whole exit — remasuring every frame (and during
+            // mobile URL-bar reflows) was snapping scale into the corner again.
+            if (!this.titleExitOrigin) {
+                this.titleExitOrigin = this.measureTitleExitOrigin(title)
+            }
 
-            title.style.transformOrigin = `${originX}px ${originY}px`
+            if (this.titleExitOrigin) {
+                title.style.transformOrigin = `${this.titleExitOrigin.x}px ${this.titleExitOrigin.y}px`
+            } else {
+                title.style.transformOrigin = 'left center'
+            }
+
+            this.titleExitActive = true
             title.style.transform = `scale(${scale})`
             title.style.opacity = String(opacity)
             title.style.filter = blurPx > 0.05 ? `blur(${blurPx}px)` : 'none'
@@ -707,6 +742,11 @@ export default {
             stage.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
         },
         fitTitleToWidth() {
+            if (this.titleExitActive) {
+                this.titleFitDeferred = true
+                return
+            }
+
             const title = this.getTitleEl()
             if (!title) return
 
@@ -1004,7 +1044,8 @@ export default {
     text-align: left;
     color: #bababa;
     white-space: nowrap;
-    transform-origin: center center;
+    /* Fallback only — JS locks a stable glyph-centre origin during exit */
+    transform-origin: left center;
     will-change: transform, opacity, filter;
 }
 

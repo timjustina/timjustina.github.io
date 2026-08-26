@@ -625,13 +625,13 @@ export default {
             this.featuredPressClearTimer = null
 
             const beginExpand = () => {
-                this.featuredExpandPending = false
                 clearTimeout(this.featuredExpandTimer)
                 this.featuredExpandTimer = null
                 this.featuredPressAt = 0
 
                 const rect = img.getBoundingClientRect()
                 if (rect.width <= 0 || rect.height <= 0) {
+                    this.featuredExpandPending = false
                     article?.classList.remove('project--press-expand')
                     this.$router.push('/work/DashboardDesign')
                     return
@@ -644,22 +644,34 @@ export default {
                 })
                 img.style.opacity = '0'
 
-                this.$router.push('/work/DashboardDesign').catch(() => {
-                    img.style.opacity = ''
-                    article?.classList.remove('project--press-expand')
-                    cancelImageExpand()
-                })
+                const go = () => {
+                    this.featuredExpandPending = false
+                    this.$router.push('/work/DashboardDesign').catch(() => {
+                        img.style.opacity = ''
+                        article?.classList.remove('project--press-expand')
+                        cancelImageExpand()
+                    })
+                }
+
+                // Mobile: leave the rounded flyer on the portfolio a beat so the
+                // full round reads, then navigate into the hero expand.
+                if (window.matchMedia('(max-width: 600px)').matches) {
+                    this.featuredExpandTimer = window.setTimeout(go, 320)
+                    return
+                }
+
+                go()
             }
 
             // Mobile: stay on portfolio until press-round has had its full 0.45s
-            // from finger-down, plus a short beat at the fully-rounded pose.
+            // from finger-down, plus a clear beat at the fully-rounded pose.
             if (window.matchMedia('(max-width: 600px)').matches) {
                 this.featuredExpandPending = true
                 article.classList.add('project--press-expand')
                 if (!this.featuredPressAt) this.featuredPressAt = performance.now()
 
                 const ROUND_MS = 450
-                const HOLD_MS = 200
+                const HOLD_MS = 520
                 const elapsed = performance.now() - this.featuredPressAt
                 const wait = Math.max(0, ROUND_MS - elapsed) + HOLD_MS
                 this.featuredExpandTimer = window.setTimeout(beginExpand, wait)
