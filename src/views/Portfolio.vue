@@ -584,26 +584,46 @@ export default {
 
             event.preventDefault()
 
-            const rect = img.getBoundingClientRect()
-            if (rect.width <= 0 || rect.height <= 0) {
-                this.$router.push('/work/DashboardDesign')
+            const beginExpand = () => {
+                const rect = img.getBoundingClientRect()
+                if (rect.width <= 0 || rect.height <= 0) {
+                    this.$router.push('/work/DashboardDesign')
+                    return
+                }
+
+                // Start from the full press-round — a quick tap often lands mid
+                // border-radius transition, which expanded before the top finished.
+                startImageExpand({
+                    src: img.currentSrc || img.src,
+                    rect,
+                    borderRadius: PRESS_BORDER_RADIUS,
+                })
+                img.style.opacity = '0'
+
+                this.$router.push('/work/DashboardDesign').catch(() => {
+                    img.style.opacity = ''
+                    cancelImageExpand()
+                })
+            }
+
+            // Mobile: finish rounding on the card while portfolio content is still
+            // visible, then expand. (Don't hold after navigate — that blanks the
+            // case-study page under image-expand-active.)
+            if (window.matchMedia('(max-width: 600px)').matches) {
+                const shell =
+                    article.querySelector('.project-image-link') ||
+                    article.querySelector('.project-image-wrap')
+                if (shell) {
+                    shell.style.transition = 'border-radius 0.28s ease'
+                    shell.style.borderRadius = PRESS_BORDER_RADIUS
+                }
+                img.style.transition = 'border-radius 0.28s ease'
+                img.style.borderRadius = PRESS_BORDER_RADIUS
+                window.setTimeout(beginExpand, 300)
                 return
             }
 
-            // Always start from the fully-rounded press pose — a quick tap
-            // often lands mid border-radius transition (0.45s), which made the
-            // flyer expand before the top finished rounding on mobile.
-            startImageExpand({
-                src: img.currentSrc || img.src,
-                rect,
-                borderRadius: PRESS_BORDER_RADIUS,
-            })
-            img.style.opacity = '0'
-
-            this.$router.push('/work/DashboardDesign').catch(() => {
-                img.style.opacity = ''
-                cancelImageExpand()
-            })
+            beginExpand()
         },
         jumpToSectionHash(hash) {
             scrollToPortfolioHash(hash, { duration: 0 })
