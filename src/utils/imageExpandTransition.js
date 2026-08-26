@@ -1,12 +1,14 @@
 const EXPAND_DURATION_MS = 700
-const EXPAND_DURATION_MOBILE_MS = 1100
+const EXPAND_DURATION_MOBILE_MS = 1600
 const EXPAND_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
+/* Gentler than desktop so the card→hero travel stays readable on mobile */
+const EXPAND_EASE_MOBILE = 'cubic-bezier(0.33, 0.1, 0.25, 1)'
 /* Start fading page chrome in before the flyer finishes */
-const REVEAL_LEAD_MS = 220
+const REVEAL_LEAD_MS = 280
 /* Matches card :active / hover press-round on the portfolio thumbnails */
 export const PRESS_BORDER_RADIUS = '700px 700px 20px 20px'
 /* Mobile: keep the top fully rounded for the first part of the size expand */
-const MOBILE_RADIUS_DELAY_MS = 280
+const MOBILE_RADIUS_DELAY_MS = 420
 
 let active = null
 
@@ -119,6 +121,7 @@ export async function finishImageExpand(targetImg, { duration } = {}) {
 
     const isMobile = window.matchMedia('(max-width: 600px)').matches
     const expandMs = duration ?? (isMobile ? EXPAND_DURATION_MOBILE_MS : EXPAND_DURATION_MS)
+    const ease = isMobile ? EXPAND_EASE_MOBILE : EXPAND_EASE
 
     const { clone } = active
     targetImg.style.opacity = '0'
@@ -157,11 +160,11 @@ export async function finishImageExpand(targetImg, { duration } = {}) {
     const radiusMs = Math.max(200, expandMs - radiusDelay)
 
     clone.style.transition = [
-        `top ${expandMs}ms ${EXPAND_EASE}`,
-        `left ${expandMs}ms ${EXPAND_EASE}`,
-        `width ${expandMs}ms ${EXPAND_EASE}`,
-        `height ${expandMs}ms ${EXPAND_EASE}`,
-        `border-radius ${radiusMs}ms ${EXPAND_EASE} ${radiusDelay}ms`,
+        `top ${expandMs}ms ${ease}`,
+        `left ${expandMs}ms ${ease}`,
+        `width ${expandMs}ms ${ease}`,
+        `height ${expandMs}ms ${ease}`,
+        `border-radius ${radiusMs}ms ${ease} ${radiusDelay}ms`,
     ].join(', ')
 
     clone.style.top = `${to.top}px`
