@@ -109,7 +109,7 @@
                         <template v-else>
                             <span class="hero-intro-lead">Tim Justina Yeung is a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
                             She deeply enjoys understanding complex problems and providing creative solutions
-                            <strong class="hero-intro-em hero-intro-em--keep">for people :)</strong>
+                            <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
                         </template>
                     </p>
                 </div>
@@ -648,7 +648,7 @@ export default {
                 rect,
                 borderRadius: isMobile
                     ? PRESS_BORDER_RADIUS
-                    : getComputedStyle(img).borderRadius || '12px',
+                    : getComputedStyle(img).borderRadius || '20px',
             })
             img.style.opacity = '0'
 
@@ -890,16 +890,16 @@ export default {
                 return
             }
 
-            // Also settle the line knot as soon as its clip reveal ends
+            // Lock the line fly-in once the entrance sequence finishes
             this.scheduleHeroLineClipSettle()
 
-            // Wait until the longest hero motion finishes — on mobile that's the
-            // ":)" afterthought (CTA end + beat + char fly), not just the CTA.
+            // Wait until the longest hero motion finishes.
             let settleMs = 2300
+            const intro = this.$el?.querySelector('.hero-intro')
+            const introStyles = intro ? getComputedStyle(intro) : getComputedStyle(this.$el)
+
             if (window.matchMedia('(max-width: 600px)').matches) {
                 const pageStyles = getComputedStyle(this.$el)
-                const intro = this.$el?.querySelector('.hero-intro')
-                const introStyles = intro ? getComputedStyle(intro) : pageStyles
                 const ctaDelay =
                     parseFloat(pageStyles.getPropertyValue('--cta-fly-delay')) || 0.1
                 const ctaDuration =
@@ -910,6 +910,24 @@ export default {
                 // Matches syncHeroIntroCharColumns: ctaEnd + 0.22 + idx*0.1 + jitter
                 const afterthoughtStart = ctaDelay + ctaDuration + 0.22 + 0.1 + 0.05
                 settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
+            } else {
+                const flyEnd =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-fly-end')) || 1.63
+                const beat =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-afterthought-beat')) ||
+                    0.06
+                const cursorLead =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-cursor-lead')) ||
+                    0.18
+                const char2Gap =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-char-2-gap')) ||
+                    0.38
+                const cursorTail =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-cursor-tail')) ||
+                    0.28
+                const typeEnd =
+                    flyEnd + beat + cursorLead + char2Gap + cursorTail
+                settleMs = Math.ceil((typeEnd + 0.15) * 1000)
             }
 
             clearTimeout(this.pageEntranceSettleTimer)
@@ -946,12 +964,12 @@ export default {
             }
             line.addEventListener('transitionend', this.onHeroLineClipSettleEnd)
 
-            // 1.15s delay + 0.7s clip reveal (+ buffer) — fallback if transitionend is skipped
+            // Fly-in duration (+ buffer) — knot stays clipped; no clip-path reveal on load
             clearTimeout(this.heroLineClipSettleTimer)
             this.heroLineClipSettleTimer = setTimeout(() => {
                 line.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
                 this.markHeroLineClipSettled()
-            }, 2000)
+            }, 1300)
         },
         markHeroLineClipSettled() {
             clearTimeout(this.heroLineClipSettleTimer)
@@ -1556,9 +1574,10 @@ export default {
     will-change: auto;
 }
 
-.portfolio-page--settled .hero-decor-line,
-.portfolio-page--settled .hero-decor-line.hero-decor-line--settled {
-    clip-path: inset(0);
+.portfolio-page--settled .hero-decor-line:not(.hero-decor-line--bouncing):not(.hero-decor-line--up),
+.portfolio-page--settled
+    .hero-decor-line.hero-decor-line--settled:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
+    clip-path: inset(0 0 45px 0);
     transition: transform var(--hero-line-return-duration) ease;
 }
 
@@ -1603,11 +1622,17 @@ export default {
     .portfolio-page--reveal .portfolio-fly,
     .about--reveal .portfolio-fly,
     .hero-intro--chars .hero-intro-char,
-    .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
+    .portfolio-page--reveal .hero-intro--chars .hero-intro-char,
+    .hero-intro-afterthought-char {
+        max-width: none;
         opacity: 1;
         transform: none;
         animation: none;
         will-change: auto;
+    }
+
+    .hero-intro-afterthought-cursor {
+        display: none;
     }
 
     .hero-decor-line,
@@ -1698,13 +1723,14 @@ export default {
 .hero {
     position: relative;
     z-index: 1;
+    --hero-intro-max-width: 850px;
     --hero-cta-gap: 110px;
     --hero-cta-height: 57px;
     --hero-squiggle-left: 121px;
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
     /* 746px from the left edge of the first project image (content left) */
-    --hero-cta-left: 786px;
+    --hero-cta-left: 836px;
     /* Text bottom → first image = cta gap + cta height + CTA→image margin */
     --hero-text-to-image: 387px;
     margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
@@ -1713,7 +1739,7 @@ export default {
 .hero-intro-wrap {
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     position: relative;
-    max-width: min(850px, calc(100% - var(--hero-intro-left)));
+    max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
     margin: 110px 0 0
         var(--hero-intro-left);
 }
@@ -1764,20 +1790,20 @@ export default {
 }
 
 .portfolio-page--reveal .hero-decor-line {
-    clip-path: inset(0);
-    transition:
-        transform var(--hero-line-return-duration) ease,
-        clip-path 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1.15s;
-}
-
-/* After entrance: lock knot visible with no clip-path transition (avoids replay on resize) */
-.portfolio-page--reveal .hero-decor-line.hero-decor-line--settled {
-    clip-path: inset(0);
     transition: transform var(--hero-line-return-duration) ease;
 }
 
+/* After entrance: lock fly-in without revealing the bottom knot */
+.portfolio-page--reveal
+    .hero-decor-line.hero-decor-line--settled:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
+    clip-path: inset(0 0 45px 0);
+    transition:
+        transform var(--hero-line-return-duration) ease,
+        clip-path 0.35s ease;
+}
+
 /* While viewport/layout is syncing, hide the knot so it can’t flash in the CTA gap */
-.hero-decor.hero-decor--resizing .hero-decor-line {
+.hero-decor.hero-decor--resizing .hero-decor-line:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
     clip-path: inset(0 0 45px 0);
     transition: transform var(--hero-line-return-duration) ease;
 }
@@ -1789,11 +1815,13 @@ export default {
 }
 
 .hero-decor-line--bouncing {
+    clip-path: inset(0);
     transition: none;
     animation: hero-line-bounce-up var(--hero-line-bounce-duration) forwards;
 }
 
 .hero-decor-line--up {
+    clip-path: inset(0);
     transform: translateY(calc(-1 * var(--hero-line-lift)));
     transition: none;
 }
@@ -1841,10 +1869,10 @@ export default {
     z-index: 1;
     margin: 0;
     font-family: 'Fira Code', monospace;
-    font-size: 22px;
+    font-size: 24px;
     font-style: normal;
     font-weight: calc(400 * var(--font-weight-scale));
-    line-height: 33px;
+    line-height: 36px;
     letter-spacing: -0.02em;
     color: var(--muted);
     font-synthesis: none;
@@ -1874,6 +1902,130 @@ export default {
 
 .hero-intro-em--keep {
     white-space: nowrap;
+}
+
+.hero-intro-afterthought {
+    display: inline;
+}
+
+.hero-intro-afterthought-char {
+    display: inline;
+}
+
+.hero-intro-afterthought-cursor {
+    display: none;
+}
+
+/* Desktop: type ":)" after the block fly-in — cursor first, then one char at a time */
+@media (min-width: 601px) {
+    .hero-intro {
+        --hero-intro-fly-end: 1.63s; /* 0.08s delay + 1.55s duration */
+        --hero-intro-afterthought-beat: 0.06s;
+        --hero-intro-afterthought-start: calc(
+            var(--hero-intro-fly-end) + var(--hero-intro-afterthought-beat)
+        );
+        --hero-intro-type-cursor-lead: 0.18s;
+        --hero-intro-type-char-2-gap: 0.38s; /* brief beat between : and ) */
+        --hero-intro-type-char-1-at: var(--hero-intro-type-cursor-lead);
+        --hero-intro-type-char-2-at: calc(
+            var(--hero-intro-type-cursor-lead) + var(--hero-intro-type-char-2-gap)
+        );
+        --hero-intro-type-cursor-tail: 0.28s;
+        --hero-intro-type-end: calc(
+            var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at) +
+                var(--hero-intro-type-cursor-tail)
+        );
+    }
+
+    .hero-intro-afterthought-char {
+        display: inline-block;
+        max-width: 0;
+        overflow: hidden;
+        vertical-align: bottom;
+        opacity: 0;
+    }
+
+    .hero-intro-afterthought-cursor {
+        display: inline-block;
+        width: 0.1em;
+        min-width: 2px;
+        height: 0.92em;
+        margin-left: 0.04em;
+        background: transparent;
+        box-shadow: inset 2px 0 0 0 var(--brand);
+        vertical-align: -0.1em;
+        opacity: 0;
+        overflow: hidden;
+        /* Always occupy the slot — hide visually, never collapse width */
+        visibility: hidden;
+    }
+
+    .portfolio-page--reveal .hero-intro-afterthought-char:nth-child(1) {
+        animation: hero-intro-char-reveal 0.02s steps(1, end)
+            calc(var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-1-at)) forwards;
+    }
+
+    .portfolio-page--reveal .hero-intro-afterthought-char:nth-child(2) {
+        animation: hero-intro-char-reveal 0.02s steps(1, end)
+            calc(var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at)) forwards;
+    }
+
+    .portfolio-page--reveal .hero-intro-afterthought-cursor {
+        visibility: visible;
+        animation:
+            hero-intro-cursor-on 0.001s linear var(--hero-intro-afterthought-start) forwards,
+            hero-intro-cursor-blink 1.06s step-end var(--hero-intro-afterthought-start) infinite,
+            hero-intro-cursor-off 0.001s linear var(--hero-intro-type-end) forwards;
+    }
+
+    .portfolio-page--settled .hero-intro-afterthought-char {
+        max-width: none;
+        opacity: 1;
+        animation: none !important;
+    }
+
+    .portfolio-page--settled .hero-intro-afterthought-cursor {
+        opacity: 0;
+        visibility: hidden;
+        box-shadow: none;
+    }
+}
+
+@keyframes hero-intro-char-reveal {
+    to {
+        opacity: 1;
+        max-width: 1ch;
+    }
+}
+
+@keyframes hero-intro-cursor-on {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes hero-intro-cursor-blink {
+    0%,
+    45% {
+        box-shadow: inset 2px 0 0 0 var(--brand);
+    }
+
+    50%,
+    95% {
+        box-shadow: none;
+    }
+
+    100% {
+        box-shadow: inset 2px 0 0 0 var(--brand);
+    }
+}
+
+@keyframes hero-intro-cursor-off {
+    to {
+        opacity: 0;
+        visibility: hidden;
+        box-shadow: none;
+    }
 }
 
 .hero-intro-lead {
@@ -1983,7 +2135,7 @@ export default {
     max-width: 100%;
     height: auto;
     display: block;
-    border-radius: 12px 12px 12px 12px;
+    border-radius: 20px;
     background: #fff;
     transition: border-radius 0.45s ease;
 }
@@ -2010,7 +2162,7 @@ export default {
     justify-content: center;
     align-items: center;
     padding: 0;
-    border-radius: 12px;
+    border-radius: 20px;
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
@@ -2167,7 +2319,7 @@ export default {
     z-index: 1;
     width: clamp(281px, calc(281px + (100vw - 997px) * 12 / 457), 293px);
     height: clamp(402px, calc(402px + (100vw - 997px) * 18 / 457), 420px);
-    border-radius: 12px;
+    border-radius: 20px;
     object-fit: cover;
     display: block;
 }
@@ -2293,8 +2445,12 @@ export default {
 
 /* ≥1454px: Final content artboard spacing */
 @media (min-width: 1454px) {
+    .hero {
+        /* 920px keeps "complex" on the second line at 24px / full artboard width */
+        --hero-intro-max-width: 920px;
+    }
+
     .hero-intro-wrap {
-        max-width: 850px;
         margin: 110px 0 0 var(--hero-intro-left);
     }
 
@@ -2392,7 +2548,7 @@ export default {
     }
 
     .cta-button {
-        margin-left: min(615px, max(0px, calc(100% - 233px)));
+        margin-left: min(665px, max(0px, calc(100% - 233px)));
     }
 
     .project--offset {
@@ -2594,7 +2750,7 @@ export default {
         max-width: 100%;
         aspect-ratio: 1 / 1;
         overflow: hidden;
-        border-radius: 12px;
+        border-radius: 20px;
         transition: border-radius 0.45s ease;
     }
 
