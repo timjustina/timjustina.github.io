@@ -922,11 +922,14 @@ export default {
                 const char2Gap =
                     parseFloat(introStyles.getPropertyValue('--hero-intro-type-char-2-gap')) ||
                     0.38
-                const cursorTail =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-cursor-tail')) ||
-                    0.28
-                const typeEnd =
-                    flyEnd + beat + cursorLead + char2Gap + cursorTail
+                const char2At =
+                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-char-2-at')) ||
+                    cursorLead + char2Gap
+                const cursorPostBlink =
+                    parseFloat(
+                        introStyles.getPropertyValue('--hero-intro-type-cursor-post-blink')
+                    ) || 1.06
+                const typeEnd = flyEnd + beat + char2At + cursorPostBlink
                 settleMs = Math.ceil((typeEnd + 0.15) * 1000)
             }
 
@@ -1930,10 +1933,10 @@ export default {
         --hero-intro-type-char-2-at: calc(
             var(--hero-intro-type-cursor-lead) + var(--hero-intro-type-char-2-gap)
         );
-        --hero-intro-type-cursor-tail: 0.28s;
+        --hero-intro-type-cursor-post-blink: 1.06s;
         --hero-intro-type-end: calc(
             var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at) +
-                var(--hero-intro-type-cursor-tail)
+                var(--hero-intro-type-cursor-post-blink)
         );
     }
 
@@ -1972,9 +1975,17 @@ export default {
 
     .portfolio-page--reveal .hero-intro-afterthought-cursor {
         visibility: visible;
+        --hero-intro-type-cursor-post-at: calc(
+            var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at)
+        );
         animation:
             hero-intro-cursor-on 0.001s linear var(--hero-intro-afterthought-start) forwards,
-            hero-intro-cursor-blink 1.06s step-end var(--hero-intro-afterthought-start) infinite,
+            hero-intro-cursor-blink var(--hero-intro-type-char-2-at) step-end
+                var(--hero-intro-afterthought-start) forwards,
+            hero-intro-cursor-post-on 0.001s linear var(--hero-intro-type-cursor-post-at)
+                forwards,
+            hero-intro-cursor-blink var(--hero-intro-type-cursor-post-blink) step-end
+                var(--hero-intro-type-cursor-post-at) 1 forwards,
             hero-intro-cursor-off 0.001s linear var(--hero-intro-type-end) forwards;
     }
 
@@ -2001,6 +2012,13 @@ export default {
 @keyframes hero-intro-cursor-on {
     to {
         opacity: 1;
+    }
+}
+
+@keyframes hero-intro-cursor-post-on {
+    to {
+        opacity: 1;
+        box-shadow: inset 2px 0 0 0 var(--brand);
     }
 }
 
