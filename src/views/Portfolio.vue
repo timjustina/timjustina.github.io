@@ -2810,10 +2810,16 @@ export default {
     color: #fff;
     text-decoration: none;
     box-sizing: border-box;
+    transition: background 0.2s ease;
+}
+
+.about-action-btn:hover {
+    background: var(--brand-hover);
 }
 
 .about-action-btn:active {
     background: var(--brand-active);
+    transition: none;
 }
 
 /* ≥1454px: Final content artboard spacing */
