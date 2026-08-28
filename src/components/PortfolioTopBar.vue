@@ -248,24 +248,33 @@ export default {
     right: 0;
     z-index: 100;
     width: 100%;
+    height: var(--top-bar-height);
     background: #fff;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* Cover subpixel seam where content peeks through during slide */
+    box-shadow: 0 1px 0 0 #fff;
     transition:
         transform 0.3s ease,
-        background-color 0.25s ease;
+        background-color 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
 .top-bar--transparent {
     background: transparent;
+    box-shadow: none;
 }
 
 .top-bar--hidden {
-    transform: translateY(-100%);
+    transform: translate3d(0, -100%, 0);
 }
 
 .top-bar--in-flow {
     position: static;
+    height: auto;
     transform: none;
+    box-shadow: none;
     transition: none;
 }
 
