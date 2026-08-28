@@ -2067,9 +2067,9 @@ export default {
     position: fixed;
     left: 0;
     top: 0;
-    width: 16px;
-    height: 16px;
-    margin: -8px 0 0 -8px;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
     border-radius: 50%;
     background: #fff;
     filter:
