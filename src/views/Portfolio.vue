@@ -78,21 +78,13 @@
                         aria-hidden="true"
                     >
                         <picture>
-                            <source
-                                media="(min-width: 998px)"
-                                :srcset="lineAnimationTall"
-                            />
-                            <source
-                                media="(max-width: 997px)"
-                                :srcset="lineAnimationTall"
-                            />
                             <img
                                 class="hero-decor-line"
                                 :class="{
                                     'hero-decor-line--bouncing': heroLinePhase === 'bouncing',
                                     'hero-decor-line--up': heroLinePhase === 'up',
                                 }"
-                                :src="lineAnimation"
+                                :src="lineAnimationExtended"
                                 alt=""
                                 @animationend="onHeroLineBounceEnd"
                             />
@@ -214,7 +206,14 @@
                     </div>
                 </article>
 
-                <article class="project project--upcoming portfolio-fly portfolio-fly--from-right">
+                <article
+                    id="work-last"
+                    class="project project--upcoming portfolio-fly portfolio-fly--from-right"
+                    @mouseenter="liftHeroLine"
+                    @mouseleave="dropHeroLine"
+                    @focusin="liftHeroLine"
+                    @focusout="onFeaturedFocusOut"
+                >
                     <div class="project-image-wrap">
                         <img
                             class="project-image"
@@ -336,8 +335,7 @@ import dashboardHero from '../assets/1_dashboard/0_dashboard_hero_detail-2400.jp
 import multiplatformHero from '../assets/2_multiplatform/0_multiplatform_hero.jpg'
 import marketplaceHero from '../assets/3_marketplace/0_marketplace_hero.jpg'
 import aboutPhoto from '../assets/portrait.jpg'
-import lineAnimation from '../assets/line_animation.svg'
-import lineAnimationTall from '../assets/line_animation_tall.svg'
+import lineAnimationExtended from '../assets/line_animation_extended.svg'
 import aboutSquiggle from '../assets/squiggle_3.svg'
 import loadingNormal from '../assets/loading/loading_normal.svg'
 import loadingFolded from '../assets/loading/loading_folded.svg'
@@ -442,8 +440,7 @@ export default {
             multiplatformHero,
             marketplaceHero,
             aboutPhoto,
-            lineAnimation,
-            lineAnimationTall,
+            lineAnimationExtended,
             aboutSquiggle,
             loadingFrames: [loadingNormal, loadingFolded],
             menuLogo,
@@ -572,21 +569,31 @@ export default {
         })
 
         const main = this.$el?.querySelector('.portfolio-main')
+        const work = this.$el?.querySelector('.work')
         const workFirst = this.$el?.querySelector('#work-first')
+        const workLast = this.$el?.querySelector('#work-last')
         const heroIntro = this.$el?.querySelector('.hero-intro')
         if (main) {
             this.heroDecorObserver.observe(main)
         }
+        if (work) {
+            this.heroDecorObserver.observe(work)
+        }
         if (workFirst) {
             this.heroDecorObserver.observe(workFirst)
+        }
+        if (workLast) {
+            this.heroDecorObserver.observe(workLast)
         }
         if (heroIntro) {
             this.heroDecorObserver.observe(heroIntro)
         }
 
-        const heroImage = workFirst?.querySelector('.project-image')
-        if (heroImage && !heroImage.complete) {
-            heroImage.addEventListener('load', () => this.syncHeroDecorHeight(), { once: true })
+        for (const article of [workFirst, workLast]) {
+            const heroImage = article?.querySelector('.project-image')
+            if (heroImage && !heroImage.complete) {
+                heroImage.addEventListener('load', () => this.syncHeroDecorHeight(), { once: true })
+            }
         }
 
         this.syncHeroDecorHeight()
@@ -1986,14 +1993,14 @@ export default {
         syncHeroDecorHeight() {
             const decor = this.$el?.querySelector('.hero-decor')
             const heroIntro = this.$el?.querySelector('.hero-intro')
-            const workFirstImage = this.$el?.querySelector('#work-first .project-image-link')
-            if (!decor || !heroIntro || !workFirstImage) return
+            const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
+            if (!decor || !heroIntro || !workLastAnchor) return
 
             if (window.getComputedStyle(decor).display === 'none') return
             if (!window.matchMedia('(min-width: 800px)').matches) return
 
             const wrap = decor.parentElement
-            const imageTop = workFirstImage.getBoundingClientRect().top
+            const imageTop = workLastAnchor.getBoundingClientRect().top
             const offset =
                 parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-bottom-offset')) || 0
 
@@ -2452,7 +2459,7 @@ export default {
     --hero-decor-height: 487px;
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
-    --hero-decor-line-natural-height: 818px;
+    --hero-decor-line-natural-height: 3200px;
     --hero-decor-line-width: 2px;
     position: absolute;
     top: 7px;
