@@ -265,7 +265,7 @@
                         Interrogate LLMs.
                         <br><br>
                         Like to work out in free time - old books and films for the brain,
-                        gym and swim for the rest of the body. Drink wild beers on cheat days. Bilingual in
+                        gym and swim for the rest. Drink wild beers on cheat days. Bilingual in
                         English and Chinese. Speak a bit of Spanish. Love a good conversation. Can't help
                         learning new things all the time.
                         <br><br>
