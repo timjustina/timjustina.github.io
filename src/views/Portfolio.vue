@@ -1352,7 +1352,7 @@ export default {
                 /* ignore */
             }
         },
-        setHeroIntroPointer(x, y, { showBall = false } = {}) {
+        setHeroIntroPointer(x, y, { showBall = false, immediate = false } = {}) {
             if (showBall) {
                 this.heroCursorPos = { x, y }
                 this.heroCursorActive = true
@@ -1360,11 +1360,19 @@ export default {
             this.heroIntroPointer = { x, y }
 
             if (this.isHeroIntroMobileTouch()) {
-                if (this.heroIntroPointerRaf != null) {
-                    cancelAnimationFrame(this.heroIntroPointerRaf)
-                    this.heroIntroPointerRaf = null
+                if (immediate) {
+                    if (this.heroIntroPointerRaf != null) {
+                        cancelAnimationFrame(this.heroIntroPointerRaf)
+                        this.heroIntroPointerRaf = null
+                    }
+                    this.applyHeroIntroPointerShift()
+                    return
                 }
-                this.applyHeroIntroPointerShift()
+                if (this.heroIntroPointerRaf != null) return
+                this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                    this.heroIntroPointerRaf = null
+                    this.applyHeroIntroPointerShift()
+                })
                 return
             }
 
@@ -1441,7 +1449,7 @@ export default {
             if (event.pointerType === 'touch') {
                 this.enableHeroIntroTouchGuard()
             }
-            this.setHeroIntroPointer(event.clientX, event.clientY)
+            this.setHeroIntroPointer(event.clientX, event.clientY, { immediate: true })
         },
         onHeroPointerUpHandler(event) {
             if (this.heroIntroActivePointerId !== event.pointerId) return
@@ -1492,32 +1500,18 @@ export default {
         },
         onHeroPointerScrollHandler() {
             if (!this.canHeroIntroPointerPlay()) return
-
-            const mobileStrokeActive =
-                this.isHeroIntroMobileTouch() &&
-                this.heroIntroActivePointerId != null &&
-                this.heroIntroTouchMode === 'stroke' &&
-                this.heroIntroPointer
-
-            if (this.isHeroIntroFinePointer()) {
-                if (!this.heroCursorActive && !this.heroIntroPointer) return
-            } else if (!mobileStrokeActive) {
-                return
-            }
+            if (!this.isHeroIntroFinePointer()) return
+            if (!this.heroCursorActive && !this.heroIntroPointer) return
 
             if (this.heroIntroScrollRaf != null) return
             this.heroIntroScrollRaf = requestAnimationFrame(() => {
                 this.heroIntroScrollRaf = null
 
-                if (this.isHeroIntroFinePointer()) {
-                    if (!this.heroCursorActive && !this.heroIntroPointer) return
+                if (!this.heroCursorActive && !this.heroIntroPointer) return
 
-                    const { x, y } = this.heroCursorPos
-                    if (!this.isHeroIntroPointerNear(x, y)) {
-                        this.onHeroPointerEndHandlerImpl()
-                        return
-                    }
-                } else if (!this.heroIntroPointer) {
+                const { x, y } = this.heroCursorPos
+                if (!this.isHeroIntroPointerNear(x, y)) {
+                    this.onHeroPointerEndHandlerImpl()
                     return
                 }
 
@@ -1538,6 +1532,7 @@ export default {
             const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
             const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
             const minForce = parseCssPx(introStyles, '--hero-intro-hover-min-force', 0)
+            const radiusExitMult = parseCssPx(introStyles, '--hero-intro-hover-radius-exit-mult', 1)
             const { x, y } = pointer
 
             for (const el of intro.querySelectorAll('.hero-intro-char')) {
@@ -1554,8 +1549,10 @@ export default {
                 const dx = cx - x
                 const dy = cy - y
                 const dist = Math.hypot(dx, dy)
+                const wasPushed = el.classList.contains('hero-intro-char--pushed')
+                const effectiveRadius = wasPushed ? radius * radiusExitMult : radius
 
-                if (dist < radius) {
+                if (dist < effectiveRadius) {
                     const t = dist <= 0 ? 1 : 1 - dist / radius
                     const force = Math.max(t ** forceExp, minForce) * maxShift
                     const lift = Math.max(t ** liftExp, minForce) * maxLift
@@ -2030,24 +2027,21 @@ export default {
         --hero-intro-swipe-min-travel: 20px;
         --hero-intro-swipe-vertical-min: 36px;
         --hero-intro-swipe-ratio: 1.7;
-        --hero-cursor-zone-pad: 240px;
-        --hero-intro-hover-radius: 240px;
+        --hero-cursor-zone-pad: 160px;
+        --hero-intro-hover-radius: 160px;
         --hero-intro-hover-shift: 102px;
         --hero-intro-hover-lift: 38px;
         --hero-intro-hover-force-exp: 1.45;
         --hero-intro-hover-lift-exp: 1.25;
-        --hero-intro-hover-min-force: 0.12;
+        --hero-intro-hover-min-force: 0;
+        --hero-intro-hover-radius-exit-mult: 1.08;
         --hero-intro-hover-knock-mult: 0.34;
         touch-action: pan-y;
     }
 
-    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char,
-    .portfolio-page--settled
-        .hero-intro--chars.hero-intro--stroke-active
-        .hero-intro-char.hero-intro-char--pushed {
-        transition: transform
-            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.34))
-            var(--fly-ease);
+    /* Direct follow while stroking — CSS transitions fight per-frame updates and vibrate */
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char {
+        transition: none;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
