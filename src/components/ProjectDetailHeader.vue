@@ -63,7 +63,7 @@ export default {
 .project-header-title {
     margin: 0;
     max-width: 896px;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-weight: calc(300 * var(--font-weight-scale));
     font-style: normal;
     font-size: 32px;
@@ -110,7 +110,7 @@ export default {
 
     .project-header-title {
         max-width: 318px;
-        font-family: 'Be Vietnam Pro', sans-serif;
+        font-family: 'Work Sans', sans-serif;
         font-weight: calc(300 * var(--font-weight-scale));
         font-size: 20px;
         line-height: 30px;

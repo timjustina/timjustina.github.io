@@ -2909,7 +2909,7 @@ export default {
     flex: 0 1 629px;
     min-width: 0;
     margin: 0;
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 18px;
     font-weight: calc(500 * var(--font-weight-scale));
     line-height: 27px;
@@ -3084,7 +3084,7 @@ export default {
 }
 
 .about-location-text {
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 16px;
     font-style: normal;
     font-weight: calc(400 * var(--font-weight-scale));
@@ -3110,7 +3110,7 @@ export default {
 
 .about-heading {
     margin: 0 0 var(--about-text-gap);
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 18px;
     font-style: normal;
     font-weight: calc(400 * var(--font-weight-scale));
@@ -3164,7 +3164,7 @@ export default {
     padding: 12px 24px;
     border-radius: 60px;
     background: var(--brand);
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 20px;
     font-weight: calc(500 * var(--font-weight-scale));
     line-height: 30px;
@@ -3645,7 +3645,7 @@ export default {
     .project-title {
         flex: 1 1 auto;
         max-width: none;
-        font-family: 'Be Vietnam Pro', sans-serif;
+        font-family: 'Work Sans', sans-serif;
         font-size: 18px;
         font-weight: calc(500 * var(--font-weight-scale));
         line-height: 27px;

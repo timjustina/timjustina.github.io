@@ -67,7 +67,7 @@ export default {
 
 .footer-email,
 .footer-copy {
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 16px;
     font-weight: calc(400 * var(--font-weight-scale));
     line-height: 27px;

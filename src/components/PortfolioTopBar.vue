@@ -313,9 +313,9 @@ export default {
 }
 
 .nav-link {
-    font-family: 'Be Vietnam Pro', sans-serif;
+    font-family: 'Work Sans', sans-serif;
     font-size: 18px;
-    font-weight: calc(500 * var(--font-weight-scale));
+    font-weight: 500;
     line-height: 27px;
     color: var(--brand);
     text-decoration: none;
