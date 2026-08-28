@@ -113,10 +113,6 @@
                         </template>
                     </p>
                 </div>
-                <a
-                    class="cta-button cta-button--in-hero portfolio-fly portfolio-fly--from-left"
-                    href="mailto:design@timjustina.com"
-                >Drop me a line</a>
             </section>
 
             <section id="work" class="work">
@@ -276,6 +272,10 @@
                         developmental neurobiology
                         (research paper).
                     </p>
+                    <a
+                        class="cta-button cta-button--in-about portfolio-fly portfolio-fly--from-left"
+                        href="mailto:design@timjustina.com"
+                    >Drop me a line</a>
                 </div>
                 <div class="about-actions portfolio-fly portfolio-fly--from-left">
                     <div class="about-actions-row">
@@ -298,15 +298,6 @@
                     >Email</a>
                 </div>
             </div>
-            <img
-                class="about-ball"
-                :class="{ 'about-ball--dropped': aboutBallDropped }"
-                :src="aboutSquiggle"
-                alt=""
-                width="59"
-                height="56"
-                aria-hidden="true"
-            />
         </section>
 
         <PortfolioSiteFooter />
@@ -321,7 +312,6 @@ import marketplaceHero from '../assets/3_marketplace/0_marketplace_hero.jpg'
 import aboutPhoto from '../assets/portrait.jpg'
 import lineAnimation from '../assets/line_animation.svg'
 import lineAnimationTall from '../assets/line_animation_tall.svg'
-import aboutSquiggle from '../assets/squiggle_3.svg'
 import loadingNormal from '../assets/loading/loading_normal.svg'
 import loadingFolded from '../assets/loading/loading_folded.svg'
 import menuLogo from '../assets/TjyCutoutLogo.svg'
@@ -413,7 +403,6 @@ export default {
             aboutPhoto,
             lineAnimation,
             lineAnimationTall,
-            aboutSquiggle,
             loadingFrames: [loadingNormal, loadingFolded],
             menuLogo,
             cvUrl,
@@ -431,8 +420,6 @@ export default {
             pageEntranceDone: false,
             aboutRevealed: false,
             aboutEntranceDone: false,
-            pendingAboutBallDrop: false,
-            aboutBallDropped: false,
             heroLinePhase: 'rest',
             heroLineClipSettled: false,
             // JS-owned so we can measure while hidden, then show after sync (avoids 600px flash)
@@ -506,13 +493,10 @@ export default {
         }
 
         this.syncHeroDecorHeight()
-        this.syncAboutBallPosition()
         this.syncAboutLocationTextClip()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
-        window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
-            this.syncAboutBallPosition()
             this.syncAboutLocationTextClip()
             if (!this.pageRevealed) {
                 this.syncHeroIntroCharColumns()
@@ -521,14 +505,6 @@ export default {
                 this.jumpToSectionHash(sectionHash)
             }
         })
-
-        const aboutBio = this.$el?.querySelector('.about-bio')
-        if (aboutBio) {
-            this.aboutBallObserver = new ResizeObserver(() => {
-                requestAnimationFrame(() => this.syncAboutBallPosition())
-            })
-            this.aboutBallObserver.observe(aboutBio)
-        }
 
         const aboutInner = this.$el?.querySelector('.about-inner')
         if (aboutInner) {
@@ -549,7 +525,6 @@ export default {
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
                     this.syncHeroDecorHeight()
-                    this.syncAboutBallPosition()
                     this.syncAboutLocationTextClip()
                     this.jumpToSectionHash(sectionHash)
                 })
@@ -579,13 +554,11 @@ export default {
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
-        this.aboutBallObserver?.disconnect()
         this.aboutLocationClipObserver?.disconnect()
         this.stopAboutLocationTextClipPoll()
         this.aboutRevealObserver?.disconnect()
         this.projectFadeObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
-        window.removeEventListener('scroll', this.onAboutBallScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
@@ -791,12 +764,7 @@ export default {
             this.aboutEntranceTimer = setTimeout(() => {
                 this.aboutEntranceDone = true
                 this.stopAboutLocationTextClipPoll()
-                this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
-                if (this.pendingAboutBallDrop) {
-                    this.pendingAboutBallDrop = false
-                    this.startAboutBallDrop()
-                }
             }, durationMs + 200)
         },
         clearLoadingTimer() {
@@ -896,7 +864,6 @@ export default {
             if (this.pageRevealed) return
             document.documentElement.classList.remove('portfolio-booting')
             this.syncHeroDecorHeight()
-            this.syncAboutBallPosition()
             this.syncAboutLocationTextClip()
             this.syncHeroIntroCharColumns()
             this.pageRevealed = true
@@ -1052,7 +1019,6 @@ export default {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         this.syncHeroDecorHeight()
-                        this.syncAboutBallPosition()
                         this.syncAboutLocationTextClip()
                         if (this.heroIntroLetterMode && !this.pageRevealed) {
                             this.syncHeroIntroCharColumns()
@@ -1211,62 +1177,10 @@ export default {
                 this.dropHeroLine()
             }
         },
-        onAboutBallScroll() {
-            if (this.aboutBallDropped) return
-            const footer = this.$el?.querySelector('.site-footer')
-            const threshold = footer?.offsetHeight || 120
-            const doc = document.documentElement
-            const remaining =
-                doc.scrollHeight - (window.scrollY + window.innerHeight)
-            if (remaining <= threshold) {
-                this.startAboutBallDrop()
-            }
-        },
-        startAboutBallDrop() {
-            if (this.aboutBallDropped) return
-            // Don't start the drop while the about slide-in is still moving
-            if (this.aboutRevealed && !this.aboutEntranceDone) {
-                this.pendingAboutBallDrop = true
-                return
-            }
-            this.syncAboutBallPosition()
-            this.aboutBallDropped = true
-            window.removeEventListener('scroll', this.onAboutBallScroll)
-        },
-        syncAboutBallPosition() {
-            // Skip while about fly-ins are running — mutating those elements
-            // to measure was restarting the entrance animations.
-            if (this.aboutRevealed && !this.aboutEntranceDone) return
-
-            const about = this.$el?.querySelector('.about')
-            if (!about) return
-
-            if (window.matchMedia('(max-width: 600px)').matches) {
-                about.style.removeProperty('--about-ball-x')
-                return
-            }
-
-            const bio = this.$el?.querySelector('.about-bio')
-            if (!bio) return
-
-            const aboutRect = about.getBoundingClientRect()
-            const bioRect = bio.getBoundingClientRect()
-            const styles = getComputedStyle(about)
-            const ballSize =
-                parseFloat(styles.getPropertyValue('--about-ball-size')) || 49
-            const gap = 16
-            const maxX = about.clientWidth - ballSize - 16
-            const x = Math.max(
-                16,
-                Math.min(bioRect.right - aboutRect.left + gap, maxX)
-            )
-            about.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
-        },
         onHeroDecorResize() {
             this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
-                this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
                 if (!this.pageRevealed) {
                     this.syncHeroIntroCharColumns()
@@ -1573,11 +1487,6 @@ export default {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.08s both;
 }
 
-.portfolio-page--reveal .cta-button.portfolio-fly--from-left {
-    animation: portfolio-fly-from-left var(--cta-fly-duration) var(--fly-ease) var(--cta-fly-delay)
-        both;
-}
-
 /* Lock hero/work fly-ins after first play — resize must not restart them */
 .portfolio-page--settled .portfolio-main .portfolio-fly:not(.project) {
     opacity: 1;
@@ -1645,6 +1554,10 @@ export default {
 
 .about--reveal .about-bio.portfolio-fly--from-left {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.16s both;
+}
+
+.about--reveal .cta-button--in-about.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--cta-fly-duration) var(--fly-ease) 0.24s both;
 }
 
 .about--reveal .about-actions.portfolio-fly--from-left {
@@ -1777,9 +1690,9 @@ export default {
     --hero-cta-width: 233px;
     /* 903px from the left edge of the first project image (content left) */
     --hero-cta-left: 862px;
-    /* Text bottom → first image = cta gap + cta height + CTA→image margin */
+    /* Text bottom → first image (CTA lives in the about section on desktop) */
     --hero-text-to-image: 437px;
-    margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
+    margin-bottom: var(--hero-text-to-image);
 }
 
 .hero-intro-wrap {
@@ -2115,12 +2028,16 @@ export default {
     transition: background 0.2s ease;
 }
 
-.cta-button--in-hero {
-    margin-top: var(--hero-cta-gap);
-    margin-left: min(
-        var(--hero-cta-left),
-        max(0px, calc(100% - var(--hero-cta-width)))
-    );
+.cta-button--in-about {
+    display: none;
+}
+
+@media (min-width: 601px) {
+    .cta-button--in-about {
+        display: inline-flex;
+        margin-top: var(--about-bio-cta-gap);
+        margin-left: -24px;
+    }
 }
 
 .cta-button:hover {
@@ -2354,8 +2271,16 @@ export default {
     position: relative;
     width: 100%;
     --about-gap: 340px;
+    --about-text-gap: 39px;
+    --about-bio-cta-gap: calc(var(--about-text-gap) * 1.5);
+    --about-extra-bio-cta-gap: calc(var(--about-bio-cta-gap) - var(--about-text-gap));
+    --about-bottom-pad-base: clamp(180px, calc(180px + (100vw - 997px) * 100 / 457), 280px);
+    --about-bottom-pad: calc(var(--about-bottom-pad-base) - var(--about-extra-bio-cta-gap));
     --about-image-text-gap: clamp(32px, calc(32px + (100vw - 997px) * 32 / 457), 64px);
-    --about-bottom-pad: clamp(180px, calc(180px + (100vw - 997px) * 100 / 457), 280px);
+    --about-photo-w: clamp(281px, calc(281px + (100vw - 997px) * 12 / 457), 293px);
+    --about-photo-h: clamp(402px, calc(402px + (100vw - 997px) * 18 / 457), 420px);
+    --about-photo-col-w: calc(2 * var(--about-image-text-gap) + var(--about-photo-w));
+    --about-inner-max-w: clamp(800px, calc(800px + (100vw - 997px) * 187 / 457), 987px);
     --about-top-pad: 80px;
     margin-top: var(--about-gap);
     padding: var(--about-top-pad) 0 var(--about-bottom-pad);
@@ -2371,9 +2296,9 @@ export default {
 
 .about-inner {
     display: grid;
-    grid-template-columns: clamp(345px, calc(345px + (100vw - 997px) * 46 / 457), 391px) 1fr;
+    grid-template-columns: var(--about-photo-col-w) 1fr;
     gap: 0;
-    max-width: clamp(800px, calc(800px + (100vw - 997px) * 157 / 457), 957px);
+    max-width: var(--about-inner-max-w);
     margin: 0 auto;
     padding: 0;
     box-sizing: border-box;
@@ -2383,18 +2308,18 @@ export default {
 .about-photo-column {
     display: flex;
     flex-direction: column;
-    padding-left: clamp(32px, calc(32px + (100vw - 997px) * 2 / 457), 34px);
+    padding-left: var(--about-image-text-gap);
     box-sizing: border-box;
 }
 
 .about-line {
     position: absolute;
-    left: calc((100vw - clamp(800px, calc(800px + (100vw - 997px) * 157 / 457), 957px)) / 2 + clamp(0px, calc((100vw - 997px) * 2 / 457), 2px));
+    left: calc((100vw - var(--about-inner-max-w)) / 2 + clamp(0px, calc((100vw - 997px) * 2 / 457), 2px));
     top: calc(140px - var(--about-gap));
     z-index: 1;
     display: block;
     width: 0;
-    height: 400px;
+    height: var(--about-photo-h);
     border-left: 2px solid var(--brand);
     pointer-events: none;
 }
@@ -2402,8 +2327,8 @@ export default {
 .about-photo {
     position: relative;
     z-index: 1;
-    width: clamp(281px, calc(281px + (100vw - 997px) * 12 / 457), 293px);
-    height: clamp(402px, calc(402px + (100vw - 997px) * 18 / 457), 420px);
+    width: var(--about-photo-w);
+    height: var(--about-photo-h);
     border-radius: 20px;
     object-fit: cover;
     display: block;
@@ -2421,7 +2346,7 @@ export default {
     align-items: center;
     gap: 4px;
     width: auto;
-    margin: 0 0 39px 20px;
+    margin: 0 0 var(--about-text-gap) 20px;
     padding: 0;
     box-sizing: border-box;
     flex: none;
@@ -2479,7 +2404,7 @@ export default {
 }
 
 .about-heading {
-    margin: 0 0 39px;
+    margin: 0 0 var(--about-text-gap);
     font-family: 'Be Vietnam Pro', sans-serif;
     font-size: 18px;
     font-style: normal;
@@ -2504,26 +2429,6 @@ export default {
     color: var(--brand);
 }
 
-.about-ball {
-    --about-ball-size: 49px;
-    --about-ball-height: 46px;
-    position: absolute;
-    left: var(--about-ball-x, 50%);
-    bottom: 0;
-    z-index: 5;
-    width: var(--about-ball-size);
-    height: var(--about-ball-height);
-    display: block;
-    pointer-events: none;
-    opacity: 0;
-    transform: translate3d(0, -1100px, 0) rotate(0deg);
-    transform-origin: center center;
-}
-
-.about-ball--dropped {
-    opacity: 1;
-}
-
 .about-actions {
     display: none;
 }
@@ -2537,13 +2442,6 @@ export default {
 
     .hero-decor {
         top: 7px;
-    }
-
-    .cta-button--in-hero {
-        margin-top: var(--hero-cta-gap);
-        width: var(--hero-cta-width);
-        min-width: 0;
-        height: var(--hero-cta-height);
     }
 
     .work {
@@ -2565,18 +2463,18 @@ export default {
 
     .about {
         --about-gap: 340px;
-        --about-bottom-pad: 280px;
+        --about-bottom-pad-base: 280px;
         margin-top: 340px;
         padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-inner {
-        grid-template-columns: 391px 1fr;
-        max-width: 957px;
+        grid-template-columns: 421px 1fr;
+        max-width: 987px;
     }
 
     .about-photo-column {
-        padding-left: 34px;
+        padding-left: var(--about-image-text-gap);
         box-sizing: border-box;
     }
 
@@ -2591,7 +2489,7 @@ export default {
     }
 
     .about-heading {
-        margin: 0 0 39px;
+        margin: 0 0 var(--about-text-gap);
     }
 
     .about-bio {
@@ -2600,7 +2498,7 @@ export default {
     }
 
     .about-location {
-        margin: 0 0 39px 20px;
+        margin: 0 0 var(--about-text-gap) 20px;
     }
 }
 
@@ -2612,7 +2510,7 @@ export default {
     }
 
     .hero {
-        margin-bottom: 270px;
+        margin-bottom: var(--hero-text-to-image);
     }
 
     .hero-intro-wrap {
@@ -2621,13 +2519,9 @@ export default {
     }
 
     .hero-decor {
-        top: calc(100% + var(--hero-cta-gap));
+        top: 100%;
         right: auto;
         left: 61px;
-    }
-
-    .cta-button--in-hero {
-        margin-left: min(655px, max(0px, calc(100% - 233px)));
     }
 
     .project + .project {
@@ -2644,7 +2538,7 @@ export default {
 
     .about {
         --about-gap: 340px;
-        --about-bottom-pad: 180px;
+        --about-bottom-pad-base: 180px;
         margin-top: 340px;
         padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
@@ -2656,11 +2550,11 @@ export default {
     }
 
     .about-photo-column {
-        padding-left: 32px;
+        padding-left: var(--about-image-text-gap);
     }
 
     .about-line {
-        left: calc((100vw - 800px) / 2);
+        left: calc((100vw - var(--about-inner-max-w)) / 2);
     }
 
     .about-photo,
@@ -2772,10 +2666,6 @@ export default {
     .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
         animation: portfolio-fly-from-right var(--hero-intro-char-duration, 0.85s) var(--fly-ease)
             var(--hero-intro-char-delay) both;
-    }
-
-    .cta-button--in-hero {
-        display: none;
     }
 
     .work {
@@ -3089,11 +2979,6 @@ export default {
         gap: 20px;
     }
 
-    .about-ball {
-        left: auto;
-        right: 0;
-    }
-
     .about-action-btn {
         display: inline-flex;
         align-items: center;
@@ -3117,72 +3002,5 @@ export default {
         background: var(--brand-active);
     }
 
-}
-</style>
-
-<style>
-/* Unscoped so the keyframe name isn’t rewritten away from the animation. */
-.about-ball.about-ball--dropped {
-    animation: about-ball-fall 1.75s linear forwards;
-}
-
-@keyframes about-ball-fall {
-    /* Fall + 4 decaying bounces left, rolling counter-clockwise */
-    0% {
-        opacity: 1;
-        transform: translate3d(0, -1100px, 0) rotate(0deg);
-        animation-timing-function: cubic-bezier(0.55, 0.05, 0.8, 0.4);
-    }
-
-    /* First impact */
-    40% {
-        transform: translate3d(0, 0, 0) rotate(-460deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 1 */
-    49% {
-        transform: translate3d(-15px, -78px, 0) rotate(-510deg);
-        animation-timing-function: ease-in;
-    }
-
-    57% {
-        transform: translate3d(-29px, 0, 0) rotate(-550deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 2 */
-    64% {
-        transform: translate3d(-39px, -34px, 0) rotate(-585deg);
-        animation-timing-function: ease-in;
-    }
-
-    71% {
-        transform: translate3d(-49px, 0, 0) rotate(-615deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 3 */
-    77% {
-        transform: translate3d(-55px, -15px, 0) rotate(-640deg);
-        animation-timing-function: ease-in;
-    }
-
-    83% {
-        transform: translate3d(-62px, 0, 0) rotate(-660deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 4 → settle */
-    88% {
-        transform: translate3d(-66px, -6px, 0) rotate(-675deg);
-        animation-timing-function: ease-in;
-    }
-
-    93%,
-    100% {
-        opacity: 1;
-        transform: translate3d(-70px, 0, 0) rotate(-690deg);
-    }
 }
 </style>
