@@ -461,6 +461,7 @@ export default {
             heroIntroTapLingerTimer: null,
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
+            heroIntroTouchGuardActive: false,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
         }
@@ -516,6 +517,7 @@ export default {
             this.onHeroPointerEndHandlerImpl()
         }
         this.onHeroPointerScroll = () => this.onHeroPointerScrollHandler()
+        this.onHeroTouchMove = (event) => this.onHeroTouchMoveHandler(event)
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
         window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
         window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
@@ -626,6 +628,7 @@ export default {
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
         clearTimeout(this.heroIntroTapLingerTimer)
+        this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
         window.removeEventListener('pointermove', this.onHeroPointerMove)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
@@ -1228,20 +1231,6 @@ export default {
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
         },
-        isHeroIntroPointerOnText(x, y) {
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return false
-
-            const introStyles = getComputedStyle(intro)
-            const pad = parseCssPx(introStyles, '--hero-intro-touch-pad', 20)
-            const rect = intro.getBoundingClientRect()
-            return (
-                x >= rect.left - pad &&
-                x <= rect.right + pad &&
-                y >= rect.top - pad &&
-                y <= rect.bottom + pad
-            )
-        },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
@@ -1290,6 +1279,7 @@ export default {
         },
         enterHeroIntroSwipeMode(pointerId) {
             this.heroIntroTouchMode = 'swipe'
+            this.disableHeroIntroTouchGuard()
             this.releaseHeroIntroPointerCapture(pointerId)
             this.setHeroIntroStrokeActive(false)
             this.heroIntroPointer = null
@@ -1298,6 +1288,50 @@ export default {
                 this.heroIntroPointerRaf = null
             }
             this.clearHeroIntroPointerShift()
+        },
+        enableHeroIntroTouchGuard() {
+            if (this.heroIntroTouchGuardActive) return
+            this.heroIntroTouchGuardActive = true
+            window.addEventListener('touchmove', this.onHeroTouchMove, { passive: false })
+        },
+        disableHeroIntroTouchGuard() {
+            if (!this.heroIntroTouchGuardActive) return
+            this.heroIntroTouchGuardActive = false
+            window.removeEventListener('touchmove', this.onHeroTouchMove)
+        },
+        onHeroTouchMoveHandler(event) {
+            if (this.heroIntroActivePointerId == null) return
+            if (this.heroIntroTouchMode === 'swipe') return
+
+            const touch = [...event.changedTouches].find(
+                (t) => t.identifier === this.heroIntroActivePointerId
+            ) ?? [...event.touches].find(
+                (t) => t.identifier === this.heroIntroActivePointerId
+            )
+            if (!touch) return
+
+            const probe = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                pointerType: 'touch',
+            }
+
+            if (this.classifyHeroIntroTouchGesture(probe) === 'swipe') {
+                this.enterHeroIntroSwipeMode(this.heroIntroActivePointerId)
+                return
+            }
+
+            const start = this.heroIntroTouchStart
+            if (start) {
+                const absDx = Math.abs(touch.clientX - start.x)
+                const absDy = Math.abs(touch.clientY - start.y)
+                // Vertical drift → let the browser scroll; keep push via pointermove
+                if (absDy > absDx * 1.05 && absDy > 10) return
+            }
+
+            if (this.isHeroIntroPointerNear(touch.clientX, touch.clientY)) {
+                event.preventDefault()
+            }
         },
         captureHeroIntroPointer(event) {
             const intro = this.$el?.querySelector('.hero-intro')
@@ -1345,6 +1379,7 @@ export default {
             this.heroIntroTapLingerTimer = null
         },
         releaseHeroIntroMobileTouch({ linger = false, pointerId = null } = {}) {
+            this.disableHeroIntroTouchGuard()
             this.releaseHeroIntroPointerCapture(pointerId ?? this.heroIntroActivePointerId)
             this.heroIntroTouchStart = null
             this.heroIntroTouchMode = null
@@ -1376,6 +1411,7 @@ export default {
             }, lingerMs)
         },
         onHeroPointerEndHandlerImpl() {
+            this.disableHeroIntroTouchGuard()
             this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
             this.heroIntroTouchStart = null
             this.heroIntroTouchMode = null
@@ -1394,15 +1430,16 @@ export default {
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroMobileTouch()) return
             if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
-            if (!this.isHeroIntroPointerOnText(event.clientX, event.clientY)) return
+            if (!this.isHeroIntroPointerNear(event.clientX, event.clientY)) return
 
             this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = event.pointerId
             this.heroIntroTouchStart = { x: event.clientX, y: event.clientY }
             this.heroIntroTouchMode = 'stroke'
             this.setHeroIntroStrokeActive(true)
-            if (event.pointerType === 'pen') {
-                this.captureHeroIntroPointer(event)
+            this.captureHeroIntroPointer(event)
+            if (event.pointerType === 'touch') {
+                this.enableHeroIntroTouchGuard()
             }
             this.setHeroIntroPointer(event.clientX, event.clientY)
         },
@@ -1450,9 +1487,6 @@ export default {
 
                 this.heroIntroTouchMode = 'stroke'
                 this.setHeroIntroStrokeActive(true)
-                if (event.pointerType === 'touch') {
-                    this.captureHeroIntroPointer(event)
-                }
                 this.setHeroIntroPointer(event.clientX, event.clientY)
             }
         },
@@ -1992,34 +2026,27 @@ export default {
 
 @media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
-        --hero-intro-touch-pad: 40px;
         --hero-intro-tap-linger: 280ms;
-        --hero-intro-swipe-min-travel: 22px;
-        --hero-intro-swipe-vertical-min: 30px;
-        --hero-intro-swipe-ratio: 1.65;
+        --hero-intro-swipe-min-travel: 20px;
+        --hero-intro-swipe-vertical-min: 36px;
+        --hero-intro-swipe-ratio: 1.7;
         --hero-cursor-zone-pad: 240px;
         --hero-intro-hover-radius: 240px;
         --hero-intro-hover-shift: 102px;
         --hero-intro-hover-lift: 38px;
         --hero-intro-hover-force-exp: 1.45;
         --hero-intro-hover-lift-exp: 1.25;
-        --hero-intro-hover-min-force: 0.1;
+        --hero-intro-hover-min-force: 0.12;
         --hero-intro-hover-knock-mult: 0.34;
-        --hero-intro-stroke-knock-mult: 0.26;
         touch-action: pan-y;
     }
 
-    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char {
-        transition: transform
-            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-stroke-knock-mult, 0.26))
-            var(--fly-ease);
-    }
-
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char,
     .portfolio-page--settled
         .hero-intro--chars.hero-intro--stroke-active
         .hero-intro-char.hero-intro-char--pushed {
         transition: transform
-            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-stroke-knock-mult, 0.26))
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.34))
             var(--fly-ease);
     }
 
