@@ -265,7 +265,7 @@
                         </p>
                     </div>
                     <p class="about-bio portfolio-fly portfolio-fly--from-left">
-                        Started in the east, ended up in the west. Started in academia, ended up in the
+                        Started in academia, ended up in the
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
                         <br><br>
@@ -274,8 +274,7 @@
                         Interrogate LLMs.
                         <br><br>
                         Like to work out in free time - old books and films for the brain,
-                        gym and swim for the rest. Drink wild beers on cheat days. Bilingual in
-                        English and Chinese. Speak a bit of Spanish. Love a good conversation. Can't help
+                        gym and swim for the rest. Drink wild beers on cheat days. Love a good conversation. Can't help
                         learning new things all the time.
                         <br><br>
                         For the nerds: a <a href="https://journals.biologists.com/dev/article/151/24/dev204256/363461/Short-range-Fgf-signalling-patterns-hindbrain" class="about-link">link</a> to my past life in
