@@ -30,24 +30,6 @@
                             <span>About</span>
                             <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
                         </router-link>
-                        <a
-                            href="https://www.linkedin.com/in/timjustinayeung"
-                            class="nav-link nav-link--stacked nav-link--linkedin"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <span>Linkedin</span>
-                            <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
-                        </a>
-                        <a
-                            :href="cvUrl"
-                            class="nav-link nav-link--stacked nav-link--cv"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <span>CV</span>
-                            <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
-                        </a>
                     </nav>
                 </div>
             </div>
@@ -58,7 +40,6 @@
 <script>
 import logo from '../assets/TjyCutoutLogo.svg'
 import menuHover from '../assets/menu_hover.svg'
-import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
 const SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
@@ -76,7 +57,6 @@ export default {
         return {
             logo,
             menuHover,
-            cvUrl,
             navCompact: false,
             fullNavWidth: null,
             navGapObserver: null,
@@ -139,6 +119,7 @@ export default {
         },
         onResize() {
             this.syncMobileTopBarState()
+            this.updateNavCompact()
             this.updateHeroOverlap()
         },
         onSectionJump() {
@@ -216,6 +197,11 @@ export default {
             })
         },
         updateNavCompact() {
+            if (window.matchMedia('(max-width: 600px)').matches) {
+                this.navCompact = false
+                return
+            }
+
             const content = this.$refs.topBarContent
             const logoBlock = content?.querySelector('.logo-block')
             const nav = this.$refs.nav
@@ -231,7 +217,9 @@ export default {
             const gapIfFull =
                 contentRect.width - fullWidth - (logoRect.right - contentRect.left)
 
-            this.navCompact = gapIfFull < 312
+            // Tighter threshold for the two-link nav; compact keeps Work/About visible
+            // and only tightens spacing, like LinkedIn/CV did before.
+            this.navCompact = gapIfFull < 120
         },
         getTopBarHeight() {
             return this.$el?.querySelector('.top-bar-inner')?.offsetHeight ?? 120
@@ -317,6 +305,11 @@ export default {
     align-items: center;
     gap: 40px;
     height: 27px;
+    transition: gap 0.22s ease;
+}
+
+.nav--compact {
+    gap: 24px;
 }
 
 .nav-link {
@@ -375,14 +368,9 @@ export default {
     transform: translateX(-50%) scaleY(1);
 }
 
-.nav--compact .nav-link--work,
-.nav--compact .nav-link--about {
-    display: none;
-}
-
 @media (max-width: 600px) {
-    .nav-link--linkedin,
-    .nav-link--cv {
+    .nav-link--work,
+    .nav-link--about {
         display: none;
     }
 

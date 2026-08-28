@@ -272,30 +272,22 @@
                         developmental neurobiology
                         (research paper).
                     </p>
-                    <a
-                        class="cta-button cta-button--in-about portfolio-fly portfolio-fly--from-left"
-                        href="mailto:design@timjustina.com"
-                    >Drop me a line</a>
-                </div>
-                <div class="about-actions portfolio-fly portfolio-fly--from-left">
-                    <div class="about-actions-row">
-                        <a
-                            href="https://www.linkedin.com/in/timjustinayeung"
-                            class="about-action-btn"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >Linkedin</a>
-                        <a
-                            :href="cvUrl"
-                            class="about-action-btn"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >CV</a>
+                    <div class="about-actions portfolio-fly portfolio-fly--from-left">
+                        <div class="about-actions-row">
+                            <a
+                                href="https://www.linkedin.com/in/timjustinayeung"
+                                class="about-action-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >Linkedin</a>
+                            <a
+                                :href="cvUrl"
+                                class="about-action-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >CV</a>
+                        </div>
                     </div>
-                    <a
-                        href="mailto:design@timjustina.com"
-                        class="about-action-btn"
-                    >Email</a>
                 </div>
             </div>
         </section>
@@ -1556,10 +1548,6 @@ export default {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.16s both;
 }
 
-.about--reveal .cta-button--in-about.portfolio-fly--from-left {
-    animation: portfolio-fly-from-left var(--cta-fly-duration) var(--fly-ease) 0.24s both;
-}
-
 .about--reveal .about-actions.portfolio-fly--from-left {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.2s both;
 }
@@ -2028,18 +2016,6 @@ export default {
     transition: background 0.2s ease;
 }
 
-.cta-button--in-about {
-    display: none;
-}
-
-@media (min-width: 601px) {
-    .cta-button--in-about {
-        display: inline-flex;
-        margin-top: var(--about-bio-cta-gap);
-        margin-left: -24px;
-    }
-}
-
 .cta-button:hover {
     background: var(--brand-hover);
 }
@@ -2430,7 +2406,43 @@ export default {
 }
 
 .about-actions {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: var(--about-bio-cta-gap);
+    padding: 0;
+}
+
+.about-actions-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.about-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 54px;
+    padding: 12px 24px;
+    border-radius: 60px;
+    background: var(--brand);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 20px;
+    font-weight: calc(500 * var(--font-weight-scale));
+    line-height: 30px;
+    white-space: nowrap;
+    color: #fff;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.about-action-btn:active {
+    background: var(--brand-active);
 }
 
 /* ≥1454px: Final content artboard spacing */
@@ -2963,43 +2975,7 @@ export default {
     }
 
     .about-actions {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
         margin-top: 96px;
-        padding: 0;
-    }
-
-    .about-actions-row {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .about-action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex: 0 0 auto;
-        height: 54px;
-        padding: 12px 24px;
-        border-radius: 60px;
-        background: var(--brand);
-        font-family: 'Be Vietnam Pro', sans-serif;
-        font-size: 20px;
-        font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 30px;
-        white-space: nowrap;
-        color: #fff;
-        text-decoration: none;
-        box-sizing: border-box;
-    }
-
-    .about-action-btn:active {
-        background: var(--brand-active);
     }
 
 }
