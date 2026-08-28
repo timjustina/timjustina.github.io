@@ -458,6 +458,7 @@ export default {
             heroIntroPointerRaf: null,
             heroIntroPointer: null,
             heroIntroActivePointerId: null,
+            heroIntroTouchScrollLock: false,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
         }
@@ -517,6 +518,7 @@ export default {
         window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
         window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
         window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
+        this.onHeroTouchMove = (event) => this.onHeroTouchMoveHandler(event)
         window.addEventListener('blur', this.onHeroPointerEndHandler)
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
@@ -623,6 +625,7 @@ export default {
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
         this.clearHeroIntroPointerShift()
+        window.removeEventListener('touchmove', this.onHeroTouchMove)
         window.removeEventListener('pointermove', this.onHeroPointerMove)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
         window.removeEventListener('pointerup', this.onHeroPointerUp)
@@ -1229,7 +1232,7 @@ export default {
             if (!intro) return false
 
             const introStyles = getComputedStyle(intro)
-            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 100)
+            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 160)
             const rect = intro.getBoundingClientRect()
             return (
                 x >= rect.left - zonePad &&
@@ -1254,18 +1257,39 @@ export default {
         onHeroPointerEndHandlerImpl() {
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
+            if (this.heroIntroTouchScrollLock) {
+                window.removeEventListener('touchmove', this.onHeroTouchMove)
+                this.heroIntroTouchScrollLock = false
+            }
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
                 this.heroIntroPointerRaf = null
             }
             this.clearHeroIntroPointerShift()
         },
+        onHeroTouchMoveHandler(event) {
+            if (this.heroIntroActivePointerId == null) return
+
+            const touch = [...event.touches].find(
+                (t) => t.identifier === this.heroIntroActivePointerId
+            )
+            if (!touch) return
+
+            if (this.isHeroIntroPointerNear(touch.clientX, touch.clientY)) {
+                event.preventDefault()
+            }
+        },
         onHeroPointerDownHandler(event) {
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroMobileTouch()) return
             if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
+            if (!this.isHeroIntroPointerNear(event.clientX, event.clientY)) return
 
             this.heroIntroActivePointerId = event.pointerId
+            if (!this.heroIntroTouchScrollLock) {
+                this.heroIntroTouchScrollLock = true
+                window.addEventListener('touchmove', this.onHeroTouchMove, { passive: false })
+            }
             this.setHeroIntroPointer(event.clientX, event.clientY)
         },
         onHeroPointerUpHandler(event) {
@@ -1325,9 +1349,11 @@ export default {
             if (!intro || !pointer) return
 
             const introStyles = getComputedStyle(intro)
-            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 100)
+            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 160)
             const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
             const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
+            const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
+            const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
             const { x, y } = pointer
 
             for (const el of intro.querySelectorAll('.hero-intro-char')) {
@@ -1347,8 +1373,8 @@ export default {
 
                 if (dist < radius && dist > 0) {
                     const t = 1 - dist / radius
-                    const force = t ** 2.65 * maxShift
-                    const lift = t ** 2.2 * maxLift
+                    const force = t ** forceExp * maxShift
+                    const lift = t ** liftExp * maxLift
                     const nx = dx / dist
                     const ny = dy / dist
                     el.classList.add('hero-intro-char--pushed')
@@ -1778,10 +1804,12 @@ export default {
 
 @media (hover: hover) and (pointer: fine) {
     .hero-intro.hero-intro--chars {
-        --hero-cursor-zone-pad: 100px;
-        --hero-intro-hover-radius: 100px;
+        --hero-cursor-zone-pad: 160px;
+        --hero-intro-hover-radius: 160px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
+        --hero-intro-hover-force-exp: 2.65;
+        --hero-intro-hover-lift-exp: 2.2;
         --hero-intro-hover-knock-mult: 0.55;
     }
 
@@ -1807,10 +1835,14 @@ export default {
 
 @media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
-        --hero-intro-hover-radius: 100px;
-        --hero-intro-hover-shift: 84px;
-        --hero-intro-hover-lift: 32px;
-        --hero-intro-hover-knock-mult: 0.55;
+        --hero-cursor-zone-pad: 240px;
+        --hero-intro-hover-radius: 240px;
+        --hero-intro-hover-shift: 102px;
+        --hero-intro-hover-lift: 38px;
+        --hero-intro-hover-force-exp: 1.45;
+        --hero-intro-hover-lift-exp: 1.25;
+        --hero-intro-hover-knock-mult: 0.34;
+        touch-action: none;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
