@@ -2807,14 +2807,14 @@ export default {
 }
 
 /* Touch: press feedback — clears on release so the radius can ease back */
-.project:not(.project--upcoming):active .project-image {
+.project:active .project-image {
     border-radius: 700px 700px 20px 20px;
 }
 
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
 @media (hover: hover) and (pointer: fine) {
-    .project:not(.project--upcoming):hover .project-image,
-    .project:not(.project--upcoming):focus-within .project-image {
+    .project:hover .project-image,
+    .project:focus-within .project-image {
         border-radius: 700px 700px 20px 20px;
     }
 }
@@ -2833,13 +2833,26 @@ export default {
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     opacity: 0;
-    transition: opacity 0.35s ease;
+    transition:
+        opacity 0.35s ease,
+        border-radius 0.45s ease;
     pointer-events: none;
+}
+
+.project--upcoming:active .project-upcoming-overlay {
+    border-radius: 700px 700px 20px 20px;
 }
 
 .project--upcoming:hover .project-upcoming-overlay,
 .project--upcoming:focus-within .project-upcoming-overlay {
     opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .project--upcoming:hover .project-upcoming-overlay,
+    .project--upcoming:focus-within .project-upcoming-overlay {
+        border-radius: 700px 700px 20px 20px;
+    }
 }
 
 .project-upcoming-label {
@@ -3476,12 +3489,22 @@ export default {
         transition: border-radius 0.45s ease;
     }
 
-    .project:not(.project--upcoming):active .project-image-link,
-    .project:not(.project--upcoming):active .project-image-wrap,
+    .project:active .project-image-link,
+    .project:active .project-image-wrap,
+    .project:active .project-upcoming-overlay,
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap,
     .project--press-expand .project-image {
         border-radius: 700px 700px 20px 20px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .project:hover .project-image-link,
+        .project:hover .project-image-wrap,
+        .project:focus-within .project-image-link,
+        .project:focus-within .project-image-wrap {
+            border-radius: 700px 700px 20px 20px;
+        }
     }
 
     .project-image {
