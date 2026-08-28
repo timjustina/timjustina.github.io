@@ -7,6 +7,7 @@
             'portfolio-page--hero-cursor': heroCursorActive,
         }"
     >
+    <Teleport to="body">
         <span
             v-if="heroIntroLetterMode && heroIntroFinePointer"
             class="hero-intro-cursor-ball"
@@ -14,7 +15,8 @@
             :style="heroCursorBallStyle"
             aria-hidden="true"
         />
-        <div
+    </Teleport>
+    <div
             v-if="showLoadingSplash || logoHandoff"
             class="loading-splash"
             :class="{ 'loading-splash--handoff': logoHandoff }"
@@ -1830,6 +1832,7 @@ export default {
 }
 
 .hero-intro-cursor-ball {
+    display: block;
     position: fixed;
     left: 0;
     top: 0;
@@ -1837,7 +1840,12 @@ export default {
     height: 16px;
     margin: -8px 0 0 -8px;
     border-radius: 50%;
-    background: var(--brand);
+    background: #fff;
+    filter:
+        drop-shadow(0 0 4px rgba(0, 10, 170, 0.11))
+        drop-shadow(0 0 8px rgba(0, 10, 170, 0.065))
+        drop-shadow(0 0 13px rgba(0, 10, 170, 0.032))
+        drop-shadow(0 0 18px rgba(0, 10, 170, 0.016));
     pointer-events: none;
     z-index: 110;
     visibility: hidden;
