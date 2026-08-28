@@ -1662,7 +1662,9 @@ export default {
 
 .portfolio-page--settled .hero-intro--chars .hero-intro-char {
     opacity: 1;
+    transform: none;
     animation: none !important;
+    will-change: auto;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2901,6 +2903,12 @@ export default {
         margin: 0;
         padding-bottom: var(--page-pad);
         box-sizing: border-box;
+        overflow-x: clip;
+    }
+
+    /* Hidden decor still extended ~79px left (absolute + fly-in) and caused horizontal scroll jank */
+    .hero-decor {
+        display: none;
     }
 
     .work {
