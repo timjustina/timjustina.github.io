@@ -48,7 +48,7 @@
 
                 <h3>1. Identify the scope of content</h3>
                 <p>The caregiver user group here and their corresponding business context provide an important
-                    <strong>constraint</strong> on the type of dashboard to aim for - a <strong>slightly data-rich
+                    <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
                         consumer dashboard</strong>. In order
                     to identify the scope of content relevant to such a dashboard, I turned to the <strong>user
                         research</strong>
@@ -71,7 +71,7 @@
                         and medication stock.</li>
                 </ul>
 
-                <p> The first point was anticipated. The second point makes sense in hindsight - as the dashboard is the
+                <p> The first point was anticipated. The second point makes sense in hindsight – as the dashboard is the
                     home screen, users would expect to find <strong>operational information</strong> there also. These
                     two expectations
                     became both the <strong>rationale and the blueprint</strong> for a layout that
@@ -95,7 +95,7 @@
                     user's mobile
                     app that I had previously designed functions as a <strong>progress hub</strong> at the home screen.
                     It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation to
-                    trigger immediate impression - cumulative
+                    trigger immediate impression – cumulative
                     adherence
                     appears as a <strong>heart-shaped progress graphic</strong> leveraging the <strong>cognitive tension
                         from unfinished tasks</strong>; a
