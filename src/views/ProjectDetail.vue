@@ -82,7 +82,7 @@ export default {
   --top-bar-height: 120px;
   background: #fff;
   color: #3c3f41;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: 'Work Sans', sans-serif;
   font-size: 22px;
   min-height: 100vh;
 }
@@ -124,7 +124,7 @@ export default {
   margin-left: var(--project-body-left);
   margin-right: auto;
   overflow: visible;
-  font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
+  font-family: 'Work Sans', sans-serif;
   font-weight: calc(400 * var(--font-weight-scale));
   font-style: normal;
   font-size: 22px;
@@ -284,7 +284,7 @@ export default {
 
 .main :global(.project-body h3) {
   margin: 100px 0 0;
-  font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
+  font-family: 'Work Sans', sans-serif;
   font-weight: calc(400 * var(--font-weight-scale));
   font-style: normal;
   font-size: 30px;
@@ -483,8 +483,8 @@ export default {
 }
 
 .main :global(.project-body strong) {
-  font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
-  font-weight: calc(700 * var(--font-weight-scale));
+  font-family: 'Work Sans', sans-serif;
+  font-weight: calc(600 * var(--font-weight-scale));
   font-style: normal;
   font-size: 22px;
   line-height: 37px;
@@ -593,7 +593,7 @@ export default {
     padding: 0;
     width: var(--project-text-width);
     max-width: 320px;
-    font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
+    font-family: 'Work Sans', sans-serif;
     font-weight: calc(400 * var(--font-weight-scale));
     font-size: calc(16px * var(--project-type-scale));
     line-height: calc(24px * var(--project-type-scale));
@@ -608,7 +608,7 @@ export default {
 
   .main :global(.project-body h3) {
     margin-top: 52px;
-    font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
+    font-family: 'Work Sans', sans-serif;
     font-weight: calc(400 * var(--font-weight-scale));
     font-size: 24px;
     line-height: calc(27px * 24 / 22);
@@ -668,8 +668,8 @@ export default {
   }
 
   .main :global(.project-body strong) {
-    font-family: 'EB Garamond', Georgia, 'Times New Roman', Times, serif;
-    font-weight: calc(700 * var(--font-weight-scale));
+    font-family: 'Work Sans', sans-serif;
+    font-weight: calc(600 * var(--font-weight-scale));
     font-size: calc(16px * var(--project-type-scale));
     line-height: calc(24px * var(--project-type-scale));
   }
