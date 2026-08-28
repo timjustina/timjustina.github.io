@@ -1254,6 +1254,25 @@ export default {
                 y <= rect.bottom + zonePad
             )
         },
+        captureHeroIntroPointer(event) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro?.setPointerCapture || intro.hasPointerCapture?.(event.pointerId)) return
+            try {
+                intro.setPointerCapture(event.pointerId)
+            } catch {
+                /* pointer may already be captured elsewhere */
+            }
+        },
+        releaseHeroIntroPointerCapture(pointerId) {
+            if (pointerId == null) return
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro?.releasePointerCapture || !intro.hasPointerCapture?.(pointerId)) return
+            try {
+                intro.releasePointerCapture(pointerId)
+            } catch {
+                /* ignore */
+            }
+        },
         setHeroIntroPointer(x, y, { showBall = false } = {}) {
             if (showBall) {
                 this.heroCursorPos = { x, y }
@@ -1280,7 +1299,8 @@ export default {
             clearTimeout(this.heroIntroTapLingerTimer)
             this.heroIntroTapLingerTimer = null
         },
-        releaseHeroIntroMobileTouch({ linger = false } = {}) {
+        releaseHeroIntroMobileTouch({ linger = false, pointerId = null } = {}) {
+            this.releaseHeroIntroPointerCapture(pointerId ?? this.heroIntroActivePointerId)
             this.heroIntroActivePointerId = null
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -1307,6 +1327,7 @@ export default {
             }, lingerMs)
         },
         onHeroPointerEndHandlerImpl() {
+            this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
             this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
@@ -1325,12 +1346,13 @@ export default {
 
             this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = event.pointerId
+            this.captureHeroIntroPointer(event)
             this.setHeroIntroPointer(event.clientX, event.clientY)
         },
         onHeroPointerUpHandler(event) {
             if (this.heroIntroActivePointerId !== event.pointerId) return
             if (this.isHeroIntroMobileTouch()) {
-                this.releaseHeroIntroMobileTouch({ linger: true })
+                this.releaseHeroIntroMobileTouch({ linger: true, pointerId: event.pointerId })
                 return
             }
             this.onHeroPointerEndHandlerImpl()
@@ -1406,6 +1428,7 @@ export default {
             const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
             const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
             const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
+            const minForce = parseCssPx(introStyles, '--hero-intro-hover-min-force', 0)
             const { x, y } = pointer
 
             for (const el of intro.querySelectorAll('.hero-intro-char')) {
@@ -1425,8 +1448,8 @@ export default {
 
                 if (dist < radius) {
                     const t = dist <= 0 ? 1 : 1 - dist / radius
-                    const force = t ** forceExp * maxShift
-                    const lift = t ** liftExp * maxLift
+                    const force = Math.max(t ** forceExp, minForce) * maxShift
+                    const lift = Math.max(t ** liftExp, minForce) * maxLift
                     let nx
                     let ny
                     if (dist <= 0.5) {
@@ -1894,15 +1917,17 @@ export default {
 
 @media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
-        --hero-intro-touch-pad: 24px;
-        --hero-intro-tap-linger: 260ms;
+        --hero-intro-touch-pad: 40px;
+        --hero-intro-tap-linger: 280ms;
         --hero-cursor-zone-pad: 240px;
-        --hero-intro-hover-radius: 260px;
-        --hero-intro-hover-shift: 108px;
-        --hero-intro-hover-lift: 40px;
-        --hero-intro-hover-force-exp: 1.35;
-        --hero-intro-hover-lift-exp: 1.18;
-        --hero-intro-hover-knock-mult: 0.3;
+        --hero-intro-hover-radius: 240px;
+        --hero-intro-hover-shift: 102px;
+        --hero-intro-hover-lift: 38px;
+        --hero-intro-hover-force-exp: 1.45;
+        --hero-intro-hover-lift-exp: 1.25;
+        --hero-intro-hover-min-force: 0.1;
+        --hero-intro-hover-knock-mult: 0.34;
+        touch-action: pan-y;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
