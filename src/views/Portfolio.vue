@@ -76,6 +76,8 @@
                         class="hero-intro portfolio-fly portfolio-fly--from-right"
                         :class="{ 'hero-intro--chars': heroIntroLetterMode }"
                         :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
+                        @pointermove="onHeroIntroPointerMove"
+                        @pointerleave="onHeroIntroPointerLeave"
                     >
                         <template v-if="heroIntroLetterMode">
                             <span class="hero-intro-chars" aria-hidden="true">
@@ -335,6 +337,13 @@ function parseCssTimeSec(styles, prop, fallback) {
     return Number.isFinite(n) ? n : fallback
 }
 
+function parseCssPx(styles, prop, fallback) {
+    const raw = styles.getPropertyValue(prop).trim()
+    if (!raw) return fallback
+    const n = parseFloat(raw)
+    return Number.isFinite(n) ? n : fallback
+}
+
 const HERO_INTRO_PARTS = [
     { text: 'Tim Justina Yeung is a ', em: false },
     { text: 'Product Designer', em: true },
@@ -438,6 +447,8 @@ export default {
             heroIntroLetterMode:
                 typeof window !== 'undefined' &&
                 !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+            heroIntroPointerRaf: null,
+            heroIntroPointer: null,
         }
     },
     mounted() {
@@ -559,6 +570,8 @@ export default {
         window.removeEventListener('resize', this.onHeroDecorResize)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
+        if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
+        this.clearHeroIntroPointerShift()
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -1116,6 +1129,85 @@ export default {
         getHeroLineEl() {
             return this.$el?.querySelector('.hero-decor-line')
         },
+        canHeroIntroPointerPlay() {
+            return (
+                this.heroIntroLetterMode &&
+                this.pageEntranceDone &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined' &&
+                window.matchMedia('(hover: hover) and (pointer: fine)').matches
+            )
+        },
+        onHeroIntroPointerMove(event) {
+            if (!this.canHeroIntroPointerPlay()) return
+            if (event.pointerType !== 'mouse') return
+
+            this.heroIntroPointer = { x: event.clientX, y: event.clientY }
+            if (this.heroIntroPointerRaf != null) return
+            this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                this.heroIntroPointerRaf = null
+                this.applyHeroIntroPointerShift()
+            })
+        },
+        onHeroIntroPointerLeave() {
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.clearHeroIntroPointerShift()
+        },
+        applyHeroIntroPointerShift() {
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const pointer = this.heroIntroPointer
+            if (!intro || !pointer) return
+
+            const introStyles = getComputedStyle(intro)
+            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 100)
+            const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 52)
+            const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 20)
+            const { x, y } = pointer
+
+            for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                const rect = el.getBoundingClientRect()
+                if (rect.width <= 0 || rect.height <= 0) {
+                    el.classList.remove('hero-intro-char--pushed')
+                    el.style.removeProperty('--hero-intro-push-x')
+                    el.style.removeProperty('--hero-intro-push-y')
+                    continue
+                }
+
+                const cx = rect.left + rect.width / 2
+                const cy = rect.top + rect.height / 2
+                const dx = cx - x
+                const dy = cy - y
+                const dist = Math.hypot(dx, dy)
+
+                if (dist < radius && dist > 0) {
+                    const t = 1 - dist / radius
+                    const force = t ** 2.65 * maxShift
+                    const lift = t ** 2.2 * maxLift
+                    const nx = dx / dist
+                    const ny = dy / dist
+                    el.classList.add('hero-intro-char--pushed')
+                    el.style.setProperty('--hero-intro-push-x', `${nx * force}px`)
+                    el.style.setProperty('--hero-intro-push-y', `${ny * force - lift}px`)
+                } else {
+                    el.classList.remove('hero-intro-char--pushed')
+                    el.style.removeProperty('--hero-intro-push-x')
+                    el.style.removeProperty('--hero-intro-push-y')
+                }
+            }
+        },
+        clearHeroIntroPointerShift() {
+            this.heroIntroPointer = null
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro) return
+            for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                el.classList.remove('hero-intro-char--pushed')
+                el.style.removeProperty('--hero-intro-push-x')
+                el.style.removeProperty('--hero-intro-push-y')
+            }
+        },
         liftHeroLine() {
             if (this.heroLinePhase === 'bouncing' || this.heroLinePhase === 'up') return
             const line = this.getHeroLineEl()
@@ -1516,9 +1608,35 @@ export default {
 
 .portfolio-page--settled .hero-intro--chars .hero-intro-char {
     opacity: 1;
-    transform: none;
     animation: none !important;
-    will-change: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .hero-intro.hero-intro--chars {
+        --hero-intro-hover-radius: 100px;
+        --hero-intro-hover-shift: 52px;
+        --hero-intro-hover-lift: 20px;
+        --hero-intro-hover-knock-mult: 0.18;
+    }
+
+    /* Float back at cascade pace (per-letter --hero-intro-char-duration from assemble) */
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char {
+        transform: translate3d(0, 0, 0);
+        transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
+        will-change: transform;
+    }
+
+    /* Knock outward a bit quicker, same easing as the cascade fly-in */
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
+        transform: translate3d(
+            var(--hero-intro-push-x, 0),
+            var(--hero-intro-push-y, 0),
+            0
+        );
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
+            var(--fly-ease);
+    }
 }
 
 .portfolio-page--settled .hero-decor-line:not(.hero-decor-line--bouncing):not(.hero-decor-line--up),
