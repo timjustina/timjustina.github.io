@@ -11,13 +11,6 @@ export default {
 <style>
 :root {
   --font-weight-scale: 0.98;
-  --cursor-ball: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='9' r='7' fill='%23000AAA'/%3E%3C/svg%3E")
-    9 9,
-    auto;
-}
-
-html {
-  cursor: var(--cursor-ball);
 }
 
 * {

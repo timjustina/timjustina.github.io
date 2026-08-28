@@ -675,8 +675,7 @@ export default {
             const projects = [...(this.$el?.querySelectorAll('.work .project') ?? [])]
             if (!projects.length) return
 
-            const isMobile = window.matchMedia('(max-width: 600px)').matches
-            if (!isMobile || prefersReducedMotion()) {
+            if (prefersReducedMotion()) {
                 this.revealAllProjects()
                 return
             }
@@ -686,6 +685,8 @@ export default {
                 this.revealAllProjects()
                 return
             }
+
+            const isMobile = window.matchMedia('(max-width: 600px)').matches
 
             this.projectFadeObserver = new IntersectionObserver(
                 (entries) => {
@@ -702,7 +703,19 @@ export default {
                 }
             )
             for (const project of projects) {
-                this.projectFadeObserver.observe(project)
+                if (isMobile) {
+                    this.projectFadeObserver.observe(project)
+                    continue
+                }
+
+                const rect = project.getBoundingClientRect()
+                const inViewport = rect.top < window.innerHeight && rect.bottom > 0
+                if (inViewport) {
+                    project.classList.add('project--in-view')
+                } else {
+                    project.classList.add('project--scroll-fade')
+                    this.projectFadeObserver.observe(project)
+                }
             }
         },
         revealAllProjects() {
@@ -1531,8 +1544,9 @@ export default {
     transform: translate3d(calc(-1 * var(--fly-distance)), 0, 0);
 }
 
-.portfolio-page--reveal .project--featured.portfolio-fly--from-right,
-.portfolio-page--reveal .project--upcoming:not(.project--offset).portfolio-fly--from-right {
+.portfolio-page--reveal .project--featured.portfolio-fly--from-right:not(.project--scroll-fade),
+.portfolio-page--reveal
+    .project--upcoming:not(.project--offset).portfolio-fly--from-right:not(.project--scroll-fade) {
     animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.08s both;
 }
 
@@ -1545,8 +1559,7 @@ export default {
     animation: portfolio-fly-from-right 1.55s var(--fly-ease) 0.08s both;
 }
 
-.portfolio-page--reveal .cta-button.portfolio-fly--from-left,
-.portfolio-page--reveal .project--offset.portfolio-fly--from-left {
+.portfolio-page--reveal .project--offset.portfolio-fly--from-left:not(.project--scroll-fade) {
     animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.08s both;
 }
 
@@ -1567,7 +1580,27 @@ export default {
     transform: none;
     animation: none !important;
     will-change: auto;
+}
+
+.portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade),
+.portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade.project--in-view {
     opacity: 1;
+}
+
+/* Desktop: off-screen case studies fade in on scroll (same as mobile) */
+.portfolio-page--reveal .project.portfolio-fly.project--scroll-fade,
+.portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade {
+    opacity: 0;
+    transform: none;
+    animation: none !important;
+    transition: opacity 0.55s ease-out;
+    will-change: opacity;
+}
+
+.portfolio-page--reveal .project.portfolio-fly.project--scroll-fade.project--in-view,
+.portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade.project--in-view {
+    opacity: 1;
+    will-change: auto;
 }
 
 .portfolio-page--settled .hero-intro--chars .hero-intro-char {
@@ -2211,7 +2244,7 @@ export default {
 }
 
 .project--upcoming {
-    cursor: var(--cursor-ball);
+    cursor: default;
 }
 
 .project--upcoming .project-title {
@@ -2813,7 +2846,7 @@ export default {
     /* Thumbnail only — title tap must not navigate */
     .project-title-link {
         pointer-events: none;
-        cursor: var(--cursor-ball);
+        cursor: default;
     }
 
     .project-description {

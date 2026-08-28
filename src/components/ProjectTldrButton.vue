@@ -211,7 +211,7 @@ export default {
   border: 0;
   background: transparent;
   color: #000aaa;
-  cursor: var(--cursor-ball);
+  cursor: pointer;
   box-sizing: border-box;
 }
 
@@ -433,7 +433,7 @@ export default {
   line-height: 27px;
   letter-spacing: -0.02em;
   color: #fff;
-  cursor: var(--cursor-ball);
+  cursor: pointer;
   box-sizing: border-box;
   vertical-align: middle;
   transition: background 0.2s ease;
