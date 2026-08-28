@@ -2158,13 +2158,15 @@ export default {
 .project--offset {
     width: var(--project-w);
     max-width: 100%;
-    margin-top: var(--project-stack-gap);
     margin-left: auto;
 }
 
 .project:last-child {
     width: var(--project-w-wide);
     max-width: 100%;
+}
+
+.project + .project {
     margin-top: var(--project-stack-gap);
 }
 
@@ -2316,6 +2318,25 @@ export default {
     line-height: 25px;
     letter-spacing: -0.02em;
     color: var(--muted);
+}
+
+/* Keep image-to-image rhythm even when descriptions wrap unevenly */
+@media (min-width: 601px) and (max-width: 750px) {
+    .project-caption {
+        min-height: 147px;
+    }
+}
+
+@media (min-width: 751px) and (max-width: 997px) {
+    .project-caption {
+        min-height: 120px;
+    }
+}
+
+@media (min-width: 998px) {
+    .project-caption {
+        min-height: 95px;
+    }
 }
 
 .project-year {
@@ -2534,8 +2555,7 @@ export default {
         --project-w-wide: 1060px;
     }
 
-    .project--offset,
-    .project:last-child {
+    .project + .project {
         margin-top: 150px;
     }
 
@@ -2610,13 +2630,12 @@ export default {
         margin-left: min(655px, max(0px, calc(100% - 233px)));
     }
 
-    .project--offset {
+    .project + .project {
         margin-top: 120px;
-        margin-left: 0;
     }
 
-    .project:last-child {
-        margin-top: 120px;
+    .project--offset {
+        margin-left: 0;
     }
 
     .project-description {
