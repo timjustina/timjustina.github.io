@@ -4,8 +4,16 @@
         :class="{
             'portfolio-page--reveal': pageRevealed,
             'portfolio-page--settled': pageEntranceDone,
+            'portfolio-page--hero-cursor': heroCursorActive,
         }"
     >
+        <span
+            v-if="heroIntroLetterMode"
+            class="hero-intro-cursor-ball"
+            :class="{ 'hero-intro-cursor-ball--visible': heroCursorActive }"
+            :style="heroCursorBallStyle"
+            aria-hidden="true"
+        />
         <div
             v-if="showLoadingSplash || logoHandoff"
             class="loading-splash"
@@ -76,8 +84,6 @@
                         class="hero-intro portfolio-fly portfolio-fly--from-right"
                         :class="{ 'hero-intro--chars': heroIntroLetterMode }"
                         :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
-                        @pointermove="onHeroIntroPointerMove"
-                        @pointerleave="onHeroIntroPointerLeave"
                     >
                         <template v-if="heroIntroLetterMode">
                             <span class="hero-intro-chars" aria-hidden="true">
@@ -449,7 +455,17 @@ export default {
                 !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
             heroIntroPointerRaf: null,
             heroIntroPointer: null,
+            heroCursorActive: false,
+            heroCursorPos: { x: 0, y: 0 },
         }
+    },
+    computed: {
+        heroCursorBallStyle() {
+            const { x, y } = this.heroCursorPos
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+            }
+        },
     },
     mounted() {
         const sectionHash = PORTFOLIO_SECTION_HASHES.has(this.$route.hash)
@@ -474,6 +490,16 @@ export default {
         }
         this.heroIntroLetterMq.addEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
+
+        this.onHeroPointerMove = (event) => this.onHeroPointerMoveHandler(event)
+        this.onHeroPointerEndHandler = () => this.onHeroPointerEndHandlerImpl()
+        this.onHeroPointerLeaveWindow = (event) => {
+            if (event.relatedTarget != null) return
+            this.onHeroPointerEndHandlerImpl()
+        }
+        window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
+        window.addEventListener('blur', this.onHeroPointerEndHandler)
+        document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
 
         this.heroDecorObserver = new ResizeObserver(() => {
             this.beginHeroDecorResizeClip()
@@ -572,6 +598,9 @@ export default {
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         this.clearHeroIntroPointerShift()
+        window.removeEventListener('pointermove', this.onHeroPointerMove)
+        window.removeEventListener('blur', this.onHeroPointerEndHandler)
+        document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -1138,23 +1167,48 @@ export default {
                 window.matchMedia('(hover: hover) and (pointer: fine)').matches
             )
         },
-        onHeroIntroPointerMove(event) {
-            if (!this.canHeroIntroPointerPlay()) return
-            if (event.pointerType !== 'mouse') return
-
-            this.heroIntroPointer = { x: event.clientX, y: event.clientY }
-            if (this.heroIntroPointerRaf != null) return
-            this.heroIntroPointerRaf = requestAnimationFrame(() => {
-                this.heroIntroPointerRaf = null
-                this.applyHeroIntroPointerShift()
-            })
-        },
-        onHeroIntroPointerLeave() {
+        onHeroPointerEndHandlerImpl() {
+            this.heroCursorActive = false
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
                 this.heroIntroPointerRaf = null
             }
             this.clearHeroIntroPointerShift()
+        },
+        onHeroPointerMoveHandler(event) {
+            if (!this.canHeroIntroPointerPlay()) return
+            if (event.pointerType !== 'mouse') return
+
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return
+
+            const x = event.clientX
+            const y = event.clientY
+            const introStyles = getComputedStyle(intro)
+            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 100)
+            const rect = intro.getBoundingClientRect()
+            const near =
+                x >= rect.left - zonePad &&
+                x <= rect.right + zonePad &&
+                y >= rect.top - zonePad &&
+                y <= rect.bottom + zonePad
+
+            if (!near) {
+                if (this.heroCursorActive || this.heroIntroPointer) {
+                    this.onHeroPointerEndHandlerImpl()
+                }
+                return
+            }
+
+            this.heroCursorPos = { x, y }
+            this.heroCursorActive = true
+            this.heroIntroPointer = { x, y }
+
+            if (this.heroIntroPointerRaf != null) return
+            this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                this.heroIntroPointerRaf = null
+                this.applyHeroIntroPointerShift()
+            })
         },
         applyHeroIntroPointerShift() {
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
@@ -1613,6 +1667,7 @@ export default {
 
 @media (hover: hover) and (pointer: fine) {
     .hero-intro.hero-intro--chars {
+        --hero-cursor-zone-pad: 100px;
         --hero-intro-hover-radius: 100px;
         --hero-intro-hover-shift: 52px;
         --hero-intro-hover-lift: 20px;
@@ -1636,6 +1691,34 @@ export default {
         transition: transform
             calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
             var(--fly-ease);
+    }
+}
+
+.hero-intro-cursor-ball {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border-radius: 50%;
+    background: var(--brand);
+    pointer-events: none;
+    z-index: 110;
+    visibility: hidden;
+    opacity: 0;
+    will-change: transform;
+}
+
+.hero-intro-cursor-ball--visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .portfolio-page--hero-cursor .hero,
+    .portfolio-page--hero-cursor .hero * {
+        cursor: none;
     }
 }
 
