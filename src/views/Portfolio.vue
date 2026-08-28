@@ -1902,6 +1902,19 @@ export default {
     --top-bar-logo-height: 52px;
     --top-bar-logo-inset: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --hero-logo-gap: 150px;
+    --hero-squiggle-left: clamp(
+        61px,
+        calc(61px + (100vw - 997px) * 60 / 457),
+        121px
+    );
+    --hero-squiggle-width: 56px;
+    /* SVG stroke is centered on x=35; match the 2px border-left left edge at x=34 */
+    --hero-decor-line-stroke-x: 34px;
+    --portfolio-main-inset-left: max(0px, (100vw - var(--page-max)) / 2);
+    --portfolio-decor-line-x: calc(
+        var(--portfolio-main-inset-left) + var(--page-pad) + var(--hero-squiggle-left) +
+            var(--hero-decor-line-stroke-x)
+    );
     --fly-distance: min(42vw, 360px);
     --fly-duration: 1.25s;
     --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -2267,12 +2280,6 @@ export default {
     --hero-intro-max-width: 850px;
     --hero-cta-gap: 110px;
     --hero-cta-height: 57px;
-    --hero-squiggle-left: clamp(
-        61px,
-        calc(61px + (100vw - 997px) * 60 / 457),
-        121px
-    );
-    --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
     /* 903px from the left edge of the first project image (content left) */
     --hero-cta-left: 862px;
@@ -2912,9 +2919,9 @@ export default {
 
 .about-line {
     position: absolute;
-    left: calc((100vw - var(--about-inner-max-w)) / 2 + clamp(0px, calc((100vw - 997px) * 2 / 457), 2px));
+    left: var(--portfolio-decor-line-x);
     top: calc(140px - var(--about-gap));
-    z-index: 1;
+    z-index: 2;
     display: block;
     width: 0;
     height: var(--about-photo-h);
@@ -3144,7 +3151,7 @@ export default {
 
 /* Tablet: tighter squiggle inset so line + paragraph stay side-by-side */
 @media (min-width: 800px) and (max-width: 997px) {
-    .hero {
+    .portfolio-page {
         --hero-squiggle-left: 61px; /* clamp floor; explicit for 800–997 */
     }
 }
@@ -3187,10 +3194,6 @@ export default {
 
     .about-photo-column {
         padding-left: var(--about-image-text-gap);
-    }
-
-    .about-line {
-        left: calc((100vw - var(--about-inner-max-w)) / 2);
     }
 
     .about-photo,
@@ -3324,6 +3327,10 @@ export default {
         display: none;
     }
 
+    .about-line {
+        display: none;
+    }
+
     .work {
         gap: 0;
         width: 100%;
@@ -3444,11 +3451,6 @@ export default {
         z-index: 1;
     }
 
-    .about-line {
-        display: block;
-        left: calc((100vw - var(--about-inner-max-w)) / 2);
-    }
-
     .about-photo,
     .about-photo--placeholder {
         width: 281px;
@@ -3553,10 +3555,6 @@ export default {
         position: relative;
         --about-side-pad: var(--page-pad);
         padding: 0 var(--about-side-pad);
-    }
-
-    .about-line {
-        display: none;
     }
 
     /* Photo: right-aligned, behind heading/location */
