@@ -5,6 +5,7 @@
             'portfolio-page--reveal': pageRevealed,
             'portfolio-page--settled': pageEntranceDone,
             'portfolio-page--hero-cursor': heroCursorActive,
+            'portfolio-page--mobile-hero-fixed': pageEntranceDone && isMobileLayout,
         }"
     >
         <span
@@ -458,6 +459,7 @@ export default {
             heroIntroActivePointerId: null,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
+            isMobileLayout: false,
         }
     },
     computed: {
@@ -491,12 +493,17 @@ export default {
         }
 
         this.heroIntroLetterMq = window.matchMedia('(max-width: 799px)')
+        this.isMobileLayout = this.heroIntroLetterMq.matches
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.onHeroIntroLetterMqChange = () => {
             this.onMobileHeroLayoutChange()
         }
         this.heroIntroLetterMq.addEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
+
+        if (this.pageEntranceDone) {
+            this.$nextTick(() => this.lockMobileHeroHeight())
+        }
 
         this.onHeroPointerMove = (event) => this.onHeroPointerMoveHandler(event)
         this.onHeroPointerDown = (event) => this.onHeroPointerDownHandler(event)
@@ -512,6 +519,10 @@ export default {
         window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
         window.addEventListener('blur', this.onHeroPointerEndHandler)
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
+        this.onMobileHeroOrientation = () => {
+            window.setTimeout(() => this.lockMobileHeroHeight(), 250)
+        }
+        window.addEventListener('orientationchange', this.onMobileHeroOrientation)
 
         this.heroDecorObserver = new ResizeObserver(() => {
             this.beginHeroDecorResizeClip()
@@ -614,6 +625,8 @@ export default {
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
         window.removeEventListener('pointerup', this.onHeroPointerUp)
         window.removeEventListener('pointercancel', this.onHeroPointerUp)
+        window.removeEventListener('orientationchange', this.onMobileHeroOrientation)
+        this.clearMobileHeroHeight()
         window.removeEventListener('blur', this.onHeroPointerEndHandler)
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
@@ -982,6 +995,7 @@ export default {
             this.pageEntranceSettleTimer = null
             if (this.pageEntranceDone) return
             this.pageEntranceDone = true
+            this.lockMobileHeroHeight()
             this.markHeroLineClipSettled()
         },
         scheduleHeroLineClipSettle() {
@@ -1035,6 +1049,7 @@ export default {
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
+            this.isMobileLayout = isMobile
             const nextLetter = !this.heroIntroReduceMq.matches
             const letterChanged = nextLetter !== this.heroIntroLetterMode
             const leavingMobile = this.heroDecorHidden && !isMobile
@@ -1042,8 +1057,11 @@ export default {
             if (isMobile) {
                 this.heroDecorHidden = true
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
+                this.$nextTick(() => this.lockMobileHeroHeight())
                 return
             }
+
+            this.clearMobileHeroHeight()
 
             if (letterChanged) this.heroIntroLetterMode = nextLetter
 
@@ -1169,6 +1187,20 @@ export default {
             } else {
                 setTimeout(run, 200)
             }
+        },
+        lockMobileHeroHeight() {
+            if (!this.heroIntroLetterMq?.matches || !this.pageEntranceDone) {
+                this.clearMobileHeroHeight()
+                return
+            }
+
+            const pageStyles = getComputedStyle(this.$el)
+            const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
+            const height = Math.max(0, Math.round(window.innerHeight - topBarHeight))
+            this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
+        },
+        clearMobileHeroHeight() {
+            this.$el?.style.removeProperty('--mobile-hero-height')
         },
         getHeroLineEl() {
             return this.$el?.querySelector('.hero-decor-line')
@@ -2957,6 +2989,29 @@ export default {
 
     .hero {
         margin-bottom: 120px;
+    }
+
+    .portfolio-page--mobile-hero-fixed .hero {
+        position: fixed;
+        top: var(--top-bar-height);
+        left: 0;
+        right: 0;
+        z-index: 0;
+        margin-bottom: 0;
+        padding: 0 var(--page-pad);
+        box-sizing: border-box;
+        background: #fff;
+    }
+
+    .portfolio-page--mobile-hero-fixed .hero-intro-wrap {
+        min-height: var(--mobile-hero-height, calc(100svh - var(--top-bar-height)));
+    }
+
+    .portfolio-page--mobile-hero-fixed .work {
+        position: relative;
+        z-index: 1;
+        padding-top: calc(var(--mobile-hero-height, calc(100svh - var(--top-bar-height))) + 120px);
+        background: #fff;
     }
 
     .about {
