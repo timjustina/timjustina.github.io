@@ -8,7 +8,7 @@
         }"
     >
         <span
-            v-if="heroIntroLetterMode"
+            v-if="heroIntroLetterMode && heroIntroFinePointer"
             class="hero-intro-cursor-ball"
             :class="{ 'hero-intro-cursor-ball--visible': heroCursorActive }"
             :style="heroCursorBallStyle"
@@ -455,11 +455,18 @@ export default {
                 !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
             heroIntroPointerRaf: null,
             heroIntroPointer: null,
+            heroIntroActivePointerId: null,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
         }
     },
     computed: {
+        heroIntroFinePointer() {
+            return (
+                typeof window !== 'undefined' &&
+                window.matchMedia('(hover: hover) and (pointer: fine)').matches
+            )
+        },
         heroCursorBallStyle() {
             const { x, y } = this.heroCursorPos
             return {
@@ -492,12 +499,17 @@ export default {
         this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
 
         this.onHeroPointerMove = (event) => this.onHeroPointerMoveHandler(event)
+        this.onHeroPointerDown = (event) => this.onHeroPointerDownHandler(event)
+        this.onHeroPointerUp = (event) => this.onHeroPointerUpHandler(event)
         this.onHeroPointerEndHandler = () => this.onHeroPointerEndHandlerImpl()
         this.onHeroPointerLeaveWindow = (event) => {
             if (event.relatedTarget != null) return
             this.onHeroPointerEndHandlerImpl()
         }
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
+        window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
+        window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
+        window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
         window.addEventListener('blur', this.onHeroPointerEndHandler)
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
 
@@ -599,6 +611,9 @@ export default {
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         this.clearHeroIntroPointerShift()
         window.removeEventListener('pointermove', this.onHeroPointerMove)
+        window.removeEventListener('pointerdown', this.onHeroPointerDown)
+        window.removeEventListener('pointerup', this.onHeroPointerUp)
+        window.removeEventListener('pointercancel', this.onHeroPointerUp)
         window.removeEventListener('blur', this.onHeroPointerEndHandler)
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
@@ -1163,45 +1178,23 @@ export default {
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
                 !prefersReducedMotion() &&
+                typeof window !== 'undefined'
+            )
+        },
+        isHeroIntroFinePointer() {
+            return (
                 typeof window !== 'undefined' &&
                 window.matchMedia('(hover: hover) and (pointer: fine)').matches
             )
         },
-        onHeroPointerEndHandlerImpl() {
-            this.heroCursorActive = false
-            if (this.heroIntroPointerRaf != null) {
-                cancelAnimationFrame(this.heroIntroPointerRaf)
-                this.heroIntroPointerRaf = null
-            }
-            this.clearHeroIntroPointerShift()
+        isHeroIntroMobileTouch() {
+            return this.heroIntroLetterMq?.matches ?? false
         },
-        onHeroPointerMoveHandler(event) {
-            if (!this.canHeroIntroPointerPlay()) return
-            if (event.pointerType !== 'mouse') return
-
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return
-
-            const x = event.clientX
-            const y = event.clientY
-            const introStyles = getComputedStyle(intro)
-            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 100)
-            const rect = intro.getBoundingClientRect()
-            const near =
-                x >= rect.left - zonePad &&
-                x <= rect.right + zonePad &&
-                y >= rect.top - zonePad &&
-                y <= rect.bottom + zonePad
-
-            if (!near) {
-                if (this.heroCursorActive || this.heroIntroPointer) {
-                    this.onHeroPointerEndHandlerImpl()
-                }
-                return
+        setHeroIntroPointer(x, y, { showBall = false } = {}) {
+            if (showBall) {
+                this.heroCursorPos = { x, y }
+                this.heroCursorActive = true
             }
-
-            this.heroCursorPos = { x, y }
-            this.heroCursorActive = true
             this.heroIntroPointer = { x, y }
 
             if (this.heroIntroPointerRaf != null) return
@@ -1209,6 +1202,63 @@ export default {
                 this.heroIntroPointerRaf = null
                 this.applyHeroIntroPointerShift()
             })
+        },
+        onHeroPointerEndHandlerImpl() {
+            this.heroIntroActivePointerId = null
+            this.heroCursorActive = false
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.clearHeroIntroPointerShift()
+        },
+        onHeroPointerDownHandler(event) {
+            if (!this.canHeroIntroPointerPlay()) return
+            if (!this.isHeroIntroMobileTouch()) return
+            if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
+
+            this.heroIntroActivePointerId = event.pointerId
+            this.setHeroIntroPointer(event.clientX, event.clientY)
+        },
+        onHeroPointerUpHandler(event) {
+            if (this.heroIntroActivePointerId !== event.pointerId) return
+            this.onHeroPointerEndHandlerImpl()
+        },
+        onHeroPointerMoveHandler(event) {
+            if (!this.canHeroIntroPointerPlay()) return
+
+            if (this.isHeroIntroFinePointer() && event.pointerType === 'mouse') {
+                const intro = this.$el?.querySelector('.hero-intro')
+                if (!intro) return
+
+                const x = event.clientX
+                const y = event.clientY
+                const introStyles = getComputedStyle(intro)
+                const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 100)
+                const rect = intro.getBoundingClientRect()
+                const near =
+                    x >= rect.left - zonePad &&
+                    x <= rect.right + zonePad &&
+                    y >= rect.top - zonePad &&
+                    y <= rect.bottom + zonePad
+
+                if (!near) {
+                    if (this.heroCursorActive || this.heroIntroPointer) {
+                        this.onHeroPointerEndHandlerImpl()
+                    }
+                    return
+                }
+
+                this.setHeroIntroPointer(x, y, { showBall: true })
+                return
+            }
+
+            if (
+                this.isHeroIntroMobileTouch() &&
+                this.heroIntroActivePointerId === event.pointerId
+            ) {
+                this.setHeroIntroPointer(event.clientX, event.clientY)
+            }
         },
         applyHeroIntroPointerShift() {
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
@@ -1684,6 +1734,32 @@ export default {
     }
 
     /* Knock outward a bit quicker, same easing as the cascade fly-in */
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
+        transform: translate3d(
+            var(--hero-intro-push-x, 0),
+            var(--hero-intro-push-y, 0),
+            0
+        );
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
+            var(--fly-ease);
+    }
+}
+
+@media (max-width: 799px) {
+    .hero-intro.hero-intro--chars {
+        --hero-intro-hover-radius: 100px;
+        --hero-intro-hover-shift: 52px;
+        --hero-intro-hover-lift: 20px;
+        --hero-intro-hover-knock-mult: 0.18;
+    }
+
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char {
+        transform: translate3d(0, 0, 0);
+        transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
+        will-change: transform;
+    }
+
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
             var(--hero-intro-push-x, 0),
