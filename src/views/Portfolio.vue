@@ -2574,6 +2574,23 @@ export default {
     }
 }
 
+/* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
+@media (min-width: 800px) {
+    .hero {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 100svh;
+        margin-top: calc(-1 * var(--top-bar-height));
+        margin-bottom: 0;
+        box-sizing: border-box;
+    }
+
+    .hero-intro-wrap {
+        margin-top: 0;
+    }
+}
+
 @media (max-width: 799px) {
     .portfolio-page {
         --page-pad: 20px;
