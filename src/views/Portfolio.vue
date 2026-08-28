@@ -3226,16 +3226,6 @@ export default {
         max-width: none;
         width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left));
     }
-
-    /* Widen overflow paint area into page gutters without shifting text alignment */
-    .hero-intro-wrap:has(.hero-intro--chars) {
-        margin-left: calc(var(--hero-intro-left) - var(--page-pad));
-        margin-right: calc(-1 * var(--page-pad));
-        padding-left: var(--page-pad);
-        padding-right: var(--page-pad);
-        width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left) + 2 * var(--page-pad));
-        overflow: visible;
-    }
 }
 
 @media (max-width: 799px) {
