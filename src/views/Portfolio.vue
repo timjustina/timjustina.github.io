@@ -1767,7 +1767,7 @@ export default {
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
     /* 903px from the left edge of the first project image (content left) */
-    --hero-cta-left: 912px;
+    --hero-cta-left: 862px;
     /* Text bottom → first image = cta gap + cta height + CTA→image margin */
     --hero-text-to-image: 437px;
     margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
@@ -2595,7 +2595,7 @@ export default {
     }
 
     .cta-button {
-        margin-left: min(705px, max(0px, calc(100% - 233px)));
+        margin-left: min(655px, max(0px, calc(100% - 233px)));
     }
 
     .project--offset {
