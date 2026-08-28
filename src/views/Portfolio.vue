@@ -5,7 +5,6 @@
             'portfolio-page--reveal': pageRevealed,
             'portfolio-page--settled': pageEntranceDone,
             'portfolio-page--hero-cursor': heroCursorActive,
-            'portfolio-page--mobile-hero-fixed': pageEntranceDone && isMobileLayout,
         }"
     >
         <span
@@ -459,7 +458,6 @@ export default {
             heroIntroActivePointerId: null,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
-            isMobileLayout: false,
         }
     },
     computed: {
@@ -493,7 +491,6 @@ export default {
         }
 
         this.heroIntroLetterMq = window.matchMedia('(max-width: 799px)')
-        this.isMobileLayout = this.heroIntroLetterMq.matches
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.onHeroIntroLetterMqChange = () => {
             this.onMobileHeroLayoutChange()
@@ -1049,7 +1046,6 @@ export default {
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
-            this.isMobileLayout = isMobile
             const nextLetter = !this.heroIntroReduceMq.matches
             const letterChanged = nextLetter !== this.heroIntroLetterMode
             const leavingMobile = this.heroDecorHidden && !isMobile
@@ -2991,29 +2987,6 @@ export default {
         margin-bottom: 120px;
     }
 
-    .portfolio-page--mobile-hero-fixed .hero {
-        position: fixed;
-        top: var(--top-bar-height);
-        left: 0;
-        right: 0;
-        z-index: 0;
-        margin-bottom: 0;
-        padding: 0 var(--page-pad);
-        box-sizing: border-box;
-        background: #fff;
-    }
-
-    .portfolio-page--mobile-hero-fixed .hero-intro-wrap {
-        min-height: var(--mobile-hero-height, calc(100svh - var(--top-bar-height)));
-    }
-
-    .portfolio-page--mobile-hero-fixed .work {
-        position: relative;
-        z-index: 1;
-        padding-top: calc(var(--mobile-hero-height, calc(100svh - var(--top-bar-height))) + 120px);
-        background: #fff;
-    }
-
     .about {
         margin-top: calc(2 * var(--mobile-block-gap));
     }
@@ -3032,7 +3005,9 @@ export default {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        min-height: calc(100svh - var(--top-bar-height));
+        /* Before load: fill viewport; after load: lock pixels so URL-bar show/hide won't shift intro */
+        min-height: var(--mobile-hero-height, calc(100svh - var(--top-bar-height)));
+        height: var(--mobile-hero-height, auto);
         max-width: 100%;
         width: 100%;
         margin: 0;
