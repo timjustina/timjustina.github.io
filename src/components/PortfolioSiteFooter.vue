@@ -2,7 +2,7 @@
     <footer class="site-footer">
         <div class="footer-inner">
             <div class="footer-contact">
-                <strong class="footer-contact-title">Get in touch</strong>
+                <strong class="footer-contact-title">Drop me a line</strong>
                 <a href="mailto:design@timjustina.com" class="footer-email">design@timjustina.com</a>
             </div>
             <span class="footer-copy">© 2026 Tim Justina Yeung</span>
