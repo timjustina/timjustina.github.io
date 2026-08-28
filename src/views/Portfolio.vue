@@ -458,7 +458,7 @@ export default {
             heroIntroPointerRaf: null,
             heroIntroPointer: null,
             heroIntroActivePointerId: null,
-            heroIntroTouchScrollLock: false,
+            heroIntroTouchStart: null,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
         }
@@ -518,7 +518,6 @@ export default {
         window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
         window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
         window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
-        this.onHeroTouchMove = (event) => this.onHeroTouchMoveHandler(event)
         window.addEventListener('blur', this.onHeroPointerEndHandler)
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
@@ -625,7 +624,6 @@ export default {
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
         this.clearHeroIntroPointerShift()
-        window.removeEventListener('touchmove', this.onHeroTouchMove)
         window.removeEventListener('pointermove', this.onHeroPointerMove)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
         window.removeEventListener('pointerup', this.onHeroPointerUp)
@@ -1227,6 +1225,33 @@ export default {
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
         },
+        isHeroIntroPointerOnText(x, y) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return false
+
+            const rect = intro.getBoundingClientRect()
+            return (
+                x >= rect.left &&
+                x <= rect.right &&
+                y >= rect.top &&
+                y <= rect.bottom
+            )
+        },
+        isHeroIntroTouchScrollIntent(event) {
+            const start = this.heroIntroTouchStart
+            if (!start) return false
+
+            const dx = event.clientX - start.x
+            const dy = event.clientY - start.y
+            const absDx = Math.abs(dx)
+            const absDy = Math.abs(dy)
+            const travel = Math.hypot(dx, dy)
+
+            if (travel < 10) return false
+            if (event.pointerType === 'pen') return false
+
+            return absDy > absDx * 1.15 && absDy > 14
+        },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
@@ -1256,40 +1281,22 @@ export default {
         },
         onHeroPointerEndHandlerImpl() {
             this.heroIntroActivePointerId = null
+            this.heroIntroTouchStart = null
             this.heroCursorActive = false
-            if (this.heroIntroTouchScrollLock) {
-                window.removeEventListener('touchmove', this.onHeroTouchMove)
-                this.heroIntroTouchScrollLock = false
-            }
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
                 this.heroIntroPointerRaf = null
             }
             this.clearHeroIntroPointerShift()
         },
-        onHeroTouchMoveHandler(event) {
-            if (this.heroIntroActivePointerId == null) return
-
-            const touch = [...event.touches].find(
-                (t) => t.identifier === this.heroIntroActivePointerId
-            )
-            if (!touch) return
-
-            if (this.isHeroIntroPointerNear(touch.clientX, touch.clientY)) {
-                event.preventDefault()
-            }
-        },
         onHeroPointerDownHandler(event) {
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroMobileTouch()) return
             if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
-            if (!this.isHeroIntroPointerNear(event.clientX, event.clientY)) return
+            if (!this.isHeroIntroPointerOnText(event.clientX, event.clientY)) return
 
             this.heroIntroActivePointerId = event.pointerId
-            if (!this.heroIntroTouchScrollLock) {
-                this.heroIntroTouchScrollLock = true
-                window.addEventListener('touchmove', this.onHeroTouchMove, { passive: false })
-            }
+            this.heroIntroTouchStart = { x: event.clientX, y: event.clientY }
             this.setHeroIntroPointer(event.clientX, event.clientY)
         },
         onHeroPointerUpHandler(event) {
@@ -1318,6 +1325,11 @@ export default {
                 this.isHeroIntroMobileTouch() &&
                 this.heroIntroActivePointerId === event.pointerId
             ) {
+                if (this.isHeroIntroTouchScrollIntent(event)) {
+                    this.onHeroPointerEndHandlerImpl()
+                    return
+                }
+
                 this.setHeroIntroPointer(event.clientX, event.clientY)
             }
         },
@@ -1842,7 +1854,6 @@ export default {
         --hero-intro-hover-force-exp: 1.45;
         --hero-intro-hover-lift-exp: 1.25;
         --hero-intro-hover-knock-mult: 0.34;
-        touch-action: none;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
@@ -2061,6 +2072,7 @@ export default {
     /* Text bottom → first image (CTA lives in the about section on desktop) */
     --hero-text-to-image: 437px;
     margin-bottom: var(--hero-text-to-image);
+    overflow: visible;
 }
 
 .hero-intro-wrap {
@@ -2069,6 +2081,24 @@ export default {
     max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
     margin: var(--hero-logo-gap) 0 0
         var(--hero-intro-left);
+}
+
+/* Letter push / fly-in may extend to the viewport edge, not the content padding box */
+.hero-intro-wrap:has(.hero-intro--chars) {
+    --hero-intro-viewport-bleed: calc(50vw - 50%);
+    width: 100vw;
+    max-width: 100vw;
+    left: 50%;
+    margin-right: -50vw;
+    margin-left: -50vw;
+    padding-left: calc(var(--hero-intro-viewport-bleed) + var(--page-pad) + var(--hero-intro-left));
+    padding-right: calc(var(--hero-intro-viewport-bleed) + var(--page-pad));
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+.hero-intro-wrap:has(.hero-intro--chars) .hero-intro {
+    max-width: min(var(--hero-intro-max-width), 100%);
 }
 
 .hero-decor {
@@ -3026,6 +3056,21 @@ export default {
         max-width: none;
         width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left));
     }
+
+    .hero-intro-wrap:has(.hero-intro--chars) {
+        width: 100vw;
+        max-width: 100vw;
+        margin-left: -50vw;
+        padding-left: calc(var(--hero-intro-viewport-bleed) + var(--page-pad) + var(--hero-intro-left));
+        padding-right: calc(var(--hero-intro-viewport-bleed) + var(--page-pad) + var(--hero-squiggle-left));
+    }
+
+    .hero-intro-wrap:has(.hero-intro--chars) .hero-intro {
+        max-width: min(
+            var(--hero-intro-max-width),
+            calc(100vw - (var(--page-pad) * 2) - var(--hero-intro-left) - var(--hero-squiggle-left))
+        );
+    }
 }
 
 @media (max-width: 799px) {
@@ -3088,7 +3133,17 @@ export default {
         margin: 0;
         padding-bottom: var(--page-pad);
         box-sizing: border-box;
-        overflow-x: clip;
+    }
+
+    .hero-intro-wrap:has(.hero-intro--chars) {
+        width: 100vw;
+        max-width: 100vw;
+        left: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        padding-left: calc(var(--hero-intro-viewport-bleed) + var(--page-pad));
+        padding-right: calc(var(--hero-intro-viewport-bleed) + var(--page-pad));
+        overflow: visible;
     }
 
     /* Hidden decor still extended ~79px left (absolute + fly-in) and caused horizontal scroll jank */
