@@ -1229,12 +1229,14 @@ export default {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
 
+            const introStyles = getComputedStyle(intro)
+            const pad = parseCssPx(introStyles, '--hero-intro-touch-pad', 0)
             const rect = intro.getBoundingClientRect()
             return (
-                x >= rect.left &&
-                x <= rect.right &&
-                y >= rect.top &&
-                y <= rect.bottom
+                x >= rect.left - pad &&
+                x <= rect.right + pad &&
+                y >= rect.top - pad &&
+                y <= rect.bottom + pad
             )
         },
         isHeroIntroTouchScrollIntent(event) {
@@ -1247,10 +1249,10 @@ export default {
             const absDy = Math.abs(dy)
             const travel = Math.hypot(dx, dy)
 
-            if (travel < 10) return false
+            if (travel < 22) return false
             if (event.pointerType === 'pen') return false
 
-            return absDy > absDx * 1.15 && absDy > 14
+            return absDy > absDx * 1.55 && absDy > 40
         },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
@@ -1326,7 +1328,14 @@ export default {
                 this.heroIntroActivePointerId === event.pointerId
             ) {
                 if (this.isHeroIntroTouchScrollIntent(event)) {
-                    this.onHeroPointerEndHandlerImpl()
+                    this.heroIntroActivePointerId = null
+                    this.heroIntroTouchStart = null
+                    this.heroIntroPointer = null
+                    if (this.heroIntroPointerRaf != null) {
+                        cancelAnimationFrame(this.heroIntroPointerRaf)
+                        this.heroIntroPointerRaf = null
+                    }
+                    this.clearHeroIntroPointerShift()
                     return
                 }
 
@@ -1847,13 +1856,14 @@ export default {
 
 @media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
-        --hero-cursor-zone-pad: 240px;
-        --hero-intro-hover-radius: 240px;
-        --hero-intro-hover-shift: 102px;
-        --hero-intro-hover-lift: 38px;
-        --hero-intro-hover-force-exp: 1.45;
-        --hero-intro-hover-lift-exp: 1.25;
-        --hero-intro-hover-knock-mult: 0.34;
+        --hero-intro-touch-pad: 36px;
+        --hero-cursor-zone-pad: 220px;
+        --hero-intro-hover-radius: 220px;
+        --hero-intro-hover-shift: 96px;
+        --hero-intro-hover-lift: 36px;
+        --hero-intro-hover-force-exp: 1.62;
+        --hero-intro-hover-lift-exp: 1.38;
+        --hero-intro-hover-knock-mult: 0.46;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
@@ -2081,24 +2091,6 @@ export default {
     max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
     margin: var(--hero-logo-gap) 0 0
         var(--hero-intro-left);
-}
-
-/* Letter push / fly-in may extend to the viewport edge, not the content padding box */
-.hero-intro-wrap:has(.hero-intro--chars) {
-    --hero-intro-viewport-bleed: calc(50vw - 50%);
-    width: 100vw;
-    max-width: 100vw;
-    left: 50%;
-    margin-right: -50vw;
-    margin-left: -50vw;
-    padding-left: calc(var(--hero-intro-viewport-bleed) + var(--page-pad) + var(--hero-intro-left));
-    padding-right: calc(var(--hero-intro-viewport-bleed) + var(--page-pad));
-    box-sizing: border-box;
-    overflow: visible;
-}
-
-.hero-intro-wrap:has(.hero-intro--chars) .hero-intro {
-    max-width: min(var(--hero-intro-max-width), 100%);
 }
 
 .hero-decor {
@@ -3057,19 +3049,14 @@ export default {
         width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left));
     }
 
+    /* Widen overflow paint area into page gutters without shifting text alignment */
     .hero-intro-wrap:has(.hero-intro--chars) {
-        width: 100vw;
-        max-width: 100vw;
-        margin-left: -50vw;
-        padding-left: calc(var(--hero-intro-viewport-bleed) + var(--page-pad) + var(--hero-intro-left));
-        padding-right: calc(var(--hero-intro-viewport-bleed) + var(--page-pad) + var(--hero-squiggle-left));
-    }
-
-    .hero-intro-wrap:has(.hero-intro--chars) .hero-intro {
-        max-width: min(
-            var(--hero-intro-max-width),
-            calc(100vw - (var(--page-pad) * 2) - var(--hero-intro-left) - var(--hero-squiggle-left))
-        );
+        margin-left: calc(var(--hero-intro-left) - var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        padding-left: var(--page-pad);
+        padding-right: var(--page-pad);
+        width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left) + 2 * var(--page-pad));
+        overflow: visible;
     }
 }
 
@@ -3136,13 +3123,12 @@ export default {
     }
 
     .hero-intro-wrap:has(.hero-intro--chars) {
-        width: 100vw;
-        max-width: 100vw;
-        left: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-        padding-left: calc(var(--hero-intro-viewport-bleed) + var(--page-pad));
-        padding-right: calc(var(--hero-intro-viewport-bleed) + var(--page-pad));
+        width: calc(100% + 2 * var(--page-pad));
+        max-width: none;
+        margin-left: calc(-1 * var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        padding-left: var(--page-pad);
+        padding-right: var(--page-pad);
         overflow: visible;
     }
 
