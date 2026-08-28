@@ -2880,7 +2880,11 @@ export default {
     }
 
     .hero {
-        margin-bottom: calc(2 * var(--mobile-block-gap));
+        margin-bottom: 120px;
+    }
+
+    .about {
+        margin-top: calc(2 * var(--mobile-block-gap));
     }
 
     .portfolio-main {
@@ -3007,9 +3011,7 @@ export default {
     }
 
     .about {
-        --about-gap: 340px;
         --about-bottom-pad-base: 180px;
-        margin-top: 340px;
         padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
@@ -3127,7 +3129,6 @@ export default {
     }
 
     .about {
-        margin-top: var(--project-stack-gap);
         --about-bottom-pad: 326px;
         --about-photo-h: 288px;
         --about-stack-gap: 50px;

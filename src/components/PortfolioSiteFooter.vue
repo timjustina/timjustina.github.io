@@ -103,7 +103,7 @@ export default {
 
     .footer-copy {
         align-self: flex-end;
-        margin-top: calc(var(--footer-item-gap) * 2);
+        margin-top: 40px;
     }
 }
 
