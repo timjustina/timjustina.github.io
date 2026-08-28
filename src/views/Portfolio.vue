@@ -1295,8 +1295,8 @@ export default {
 
             const introStyles = getComputedStyle(intro)
             const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 100)
-            const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 52)
-            const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 20)
+            const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
+            const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
             const { x, y } = pointer
 
             for (const el of intro.querySelectorAll('.hero-intro-char')) {
@@ -1749,9 +1749,9 @@ export default {
     .hero-intro.hero-intro--chars {
         --hero-cursor-zone-pad: 100px;
         --hero-intro-hover-radius: 100px;
-        --hero-intro-hover-shift: 52px;
-        --hero-intro-hover-lift: 20px;
-        --hero-intro-hover-knock-mult: 0.18;
+        --hero-intro-hover-shift: 84px;
+        --hero-intro-hover-lift: 32px;
+        --hero-intro-hover-knock-mult: 0.55;
     }
 
     /* Float back at cascade pace (per-letter --hero-intro-char-duration from assemble) */
@@ -1761,7 +1761,7 @@ export default {
         will-change: transform;
     }
 
-    /* Knock outward a bit quicker, same easing as the cascade fly-in */
+    /* Knock outward in slow motion, same easing as the cascade fly-in */
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
             var(--hero-intro-push-x, 0),
@@ -1777,9 +1777,9 @@ export default {
 @media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
         --hero-intro-hover-radius: 100px;
-        --hero-intro-hover-shift: 52px;
-        --hero-intro-hover-lift: 20px;
-        --hero-intro-hover-knock-mult: 0.18;
+        --hero-intro-hover-shift: 84px;
+        --hero-intro-hover-lift: 32px;
+        --hero-intro-hover-knock-mult: 0.55;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
