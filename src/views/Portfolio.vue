@@ -1514,6 +1514,7 @@ export default {
     --project-w-wide: min(876px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
+    --hero-logo-gap: 160px;
     --fly-distance: min(42vw, 360px);
     --fly-duration: 1.25s;
     --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -1776,7 +1777,7 @@ export default {
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     position: relative;
     max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
-    margin: 110px 0 0
+    margin: var(--hero-logo-gap) 0 0
         var(--hero-intro-left);
 }
 
@@ -2501,10 +2502,6 @@ export default {
         --hero-intro-max-width: 920px;
     }
 
-    .hero-intro-wrap {
-        margin: 110px 0 0 var(--hero-intro-left);
-    }
-
     .hero-decor {
         top: 7px;
     }
@@ -2578,7 +2575,6 @@ export default {
 /* ≤997px: 997px artboard lock before tablet layout */
 @media (max-width: 997px) {
     .portfolio-page {
-        --hero-logo-gap: 118px;
         /* Logo sits above the bar bottom: (120px bar − 50px nav block) / 2 */
         --top-bar-logo-inset: 35px;
     }
