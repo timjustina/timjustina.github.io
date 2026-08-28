@@ -29,7 +29,7 @@
                 class="loading-splash-frame"
                 :class="{ 'loading-splash-frame--rotating': loadingRotating }"
                 :src="loadingFrames[loadingFrameIndex]"
-                :style="{ transform: `rotate(${loadingRotationDeg}deg)` }"
+                :style="{ transform: loadingSplashFrameTransform }"
                 alt=""
                 width="84"
                 height="84"
@@ -477,6 +477,9 @@ export default {
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
             }
+        },
+        loadingSplashFrameTransform() {
+            return `rotate(${this.loadingRotationDeg}deg)`
         },
     },
     mounted() {
@@ -1896,6 +1899,8 @@ export default {
     --project-w-wide: min(1060px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
+    --top-bar-logo-height: 52px;
+    --top-bar-logo-inset: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --hero-logo-gap: 150px;
     --fly-distance: min(42vw, 360px);
     --fly-duration: 1.25s;
@@ -2208,6 +2213,21 @@ export default {
     height: 84px;
     display: block;
     transform-origin: center center;
+}
+
+@media (min-width: 800px) {
+    .loading-splash {
+        display: block;
+    }
+
+    /* Align top half of frame (the mark) with .portfolio-top-bar .logo */
+    .loading-splash-frame {
+        position: fixed;
+        top: var(--top-bar-logo-inset);
+        left: var(--top-bar-logo-inset);
+        width: calc(var(--top-bar-logo-height) * 2);
+        height: calc(var(--top-bar-logo-height) * 2);
+    }
 }
 
 .loading-splash-frame--rotating {
