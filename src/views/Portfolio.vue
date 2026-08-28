@@ -1514,7 +1514,7 @@ export default {
     --project-w-wide: min(876px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
-    --hero-logo-gap: 160px;
+    --hero-logo-gap: 150px;
     --fly-distance: min(42vw, 360px);
     --fly-duration: 1.25s;
     --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -1769,7 +1769,7 @@ export default {
     /* 746px from the left edge of the first project image (content left) */
     --hero-cta-left: 836px;
     /* Text bottom → first image = cta gap + cta height + CTA→image margin */
-    --hero-text-to-image: 387px;
+    --hero-text-to-image: 437px;
     margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
 }
 
@@ -2580,7 +2580,7 @@ export default {
     }
 
     .hero {
-        margin-bottom: 220px;
+        margin-bottom: 270px;
     }
 
     .hero-intro-wrap {
