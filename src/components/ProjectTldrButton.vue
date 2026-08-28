@@ -1,5 +1,9 @@
 <template>
-  <div class="project-tldr" :class="{ 'project-tldr--open': open }">
+  <div
+    ref="root"
+    class="project-tldr"
+    :class="{ 'project-tldr--open': open }"
+  >
     <button
       type="button"
       class="project-tldr-trigger"
@@ -95,6 +99,11 @@
 import chevronDefault from '../assets/tldr-chevron-default.svg'
 import chevronHover from '../assets/tldr-chevron-hover.svg'
 import chevronClicked from '../assets/tldr-chevron-clicked.svg'
+import { easeInOutCubic, smoothScrollTo } from '../utils/scrollToAbout.js'
+
+const MOBILE_VIEWPORT_QUERY = '(max-width: 600px)'
+const TLDR_TRIGGER_TOP_OFFSET = 60
+const TLDR_SCROLL_DURATION_MS = 260
 
 export default {
   name: 'ProjectTldrButton',
@@ -122,8 +131,61 @@ export default {
     clearTimeout(this.copyResetTimer)
   },
   methods: {
+    isMobileViewport() {
+      return window.matchMedia(MOBILE_VIEWPORT_QUERY).matches
+    },
+    getOpenSectionHeight(root) {
+      const liveHeight = root.getBoundingClientRect().height
+      if (!this.open) return liveHeight
+
+      const panel = root.querySelector('.project-tldr-panel')
+      if (panel) {
+        return Math.max(liveHeight, panel.scrollHeight)
+      }
+
+      return liveHeight
+    },
+    getOpenSectionScrollTop() {
+      const root = this.$refs.root
+      const trigger = root?.querySelector('.project-tldr-trigger')
+      if (!root || !trigger) return null
+
+      const viewportHeight = window.innerHeight
+      const scrollY = window.scrollY
+      const sectionRect = root.getBoundingClientRect()
+      const sectionTop = sectionRect.top + scrollY
+      const sectionHeight = this.getOpenSectionHeight(root)
+
+      if (sectionHeight > viewportHeight) {
+        const triggerTop = trigger.getBoundingClientRect().top + scrollY
+        return Math.max(0, triggerTop - TLDR_TRIGGER_TOP_OFFSET)
+      }
+
+      return Math.max(0, sectionTop + sectionHeight / 2 - viewportHeight / 2)
+    },
+    scrollOpenSectionIntoView() {
+      const targetTop = this.getOpenSectionScrollTop()
+      if (targetTop === null) return
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      smoothScrollTo(targetTop, {
+        duration: reducedMotion ? 0 : TLDR_SCROLL_DURATION_MS,
+        ease: easeInOutCubic,
+      })
+    },
+    scheduleScrollOpenSectionIntoView() {
+      this.$nextTick(() => {
+        requestAnimationFrame(() => this.scrollOpenSectionIntoView())
+      })
+    },
     toggle(event) {
+      const wasOpen = this.open
       this.open = !this.open
+
+      if (!wasOpen && this.open && !this.isMobileViewport()) {
+        this.scheduleScrollOpenSectionIntoView()
+      }
+
       // Drop sticky focus/hover so pressed chevron doesn’t linger on mobile
       const trigger = event?.currentTarget
       if (trigger && typeof trigger.blur === 'function') {

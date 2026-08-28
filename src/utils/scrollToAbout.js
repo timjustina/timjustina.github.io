@@ -44,7 +44,9 @@ function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
-export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION } = {}) {
+export { easeInOutCubic }
+
+export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION, ease = easeInOutCubic } = {}) {
     if (activeScrollAnimation !== null) {
         cancelAnimationFrame(activeScrollAnimation)
         activeScrollAnimation = null
@@ -65,7 +67,7 @@ export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION }
     const step = (now) => {
         const elapsed = now - startTime
         const progress = Math.min(1, elapsed / duration)
-        const eased = easeInOutCubic(progress)
+        const eased = ease(progress)
 
         window.scrollTo(0, startTop + distance * eased)
 
