@@ -53,6 +53,22 @@
         >
         <PortfolioTopBar />
 
+        <p
+            class="hero-location"
+            :class="{ 'hero-location--visible': heroLocationVisible && pageRevealed }"
+            aria-label="London / Barcelona"
+        >
+            <span class="hero-location-icon-wrap" aria-hidden="true">
+                <svg class="hero-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
+                    <path
+                        d="M6.5 0C2.91 0 0 2.91 0 6.5C0 11.38 6.5 20 6.5 20S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0ZM6.5 8.75C5.26 8.75 4.25 7.74 4.25 6.5C4.25 5.26 5.26 4.25 6.5 4.25C7.74 4.25 8.75 5.26 8.75 6.5C8.75 7.74 7.74 8.75 6.5 8.75Z"
+                        fill="currentColor"
+                    />
+                </svg>
+            </span>
+            <span class="hero-location-text">London / Barcelona</span>
+        </p>
+
         <main class="portfolio-main">
             <section class="hero">
                 <div class="hero-intro-wrap">
@@ -454,6 +470,8 @@ export default {
             heroDecorHidden:
                 typeof window !== 'undefined' &&
                 window.matchMedia('(max-width: 799px)').matches,
+            heroLocationVisible: false,
+            heroLocationScrollTicking: false,
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
@@ -576,6 +594,7 @@ export default {
         this.syncAboutLocationTextClip()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
         window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
+        window.addEventListener('scroll', this.onHeroLocationScroll, { passive: true })
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
             this.syncAboutBallPosition()
@@ -609,6 +628,7 @@ export default {
             this.setupAboutReveal()
         }
         this.setupProjectScrollFade(sectionHash)
+        this.setupHeroLocationVisibility()
         this.scheduleFirstProjectPrefetch()
 
         if (sectionHash) {
@@ -650,8 +670,10 @@ export default {
         this.stopAboutLocationTextClipPoll()
         this.aboutRevealObserver?.disconnect()
         this.projectFadeObserver?.disconnect()
+        this.heroLocationObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
+        window.removeEventListener('scroll', this.onHeroLocationScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -754,6 +776,9 @@ export default {
             if (hash === '#work' || hash === '#work-first') {
                 this.revealAllProjects()
             }
+            this.$nextTick(() => {
+                requestAnimationFrame(() => this.updateHeroLocationVisibility())
+            })
             if (hash !== '#about' || this.aboutRevealed) return
 
             // Start the about slide-in after the jump so it animates into place.
@@ -1100,6 +1125,7 @@ export default {
 
             if (isMobile) {
                 this.heroDecorHidden = true
+                this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
                 this.$nextTick(() => this.lockMobileHeroHeight())
                 return
@@ -1137,8 +1163,44 @@ export default {
                         }
                         this.heroDecorHidden = false
                         this.endHeroDecorResizeClip()
+                        this.updateHeroLocationVisibility()
                     })
                 })
+            })
+        },
+        setupHeroLocationVisibility() {
+            const workFirst = this.$el?.querySelector('#work-first')
+            if (!workFirst) return
+
+            this.heroLocationObserver = new IntersectionObserver(
+                () => this.updateHeroLocationVisibility(),
+                { threshold: [0, 1] },
+            )
+            this.heroLocationObserver.observe(workFirst)
+            this.updateHeroLocationVisibility()
+        },
+        updateHeroLocationVisibility() {
+            if (window.matchMedia('(max-width: 799px)').matches) {
+                this.heroLocationVisible = false
+                return
+            }
+
+            const workFirst = this.$el?.querySelector('#work-first')
+            if (!workFirst) {
+                this.heroLocationVisible = false
+                return
+            }
+
+            const top = workFirst.getBoundingClientRect().top
+            this.heroLocationVisible = top >= window.innerHeight
+        },
+        onHeroLocationScroll() {
+            if (window.matchMedia('(max-width: 799px)').matches) return
+            if (this.heroLocationScrollTicking) return
+            this.heroLocationScrollTicking = true
+            requestAnimationFrame(() => {
+                this.updateHeroLocationVisibility()
+                this.heroLocationScrollTicking = false
             })
         },
         completeLoadingHandoff() {
@@ -1721,6 +1783,7 @@ export default {
                     this.syncHeroIntroCharColumns()
                 }
                 this.endHeroDecorResizeClip()
+                this.updateHeroLocationVisibility()
             })
         },
         /**
@@ -1973,6 +2036,8 @@ export default {
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
+    --top-bar-nav-height: 27px;
+    --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
     --top-bar-logo-inset: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --hero-logo-gap: 150px;
     --hero-squiggle-left: clamp(
@@ -2347,6 +2412,10 @@ export default {
     box-sizing: border-box;
 }
 
+.hero-location {
+    display: none;
+}
+
 .hero {
     position: relative;
     z-index: 1;
@@ -2511,10 +2580,10 @@ export default {
     z-index: 1;
     margin: 0;
     font-family: 'Fira Code', monospace;
-    font-size: 26px;
+    font-size: 25px;
     font-style: normal;
     font-weight: 400;
-    line-height: 39px;
+    line-height: 37.5px;
     letter-spacing: -0.02em;
     color: var(--muted);
     font-synthesis: none;
@@ -2577,8 +2646,8 @@ export default {
 
 .hero-intro-afterthought {
     display: inline;
-    color: var(--muted);
-    font-weight: 400;
+    color: var(--brand);
+    font-weight: 600;
 }
 
 .hero-intro-afterthought-char {
@@ -2586,8 +2655,8 @@ export default {
 }
 
 .hero-intro-char--afterthought {
-    color: var(--muted);
-    font-weight: 400;
+    color: var(--brand);
+    font-weight: 600;
 }
 
 .hero-intro-afterthought-cursor {
@@ -3197,7 +3266,7 @@ export default {
 /* ≥1454px: Final content artboard spacing */
 @media (min-width: 1454px) {
     .hero {
-        /* 920px keeps "complex" on the second line at 26px / full artboard width */
+        /* 920px keeps "complex" on the second line at 25px / full artboard width */
         --hero-intro-max-width: 920px;
     }
 
@@ -3334,6 +3403,63 @@ export default {
 
 /* Desktop: hero intro at 1/3 viewport Y; line + work follow via layout + JS */
 @media (min-width: 800px) {
+    .hero-location {
+        position: fixed;
+        right: var(--top-bar-edge-pad-right);
+        bottom: var(--top-bar-edge-pad-right);
+        z-index: 99;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        pointer-events: none;
+        color: var(--muted);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity 0.3s ease,
+            visibility 0.3s ease;
+    }
+
+    .hero-location--visible {
+        opacity: 0.6;
+        visibility: visible;
+    }
+
+    .hero-location-icon-wrap {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        width: 30px;
+        height: 30px;
+        flex: none;
+    }
+
+    .hero-location-icon {
+        display: block;
+        width: 13px;
+        height: 20px;
+        flex: none;
+    }
+
+    .hero-location-icon :deep(path) {
+        fill: currentColor;
+    }
+
+    .hero-location-text {
+        font-family: 'Work Sans', sans-serif;
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: 30px;
+        color: currentColor;
+        flex: none;
+        white-space: nowrap;
+    }
+
     .portfolio-page {
         --hero-line-fly-delay: 0.08s;
         --hero-line-fly-duration: 1.05s;
@@ -3563,8 +3689,8 @@ export default {
 /* 601–799px: mobile layout with desktop text sizes and about format */
 @media (min-width: 601px) and (max-width: 799px) {
     .hero-intro {
-        font-size: 26px;
-        line-height: 39px;
+        font-size: 25px;
+        line-height: 37.5px;
     }
 
     .project-description {
