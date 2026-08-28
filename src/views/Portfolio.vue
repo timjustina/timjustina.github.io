@@ -3516,6 +3516,10 @@ export default {
         max-width: none;
         width: auto;
     }
+
+    .about-location {
+        display: none;
+    }
 }
 
 @media (min-width: 800px) and (min-height: 901px) {
