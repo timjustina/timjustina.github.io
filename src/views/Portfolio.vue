@@ -2040,7 +2040,7 @@ export default {
 }
 
 .hero-decor {
-    --hero-line-lift: 100px;
+    --hero-line-lift: 72px;
     --hero-line-bounce-1: 2.2*30px;
     --hero-line-bounce-2: 2.2*12.75px;
     --hero-line-bounce-3: 2.2*5.25px;
@@ -2048,7 +2048,7 @@ export default {
     --hero-line-bounce-duration: 1.2s;
     --hero-line-return-duration: 0.4s;
     --hero-decor-height: 487px;
-    --hero-decor-bottom-offset: 50px;
+    --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
     --hero-decor-line-natural-height: 818px;
     position: absolute;
