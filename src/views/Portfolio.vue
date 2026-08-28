@@ -3343,7 +3343,7 @@ export default {
         padding-top: calc(100svh / 3);
         min-height: 100svh;
         margin-top: calc(-1 * var(--top-bar-height));
-        margin-bottom: 0;
+        margin-bottom: 100px;
         box-sizing: border-box;
     }
 
