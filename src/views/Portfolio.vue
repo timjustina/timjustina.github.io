@@ -299,6 +299,15 @@
                     </div>
                 </div>
             </div>
+            <img
+                class="about-ball"
+                :class="{ 'about-ball--dropped': aboutBallDropped }"
+                :src="aboutSquiggle"
+                alt=""
+                width="59"
+                height="56"
+                aria-hidden="true"
+            />
         </section>
 
         <PortfolioSiteFooter />
@@ -313,6 +322,7 @@ import marketplaceHero from '../assets/3_marketplace/0_marketplace_hero.jpg'
 import aboutPhoto from '../assets/portrait.jpg'
 import lineAnimation from '../assets/line_animation.svg'
 import lineAnimationTall from '../assets/line_animation_tall.svg'
+import aboutSquiggle from '../assets/squiggle_3.svg'
 import loadingNormal from '../assets/loading/loading_normal.svg'
 import loadingFolded from '../assets/loading/loading_folded.svg'
 import menuLogo from '../assets/TjyCutoutLogo.svg'
@@ -418,6 +428,7 @@ export default {
             aboutPhoto,
             lineAnimation,
             lineAnimationTall,
+            aboutSquiggle,
             loadingFrames: [loadingNormal, loadingFolded],
             menuLogo,
             cvUrl,
@@ -435,6 +446,8 @@ export default {
             pageEntranceDone: false,
             aboutRevealed: false,
             aboutEntranceDone: false,
+            pendingAboutBallDrop: false,
+            aboutBallDropped: false,
             heroLinePhase: 'rest',
             heroLineClipSettled: false,
             // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
@@ -559,10 +572,13 @@ export default {
         }
 
         this.syncHeroDecorHeight()
+        this.syncAboutBallPosition()
         this.syncAboutLocationTextClip()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
+        window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
+            this.syncAboutBallPosition()
             this.syncAboutLocationTextClip()
             if (!this.pageRevealed) {
                 this.syncHeroIntroCharColumns()
@@ -580,6 +596,14 @@ export default {
             this.aboutLocationClipObserver.observe(aboutInner)
         }
 
+        const aboutBio = this.$el?.querySelector('.about-bio')
+        if (aboutBio) {
+            this.aboutBallObserver = new ResizeObserver(() => {
+                requestAnimationFrame(() => this.syncAboutBallPosition())
+            })
+            this.aboutBallObserver.observe(aboutBio)
+        }
+
         // Work jumps use the normal IO reveal; About jumps start the slide-in after scroll.
         if (sectionHash !== '#about') {
             this.setupAboutReveal()
@@ -591,6 +615,7 @@ export default {
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
                     this.syncHeroDecorHeight()
+                    this.syncAboutBallPosition()
                     this.syncAboutLocationTextClip()
                     this.jumpToSectionHash(sectionHash)
                 })
@@ -620,11 +645,13 @@ export default {
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
         document.documentElement.classList.remove('portfolio-booting')
         this.heroDecorObserver?.disconnect()
+        this.aboutBallObserver?.disconnect()
         this.aboutLocationClipObserver?.disconnect()
         this.stopAboutLocationTextClipPoll()
         this.aboutRevealObserver?.disconnect()
         this.projectFadeObserver?.disconnect()
         window.removeEventListener('resize', this.onHeroDecorResize)
+        window.removeEventListener('scroll', this.onAboutBallScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -844,7 +871,12 @@ export default {
             this.aboutEntranceTimer = setTimeout(() => {
                 this.aboutEntranceDone = true
                 this.stopAboutLocationTextClipPoll()
+                this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
+                if (this.pendingAboutBallDrop) {
+                    this.pendingAboutBallDrop = false
+                    this.startAboutBallDrop()
+                }
             }, durationMs + 200)
         },
         clearLoadingTimer() {
@@ -944,6 +976,7 @@ export default {
             if (this.pageRevealed) return
             document.documentElement.classList.remove('portfolio-booting')
             this.syncHeroDecorHeight()
+            this.syncAboutBallPosition()
             this.syncAboutLocationTextClip()
             this.syncHeroIntroCharColumns()
             this.pageRevealed = true
@@ -1097,6 +1130,7 @@ export default {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         this.syncHeroDecorHeight()
+                        this.syncAboutBallPosition()
                         this.syncAboutLocationTextClip()
                         if (this.heroIntroLetterMode && !this.pageRevealed) {
                             this.syncHeroIntroCharColumns()
@@ -1640,10 +1674,48 @@ export default {
                 this.dropHeroLine()
             }
         },
+        onAboutBallScroll() {
+            if (this.aboutBallDropped) return
+            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (prefersReducedMotion()) return
+
+            const footer = this.$el?.querySelector('.site-footer')
+            const threshold = footer?.offsetHeight || 120
+            const doc = document.documentElement
+            const remaining = doc.scrollHeight - (window.scrollY + window.innerHeight)
+            if (remaining <= threshold) {
+                this.startAboutBallDrop()
+            }
+        },
+        startAboutBallDrop() {
+            if (this.aboutBallDropped) return
+            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (prefersReducedMotion()) return
+            // Don't start the drop while the about slide-in is still moving
+            if (this.aboutRevealed && !this.aboutEntranceDone) {
+                this.pendingAboutBallDrop = true
+                return
+            }
+            this.syncAboutBallPosition()
+            this.aboutBallDropped = true
+            window.removeEventListener('scroll', this.onAboutBallScroll)
+        },
+        syncAboutBallPosition() {
+            if (!window.matchMedia('(max-width: 799px)').matches) return
+            // Skip while about fly-ins are running — mutating those elements
+            // to measure was restarting the entrance animations.
+            if (this.aboutRevealed && !this.aboutEntranceDone) return
+
+            const about = this.$el?.querySelector('.about')
+            if (!about) return
+
+            about.style.removeProperty('--about-ball-x')
+        },
         onHeroDecorResize() {
             this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
+                this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
                 if (!this.pageRevealed) {
                     this.syncHeroIntroCharColumns()
@@ -3034,6 +3106,10 @@ export default {
     color: var(--brand);
 }
 
+.about-ball {
+    display: none;
+}
+
 .about-actions {
     display: flex;
     flex-direction: column;
@@ -3322,13 +3398,33 @@ export default {
         overflow: visible;
     }
 
-    /* Hidden decor still extended ~79px left (absolute + fly-in) and caused horizontal scroll jank */
     .hero-decor {
         display: none;
     }
 
     .about-line {
         display: none;
+    }
+
+    .about-ball {
+        --about-ball-size: 49px;
+        --about-ball-height: 46px;
+        display: block;
+        position: absolute;
+        left: auto;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        width: var(--about-ball-size);
+        height: var(--about-ball-height);
+        pointer-events: none;
+        opacity: 0;
+        transform: translate3d(0, -1100px, 0) rotate(0deg);
+        transform-origin: center center;
+    }
+
+    .about-ball--dropped {
+        opacity: 1;
     }
 
     .work {
@@ -3706,6 +3802,75 @@ export default {
 
     .about-actions {
         margin-top: 96px;
+    }
+}
+</style>
+
+<style>
+/* Unscoped so the keyframe name isn't rewritten away from the animation. */
+@media (max-width: 799px) {
+    .about-ball.about-ball--dropped {
+        animation: about-ball-fall 1.75s linear forwards;
+    }
+}
+
+@keyframes about-ball-fall {
+    /* Fall + 4 decaying bounces left, rolling counter-clockwise */
+    0% {
+        opacity: 1;
+        transform: translate3d(0, -1100px, 0) rotate(0deg);
+        animation-timing-function: cubic-bezier(0.55, 0.05, 0.8, 0.4);
+    }
+
+    /* First impact */
+    40% {
+        transform: translate3d(0, 0, 0) rotate(-460deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 1 */
+    49% {
+        transform: translate3d(-15px, -78px, 0) rotate(-510deg);
+        animation-timing-function: ease-in;
+    }
+
+    57% {
+        transform: translate3d(-29px, 0, 0) rotate(-550deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 2 */
+    64% {
+        transform: translate3d(-39px, -34px, 0) rotate(-585deg);
+        animation-timing-function: ease-in;
+    }
+
+    71% {
+        transform: translate3d(-49px, 0, 0) rotate(-615deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 3 */
+    77% {
+        transform: translate3d(-55px, -15px, 0) rotate(-640deg);
+        animation-timing-function: ease-in;
+    }
+
+    83% {
+        transform: translate3d(-62px, 0, 0) rotate(-660deg);
+        animation-timing-function: ease-out;
+    }
+
+    /* Bounce 4 → settle */
+    88% {
+        transform: translate3d(-66px, -6px, 0) rotate(-675deg);
+        animation-timing-function: ease-in;
+    }
+
+    93%,
+    100% {
+        opacity: 1;
+        transform: translate3d(-70px, 0, 0) rotate(-690deg);
     }
 }
 </style>
