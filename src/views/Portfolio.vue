@@ -3322,7 +3322,7 @@ export default {
     }
 }
 
-/* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
+/* Desktop: hero intro at 1/3 viewport Y; line + work follow via layout + JS */
 @media (min-width: 800px) {
     .portfolio-page {
         --hero-line-fly-delay: 0.08s;
@@ -3339,7 +3339,8 @@ export default {
     .hero {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
+        padding-top: calc(100svh / 3);
         min-height: 100svh;
         margin-top: calc(-1 * var(--top-bar-height));
         margin-bottom: 0;
