@@ -458,6 +458,7 @@ export default {
             heroIntroPointerRaf: null,
             heroIntroPointer: null,
             heroIntroActivePointerId: null,
+            heroIntroTapLingerTimer: null,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
         }
@@ -622,6 +623,7 @@ export default {
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
+        clearTimeout(this.heroIntroTapLingerTimer)
         this.clearHeroIntroPointerShift()
         window.removeEventListener('pointermove', this.onHeroPointerMove)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
@@ -1224,6 +1226,20 @@ export default {
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
         },
+        isHeroIntroPointerOnText(x, y) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return false
+
+            const introStyles = getComputedStyle(intro)
+            const pad = parseCssPx(introStyles, '--hero-intro-touch-pad', 20)
+            const rect = intro.getBoundingClientRect()
+            return (
+                x >= rect.left - pad &&
+                x <= rect.right + pad &&
+                y >= rect.top - pad &&
+                y <= rect.bottom + pad
+            )
+        },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
@@ -1245,32 +1261,78 @@ export default {
             }
             this.heroIntroPointer = { x, y }
 
+            if (this.isHeroIntroMobileTouch()) {
+                if (this.heroIntroPointerRaf != null) {
+                    cancelAnimationFrame(this.heroIntroPointerRaf)
+                    this.heroIntroPointerRaf = null
+                }
+                this.applyHeroIntroPointerShift()
+                return
+            }
+
             if (this.heroIntroPointerRaf != null) return
             this.heroIntroPointerRaf = requestAnimationFrame(() => {
                 this.heroIntroPointerRaf = null
                 this.applyHeroIntroPointerShift()
             })
         },
+        clearHeroIntroTapLinger() {
+            clearTimeout(this.heroIntroTapLingerTimer)
+            this.heroIntroTapLingerTimer = null
+        },
+        releaseHeroIntroMobileTouch({ linger = false } = {}) {
+            this.heroIntroActivePointerId = null
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+
+            if (!linger || !this.heroIntroPointer) {
+                this.clearHeroIntroTapLinger()
+                this.heroIntroPointer = null
+                this.clearHeroIntroPointerShift()
+                return
+            }
+
+            this.applyHeroIntroPointerShift()
+            this.clearHeroIntroTapLinger()
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const lingerMs = intro
+                ? parseCssPx(getComputedStyle(intro), '--hero-intro-tap-linger', 260)
+                : 260
+            this.heroIntroTapLingerTimer = setTimeout(() => {
+                this.heroIntroTapLingerTimer = null
+                this.heroIntroPointer = null
+                this.clearHeroIntroPointerShift()
+            }, lingerMs)
+        },
         onHeroPointerEndHandlerImpl() {
+            this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
                 this.heroIntroPointerRaf = null
             }
+            this.heroIntroPointer = null
             this.clearHeroIntroPointerShift()
         },
         onHeroPointerDownHandler(event) {
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroMobileTouch()) return
             if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
-            if (!this.isHeroIntroPointerNear(event.clientX, event.clientY)) return
+            if (!this.isHeroIntroPointerOnText(event.clientX, event.clientY)) return
 
+            this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = event.pointerId
             this.setHeroIntroPointer(event.clientX, event.clientY)
         },
         onHeroPointerUpHandler(event) {
             if (this.heroIntroActivePointerId !== event.pointerId) return
+            if (this.isHeroIntroMobileTouch()) {
+                this.releaseHeroIntroMobileTouch({ linger: true })
+                return
+            }
             this.onHeroPointerEndHandlerImpl()
         },
         onHeroPointerMoveHandler(event) {
@@ -1361,12 +1423,19 @@ export default {
                 const dy = cy - y
                 const dist = Math.hypot(dx, dy)
 
-                if (dist < radius && dist > 0) {
-                    const t = 1 - dist / radius
+                if (dist < radius) {
+                    const t = dist <= 0 ? 1 : 1 - dist / radius
                     const force = t ** forceExp * maxShift
                     const lift = t ** liftExp * maxLift
-                    const nx = dx / dist
-                    const ny = dy / dist
+                    let nx
+                    let ny
+                    if (dist <= 0.5) {
+                        nx = 0
+                        ny = -1
+                    } else {
+                        nx = dx / dist
+                        ny = dy / dist
+                    }
                     el.classList.add('hero-intro-char--pushed')
                     el.style.setProperty('--hero-intro-push-x', `${nx * force}px`)
                     el.style.setProperty('--hero-intro-push-y', `${ny * force - lift}px`)
@@ -1825,13 +1894,15 @@ export default {
 
 @media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
+        --hero-intro-touch-pad: 24px;
+        --hero-intro-tap-linger: 260ms;
         --hero-cursor-zone-pad: 240px;
-        --hero-intro-hover-radius: 240px;
-        --hero-intro-hover-shift: 102px;
-        --hero-intro-hover-lift: 38px;
-        --hero-intro-hover-force-exp: 1.45;
-        --hero-intro-hover-lift-exp: 1.25;
-        --hero-intro-hover-knock-mult: 0.38;
+        --hero-intro-hover-radius: 260px;
+        --hero-intro-hover-shift: 108px;
+        --hero-intro-hover-lift: 40px;
+        --hero-intro-hover-force-exp: 1.35;
+        --hero-intro-hover-lift-exp: 1.18;
+        --hero-intro-hover-knock-mult: 0.3;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
