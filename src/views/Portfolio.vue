@@ -2588,6 +2588,9 @@ export default {
 
     .hero-intro-wrap {
         margin-top: 0;
+        /* Mirror --hero-squiggle-left on the right: line↔viewport left = text↔viewport right */
+        max-width: none;
+        width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left));
     }
 }
 
