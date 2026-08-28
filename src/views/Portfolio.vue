@@ -535,7 +535,7 @@ export default {
         this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
 
         if (this.pageEntranceDone) {
-            this.$nextTick(() => this.lockMobileHeroHeight())
+            this.$nextTick(() => this.lockHeroViewportHeight())
         }
 
         this.onHeroPointerMove = (event) => this.onHeroPointerMoveHandler(event)
@@ -556,7 +556,7 @@ export default {
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
         this.onMobileHeroOrientation = () => {
-            window.setTimeout(() => this.lockMobileHeroHeight(), 250)
+            window.setTimeout(() => this.lockHeroViewportHeight(), 250)
         }
         window.addEventListener('orientationchange', this.onMobileHeroOrientation)
 
@@ -693,7 +693,7 @@ export default {
         window.removeEventListener('pointerup', this.onHeroPointerUp)
         window.removeEventListener('pointercancel', this.onHeroPointerUp)
         window.removeEventListener('orientationchange', this.onMobileHeroOrientation)
-        this.clearMobileHeroHeight()
+        this.clearHeroViewportHeight()
         window.removeEventListener('blur', this.onHeroPointerEndHandler)
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
@@ -1072,7 +1072,7 @@ export default {
             this.pageEntranceSettleTimer = null
             if (this.pageEntranceDone) return
             this.pageEntranceDone = true
-            this.lockMobileHeroHeight()
+            this.lockHeroViewportHeight()
             this.markHeroLineClipSettled()
         },
         scheduleHeroLineClipSettle() {
@@ -1134,11 +1134,11 @@ export default {
                 this.heroDecorHidden = true
                 this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
-                this.$nextTick(() => this.lockMobileHeroHeight())
+                this.$nextTick(() => this.lockHeroViewportHeight())
                 return
             }
 
-            this.clearMobileHeroHeight()
+            this.lockHeroViewportHeight()
 
             if (letterChanged) this.heroIntroLetterMode = nextLetter
 
@@ -1162,6 +1162,7 @@ export default {
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
+                        this.lockHeroViewportHeight()
                         this.syncHeroDecorHeight()
                         this.syncAboutBallPosition()
                         this.syncAboutLocationTextClip()
@@ -1199,7 +1200,8 @@ export default {
             }
 
             const top = workFirst.getBoundingClientRect().top
-            this.heroLocationVisible = top >= window.innerHeight
+            // Sub-pixel slack: 100svh can sit slightly below window.innerHeight on some viewports
+            this.heroLocationVisible = top >= window.innerHeight - 1
         },
         onHeroLocationScroll() {
             if (window.matchMedia('(max-width: 799px)').matches) return
@@ -1302,19 +1304,35 @@ export default {
                 setTimeout(run, 200)
             }
         },
-        lockMobileHeroHeight() {
-            if (!this.heroIntroLetterMq?.matches || !this.pageEntranceDone) {
-                this.clearMobileHeroHeight()
+        lockHeroViewportHeight() {
+            if (!this.pageEntranceDone) {
+                this.clearHeroViewportHeight()
                 return
             }
 
-            const pageStyles = getComputedStyle(this.$el)
-            const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
-            const height = Math.max(0, Math.round(window.innerHeight - topBarHeight))
-            this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
+            const isMobile = this.heroIntroLetterMq?.matches
+
+            if (isMobile) {
+                this.$el?.style.removeProperty('--desktop-hero-min-height')
+                const pageStyles = getComputedStyle(this.$el)
+                const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
+                const height = Math.max(0, Math.round(window.innerHeight - topBarHeight))
+                this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
+            } else if (window.matchMedia('(min-width: 800px)').matches) {
+                this.$el?.style.removeProperty('--mobile-hero-height')
+                this.$el?.style.setProperty(
+                    '--desktop-hero-min-height',
+                    `${Math.round(window.innerHeight)}px`,
+                )
+            } else {
+                this.clearHeroViewportHeight()
+            }
+
+            this.updateHeroLocationVisibility()
         },
-        clearMobileHeroHeight() {
+        clearHeroViewportHeight() {
             this.$el?.style.removeProperty('--mobile-hero-height')
+            this.$el?.style.removeProperty('--desktop-hero-min-height')
         },
         getHeroLineEl() {
             return this.$el?.querySelector('.hero-decor-line')
@@ -1783,6 +1801,7 @@ export default {
         onHeroDecorResize() {
             this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
+                this.lockHeroViewportHeight()
                 this.syncHeroDecorHeight()
                 this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
@@ -3408,7 +3427,7 @@ export default {
     }
 }
 
-/* Desktop: hero intro at 1/3 viewport Y; line + work follow via layout + JS */
+/* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
 @media (min-width: 800px) {
     .hero-location {
         position: fixed;
@@ -3482,9 +3501,9 @@ export default {
     .hero {
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
-        padding-top: calc(100svh / 3);
-        min-height: 100svh;
+        justify-content: center;
+        /* Lock to innerHeight after load so work stays below the fold (100svh can be shorter) */
+        min-height: var(--desktop-hero-min-height, 100svh);
         margin-top: calc(-1 * var(--top-bar-height));
         margin-bottom: 100px;
         box-sizing: border-box;
@@ -3496,6 +3515,12 @@ export default {
         /* Flex child: let horizontal margins define width (mirrors line↔viewport-left) */
         max-width: none;
         width: auto;
+    }
+}
+
+@media (min-width: 800px) and (min-height: 901px) {
+    .hero-intro-wrap {
+        transform: translateY(-2vh);
     }
 }
 
