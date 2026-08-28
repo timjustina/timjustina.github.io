@@ -510,12 +510,14 @@ export default {
             if (event.relatedTarget != null) return
             this.onHeroPointerEndHandlerImpl()
         }
+        this.onHeroPointerScroll = () => this.onHeroPointerScrollHandler()
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
         window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
         window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
         window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
         window.addEventListener('blur', this.onHeroPointerEndHandler)
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
+        window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
         this.onMobileHeroOrientation = () => {
             window.setTimeout(() => this.lockMobileHeroHeight(), 250)
         }
@@ -617,6 +619,7 @@ export default {
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
+        if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
         this.clearHeroIntroPointerShift()
         window.removeEventListener('pointermove', this.onHeroPointerMove)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
@@ -626,6 +629,7 @@ export default {
         this.clearMobileHeroHeight()
         window.removeEventListener('blur', this.onHeroPointerEndHandler)
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
+        window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -1218,6 +1222,20 @@ export default {
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
         },
+        isHeroIntroPointerNear(x, y) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return false
+
+            const introStyles = getComputedStyle(intro)
+            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 100)
+            const rect = intro.getBoundingClientRect()
+            return (
+                x >= rect.left - zonePad &&
+                x <= rect.right + zonePad &&
+                y >= rect.top - zonePad &&
+                y <= rect.bottom + zonePad
+            )
+        },
         setHeroIntroPointer(x, y, { showBall = false } = {}) {
             if (showBall) {
                 this.heroCursorPos = { x, y }
@@ -1256,21 +1274,10 @@ export default {
             if (!this.canHeroIntroPointerPlay()) return
 
             if (this.isHeroIntroFinePointer() && event.pointerType === 'mouse') {
-                const intro = this.$el?.querySelector('.hero-intro')
-                if (!intro) return
-
                 const x = event.clientX
                 const y = event.clientY
-                const introStyles = getComputedStyle(intro)
-                const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 100)
-                const rect = intro.getBoundingClientRect()
-                const near =
-                    x >= rect.left - zonePad &&
-                    x <= rect.right + zonePad &&
-                    y >= rect.top - zonePad &&
-                    y <= rect.bottom + zonePad
 
-                if (!near) {
+                if (!this.isHeroIntroPointerNear(x, y)) {
                     if (this.heroCursorActive || this.heroIntroPointer) {
                         this.onHeroPointerEndHandlerImpl()
                     }
@@ -1287,6 +1294,28 @@ export default {
             ) {
                 this.setHeroIntroPointer(event.clientX, event.clientY)
             }
+        },
+        onHeroPointerScrollHandler() {
+            if (!this.canHeroIntroPointerPlay()) return
+            if (!this.isHeroIntroFinePointer()) return
+            if (!this.heroCursorActive && !this.heroIntroPointer) return
+
+            if (this.heroIntroScrollRaf != null) return
+            this.heroIntroScrollRaf = requestAnimationFrame(() => {
+                this.heroIntroScrollRaf = null
+
+                if (!this.heroCursorActive && !this.heroIntroPointer) return
+
+                const { x, y } = this.heroCursorPos
+                if (!this.isHeroIntroPointerNear(x, y)) {
+                    this.onHeroPointerEndHandlerImpl()
+                    return
+                }
+
+                if (this.heroIntroPointer) {
+                    this.applyHeroIntroPointerShift()
+                }
+            })
         },
         applyHeroIntroPointerShift() {
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
