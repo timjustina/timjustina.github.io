@@ -1378,27 +1378,20 @@ export default {
             if (!decor || !heroIntro || !workFirstImage) return
 
             if (window.getComputedStyle(decor).display === 'none') return
+            if (!window.matchMedia('(min-width: 601px)').matches) return
 
-            const isWide = window.matchMedia('(min-width: 998px)').matches
             const wrap = decor.parentElement
             const imageTop = workFirstImage.getBoundingClientRect().top
             const offset =
                 parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-bottom-offset')) || 0
 
-            let clipTop
-
-            if (isWide) {
-                const introAnchor = heroIntro.querySelector('.hero-intro-em') ?? heroIntro
-                const introTop = introAnchor.getBoundingClientRect().top
-                const wrapTop = wrap.getBoundingClientRect().top
-                const topOffset =
-                    parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-top-offset')) || 0
-                clipTop = introTop + topOffset
-                decor.style.top = `${Math.round(clipTop - wrapTop)}px`
-            } else {
-                decor.style.removeProperty('top')
-                clipTop = decor.getBoundingClientRect().top
-            }
+            const introAnchor = heroIntro.querySelector('.hero-intro-em') ?? heroIntro
+            const introTop = introAnchor.getBoundingClientRect().top
+            const wrapTop = wrap.getBoundingClientRect().top
+            const topOffset =
+                parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-top-offset')) || 0
+            const clipTop = introTop + topOffset
+            decor.style.top = `${Math.round(clipTop - wrapTop)}px`
 
             const height = Math.round(imageTop - clipTop) + offset
 
@@ -2514,6 +2507,13 @@ export default {
     }
 }
 
+/* Tablet: tighter squiggle inset so line + paragraph stay side-by-side */
+@media (min-width: 601px) and (max-width: 997px) {
+    .hero {
+        --hero-squiggle-left: 61px;
+    }
+}
+
 /* ≤997px: 997px artboard lock before tablet layout */
 @media (max-width: 997px) {
     .portfolio-page {
@@ -2523,17 +2523,6 @@ export default {
 
     .hero {
         margin-bottom: var(--hero-text-to-image);
-    }
-
-    .hero-intro-wrap {
-        max-width: 100%;
-        margin: var(--hero-logo-gap) 0 0;
-    }
-
-    .hero-decor {
-        top: 100%;
-        right: auto;
-        left: 61px;
     }
 
     .project + .project {
