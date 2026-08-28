@@ -2381,6 +2381,7 @@ export default {
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
     --hero-decor-line-natural-height: 818px;
+    --hero-decor-line-width: 2px;
     position: absolute;
     top: 7px;
     right: auto;
@@ -2389,6 +2390,19 @@ export default {
     width: var(--hero-squiggle-width);
     height: var(--hero-decor-height);
     overflow: hidden;
+    pointer-events: none;
+}
+
+.hero-decor::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: var(--hero-decor-line-stroke-x);
+    z-index: 1;
+    width: var(--hero-decor-line-width);
+    height: var(--hero-decor-line-width);
+    border-radius: 50%;
+    background: var(--brand);
     pointer-events: none;
 }
 
@@ -3008,9 +3022,10 @@ export default {
     top: calc(140px - var(--about-gap));
     z-index: 2;
     display: block;
-    width: 0;
+    width: 2px;
     height: var(--about-photo-h);
-    border-left: 2px solid var(--brand);
+    border-radius: 1px 1px 0 0;
+    background: var(--brand);
     pointer-events: none;
 }
 
