@@ -73,7 +73,7 @@ export default {
   padding: 0;
   border: none;
   background: none;
-  cursor: pointer;
+  cursor: var(--cursor-ball);
 }
 
 .poster-img {
@@ -88,7 +88,7 @@ export default {
   height: 100%;
   object-fit: contain;
   background: rgba(0, 0, 0, 0.15);
-  cursor: pointer;
+  cursor: var(--cursor-ball);
 }
 
 .video-player {

@@ -167,7 +167,7 @@ export default {
   font-size: 36px;
   line-height: 1;
   color: #2c2c2c;
-  cursor: pointer;
+  cursor: var(--cursor-ball);
 }
 
 .lightbox-close:hover {

@@ -2211,7 +2211,7 @@ export default {
 }
 
 .project--upcoming {
-    cursor: default;
+    cursor: var(--cursor-ball);
 }
 
 .project--upcoming .project-title {
@@ -2354,7 +2354,7 @@ export default {
     align-items: center;
     gap: 4px;
     width: auto;
-    margin: 0 0 39px;
+    margin: 0 0 39px 20px;
     padding: 0;
     box-sizing: border-box;
     flex: none;
@@ -2538,7 +2538,7 @@ export default {
     }
 
     .about-location {
-        margin: 0 0 39px;
+        margin: 0 0 39px 20px;
     }
 }
 
@@ -2813,7 +2813,7 @@ export default {
     /* Thumbnail only — title tap must not navigate */
     .project-title-link {
         pointer-events: none;
-        cursor: default;
+        cursor: var(--cursor-ball);
     }
 
     .project-description {
