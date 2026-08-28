@@ -704,7 +704,7 @@ export default {
         },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
-            if (window.matchMedia('(max-width: 600px)').matches) return
+            if (window.matchMedia('(max-width: 799px)').matches) return
             if (this.reduceMotionMq?.matches) return
 
             const footer = this.getFooterEl()
@@ -717,7 +717,7 @@ export default {
         },
         startAboutBallDrop() {
             if (this.aboutBallDropped) return
-            if (window.matchMedia('(max-width: 600px)').matches) return
+            if (window.matchMedia('(max-width: 799px)').matches) return
             this.syncAboutBallPosition()
             this.aboutBallDropped = true
             window.removeEventListener('scroll', this.onAboutBallScroll)
@@ -756,7 +756,7 @@ export default {
             const lines = [
                 ...title.querySelectorAll('.project-header-title-line'),
             ]
-            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            const isMobile = window.matchMedia('(max-width: 799px)').matches
             const minPx = isMobile ? 12 : 40
             const maxPxOneLine = Math.max(minPx, Math.floor(targetWidth / 6))
 
@@ -1078,7 +1078,7 @@ export default {
     content: ' ';
 }
 
-@media (max-width: 600px) {
+@media (max-width: 799px) {
     .dashboard-project-header.project-header {
         width: 100% !important;
         max-width: none !important;

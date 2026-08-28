@@ -84,7 +84,7 @@ export default {
     color: var(--brand);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 799px) {
     .site-footer {
         --top-bar-height: 86px;
         --top-bar-edge-pad-left: 20px;
@@ -101,14 +101,16 @@ export default {
         align-items: stretch;
     }
 
-    .footer-contact-title {
-        font-size: 22px;
-        line-height: 33px;
-    }
-
     .footer-copy {
         align-self: flex-end;
         margin-top: calc(var(--footer-item-gap) * 2);
+    }
+}
+
+@media (max-width: 600px) {
+    .footer-contact-title {
+        font-size: 22px;
+        line-height: 33px;
     }
 }
 </style>

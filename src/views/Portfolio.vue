@@ -414,10 +414,10 @@ export default {
             aboutEntranceDone: false,
             heroLinePhase: 'rest',
             heroLineClipSettled: false,
-            // JS-owned so we can measure while hidden, then show after sync (avoids 600px flash)
+            // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
             heroDecorHidden:
                 typeof window !== 'undefined' &&
-                window.matchMedia('(max-width: 600px)').matches,
+                window.matchMedia('(max-width: 799px)').matches,
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
@@ -430,7 +430,7 @@ export default {
             // Letter cascade is mobile-only; desktop keeps the original block fly-in.
             heroIntroLetterMode:
                 typeof window !== 'undefined' &&
-                window.matchMedia('(max-width: 600px)').matches &&
+                window.matchMedia('(max-width: 799px)').matches &&
                 !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         }
     },
@@ -450,7 +450,7 @@ export default {
             document.documentElement.classList.add('portfolio-booting')
         }
 
-        this.heroIntroLetterMq = window.matchMedia('(max-width: 600px)')
+        this.heroIntroLetterMq = window.matchMedia('(max-width: 799px)')
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.onHeroIntroLetterMqChange = () => {
             this.onMobileHeroLayoutChange()
@@ -562,7 +562,7 @@ export default {
         onFeaturedProjectPress(event) {
             if (event.pointerType === 'mouse' && event.button !== 0) return
             if (prefersReducedMotion()) return
-            if (!window.matchMedia('(max-width: 600px)').matches) return
+            if (!window.matchMedia('(max-width: 799px)').matches) return
             const article = event.currentTarget.closest('.project')
             clearTimeout(this.featuredPressClearTimer)
             this.featuredPressClearTimer = null
@@ -571,7 +571,7 @@ export default {
             this.featuredPressAt = performance.now()
         },
         onFeaturedProjectPressEnd(event) {
-            if (!window.matchMedia('(max-width: 600px)').matches) return
+            if (!window.matchMedia('(max-width: 799px)').matches) return
             // pointerup fires before click — delay the undo so a real tap can
             // cancel it and keep the round for the expand.
             if (this.featuredExpandPending) return
@@ -614,7 +614,7 @@ export default {
             }
 
             // Same expand path on mobile and desktop
-            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            const isMobile = window.matchMedia('(max-width: 799px)').matches
             if (isMobile) article.classList.add('project--press-expand')
 
             startImageExpand({
@@ -660,7 +660,7 @@ export default {
                 return
             }
 
-            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            const isMobile = window.matchMedia('(max-width: 799px)').matches
 
             this.projectFadeObserver = new IntersectionObserver(
                 (entries) => {
@@ -709,7 +709,7 @@ export default {
             const about = this.$el?.querySelector('#about')
             if (!about) return
 
-            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            const isMobile = window.matchMedia('(max-width: 799px)').matches
 
             this.aboutRevealObserver = new IntersectionObserver(
                 (entries) => {
@@ -782,7 +782,7 @@ export default {
         },
         finishLoadingSplash() {
             this.clearLoadingTimer()
-            const isMobile = window.matchMedia('(max-width: 600px)').matches
+            const isMobile = window.matchMedia('(max-width: 799px)').matches
             if (!isMobile || prefersReducedMotion()) {
                 this.completeLoadingHandoff()
                 return
@@ -879,7 +879,7 @@ export default {
             const intro = this.$el?.querySelector('.hero-intro')
             const introStyles = intro ? getComputedStyle(intro) : getComputedStyle(this.$el)
 
-            if (window.matchMedia('(max-width: 600px)').matches) {
+            if (window.matchMedia('(max-width: 799px)').matches) {
                 const pageStyles = getComputedStyle(this.$el)
                 const ctaDelay =
                     parseFloat(pageStyles.getPropertyValue('--cta-fly-delay')) || 0.1
@@ -1185,7 +1185,7 @@ export default {
          * so the last letter finishes with the CTA button fly-in.
          */
         syncHeroIntroCharColumns() {
-            if (!window.matchMedia('(max-width: 600px)').matches) return
+            if (!window.matchMedia('(max-width: 799px)').matches) return
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
             const intro = this.$el?.querySelector('.hero-intro')
@@ -1378,7 +1378,7 @@ export default {
             if (!decor || !heroIntro || !workFirstImage) return
 
             if (window.getComputedStyle(decor).display === 'none') return
-            if (!window.matchMedia('(min-width: 601px)').matches) return
+            if (!window.matchMedia('(min-width: 800px)').matches) return
 
             const wrap = decor.parentElement
             const imageTop = workFirstImage.getBoundingClientRect().top
@@ -1857,7 +1857,7 @@ export default {
 }
 
 /* Desktop: type ":)" after the block fly-in — cursor first, then one char at a time */
-@media (min-width: 601px) {
+@media (min-width: 800px) {
     .hero-intro {
         --hero-intro-fly-end: 1.63s; /* 0.08s delay + 1.55s duration */
         --hero-intro-afterthought-beat: 0.06s;
@@ -2207,13 +2207,7 @@ export default {
 }
 
 /* Keep image-to-image rhythm even when descriptions wrap unevenly */
-@media (min-width: 601px) and (max-width: 750px) {
-    .project-caption {
-        min-height: 147px;
-    }
-}
-
-@media (min-width: 751px) and (max-width: 997px) {
+@media (min-width: 800px) and (max-width: 997px) {
     .project-caption {
         min-height: 120px;
     }
@@ -2508,7 +2502,7 @@ export default {
 }
 
 /* Tablet: tighter squiggle inset so line + paragraph stay side-by-side */
-@media (min-width: 601px) and (max-width: 997px) {
+@media (min-width: 800px) and (max-width: 997px) {
     .hero {
         --hero-squiggle-left: 61px;
     }
@@ -2580,7 +2574,7 @@ export default {
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 799px) {
     .portfolio-page {
         --page-pad: 20px;
         --top-bar-height: 86px;
@@ -2632,12 +2626,6 @@ export default {
         margin: 0;
         padding-bottom: var(--page-pad);
         box-sizing: border-box;
-    }
-
-    .hero-intro {
-        max-width: 100%;
-        font-size: 22px;
-        line-height: 33px;
     }
 
     /*
@@ -2737,13 +2725,119 @@ export default {
     .project-caption {
         width: 100%;
         max-width: 100%;
-        margin-top: 28px;
     }
 
     .project-caption-header {
         padding-top: 0;
         gap: 0;
         width: 100%;
+    }
+
+    /* Thumbnail only — title tap must not navigate */
+    .project-title-link {
+        pointer-events: none;
+        cursor: default;
+    }
+}
+
+/* 601–799px: mobile layout with desktop text sizes and about format */
+@media (min-width: 601px) and (max-width: 799px) {
+    .hero-intro {
+        font-size: 24px;
+        line-height: 36px;
+    }
+
+    .project-description {
+        margin: 16px 0 0;
+        line-height: 25px;
+    }
+
+    .about {
+        --about-gap: 340px;
+        --about-bottom-pad-base: 180px;
+        margin-top: 340px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
+    }
+
+    .about-inner {
+        display: grid;
+        grid-template-columns: 345px 1fr;
+        max-width: 800px;
+        padding: 0;
+    }
+
+    .about-photo-column {
+        display: flex;
+        flex-direction: column;
+        position: static;
+        padding-left: var(--about-image-text-gap);
+        width: auto;
+        height: auto;
+        margin: 0;
+        right: auto;
+        top: auto;
+        z-index: 1;
+    }
+
+    .about-line {
+        display: block;
+        left: calc((100vw - var(--about-inner-max-w)) / 2);
+    }
+
+    .about-photo,
+    .about-photo--placeholder {
+        width: 281px;
+        height: 402px;
+    }
+
+    .about-text-column {
+        position: static;
+        z-index: 1;
+        padding-top: 100px;
+        padding-right: var(--about-image-text-gap);
+    }
+
+    .about-intro {
+        display: contents;
+        position: static;
+        max-width: none;
+    }
+
+    .about-heading {
+        margin: 0 0 32px;
+        max-width: none;
+    }
+
+    .about-location {
+        position: relative;
+        margin: 0 0 var(--about-text-gap) 20px;
+        top: auto;
+        left: auto;
+        padding: 0;
+    }
+
+    .about-bio {
+        margin: 0;
+        margin-top: 0;
+        max-width: 455px;
+        line-height: 25px;
+    }
+
+    .about-actions {
+        margin-top: var(--about-bio-cta-gap);
+    }
+}
+
+/* ≤600px: smaller type and mobile about layout */
+@media (max-width: 600px) {
+    .hero-intro {
+        max-width: 100%;
+        font-size: 22px;
+        line-height: 33px;
+    }
+
+    .project-caption {
+        margin-top: 28px;
     }
 
     .project-title {
@@ -2754,12 +2848,6 @@ export default {
         font-weight: calc(500 * var(--font-weight-scale));
         line-height: 27px;
         color: #4d4d4d;
-    }
-
-    /* Thumbnail only — title tap must not navigate */
-    .project-title-link {
-        pointer-events: none;
-        cursor: default;
     }
 
     .project-description {
@@ -2867,7 +2955,6 @@ export default {
     .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white) {
         position: relative;
         z-index: 1;
-        /* Gray only on the left; white comes from the scaled photo-side stack */
         background-image: linear-gradient(
             to right,
             var(--about-location-color) 0,
@@ -2881,11 +2968,6 @@ export default {
         color: transparent;
     }
 
-    /*
-     * White stack: clipped to the photo side, then scaled from the photo edge
-     * so every overlapping glyph (not just a cut letter) enlarges together.
-     * Top/right/bottom padding lets soft blur + edge glow bleed; left stays hard at the photo edge.
-     */
     .about-location-text-white-stack {
         --about-location-glow-pad: 12px;
         display: block;
@@ -2922,7 +3004,6 @@ export default {
         z-index: 0;
         color: transparent;
         -webkit-text-fill-color: transparent;
-        /* Near-edge → wall wash (#CDC6BE): darker core fades into photo light */
         text-shadow:
             0 0 0.5px rgba(130, 122, 114, 0.95),
             0 0 1.25px rgba(148, 140, 132, 0.8),
@@ -2936,7 +3017,6 @@ export default {
         z-index: 1;
         color: #fffef2;
         -webkit-text-fill-color: #fffef2;
-        /* Steep white falloff: softens the glyph edge, stays inside the dark rim */
         filter: blur(0.28px);
         text-shadow:
             0 0 0.2px rgba(255, 254, 242, 1),
@@ -2955,7 +3035,6 @@ export default {
         fill: var(--about-location-icon-fill);
     }
 
-    /* Original spot: just below the photo */
     .about-bio {
         margin-top: calc(var(--about-content-shift) + var(--about-photo-h) + var(--about-stack-gap));
         max-width: 100%;
@@ -2966,6 +3045,5 @@ export default {
     .about-actions {
         margin-top: 96px;
     }
-
 }
 </style>

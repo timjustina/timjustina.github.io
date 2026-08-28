@@ -101,7 +101,7 @@ import chevronHover from '../assets/tldr-chevron-hover.svg'
 import chevronClicked from '../assets/tldr-chevron-clicked.svg'
 import { easeInOutCubic, smoothScrollTo } from '../utils/scrollToAbout.js'
 
-const MOBILE_VIEWPORT_QUERY = '(max-width: 600px)'
+const MOBILE_VIEWPORT_QUERY = '(max-width: 799px)'
 const TLDR_TRIGGER_TOP_OFFSET = 60
 const TLDR_SCROLL_DURATION_MS = 260
 
@@ -512,7 +512,7 @@ export default {
   }
 }
 
-@media (min-width: 601px) {
+@media (min-width: 800px) {
   .project-tldr {
     --project-tldr-trigger-height: 44px;
     --project-tldr-chevron-size: 44px;
@@ -605,7 +605,7 @@ export default {
   pointer-events: none;
 }
 
-@media (min-width: 601px) {
+@media (min-width: 800px) {
   .project-tldr-toast {
     font-size: 20px;
     line-height: 30px;

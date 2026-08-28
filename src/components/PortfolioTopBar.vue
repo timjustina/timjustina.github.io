@@ -112,7 +112,7 @@ export default {
     },
     methods: {
         syncMobileTopBarState() {
-            this.isMobileViewport = window.matchMedia('(max-width: 600px)').matches
+            this.isMobileViewport = window.matchMedia('(max-width: 799px)').matches
             if (this.isInFlowMobileHome) {
                 this.topBarHidden = false
             }
@@ -197,7 +197,7 @@ export default {
             })
         },
         updateNavCompact() {
-            if (window.matchMedia('(max-width: 600px)').matches) {
+            if (window.matchMedia('(max-width: 799px)').matches) {
                 this.navCompact = false
                 return
             }
@@ -368,7 +368,7 @@ export default {
     transform: translateX(-50%) scaleY(1);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 799px) {
     .nav-link--work,
     .nav-link--about {
         display: none;

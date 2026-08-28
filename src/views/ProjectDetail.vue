@@ -53,7 +53,7 @@ export default {
       window.setTimeout(() => this.lockMobileHeroHeight(), 250)
     },
     lockMobileHeroHeight() {
-      if (!window.matchMedia('(max-width: 600px)').matches) {
+      if (!window.matchMedia('(max-width: 799px)').matches) {
         this.clearMobileHeroHeight()
         return
       }
@@ -518,7 +518,7 @@ export default {
 }
 
 /* Phone layout — after desktop rules so type/spacing aren’t overridden */
-@media (max-width: 600px) {
+@media (max-width: 799px) {
   .page {
     --project-content-offset: 0px;
     --top-bar-height: 86px;
