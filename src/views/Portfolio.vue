@@ -1508,10 +1508,10 @@ export default {
     --about-location-icon-fill: #b9b4ae;
     --about-bg: #f4f2f1;
     --page-max: 1454px;
-    /* Cap pad at 100px; only drop toward 39px once content is 776px (offset slide exhausted) */
-    --page-pad: max(39px, min(100px, calc((100vw - 776px) / 2)));
-    --project-w: min(776px, 100%);
-    --project-w-wide: min(876px, 100%);
+    /* Cap pad at 100px; only drop toward 39px once content is 939px (offset slide exhausted) */
+    --page-pad: max(39px, min(100px, calc((100vw - 939px) / 2)));
+    --project-w: min(939px, 100%);
+    --project-w-wide: min(1060px, 100%);
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
     --hero-logo-gap: 150px;
@@ -1766,8 +1766,8 @@ export default {
     --hero-squiggle-left: 121px;
     --hero-squiggle-width: 56px;
     --hero-cta-width: 233px;
-    /* 746px from the left edge of the first project image (content left) */
-    --hero-cta-left: 836px;
+    /* 903px from the left edge of the first project image (content left) */
+    --hero-cta-left: 1012px;
     /* Text bottom → first image = cta gap + cta height + CTA→image margin */
     --hero-text-to-image: 437px;
     margin-bottom: calc(var(--hero-text-to-image) - var(--hero-cta-gap) - var(--hero-cta-height));
@@ -2265,7 +2265,7 @@ export default {
 }
 
 .project-title {
-    flex: 0 1 520px;
+    flex: 0 1 629px;
     min-width: 0;
     margin: 0;
     font-family: 'Be Vietnam Pro', sans-serif;
@@ -2518,8 +2518,8 @@ export default {
     }
 
     .portfolio-page {
-        --project-w: 776px;
-        --project-w-wide: 876px;
+        --project-w: 939px;
+        --project-w-wide: 1060px;
     }
 
     .project--offset,
@@ -2595,7 +2595,7 @@ export default {
     }
 
     .cta-button {
-        margin-left: min(665px, max(0px, calc(100% - 233px)));
+        margin-left: min(805px, max(0px, calc(100% - 233px)));
     }
 
     .project--offset {
