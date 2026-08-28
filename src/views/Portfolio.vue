@@ -328,6 +328,13 @@ const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 
+function parseCssTimeSec(styles, prop, fallback) {
+    const raw = styles.getPropertyValue(prop).trim()
+    if (!raw) return fallback
+    const n = parseFloat(raw)
+    return Number.isFinite(n) ? n : fallback
+}
+
 const HERO_INTRO_PARTS = [
     { text: 'Tim Justina Yeung is a ', em: false },
     { text: 'Product Designer', em: true },
@@ -427,10 +434,9 @@ export default {
             featuredPressAt: 0,
             heroIntroParts: HERO_INTRO_BUILT,
             heroIntroPlain: HERO_INTRO_PLAIN,
-            // Letter cascade is mobile-only; desktop keeps the original block fly-in.
+            // Letter cascade on all breakpoints; reduced motion keeps static block text.
             heroIntroLetterMode:
                 typeof window !== 'undefined' &&
-                window.matchMedia('(max-width: 799px)').matches &&
                 !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         }
     },
@@ -877,41 +883,36 @@ export default {
             // Wait until the longest hero motion finishes.
             let settleMs = 2300
             const intro = this.$el?.querySelector('.hero-intro')
-            const introStyles = intro ? getComputedStyle(intro) : getComputedStyle(this.$el)
 
-            if (window.matchMedia('(max-width: 799px)').matches) {
+            if (this.heroIntroLetterMode) {
                 const pageStyles = getComputedStyle(this.$el)
-                const ctaDelay =
-                    parseFloat(pageStyles.getPropertyValue('--cta-fly-delay')) || 0.1
-                const ctaDuration =
-                    parseFloat(pageStyles.getPropertyValue('--cta-fly-duration')) || 2.05
-                const charDuration =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
-                    0.85
-                // Matches syncHeroIntroCharColumns: ctaEnd + 0.22 + idx*0.1 + jitter
-                const afterthoughtStart = ctaDelay + ctaDuration + 0.22 + 0.1 + 0.05
+                const introStyles = intro ? getComputedStyle(intro) : pageStyles
+                const ctaDelay = parseCssTimeSec(pageStyles, '--cta-fly-delay', 0.08)
+                const ctaDuration = parseCssTimeSec(pageStyles, '--cta-fly-duration', 1.25)
+                const ctaEnd = ctaDelay + ctaDuration
+                const lineFlyDurationRaw = pageStyles.getPropertyValue('--hero-line-fly-duration').trim()
+                const lineFlyDelay = parseCssTimeSec(pageStyles, '--hero-line-fly-delay', 0.08)
+                const lineFlyDuration = lineFlyDurationRaw ? parseFloat(lineFlyDurationRaw) : 0
+                const cascadeStart = parseCssTimeSec(
+                    introStyles,
+                    '--hero-intro-cascade-start',
+                    lineFlyDurationRaw ? lineFlyDelay + lineFlyDuration + 0.14 : 0.04
+                )
+                const cascadeEnd = parseCssTimeSec(introStyles, '--hero-intro-cascade-end', ctaEnd)
+                const charDuration = parseCssTimeSec(introStyles, '--hero-intro-char-duration', 0.85)
+                const slowestLineMult = 1.1
+                const maxDelay = Math.max(
+                    cascadeStart,
+                    cascadeEnd - charDuration * slowestLineMult
+                )
+                const afterthoughtStart =
+                    Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
+                    0.22 +
+                    0.1 +
+                    0.05
                 settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
             } else {
-                const flyEnd =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-fly-end')) || 1.63
-                const beat =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-afterthought-beat')) ||
-                    0.06
-                const cursorLead =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-cursor-lead')) ||
-                    0.18
-                const char2Gap =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-char-2-gap')) ||
-                    0.38
-                const char2At =
-                    parseFloat(introStyles.getPropertyValue('--hero-intro-type-char-2-at')) ||
-                    cursorLead + char2Gap
-                const cursorPostBlink =
-                    parseFloat(
-                        introStyles.getPropertyValue('--hero-intro-type-cursor-post-blink')
-                    ) || 1.06
-                const typeEnd = flyEnd + beat + char2At + cursorPostBlink
-                settleMs = Math.ceil((typeEnd + 0.15) * 1000)
+                settleMs = 300
             }
 
             clearTimeout(this.pageEntranceSettleTimer)
@@ -977,8 +978,7 @@ export default {
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
-            const nextLetter =
-                isMobile && !this.heroIntroReduceMq.matches
+            const nextLetter = !this.heroIntroReduceMq.matches
             const letterChanged = nextLetter !== this.heroIntroLetterMode
             const leavingMobile = this.heroDecorHidden && !isMobile
 
@@ -1185,8 +1185,7 @@ export default {
          * so the last letter finishes with the CTA button fly-in.
          */
         syncHeroIntroCharColumns() {
-            if (!window.matchMedia('(max-width: 799px)').matches) return
-            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+            if (!this.heroIntroLetterMode) return
 
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
@@ -1203,21 +1202,26 @@ export default {
 
             const pageStyles = getComputedStyle(this.$el)
             const introStyles = getComputedStyle(intro)
-            const ctaDelay =
-                parseFloat(pageStyles.getPropertyValue('--cta-fly-delay')) || 0.08
+            const ctaDelay = parseCssTimeSec(pageStyles, '--cta-fly-delay', 0.08)
             const ctaDuration =
-                parseFloat(pageStyles.getPropertyValue('--cta-fly-duration')) ||
-                parseFloat(pageStyles.getPropertyValue('--fly-duration')) ||
-                1.25
+                parseCssTimeSec(pageStyles, '--cta-fly-duration', 0) ||
+                parseCssTimeSec(pageStyles, '--fly-duration', 1.25)
             const ctaEnd = ctaDelay + ctaDuration
-            const charDuration =
-                parseFloat(introStyles.getPropertyValue('--hero-intro-char-duration')) ||
-                0.85
-            const minDelay = 0.04
+            const lineFlyDurationRaw = pageStyles.getPropertyValue('--hero-line-fly-duration').trim()
+            const lineFlyDelay = parseCssTimeSec(pageStyles, '--hero-line-fly-delay', 0.08)
+            const lineFlyDuration = lineFlyDurationRaw ? parseFloat(lineFlyDurationRaw) : 0
+            const cascadeStart = parseCssTimeSec(
+                introStyles,
+                '--hero-intro-cascade-start',
+                lineFlyDurationRaw ? lineFlyDelay + lineFlyDuration + 0.14 : 0.04
+            )
+            const cascadeEnd = parseCssTimeSec(introStyles, '--hero-intro-cascade-end', ctaEnd)
+            const charDuration = parseCssTimeSec(introStyles, '--hero-intro-char-duration', 0.85)
+            const minDelay = cascadeStart
             const slowestLineMult = 1.1
             const maxDelay = Math.max(
                 minDelay,
-                ctaEnd - charDuration * slowestLineMult
+                cascadeEnd - charDuration * slowestLineMult
             )
 
             const introRect = intro.getBoundingClientRect()
@@ -1279,9 +1283,11 @@ export default {
                 })
             }
 
-            // ":)" pops in after the CTA — a small beat later, like an afterthought
+            // ":)" pops in after the cascade — a small beat later, like an afterthought
+            const afterthoughtBase =
+                Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) + 0.22
             afterthoughtChars.forEach((el, idx) => {
-                const delay = ctaEnd + 0.22 + idx * 0.1 + Math.random() * 0.05
+                const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
                 el.style.removeProperty('--hero-intro-char-duration')
                 el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
             })
@@ -1461,10 +1467,11 @@ export default {
 
 /* Squiggle snappier; paragraph a touch slower — not in lockstep */
 .portfolio-page--reveal .hero-decor.portfolio-fly--from-right {
-    animation: portfolio-fly-from-right 1.05s var(--fly-ease) 0.08s both;
+    animation: portfolio-fly-from-right var(--hero-line-fly-duration, 1.05s) var(--fly-ease)
+        var(--hero-line-fly-delay, 0.08s) both;
 }
 
-.portfolio-page--reveal .hero-intro.portfolio-fly--from-right {
+.portfolio-page--reveal .hero-intro.portfolio-fly--from-right:not(.hero-intro--chars) {
     animation: portfolio-fly-from-right 1.55s var(--fly-ease) 0.08s both;
 }
 
@@ -1833,6 +1840,35 @@ export default {
 
 .hero-intro-char {
     display: inline-block;
+}
+
+/*
+ * Letter cascade: wide stagger so glyphs trickle in like an assemble,
+ * last letter still landing with the CTA.
+ */
+.hero-intro.hero-intro--chars.portfolio-fly {
+    --hero-intro-char-duration: 0.85s;
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+}
+
+.portfolio-page--reveal .hero-intro.hero-intro--chars.portfolio-fly--from-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+}
+
+.hero-intro--chars .hero-intro-char {
+    --hero-intro-char-delay: 0.04s;
+    opacity: 0;
+    transform: translate3d(var(--fly-distance), 0, 0);
+    will-change: transform, opacity;
+}
+
+.portfolio-page--reveal .hero-intro--chars .hero-intro-char {
+    animation: portfolio-fly-from-right var(--hero-intro-char-duration, 0.85s) var(--fly-ease)
+        var(--hero-intro-char-delay) both;
 }
 
 .hero-intro-word-space {
@@ -2580,6 +2616,18 @@ export default {
 
 /* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
 @media (min-width: 800px) {
+    .portfolio-page {
+        --hero-line-fly-delay: 0.08s;
+        --hero-line-fly-duration: 1.05s;
+        /* Line lands first (1.13s); cascade starts on a short beat after */
+        --hero-intro-cascade-start: 1.27s;
+        --hero-intro-cascade-end: 3.62s;
+    }
+
+    .hero-intro.hero-intro--chars.portfolio-fly {
+        --hero-intro-char-duration: 1.15s;
+    }
+
     .hero {
         display: flex;
         flex-direction: column;
@@ -2612,6 +2660,8 @@ export default {
         /* Longer CTA window so letter assemble has room and still lands together */
         --cta-fly-delay: 0.1s;
         --cta-fly-duration: 2.05s;
+        --hero-intro-cascade-start: 0.04s;
+        --hero-intro-cascade-end: 2.15s;
     }
 
     .portfolio-content {
@@ -2650,35 +2700,6 @@ export default {
         margin: 0;
         padding-bottom: var(--page-pad);
         box-sizing: border-box;
-    }
-
-    /*
-     * Letter cascade: wide stagger so glyphs trickle in like an assemble,
-     * last letter still landing with the CTA.
-     */
-    .hero-intro.hero-intro--chars.portfolio-fly {
-        --hero-intro-char-duration: 0.85s;
-        opacity: 1;
-        transform: none;
-        will-change: auto;
-    }
-
-    .portfolio-page--reveal .hero-intro.hero-intro--chars.portfolio-fly--from-right {
-        animation: none;
-        opacity: 1;
-        transform: none;
-    }
-
-    .hero-intro--chars .hero-intro-char {
-        --hero-intro-char-delay: 0.04s;
-        opacity: 0;
-        transform: translate3d(var(--fly-distance), 0, 0);
-        will-change: transform, opacity;
-    }
-
-    .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
-        animation: portfolio-fly-from-right var(--hero-intro-char-duration, 0.85s) var(--fly-ease)
-            var(--hero-intro-char-delay) both;
     }
 
     .work {
