@@ -459,6 +459,8 @@ export default {
             heroIntroPointer: null,
             heroIntroActivePointerId: null,
             heroIntroTapLingerTimer: null,
+            heroIntroTouchStart: null,
+            heroIntroTouchMode: null,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
         }
@@ -1254,6 +1256,49 @@ export default {
                 y <= rect.bottom + zonePad
             )
         },
+        classifyHeroIntroTouchGesture(event) {
+            const start = this.heroIntroTouchStart
+            if (!start) return 'stroke'
+            if (event.pointerType === 'pen') return 'stroke'
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const styles = intro ? getComputedStyle(intro) : null
+            const swipeMinTravel = styles
+                ? parseCssPx(styles, '--hero-intro-swipe-min-travel', 22)
+                : 22
+            const swipeVerticalMin = styles
+                ? parseCssPx(styles, '--hero-intro-swipe-vertical-min', 30)
+                : 30
+            const swipeRatio = styles ? parseCssPx(styles, '--hero-intro-swipe-ratio', 1.65) : 1.65
+
+            const dx = event.clientX - start.x
+            const dy = event.clientY - start.y
+            const absDx = Math.abs(dx)
+            const absDy = Math.abs(dy)
+            const travel = Math.hypot(dx, dy)
+
+            if (travel < swipeMinTravel) return 'stroke'
+            if (absDy > absDx * swipeRatio && absDy > swipeVerticalMin) return 'swipe'
+            if (absDx >= absDy * 0.7) return 'stroke'
+
+            return 'swipe'
+        },
+        setHeroIntroStrokeActive(active) {
+            this.$el
+                ?.querySelector('.hero-intro.hero-intro--chars')
+                ?.classList.toggle('hero-intro--stroke-active', active)
+        },
+        enterHeroIntroSwipeMode(pointerId) {
+            this.heroIntroTouchMode = 'swipe'
+            this.releaseHeroIntroPointerCapture(pointerId)
+            this.setHeroIntroStrokeActive(false)
+            this.heroIntroPointer = null
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.clearHeroIntroPointerShift()
+        },
         captureHeroIntroPointer(event) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro?.setPointerCapture || intro.hasPointerCapture?.(event.pointerId)) return
@@ -1301,7 +1346,10 @@ export default {
         },
         releaseHeroIntroMobileTouch({ linger = false, pointerId = null } = {}) {
             this.releaseHeroIntroPointerCapture(pointerId ?? this.heroIntroActivePointerId)
+            this.heroIntroTouchStart = null
+            this.heroIntroTouchMode = null
             this.heroIntroActivePointerId = null
+            this.setHeroIntroStrokeActive(false)
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
                 this.heroIntroPointerRaf = null
@@ -1323,11 +1371,15 @@ export default {
             this.heroIntroTapLingerTimer = setTimeout(() => {
                 this.heroIntroTapLingerTimer = null
                 this.heroIntroPointer = null
+                this.setHeroIntroStrokeActive(false)
                 this.clearHeroIntroPointerShift()
             }, lingerMs)
         },
         onHeroPointerEndHandlerImpl() {
             this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
+            this.heroIntroTouchStart = null
+            this.heroIntroTouchMode = null
+            this.setHeroIntroStrokeActive(false)
             this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
@@ -1346,13 +1398,22 @@ export default {
 
             this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = event.pointerId
-            this.captureHeroIntroPointer(event)
+            this.heroIntroTouchStart = { x: event.clientX, y: event.clientY }
+            this.heroIntroTouchMode = 'stroke'
+            this.setHeroIntroStrokeActive(true)
+            if (event.pointerType === 'pen') {
+                this.captureHeroIntroPointer(event)
+            }
             this.setHeroIntroPointer(event.clientX, event.clientY)
         },
         onHeroPointerUpHandler(event) {
             if (this.heroIntroActivePointerId !== event.pointerId) return
             if (this.isHeroIntroMobileTouch()) {
-                this.releaseHeroIntroMobileTouch({ linger: true, pointerId: event.pointerId })
+                const wasStroke = this.heroIntroTouchMode === 'stroke'
+                this.releaseHeroIntroMobileTouch({
+                    linger: wasStroke,
+                    pointerId: event.pointerId,
+                })
                 return
             }
             this.onHeroPointerEndHandlerImpl()
@@ -1379,20 +1440,34 @@ export default {
                 this.isHeroIntroMobileTouch() &&
                 this.heroIntroActivePointerId === event.pointerId
             ) {
+                if (this.heroIntroTouchMode === 'swipe') return
+
+                const gesture = this.classifyHeroIntroTouchGesture(event)
+                if (gesture === 'swipe') {
+                    this.enterHeroIntroSwipeMode(event.pointerId)
+                    return
+                }
+
+                this.heroIntroTouchMode = 'stroke'
+                this.setHeroIntroStrokeActive(true)
+                if (event.pointerType === 'touch') {
+                    this.captureHeroIntroPointer(event)
+                }
                 this.setHeroIntroPointer(event.clientX, event.clientY)
             }
         },
         onHeroPointerScrollHandler() {
             if (!this.canHeroIntroPointerPlay()) return
 
-            const mobileTouchActive =
+            const mobileStrokeActive =
                 this.isHeroIntroMobileTouch() &&
                 this.heroIntroActivePointerId != null &&
+                this.heroIntroTouchMode === 'stroke' &&
                 this.heroIntroPointer
 
             if (this.isHeroIntroFinePointer()) {
                 if (!this.heroCursorActive && !this.heroIntroPointer) return
-            } else if (!mobileTouchActive) {
+            } else if (!mobileStrokeActive) {
                 return
             }
 
@@ -1919,6 +1994,9 @@ export default {
     .hero-intro.hero-intro--chars {
         --hero-intro-touch-pad: 40px;
         --hero-intro-tap-linger: 280ms;
+        --hero-intro-swipe-min-travel: 22px;
+        --hero-intro-swipe-vertical-min: 30px;
+        --hero-intro-swipe-ratio: 1.65;
         --hero-cursor-zone-pad: 240px;
         --hero-intro-hover-radius: 240px;
         --hero-intro-hover-shift: 102px;
@@ -1927,7 +2005,22 @@ export default {
         --hero-intro-hover-lift-exp: 1.25;
         --hero-intro-hover-min-force: 0.1;
         --hero-intro-hover-knock-mult: 0.34;
+        --hero-intro-stroke-knock-mult: 0.26;
         touch-action: pan-y;
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char {
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-stroke-knock-mult, 0.26))
+            var(--fly-ease);
+    }
+
+    .portfolio-page--settled
+        .hero-intro--chars.hero-intro--stroke-active
+        .hero-intro-char.hero-intro-char--pushed {
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-stroke-knock-mult, 0.26))
+            var(--fly-ease);
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
