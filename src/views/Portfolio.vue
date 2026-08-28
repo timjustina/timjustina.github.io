@@ -1957,6 +1957,7 @@ export default {
     --brand: #000aaa;
     --brand-hover: #1a2bff;
     --brand-active: #000444;
+    --font-weight-scale: 0.98;
     --text: #2c2c2c;
     --muted: #757575;
     --title: #4d4d4d;
@@ -2363,6 +2364,8 @@ export default {
 
 .hero-intro-wrap {
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
+    /* Match viewport-left→line stroke on the text box’s right edge */
+    --hero-intro-right: calc(var(--hero-squiggle-left) + var(--hero-decor-line-stroke-x));
     position: relative;
     max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
     margin: var(--hero-logo-gap) 0 0
@@ -2508,10 +2511,10 @@ export default {
     z-index: 1;
     margin: 0;
     font-family: 'Fira Code', monospace;
-    font-size: 24px;
+    font-size: 26px;
     font-style: normal;
-    font-weight: calc(400 * var(--font-weight-scale));
-    line-height: 36px;
+    font-weight: 400;
+    line-height: 39px;
     letter-spacing: -0.02em;
     color: var(--muted);
     font-synthesis: none;
@@ -2565,7 +2568,7 @@ export default {
 
 .hero-intro-em {
     color: var(--brand);
-    font-weight: calc(600 * var(--font-weight-scale));
+    font-weight: 600;
 }
 
 .hero-intro-em--keep {
@@ -2574,10 +2577,17 @@ export default {
 
 .hero-intro-afterthought {
     display: inline;
+    color: var(--muted);
+    font-weight: 400;
 }
 
 .hero-intro-afterthought-char {
     display: inline;
+}
+
+.hero-intro-char--afterthought {
+    color: var(--muted);
+    font-weight: 400;
 }
 
 .hero-intro-afterthought-cursor {
@@ -3187,7 +3197,7 @@ export default {
 /* ≥1454px: Final content artboard spacing */
 @media (min-width: 1454px) {
     .hero {
-        /* 920px keeps "complex" on the second line at 24px / full artboard width */
+        /* 920px keeps "complex" on the second line at 26px / full artboard width */
         --hero-intro-max-width: 920px;
     }
 
@@ -3349,9 +3359,10 @@ export default {
 
     .hero-intro-wrap {
         margin-top: 0;
-        /* Mirror --hero-squiggle-left on the right: line↔viewport left = text↔viewport right */
+        margin-right: var(--hero-intro-right);
+        /* Flex child: let horizontal margins define width (mirrors line↔viewport-left) */
         max-width: none;
-        width: calc(100% - var(--hero-intro-left) - var(--hero-squiggle-left));
+        width: auto;
     }
 }
 
@@ -3552,8 +3563,8 @@ export default {
 /* 601–799px: mobile layout with desktop text sizes and about format */
 @media (min-width: 601px) and (max-width: 799px) {
     .hero-intro {
-        font-size: 24px;
-        line-height: 36px;
+        font-size: 26px;
+        line-height: 39px;
     }
 
     .project-description {
