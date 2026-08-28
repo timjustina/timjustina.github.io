@@ -113,7 +113,10 @@
                         </template>
                     </p>
                 </div>
-                <a class="cta-button portfolio-fly portfolio-fly--from-left" href="mailto:design@timjustina.com">Drop me a line</a>
+                <a
+                    class="cta-button cta-button--in-hero portfolio-fly portfolio-fly--from-left"
+                    href="mailto:design@timjustina.com"
+                >Drop me a line</a>
             </section>
 
             <section id="work" class="work">
@@ -275,18 +278,24 @@
                     </p>
                 </div>
                 <div class="about-actions portfolio-fly portfolio-fly--from-left">
+                    <div class="about-actions-row">
+                        <a
+                            href="https://www.linkedin.com/in/timjustinayeung"
+                            class="about-action-btn"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >Linkedin</a>
+                        <a
+                            :href="cvUrl"
+                            class="about-action-btn"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >CV</a>
+                    </div>
                     <a
-                        href="https://www.linkedin.com/in/timjustinayeung"
+                        href="mailto:design@timjustina.com"
                         class="about-action-btn"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >Linkedin</a>
-                    <a
-                        :href="cvUrl"
-                        class="about-action-btn"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >CV</a>
+                    >Email</a>
                 </div>
             </div>
             <img
@@ -2088,11 +2097,6 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-top: var(--hero-cta-gap);
-    margin-left: min(
-        var(--hero-cta-left),
-        max(0px, calc(100% - var(--hero-cta-width)))
-    );
     padding: 12px 24px;
     width: var(--hero-cta-width);
     max-width: 100%;
@@ -2109,6 +2113,14 @@ export default {
     text-decoration: none;
     box-sizing: border-box;
     transition: background 0.2s ease;
+}
+
+.cta-button--in-hero {
+    margin-top: var(--hero-cta-gap);
+    margin-left: min(
+        var(--hero-cta-left),
+        max(0px, calc(100% - var(--hero-cta-width)))
+    );
 }
 
 .cta-button:hover {
@@ -2506,7 +2518,7 @@ export default {
         top: 7px;
     }
 
-    .cta-button {
+    .cta-button--in-hero {
         margin-top: var(--hero-cta-gap);
         width: var(--hero-cta-width);
         min-width: 0;
@@ -2594,7 +2606,7 @@ export default {
         left: 61px;
     }
 
-    .cta-button {
+    .cta-button--in-hero {
         margin-left: min(655px, max(0px, calc(100% - 233px)));
     }
 
@@ -2661,9 +2673,9 @@ export default {
         --hero-logo-gap: 74px;
         --project-w: 100%;
         --project-w-wide: 100%;
+        --project-stack-gap: 80px;
         /* Logo top 20px + 50.4px tall (20% bigger) in the 86px bar */
         --top-bar-logo-inset: 20px;
-        /* Same gap: CTA → first image, and last project text → about */
         --mobile-block-gap: calc(2 * 84px - 25px - 20px - 15px);
         /* Longer CTA window so letter assemble has room and still lands together */
         --cta-fly-delay: 0.1s;
@@ -2683,9 +2695,7 @@ export default {
     }
 
     .hero {
-        --hero-cta-gap: 84px;
         margin-bottom: calc(2 * var(--mobile-block-gap));
-        min-height: 0;
     }
 
     .portfolio-main {
@@ -2699,9 +2709,15 @@ export default {
     }
 
     .hero-intro-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        min-height: calc(100svh - var(--top-bar-height));
         max-width: 100%;
         width: 100%;
-        margin: var(--hero-logo-gap) 0 0;
+        margin: 0;
+        padding-bottom: var(--page-pad);
+        box-sizing: border-box;
     }
 
     .hero-intro {
@@ -2739,17 +2755,8 @@ export default {
             var(--hero-intro-char-delay) both;
     }
 
-    .cta-button {
-        --hero-cta-width: 225px;
-        width: var(--hero-cta-width);
-        height: 54px;
-        min-height: 54px;
-        min-width: var(--hero-cta-width);
-        margin-left: max(0px, calc(100% - var(--hero-cta-width)));
-        padding: 12px 24px;
-        font-size: 20px;
-        line-height: 30px;
-        white-space: nowrap;
+    .cta-button--in-hero {
+        display: none;
     }
 
     .work {
@@ -2788,7 +2795,7 @@ export default {
     }
 
     .project + .project {
-        margin-top: 80px;
+        margin-top: var(--project-stack-gap);
     }
 
     .project-image-link,
@@ -2868,7 +2875,7 @@ export default {
     }
 
     .about {
-        margin-top: calc(2 * var(--mobile-block-gap));
+        margin-top: var(--project-stack-gap);
         --about-bottom-pad: 326px;
         --about-photo-h: 288px;
         --about-stack-gap: 50px;
@@ -3048,9 +3055,19 @@ export default {
 
     .about-actions {
         display: flex;
-        gap: 31px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
         margin-top: 96px;
-        padding-left: 0;
+        padding: 0;
+    }
+
+    .about-actions-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 20px;
     }
 
     .about-ball {
@@ -3062,6 +3079,7 @@ export default {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        flex: 0 0 auto;
         height: 54px;
         padding: 12px 24px;
         border-radius: 60px;
@@ -3070,6 +3088,7 @@ export default {
         font-size: 20px;
         font-weight: calc(500 * var(--font-weight-scale));
         line-height: 30px;
+        white-space: nowrap;
         color: #fff;
         text-decoration: none;
         box-sizing: border-box;
