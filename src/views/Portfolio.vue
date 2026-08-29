@@ -3108,6 +3108,11 @@ export default {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    overflow: hidden;
+    border-radius: 20px;
+    isolation: isolate;
+    background: #fff;
+    transition: border-radius 0.45s ease;
 }
 
 .project-image-link picture {
@@ -3127,15 +3132,23 @@ export default {
     transition: border-radius 0.45s ease;
 }
 
+.project-image-wrap .project-image {
+    border-radius: 0;
+    transition: none;
+}
+
 /* Touch: press feedback — clears on release so the radius can ease back */
-.project:active .project-image {
+.project:active .project-image-link .project-image,
+.project:active .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
 }
 
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
 @media (hover: hover) and (pointer: fine) {
-    .project:hover .project-image,
-    .project:focus-within .project-image {
+    .project:hover .project-image-link .project-image,
+    .project:focus-within .project-image-link .project-image,
+    .project:hover .project-image-wrap,
+    .project:focus-within .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
     }
 }
@@ -3149,31 +3162,15 @@ export default {
     justify-content: center;
     align-items: center;
     padding: 0;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.88);
     opacity: 0;
-    transition:
-        opacity 0.35s ease,
-        border-radius 0.45s ease;
+    transition: opacity 0.35s ease;
     pointer-events: none;
-}
-
-.project--upcoming:active .project-upcoming-overlay {
-    border-radius: 700px 700px 20px 20px;
 }
 
 .project--upcoming:hover .project-upcoming-overlay,
 .project--upcoming:focus-within .project-upcoming-overlay {
     opacity: 1;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .project--upcoming:hover .project-upcoming-overlay,
-    .project--upcoming:focus-within .project-upcoming-overlay {
-        border-radius: 700px 700px 20px 20px;
-    }
 }
 
 .project-upcoming-label {
@@ -3872,7 +3869,6 @@ export default {
 
     .project:active .project-image-link,
     .project:active .project-image-wrap,
-    .project:active .project-upcoming-overlay,
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap,
     .project--press-expand .project-image {
