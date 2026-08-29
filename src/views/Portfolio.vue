@@ -3756,6 +3756,12 @@ export default {
 
     .about {
         margin-top: calc(2 * var(--mobile-block-gap));
+        --about-bottom-pad: 326px;
+        --about-photo-h: 288px;
+        --about-stack-gap: 50px;
+        --about-heading-location-gap: 32px;
+        --about-content-shift: 50px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .portfolio-main {
@@ -3823,224 +3829,6 @@ export default {
 
     .about-ball--dropped {
         opacity: 1;
-    }
-
-    .work {
-        gap: 0;
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        align-items: stretch;
-    }
-
-    /* Mobile: case studies stay visible — no fly-in or scroll fade */
-    .portfolio-page--reveal .project.portfolio-fly,
-    .portfolio-page--settled .portfolio-main .project.portfolio-fly {
-        opacity: 1;
-        transform: none;
-        animation: none !important;
-        will-change: auto;
-    }
-
-    .project,
-    .project--featured,
-    .project--offset,
-    .project:last-child {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        margin-top: 0;
-        margin-left: 0;
-    }
-
-    .project + .project {
-        margin-top: var(--project-stack-gap);
-    }
-
-    .project-image-link,
-    .project-image-wrap {
-        width: 100%;
-        max-width: 100%;
-        aspect-ratio: 1 / 1;
-        overflow: hidden;
-        border-radius: 20px;
-        transition: border-radius 0.45s ease;
-    }
-
-    .project:active .project-image-link,
-    .project:active .project-image-wrap,
-    .project--press-expand .project-image-link,
-    .project--press-expand .project-image-wrap,
-    .project--press-expand .project-image {
-        border-radius: 700px 700px 20px 20px;
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-        .project:hover .project-image-link,
-        .project:hover .project-image-wrap,
-        .project:focus-within .project-image-link,
-        .project:focus-within .project-image-wrap {
-            border-radius: 700px 700px 20px 20px;
-        }
-    }
-
-    .project-image {
-        width: 100%;
-        max-width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center center;
-    }
-
-    .project-caption {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .project-caption-header {
-        padding-top: 0;
-        gap: 0;
-        width: 100%;
-    }
-
-    /* Thumbnail only — title tap must not navigate */
-    .project-title-link {
-        pointer-events: none;
-        cursor: default;
-    }
-}
-
-/* 601–799px: mobile layout with desktop text sizes and about format */
-@media (min-width: 601px) and (max-width: 799px) {
-    .hero-intro {
-        font-size: 25px;
-        line-height: 37.5px;
-    }
-
-    .project-description {
-        margin: 16px 0 0;
-        line-height: 25px;
-    }
-
-    .about {
-        --about-bottom-pad-base: 180px;
-        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
-    }
-
-    .about-inner {
-        display: grid;
-        grid-template-columns: 345px 1fr;
-        max-width: 800px;
-        padding: 0;
-    }
-
-    .about-photo-column {
-        display: flex;
-        flex-direction: column;
-        position: static;
-        padding-left: var(--about-image-text-gap);
-        width: auto;
-        height: auto;
-        margin: 0;
-        right: auto;
-        top: auto;
-        z-index: 1;
-    }
-
-    .about-photo,
-    .about-photo--placeholder {
-        width: 281px;
-        height: 402px;
-    }
-
-    .about-text-column {
-        position: static;
-        z-index: 1;
-        padding-top: 100px;
-        padding-right: var(--about-image-text-gap);
-    }
-
-    .about-intro {
-        display: contents;
-        position: static;
-        max-width: none;
-    }
-
-    .about-heading {
-        margin: 0 0 32px;
-        max-width: none;
-    }
-
-    .about-location {
-        position: relative;
-        margin: 0 0 var(--about-text-gap) 20px;
-        top: auto;
-        left: auto;
-        padding: 0;
-    }
-
-    .about-bio {
-        margin-top: 0;
-        max-width: 455px;
-        line-height: 25px;
-    }
-
-    .about-actions {
-        margin-top: var(--about-bio-cta-gap);
-    }
-}
-
-/* ≤600px: smaller type and mobile about layout */
-@media (max-width: 600px) {
-    .hero-intro {
-        max-width: 100%;
-        font-size: 22px;
-        line-height: 33px;
-    }
-
-    .project-caption {
-        margin-top: 28px;
-    }
-
-    .project-title {
-        flex: 1 1 auto;
-        max-width: none;
-        font-family: 'Work Sans', sans-serif;
-        font-size: 18px;
-        font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 27px;
-        color: #4d4d4d;
-    }
-
-    .project-description {
-        margin-top: 20px;
-        max-width: 100%;
-        font-family: 'Fira Code', monospace;
-        font-size: 16px;
-        font-weight: calc(400 * var(--font-weight-scale));
-        line-height: 25px;
-        letter-spacing: -0.02em;
-        color: #757575;
-    }
-
-    .project-year {
-        margin-left: auto;
-        flex-shrink: 0;
-        font-family: 'Fira Code', monospace;
-        font-size: 18px;
-        font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 27px;
-        letter-spacing: -0.02em;
-        color: #757575;
-    }
-
-    .about {
-        --about-bottom-pad: 326px;
-        --about-photo-h: 288px;
-        --about-stack-gap: 50px;
-        --about-heading-location-gap: 32px;
-        --about-content-shift: 50px;
-        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-inner {
@@ -4193,7 +3981,7 @@ export default {
     }
 
     .about-bio {
-        margin-top: calc(var(--about-content-shift) + var(--about-photo-h) + var(--about-stack-gap));
+        margin: calc(var(--about-content-shift) + var(--about-photo-h) + var(--about-stack-gap)) 0 0;
         max-width: 100%;
         font-size: 16px;
         line-height: 25px;
@@ -4201,6 +3989,160 @@ export default {
 
     .about-actions {
         margin-top: 96px;
+    }
+
+    .work {
+        gap: 0;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        align-items: stretch;
+    }
+
+    /* Mobile: case studies stay visible — no fly-in or scroll fade */
+    .portfolio-page--reveal .project.portfolio-fly,
+    .portfolio-page--settled .portfolio-main .project.portfolio-fly {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+        will-change: auto;
+    }
+
+    .project,
+    .project--featured,
+    .project--offset,
+    .project:last-child {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        margin-top: 0;
+        margin-left: 0;
+    }
+
+    .project + .project {
+        margin-top: var(--project-stack-gap);
+    }
+
+    .project-image-link,
+    .project-image-wrap {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        border-radius: 20px;
+        transition: border-radius 0.45s ease;
+    }
+
+    .project:active .project-image-link,
+    .project:active .project-image-wrap,
+    .project--press-expand .project-image-link,
+    .project--press-expand .project-image-wrap,
+    .project--press-expand .project-image {
+        border-radius: 700px 700px 20px 20px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .project:hover .project-image-link,
+        .project:hover .project-image-wrap,
+        .project:focus-within .project-image-link,
+        .project:focus-within .project-image-wrap {
+            border-radius: 700px 700px 20px 20px;
+        }
+    }
+
+    .project-image {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+    }
+
+    .project-caption {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .project-caption-header {
+        padding-top: 0;
+        gap: 0;
+        width: 100%;
+    }
+
+    /* Thumbnail only — title tap must not navigate */
+    .project-title-link {
+        pointer-events: none;
+        cursor: default;
+    }
+
+    /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
+    .cta-button,
+    .project-upcoming-label,
+    .project-year {
+        font-weight: 500;
+    }
+
+    .project-description,
+    .about-bio {
+        font-weight: 400;
+    }
+}
+
+/* 601–799px: mobile layout with desktop text sizes */
+@media (min-width: 601px) and (max-width: 799px) {
+    .hero-intro {
+        font-size: 25px;
+        line-height: 37.5px;
+    }
+
+    .project-description {
+        margin: 16px 0 0;
+        line-height: 25px;
+    }
+}
+
+/* ≤600px: smaller type and mobile about layout */
+@media (max-width: 600px) {
+    .hero-intro {
+        max-width: 100%;
+        font-size: 22px;
+        line-height: 33px;
+    }
+
+    .project-caption {
+        margin-top: 28px;
+    }
+
+    .project-title {
+        flex: 1 1 auto;
+        max-width: none;
+        font-family: 'Work Sans', sans-serif;
+        font-size: 18px;
+        font-weight: calc(500 * var(--font-weight-scale));
+        line-height: 27px;
+        color: #4d4d4d;
+    }
+
+    .project-description {
+        margin-top: 20px;
+        max-width: 100%;
+        font-family: 'Fira Code', monospace;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 25px;
+        letter-spacing: -0.02em;
+        color: #757575;
+    }
+
+    .project-year {
+        margin-left: auto;
+        flex-shrink: 0;
+        font-family: 'Fira Code', monospace;
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 27px;
+        letter-spacing: -0.02em;
+        color: #757575;
     }
 }
 </style>
