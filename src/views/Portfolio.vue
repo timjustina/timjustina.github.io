@@ -2069,6 +2069,7 @@ export default {
         syncAboutLineBridge() {
             const bridge = this.$el?.querySelector('.about-line-bridge')
             const about = this.$el?.querySelector('.about')
+            const aboutLine = this.$el?.querySelector('.about-line')
             const decor = this.$el?.querySelector('.hero-decor')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
             if (!bridge || !about || !decor || !workLastAnchor) return
@@ -2079,33 +2080,54 @@ export default {
             }
 
             const pageTop = this.$el.getBoundingClientRect().top
-            const aboutGap = parseFloat(getComputedStyle(about).marginTop) || 340
-            const originalTop = 140 - aboutGap
-            const aboutTop = about.getBoundingClientRect().top
-            const bridgeBottom = aboutTop + originalTop - pageTop
             const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
-            const bridgeTop = workLastBottom - pageTop
+            const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
+            const bridgeOverlap = 2
+            const bridgeTop = Math.floor(workLastBottom - pageTop)
+            const bridgeBottom = Math.ceil(aboutLineTop) + bridgeOverlap
+            const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
 
-            const applyBridgeGeometry = (top, height) => {
-                if (!this.aboutLineBridgeSynced) {
-                    bridge.style.transition = 'none'
-                }
-                bridge.style.top = `${Math.round(top)}px`
-                bridge.style.height = `${Math.round(Math.max(0, height))}px`
-                if (!this.aboutLineBridgeSynced) {
-                    void bridge.offsetWidth
-                    bridge.style.removeProperty('transition')
-                    this.aboutLineBridgeSynced = true
-                }
-            }
+            bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
 
             if (this.heroLineKnotClipped) {
-                applyBridgeGeometry(bridgeBottom, 0)
+                if (
+                    this.bridgeSyncMode === 'retract'
+                    && this.aboutLineBridgeSynced
+                    && !prefersReducedMotion()
+                ) {
+                    bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+                    bridge.style.clipPath = 'inset(0 0 0 0)'
+                    void bridge.offsetWidth
+                    return
+                }
+
+                bridge.style.setProperty('--bridge-h', '0px')
+                bridge.style.clipPath = ''
+                if (!this.aboutLineBridgeSynced) {
+                    void bridge.offsetWidth
+                    this.aboutLineBridgeSynced = true
+                }
                 return
             }
 
-            const bridgeHeight = bridgeBottom - bridgeTop
-            applyBridgeGeometry(bridgeTop, bridgeHeight)
+            bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+
+            if (
+                this.bridgeSyncMode === 'extend'
+                && this.aboutLineBridgeSynced
+                && !prefersReducedMotion()
+            ) {
+                bridge.style.clipPath = 'inset(100% 0 0 0)'
+                void bridge.offsetWidth
+                bridge.style.clipPath = 'inset(0 0 0 0)'
+                return
+            }
+
+            bridge.style.clipPath = 'inset(0 0 0 0)'
+            if (!this.aboutLineBridgeSynced) {
+                void bridge.offsetWidth
+                this.aboutLineBridgeSynced = true
+            }
         },
     },
 }
@@ -2509,27 +2531,27 @@ export default {
 .about-line-bridge {
     --hero-line-bounce-duration: 1.2s;
     --hero-line-return-duration: 0.4s;
+    --bridge-bottom: 0px;
+    --bridge-h: 0px;
     position: absolute;
     left: var(--portfolio-decor-line-x);
+    top: calc(var(--bridge-bottom) - var(--bridge-h));
     width: 2px;
-    height: 0;
+    height: var(--bridge-h);
     background: var(--brand);
     pointer-events: none;
-    z-index: 0;
+    z-index: 2;
+    clip-path: inset(0 0 0 0);
     transition: none;
     display: none;
 }
 
 .about-line-bridge--retract {
-    transition:
-        top var(--hero-line-bounce-duration) linear,
-        height var(--hero-line-bounce-duration) linear;
+    animation: about-line-bridge-retract var(--hero-line-bounce-duration) forwards;
 }
 
 .about-line-bridge--extend {
-    transition:
-        top var(--hero-line-return-duration) ease,
-        height var(--hero-line-return-duration) ease;
+    transition: clip-path var(--hero-line-return-duration) ease;
 }
 
 @media (min-width: 800px) {
@@ -2664,6 +2686,44 @@ export default {
     clip-path: inset(0);
     transform: translateY(calc(-1 * var(--hero-line-lift)));
     transition: none;
+}
+
+@keyframes about-line-bridge-retract {
+    0% {
+        clip-path: inset(0 0 0 0);
+    }
+
+    22% {
+        clip-path: inset(97% 0 0 0);
+    }
+
+    38% {
+        clip-path: inset(76% 0 0 0);
+    }
+
+    49% {
+        clip-path: inset(93% 0 0 0);
+    }
+
+    60% {
+        clip-path: inset(84% 0 0 0);
+    }
+
+    67% {
+        clip-path: inset(96% 0 0 0);
+    }
+
+    73% {
+        clip-path: inset(91% 0 0 0);
+    }
+
+    78% {
+        clip-path: inset(98.5% 0 0 0);
+    }
+
+    100% {
+        clip-path: inset(100% 0 0 0);
+    }
 }
 
 @keyframes hero-line-bounce-up {
