@@ -84,6 +84,7 @@
                                 :class="{
                                     'hero-decor-line--bouncing': heroLinePhase === 'bouncing',
                                     'hero-decor-line--up': heroLinePhase === 'up',
+                                    'hero-decor-line--knot-clipped': heroLineKnotClipped,
                                 }"
                                 :src="lineAnimationExtended"
                                 alt=""
@@ -240,12 +241,25 @@
             </section>
         </main>
 
+        <span
+            class="about-line-bridge"
+            :class="{
+                'about-line-bridge--retract': bridgeSyncMode === 'retract',
+                'about-line-bridge--extend': bridgeSyncMode === 'extend',
+            }"
+            aria-hidden="true"
+        />
+
         <section
             id="about"
             class="about"
             :class="{ 'about--reveal': aboutRevealed, 'about--settled': aboutEntranceDone }"
         >
-            <span class="about-line" aria-hidden="true" />
+            <span
+                class="about-line"
+                :class="{ 'about-line--knot-clipped': heroLineKnotClipped }"
+                aria-hidden="true"
+            />
             <div class="about-inner">
                 <div class="about-photo-column portfolio-fly portfolio-fly--from-left">
                     <img
@@ -463,6 +477,9 @@ export default {
             pendingAboutBallDrop: false,
             aboutBallDropped: false,
             heroLinePhase: 'rest',
+            heroLineKnotClipped: false,
+            aboutLineBridgeSynced: false,
+            bridgeSyncMode: null,
             heroLineClipSettled: false,
             // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
             heroDecorHidden:
@@ -1719,6 +1736,11 @@ export default {
                 line.removeEventListener('transitionend', this.onHeroLineReturnEnd)
                 line.style.removeProperty('transform')
             }
+            if (!this.heroLineKnotClipped) {
+                this.bridgeSyncMode = 'retract'
+                this.heroLineKnotClipped = true
+                this.$nextTick(() => this.syncAboutLineBridge())
+            }
             this.heroLinePhase = 'bouncing'
         },
         onHeroLineBounceEnd(event) {
@@ -1734,6 +1756,12 @@ export default {
                 return
             }
 
+            if (this.heroLineKnotClipped) {
+                this.bridgeSyncMode = 'extend'
+                this.heroLineKnotClipped = false
+                this.$nextTick(() => this.syncAboutLineBridge())
+            }
+
             // Freeze the animated position, then ease down (removing animation alone would jump).
             const computed = getComputedStyle(line).transform
             const duration =
@@ -1744,7 +1772,7 @@ export default {
             }
             this.heroLinePhase = 'rest'
             void line.offsetWidth
-            line.style.transition = `transform ${duration} ease`
+            line.style.transition = `transform ${duration} ease, clip-path 0.35s ease`
             line.removeEventListener('transitionend', this.onHeroLineReturnEnd)
             line.addEventListener('transitionend', this.onHeroLineReturnEnd)
             requestAnimationFrame(() => {
@@ -2039,6 +2067,49 @@ export default {
             if (height > 0) {
                 decor.style.setProperty('--hero-decor-height', `${height}px`)
             }
+
+            this.syncAboutLineBridge()
+        },
+        syncAboutLineBridge() {
+            const bridge = this.$el?.querySelector('.about-line-bridge')
+            const about = this.$el?.querySelector('.about')
+            const decor = this.$el?.querySelector('.hero-decor')
+            const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
+            if (!bridge || !about || !decor || !workLastAnchor) return
+            if (window.getComputedStyle(decor).display === 'none') return
+            if (!window.matchMedia('(min-width: 800px)').matches) {
+                bridge.style.height = '0px'
+                return
+            }
+
+            const pageTop = this.$el.getBoundingClientRect().top
+            const aboutGap = parseFloat(getComputedStyle(about).marginTop) || 340
+            const originalTop = 140 - aboutGap
+            const aboutTop = about.getBoundingClientRect().top
+            const bridgeBottom = aboutTop + originalTop - pageTop
+            const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
+            const bridgeTop = workLastBottom - pageTop
+
+            const applyBridgeGeometry = (top, height) => {
+                if (!this.aboutLineBridgeSynced) {
+                    bridge.style.transition = 'none'
+                }
+                bridge.style.top = `${Math.round(top)}px`
+                bridge.style.height = `${Math.round(Math.max(0, height))}px`
+                if (!this.aboutLineBridgeSynced) {
+                    void bridge.offsetWidth
+                    bridge.style.removeProperty('transition')
+                    this.aboutLineBridgeSynced = true
+                }
+            }
+
+            if (this.heroLineKnotClipped) {
+                applyBridgeGeometry(bridgeBottom, 0)
+                return
+            }
+
+            const bridgeHeight = bridgeBottom - bridgeTop
+            applyBridgeGeometry(bridgeTop, bridgeHeight)
         },
     },
 }
@@ -2280,9 +2351,9 @@ export default {
     }
 }
 
-.portfolio-page--settled .hero-decor-line:not(.hero-decor-line--bouncing):not(.hero-decor-line--up),
+.portfolio-page--settled .hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up),
 .portfolio-page--settled
-    .hero-decor-line.hero-decor-line--settled:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
+    .hero-decor-line.hero-decor-line--settled.hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
     clip-path: inset(0 0 45px 0);
     transition: transform var(--hero-line-return-duration) ease;
 }
@@ -2430,11 +2501,45 @@ export default {
 
 .portfolio-main {
     position: relative;
+    z-index: 1;
+    isolation: isolate;
     width: 100%;
     max-width: var(--page-max);
     margin: 0 auto;
     padding: var(--top-bar-height) var(--page-pad) 0;
     box-sizing: border-box;
+}
+
+.about-line-bridge {
+    --hero-line-bounce-duration: 1.2s;
+    --hero-line-return-duration: 0.4s;
+    position: absolute;
+    left: var(--portfolio-decor-line-x);
+    width: 2px;
+    height: 0;
+    background: var(--brand);
+    pointer-events: none;
+    z-index: 0;
+    transition: none;
+    display: none;
+}
+
+.about-line-bridge--retract {
+    transition:
+        top var(--hero-line-bounce-duration) linear,
+        height var(--hero-line-bounce-duration) linear;
+}
+
+.about-line-bridge--extend {
+    transition:
+        top var(--hero-line-return-duration) ease,
+        height var(--hero-line-return-duration) ease;
+}
+
+@media (min-width: 800px) {
+    .about-line-bridge {
+        display: block;
+    }
 }
 
 .hero-location {
@@ -2520,18 +2625,21 @@ export default {
     object-fit: none;
     object-position: left bottom;
     transform: translateY(0);
-    /* Hide the bottom knot so the shaft reads as a straight line while flying in */
-    clip-path: inset(0 0 45px 0);
+    clip-path: inset(0);
     transition: transform var(--hero-line-return-duration) ease;
+}
+
+.hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
+    clip-path: inset(0 0 45px 0);
 }
 
 .portfolio-page--reveal .hero-decor-line {
     transition: transform var(--hero-line-return-duration) ease;
 }
 
-/* After entrance: lock fly-in without revealing the bottom knot */
+/* After entrance: ease into clipped knot once the bounce has been triggered */
 .portfolio-page--reveal
-    .hero-decor-line.hero-decor-line--settled:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
+    .hero-decor-line.hero-decor-line--settled.hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
     clip-path: inset(0 0 45px 0);
     transition:
         transform var(--hero-line-return-duration) ease,
@@ -2539,7 +2647,7 @@ export default {
 }
 
 /* While viewport/layout is syncing, hide the knot so it can’t flash in the CTA gap */
-.hero-decor.hero-decor--resizing .hero-decor-line:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
+.hero-decor.hero-decor--resizing .hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
     clip-path: inset(0 0 45px 0);
     transition: transform var(--hero-line-return-duration) ease;
 }
@@ -3078,6 +3186,7 @@ export default {
 
 .about {
     position: relative;
+    z-index: 0;
     width: 100%;
     --about-gap: 340px;
     --about-text-gap: 39px;
@@ -3105,6 +3214,8 @@ export default {
 }
 
 .about-inner {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: var(--about-photo-col-w) 1fr;
     gap: 0;
@@ -3130,9 +3241,13 @@ export default {
     display: block;
     width: 2px;
     height: var(--about-photo-h);
-    border-radius: 1px 1px 0 0;
+    border-radius: 0;
     background: var(--brand);
     pointer-events: none;
+}
+
+.about-line--knot-clipped {
+    border-radius: 1px 1px 0 0;
 }
 
 .about-photo {
@@ -3623,6 +3738,10 @@ export default {
     }
 
     .hero-decor {
+        display: none;
+    }
+
+    .about-line-bridge {
         display: none;
     }
 
