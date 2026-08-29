@@ -841,7 +841,8 @@ export default {
                 return
             }
 
-            if (window.matchMedia('(max-width: 799px)').matches) {
+            // Desktop (800px+): no scroll fade; mobile uses observer below.
+            if (window.matchMedia('(min-width: 800px)').matches) {
                 this.revealAllProjects()
                 return
             }
@@ -2362,7 +2363,7 @@ export default {
     opacity: 1;
 }
 
-/* Desktop: off-screen case studies fade in on scroll (same as mobile) */
+/* Mobile: off-screen case studies fade in on scroll; desktop shows all immediately */
 .portfolio-page--reveal .project.portfolio-fly.project--scroll-fade,
 .portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade {
     opacity: 0;
@@ -4108,9 +4109,9 @@ export default {
         align-items: stretch;
     }
 
-    /* Mobile: case studies stay visible — no fly-in or scroll fade */
-    .portfolio-page--reveal .project.portfolio-fly,
-    .portfolio-page--settled .portfolio-main .project.portfolio-fly {
+    /* Mobile: no fly-in; off-screen cards use scroll fade */
+    .portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade),
+    .portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade) {
         opacity: 1;
         transform: none;
         animation: none !important;
