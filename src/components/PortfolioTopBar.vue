@@ -52,6 +52,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        alwaysTransparent: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -69,7 +73,7 @@ export default {
     },
     computed: {
         isTransparent() {
-            return this.transparent && this.overHero
+            return this.transparent && (this.alwaysTransparent || this.overHero)
         },
         isInFlowMobileHome() {
             return this.$route.path === '/' && this.isMobileViewport
@@ -163,7 +167,9 @@ export default {
                 return
             }
 
-            const hero = document.querySelector('.project-hero')
+            const hero =
+                document.querySelector('.project-hero') ||
+                document.querySelector('.portfolio-page .hero')
             if (!hero) {
                 this.overHero = false
                 return

@@ -51,7 +51,7 @@
             :class="{ 'portfolio-content--logo-handoff': logoHandoff }"
             :aria-hidden="(showLoadingSplash || logoHandoff) && !pageRevealed ? 'true' : undefined"
         >
-        <PortfolioTopBar />
+        <PortfolioTopBar transparent always-transparent />
 
         <p
             class="hero-location"
