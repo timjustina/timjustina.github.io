@@ -68,7 +68,7 @@ export default {
 .footer-email,
 .footer-copy {
     font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: calc(400 * var(--font-weight-scale));
     line-height: 27px;
     color: var(--muted);
