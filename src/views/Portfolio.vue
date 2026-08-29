@@ -5,6 +5,7 @@
             'portfolio-page--reveal': pageRevealed,
             'portfolio-page--settled': pageEntranceDone,
             'portfolio-page--hero-cursor': heroCursorActive,
+            'portfolio-page--mobile-hero-fixed': pageEntranceDone && isMobileLayout,
         }"
     >
     <Teleport to="body">
@@ -485,6 +486,7 @@ export default {
             heroIntroPointerRaf: null,
             heroIntroPointer: null,
             heroIntroActivePointerId: null,
+            isMobileLayout: false,
             heroIntroTapLingerTimer: null,
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
@@ -527,6 +529,7 @@ export default {
         }
 
         this.heroIntroLetterMq = window.matchMedia('(max-width: 799px)')
+        this.isMobileLayout = this.heroIntroLetterMq.matches
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.onHeroIntroLetterMqChange = () => {
             this.onMobileHeroLayoutChange()
@@ -1126,6 +1129,7 @@ export default {
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
+            this.isMobileLayout = isMobile
             const nextLetter = !this.heroIntroReduceMq.matches
             const letterChanged = nextLetter !== this.heroIntroLetterMode
             const leavingMobile = this.heroDecorHidden && !isMobile
@@ -3555,6 +3559,29 @@ export default {
 
     .hero {
         margin-bottom: 120px;
+    }
+
+    .portfolio-page--mobile-hero-fixed .hero {
+        position: fixed;
+        top: var(--top-bar-height);
+        left: 0;
+        right: 0;
+        z-index: 0;
+        margin-bottom: 0;
+        padding: 0 var(--page-pad);
+        box-sizing: border-box;
+        background: #fff;
+    }
+
+    .portfolio-page--mobile-hero-fixed .hero-intro-wrap {
+        min-height: var(--mobile-hero-height, calc(100svh - var(--top-bar-height)));
+    }
+
+    .portfolio-page--mobile-hero-fixed .work {
+        position: relative;
+        z-index: 1;
+        padding-top: calc(var(--mobile-hero-height, calc(100svh - var(--top-bar-height))) + 120px);
+        background: #fff;
     }
 
     .about {
