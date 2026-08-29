@@ -247,7 +247,13 @@
                 'about-line-bridge--extend': bridgeSyncMode === 'extend',
             }"
             aria-hidden="true"
-        />
+        >
+            <img
+                class="about-line-bridge-img portfolio-decor-line-img"
+                :src="lineAnimationExtended"
+                alt=""
+            />
+        </span>
 
         <section
             id="about"
@@ -258,7 +264,13 @@
                 class="about-line"
                 :class="{ 'about-line--knot-clipped': heroLineKnotClipped }"
                 aria-hidden="true"
-            />
+            >
+                <img
+                    class="about-line-img portfolio-decor-line-img"
+                    :src="lineAnimationExtended"
+                    alt=""
+                />
+            </span>
             <div class="about-inner">
                 <div class="about-photo-column portfolio-fly portfolio-fly--from-left">
                     <img
@@ -2078,6 +2090,14 @@ export default {
             }
 
             const pageTop = this.$el.getBoundingClientRect().top
+            const pageLeft = this.$el.getBoundingClientRect().left
+            const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
+            const decorRect = decor.getBoundingClientRect()
+            this.$el.style.setProperty(
+                '--portfolio-decor-line-x',
+                `${Math.round(decorRect.left - pageLeft + strokeX)}px`,
+            )
+
             const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
             const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
             const bridgeOverlap = 2
@@ -2164,6 +2184,8 @@ export default {
     --hero-squiggle-width: 56px;
     /* SVG stroke is centered on x=35; match the 2px border-left left edge at x=34 */
     --hero-decor-line-stroke-x: 34px;
+    --hero-decor-line-width: 2px;
+    --hero-decor-line-natural-height: 3200px;
     --portfolio-main-inset-left: max(0px, (100vw - var(--page-max)) / 2);
     --portfolio-decor-line-x: calc(
         var(--portfolio-main-inset-left) + var(--page-pad) + var(--hero-squiggle-left) +
@@ -2532,11 +2554,11 @@ export default {
     --bridge-bottom: 0px;
     --bridge-h: 0px;
     position: absolute;
-    left: var(--portfolio-decor-line-x);
+    left: calc(var(--portfolio-decor-line-x) - var(--hero-decor-line-stroke-x));
     top: calc(var(--bridge-bottom) - var(--bridge-h));
-    width: 2px;
+    width: var(--hero-squiggle-width);
     height: var(--bridge-h);
-    background: var(--brand);
+    overflow: hidden;
     pointer-events: none;
     z-index: 2;
     clip-path: inset(0 0 0 0);
@@ -2598,8 +2620,6 @@ export default {
     --hero-decor-height: 487px;
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
-    --hero-decor-line-natural-height: 3200px;
-    --hero-decor-line-width: 2px;
     position: absolute;
     top: 7px;
     right: auto;
@@ -2628,21 +2648,41 @@ export default {
     display: contents;
 }
 
-.hero-decor-line {
+.hero-decor-line,
+.portfolio-decor-line-img {
     position: absolute;
-    bottom: 0;
     left: 0;
     display: block;
-    width: 56px;
-    min-width: 56px;
-    max-width: 56px;
+    width: var(--hero-squiggle-width);
+    min-width: var(--hero-squiggle-width);
+    max-width: var(--hero-squiggle-width);
     height: var(--hero-decor-line-natural-height);
     min-height: var(--hero-decor-line-natural-height);
     object-fit: none;
+}
+
+.hero-decor-line {
+    bottom: 0;
     object-position: left bottom;
     transform: translateY(0);
     clip-path: inset(0);
     transition: transform var(--hero-line-return-duration) ease;
+}
+
+.portfolio-decor-line-img {
+    top: 0;
+    object-position: left top;
+}
+
+.about-line {
+    position: absolute;
+    left: calc(var(--portfolio-decor-line-x) - var(--hero-decor-line-stroke-x));
+    top: calc(140px - var(--about-gap));
+    z-index: 2;
+    width: var(--hero-squiggle-width);
+    height: var(--about-photo-h);
+    overflow: hidden;
+    pointer-events: none;
 }
 
 .hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
@@ -3285,19 +3325,6 @@ export default {
     flex-direction: column;
     padding-left: var(--about-image-text-gap);
     box-sizing: border-box;
-}
-
-.about-line {
-    position: absolute;
-    left: var(--portfolio-decor-line-x);
-    top: calc(140px - var(--about-gap));
-    z-index: 2;
-    display: block;
-    width: 2px;
-    height: var(--about-photo-h);
-    border-radius: 0;
-    background: var(--brand);
-    pointer-events: none;
 }
 
 .about-line--knot-clipped {
