@@ -3091,6 +3091,7 @@ export default {
     --about-photo-col-w: calc(2 * var(--about-image-text-gap) + var(--about-photo-w));
     --about-inner-max-w: clamp(800px, calc(800px + (100vw - 997px) * 187 / 457), 987px);
     --about-top-pad: 80px;
+    --about-bio-indent: 24px;
     margin-top: var(--about-gap);
     padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     background: var(--about-bg);
@@ -3225,7 +3226,7 @@ export default {
 }
 
 .about-bio {
-    margin: 0;
+    margin: 0 0 0 var(--about-bio-indent);
     max-width: clamp(455px, calc(455px + (100vw - 997px) * 37 / 457), 492px);
     font-family: 'Fira Code', monospace;
     font-size: 16px;
@@ -3350,7 +3351,6 @@ export default {
 
     .about-bio {
         max-width: 492px;
-        margin-left: 0;
     }
 
     .about-location {
@@ -3422,7 +3422,6 @@ export default {
 
     .about-bio {
         max-width: 455px;
-        margin-left: 0;
         line-height: 25px;
     }
 }
@@ -3792,7 +3791,6 @@ export default {
     }
 
     .about-bio {
-        margin: 0;
         margin-top: 0;
         max-width: 455px;
         line-height: 25px;
