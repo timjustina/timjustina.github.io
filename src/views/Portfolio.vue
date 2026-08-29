@@ -824,7 +824,10 @@ export default {
                 return
             }
 
-            const isMobile = window.matchMedia('(max-width: 799px)').matches
+            if (window.matchMedia('(max-width: 799px)').matches) {
+                this.revealAllProjects()
+                return
+            }
 
             this.projectFadeObserver = new IntersectionObserver(
                 (entries) => {
@@ -841,11 +844,6 @@ export default {
                 }
             )
             for (const project of projects) {
-                if (isMobile) {
-                    this.projectFadeObserver.observe(project)
-                    continue
-                }
-
                 const rect = project.getBoundingClientRect()
                 const inViewport = rect.top < window.innerHeight && rect.bottom > 0
                 if (inViewport) {
@@ -3811,19 +3809,12 @@ export default {
         align-items: stretch;
     }
 
-    /* Mobile: no fly-in; quick fade when each case study scrolls into view */
+    /* Mobile: case studies stay visible — no fly-in or scroll fade */
     .portfolio-page--reveal .project.portfolio-fly,
     .portfolio-page--settled .portfolio-main .project.portfolio-fly {
-        opacity: 0;
+        opacity: 1;
         transform: none;
         animation: none !important;
-        transition: opacity 0.55s ease-out;
-        will-change: opacity;
-    }
-
-    .portfolio-page--reveal .project.portfolio-fly.project--in-view,
-    .portfolio-page--settled .portfolio-main .project.portfolio-fly.project--in-view {
-        opacity: 1;
         will-change: auto;
     }
 
