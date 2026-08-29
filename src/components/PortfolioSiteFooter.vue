@@ -58,7 +58,7 @@ export default {
     font-family: 'Fira Code', monospace;
     font-size: 24px;
     font-style: normal;
-    font-weight: calc(600 * var(--font-weight-scale));
+    font-weight: 600;
     line-height: 36px;
     letter-spacing: -0.02em;
     color: var(--brand);

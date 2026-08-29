@@ -125,8 +125,8 @@
                             </span>
                         </template>
                         <template v-else>
-                            <span class="hero-intro-lead">Tim Justina Yeung is a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
-                            She deeply enjoys understanding complex problems and providing creative solutions
+                            <span class="hero-intro-lead">I'm Tim Justina Yeung – a </span><strong class="hero-intro-em">Product Designer</strong> with a background in Neuroscience and research.
+                            I deeply enjoys understanding complex problems and providing creative solutions
                             <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
                         </template>
                     </p>
