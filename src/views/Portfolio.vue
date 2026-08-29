@@ -2023,8 +2023,7 @@ export default {
             const offset =
                 parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-bottom-offset')) || 0
 
-            const introAnchor = heroIntro.querySelector('.hero-intro-em') ?? heroIntro
-            const introTop = introAnchor.getBoundingClientRect().top
+            const introTop = heroIntro.getBoundingClientRect().top
             const wrapTop = wrap.getBoundingClientRect().top
             const topOffset =
                 parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-top-offset')) || 0
