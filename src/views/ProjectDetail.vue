@@ -85,6 +85,8 @@ export default {
   font-family: 'Work Sans', sans-serif;
   font-size: 22px;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .main {
