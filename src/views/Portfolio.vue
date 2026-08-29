@@ -401,6 +401,8 @@ function parseCssPx(styles, prop, fallback) {
     return Number.isFinite(n) ? n : fallback
 }
 
+const PROJECT_CAPTION_LINE_GAP = 30
+
 const HERO_INTRO_PARTS = [
     { text: "I'm Tim Justina, a ", em: false },
     { text: 'Product Designer', em: true, keep: true },
@@ -520,6 +522,7 @@ export default {
             heroIntroTouchGuardActive: false,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
+            captionLineOffsetScrollTicking: false,
         }
     },
     computed: {
@@ -631,6 +634,7 @@ export default {
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
         window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
         window.addEventListener('scroll', this.onHeroLocationScroll, { passive: true })
+        window.addEventListener('scroll', this.onCaptionLineOffsetScroll, { passive: true })
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
             this.syncAboutBallPosition()
@@ -710,6 +714,7 @@ export default {
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         window.removeEventListener('scroll', this.onHeroLocationScroll)
+        window.removeEventListener('scroll', this.onCaptionLineOffsetScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -2051,10 +2056,19 @@ export default {
             const decor = this.$el?.querySelector('.hero-decor')
             const heroIntro = this.$el?.querySelector('.hero-intro')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
-            if (!decor || !heroIntro || !workLastAnchor) return
+            if (!decor || !heroIntro || !workLastAnchor) {
+                this.syncProjectCaptionLineOffset()
+                return
+            }
 
-            if (window.getComputedStyle(decor).display === 'none') return
-            if (!window.matchMedia('(min-width: 800px)').matches) return
+            if (window.getComputedStyle(decor).display === 'none') {
+                this.syncProjectCaptionLineOffset()
+                return
+            }
+            if (!window.matchMedia('(min-width: 800px)').matches) {
+                this.syncProjectCaptionLineOffset()
+                return
+            }
 
             const wrap = decor.parentElement
             const imageTop = workLastAnchor.getBoundingClientRect().top
@@ -2082,69 +2096,157 @@ export default {
             const aboutLine = this.$el?.querySelector('.about-line')
             const decor = this.$el?.querySelector('.hero-decor')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
-            if (!bridge || !about || !decor || !workLastAnchor) return
-            if (window.getComputedStyle(decor).display === 'none') return
-            if (!window.matchMedia('(min-width: 800px)').matches) {
-                bridge.style.height = '0px'
-                return
-            }
 
-            const pageTop = this.$el.getBoundingClientRect().top
-            const pageLeft = this.$el.getBoundingClientRect().left
-            const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
-            const decorRect = decor.getBoundingClientRect()
-            this.$el.style.setProperty(
-                '--portfolio-decor-line-x',
-                `${Math.round(decorRect.left - pageLeft + strokeX)}px`,
-            )
-
-            const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
-            const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
-            const bridgeOverlap = 2
-            const bridgeTop = Math.floor(workLastBottom - pageTop)
-            const bridgeBottom = Math.ceil(aboutLineTop) + bridgeOverlap
-            const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
-
-            bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
-
-            if (this.heroLineKnotClipped) {
-                if (
-                    this.bridgeSyncMode === 'retract'
-                    && this.aboutLineBridgeSynced
-                    && !prefersReducedMotion()
-                ) {
-                    bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
-                    bridge.style.clipPath = 'inset(0 0 0 0)'
-                    void bridge.offsetWidth
+            try {
+                if (!bridge || !about || !decor || !workLastAnchor) return
+                if (window.getComputedStyle(decor).display === 'none') return
+                if (!window.matchMedia('(min-width: 800px)').matches) {
+                    bridge.style.height = '0px'
                     return
                 }
 
-                bridge.style.setProperty('--bridge-h', '0px')
-                bridge.style.clipPath = ''
+                const pageTop = this.$el.getBoundingClientRect().top
+                const pageLeft = this.$el.getBoundingClientRect().left
+                const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
+                const decorRect = decor.getBoundingClientRect()
+                this.$el.style.setProperty(
+                    '--portfolio-decor-line-x',
+                    `${Math.round(decorRect.left - pageLeft + strokeX)}px`,
+                )
+
+                const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
+                const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
+                const bridgeOverlap = 2
+                const bridgeTop = Math.floor(workLastBottom - pageTop)
+                const bridgeBottom = Math.ceil(aboutLineTop) + bridgeOverlap
+                const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
+
+                bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
+
+                if (this.heroLineKnotClipped) {
+                    if (
+                        this.bridgeSyncMode === 'retract'
+                        && this.aboutLineBridgeSynced
+                        && !prefersReducedMotion()
+                    ) {
+                        bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+                        bridge.style.clipPath = 'inset(0 0 0 0)'
+                        void bridge.offsetWidth
+                        return
+                    }
+
+                    bridge.style.setProperty('--bridge-h', '0px')
+                    bridge.style.clipPath = ''
+                    if (!this.aboutLineBridgeSynced) {
+                        void bridge.offsetWidth
+                        this.aboutLineBridgeSynced = true
+                    }
+                    return
+                }
+
+                bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+
+                if (
+                    this.bridgeSyncMode === 'extend'
+                    && this.aboutLineBridgeSynced
+                    && !prefersReducedMotion()
+                ) {
+                    bridge.style.clipPath = 'inset(100% 0 0 0)'
+                    void bridge.offsetWidth
+                    bridge.style.clipPath = 'inset(0 0 0 0)'
+                    return
+                }
+
+                bridge.style.clipPath = 'inset(0 0 0 0)'
                 if (!this.aboutLineBridgeSynced) {
                     void bridge.offsetWidth
                     this.aboutLineBridgeSynced = true
                 }
+            } finally {
+                this.syncProjectCaptionLineOffset()
+            }
+        },
+        onCaptionLineOffsetScroll() {
+            if (this.captionLineOffsetScrollTicking) return
+            this.captionLineOffsetScrollTicking = true
+            requestAnimationFrame(() => {
+                this.captionLineOffsetScrollTicking = false
+                this.syncProjectCaptionLineOffset()
+            })
+        },
+        syncProjectCaptionLineOffset() {
+            const root = this.$el
+            if (!root) return
+
+            const captions = root.querySelectorAll('.work .project-caption')
+            if (!captions.length) return
+
+            if (!window.matchMedia('(min-width: 800px)').matches) {
+                for (const caption of captions) {
+                    caption.style.removeProperty('--project-caption-line-offset')
+                }
                 return
             }
 
-            bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+            const pageStyles = getComputedStyle(root)
+            const strokeX = parseCssPx(pageStyles, '--hero-decor-line-stroke-x', 34)
+            const lineWidth = parseCssPx(pageStyles, '--hero-decor-line-width', 2)
+            const segments = []
 
-            if (
-                this.bridgeSyncMode === 'extend'
-                && this.aboutLineBridgeSynced
-                && !prefersReducedMotion()
-            ) {
-                bridge.style.clipPath = 'inset(100% 0 0 0)'
-                void bridge.offsetWidth
-                bridge.style.clipPath = 'inset(0 0 0 0)'
-                return
+            const decor = root.querySelector('.hero-decor')
+            if (decor && getComputedStyle(decor).display !== 'none' && !this.heroDecorHidden) {
+                const decorRect = decor.getBoundingClientRect()
+                if (decorRect.height > 0) {
+                    segments.push({
+                        top: decorRect.top,
+                        bottom: decorRect.bottom,
+                        lineLeft: decorRect.left + strokeX,
+                        lineRight: decorRect.left + strokeX + lineWidth,
+                    })
+                }
             }
 
-            bridge.style.clipPath = 'inset(0 0 0 0)'
-            if (!this.aboutLineBridgeSynced) {
-                void bridge.offsetWidth
-                this.aboutLineBridgeSynced = true
+            if (!this.heroLineKnotClipped) {
+                const bridge = root.querySelector('.about-line-bridge')
+                if (bridge && getComputedStyle(bridge).display !== 'none') {
+                    const bridgeHeight =
+                        parseFloat(getComputedStyle(bridge).getPropertyValue('--bridge-h')) || 0
+                    if (bridgeHeight > 0) {
+                        const bridgeRect = bridge.getBoundingClientRect()
+                        if (bridgeRect.height > 0) {
+                            segments.push({
+                                top: bridgeRect.top,
+                                bottom: bridgeRect.bottom,
+                                lineLeft: bridgeRect.left + strokeX,
+                                lineRight: bridgeRect.left + strokeX + lineWidth,
+                            })
+                        }
+                    }
+                }
+            }
+
+            for (const caption of captions) {
+                const capRect = caption.getBoundingClientRect()
+                let offset = 0
+
+                for (const segment of segments) {
+                    if (segment.bottom <= capRect.top || segment.top >= capRect.bottom) continue
+                    if (segment.lineLeft >= capRect.right) continue
+
+                    const clearance = capRect.left - segment.lineRight
+                    if (clearance >= PROJECT_CAPTION_LINE_GAP) continue
+
+                    offset = Math.max(
+                        offset,
+                        Math.ceil(segment.lineRight + PROJECT_CAPTION_LINE_GAP - capRect.left),
+                    )
+                }
+
+                if (offset > 0) {
+                    caption.style.setProperty('--project-caption-line-offset', `${offset}px`)
+                } else {
+                    caption.style.removeProperty('--project-caption-line-offset')
+                }
             }
         },
     },
@@ -3200,6 +3302,13 @@ export default {
 .project-caption {
     position: relative;
     margin-top: 30px;
+}
+
+@media (min-width: 800px) {
+    .project-caption {
+        padding-left: var(--project-caption-line-offset, 0px);
+        transition: padding-left 0.4s ease;
+    }
 }
 
 .project-caption-header {
