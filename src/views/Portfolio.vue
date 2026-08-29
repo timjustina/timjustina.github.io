@@ -3522,7 +3522,7 @@ export default {
     }
 }
 
-@media (min-width: 800px) and (min-height: 901px) {
+@media (min-width: 800px) and (min-height: 800px) {
     .hero-intro-wrap {
         transform: translateY(-2vh);
     }
