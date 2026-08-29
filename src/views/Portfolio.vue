@@ -244,7 +244,7 @@
             class="about"
             :class="{ 'about--reveal': aboutRevealed, 'about--settled': aboutEntranceDone }"
         >
-            <span class="about-line portfolio-fly portfolio-fly--from-right" aria-hidden="true" />
+            <span class="about-line" aria-hidden="true" />
             <div class="about-inner">
                 <div class="about-photo-column portfolio-fly portfolio-fly--from-left">
                     <img
@@ -2286,10 +2286,6 @@ export default {
 
 .about-heading.portfolio-fly--from-left {
     --fly-distance: min(56vw, 480px);
-}
-
-.about--reveal .about-line.portfolio-fly--from-right {
-    animation: portfolio-fly-from-right 0.95s var(--fly-ease) -0.12s both;
 }
 
 .about--reveal .about-heading.portfolio-fly--from-left {
