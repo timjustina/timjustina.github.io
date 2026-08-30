@@ -410,6 +410,7 @@ const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
 const HERO_CURSOR_MAGNIFY_BOOST = 0.2
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
+const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
     'a[href]',
     'button:not(:disabled)',
@@ -1676,6 +1677,116 @@ export default {
 
             return false
         },
+        getHeroCursorHoverTargetElement(x, y) {
+            if (typeof document === 'undefined') return null
+
+            const stack =
+                document.elementsFromPoint?.(x, y) ??
+                [document.elementFromPoint(x, y)].filter(Boolean)
+
+            for (const el of stack) {
+                if (!(el instanceof Element)) continue
+                if (el.closest('.hero-intro-cursor-ball, .hero-intro-cursor-magnifier')) continue
+
+                const target = el.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)
+                if (target) return target
+
+                if (getComputedStyle(el).cursor === 'pointer') return el
+            }
+
+            return null
+        },
+        getMirrorNodeForLive(liveEl, cloneRoot, sourceRoot) {
+            if (!(liveEl instanceof Element) || !cloneRoot || !sourceRoot) return null
+
+            const path = []
+            let node = liveEl
+            while (node && node !== sourceRoot) {
+                const parent = node.parentElement
+                if (!parent) return null
+                path.unshift(Array.prototype.indexOf.call(parent.children, node))
+                node = parent
+            }
+            if (node !== sourceRoot) return null
+
+            let mirror = cloneRoot
+            for (const index of path) {
+                mirror = mirror.children[index]
+                if (!mirror) break
+            }
+            if (mirror instanceof Element) return mirror
+
+            return this.findMirrorNodeFallback(liveEl, cloneRoot, sourceRoot)
+        },
+        findMirrorNodeFallback(liveEl, cloneRoot, sourceRoot) {
+            if (!(liveEl instanceof Element) || !cloneRoot || !sourceRoot) return null
+
+            if (liveEl.id) {
+                const byId = cloneRoot.querySelector(`#${CSS.escape(liveEl.id)}`)
+                if (byId instanceof Element) return byId
+            }
+
+            if (liveEl instanceof HTMLAnchorElement) {
+                const href = liveEl.getAttribute('href')
+                if (href) {
+                    const matches = [...cloneRoot.querySelectorAll(`a[href="${CSS.escape(href)}"]`)]
+                    if (matches.length === 1) return matches[0]
+                    const label = liveEl.textContent?.trim()
+                    if (label) {
+                        const labeled = matches.find((node) => node.textContent?.trim() === label)
+                        if (labeled) return labeled
+                    }
+                }
+            }
+
+            const tag = liveEl.tagName.toLowerCase()
+            const classSelector = [...liveEl.classList]
+                .map((className) => `.${CSS.escape(className)}`)
+                .join('')
+            const candidates = cloneRoot.querySelectorAll(`${tag}${classSelector}`)
+            for (const candidate of candidates) {
+                if (
+                    Math.abs(candidate.offsetTop - liveEl.offsetTop) <= 1 &&
+                    Math.abs(candidate.offsetLeft - liveEl.offsetLeft) <= 1
+                ) {
+                    return candidate
+                }
+            }
+
+            return null
+        },
+        clearHeroCursorMirrorHoverState() {
+            const clone = this.heroCursorMirrorClone
+            if (!clone) return
+
+            clone.querySelectorAll('.hero-cursor-mirror-hover').forEach((el) => {
+                el.classList.remove('hero-cursor-mirror-hover')
+            })
+        },
+        syncHeroCursorMirrorHoverState(x, y) {
+            const clone = this.heroCursorMirrorClone
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            if (!clone || !source) {
+                this.clearHeroCursorMirrorHoverState()
+                return
+            }
+
+            this.clearHeroCursorMirrorHoverState()
+
+            const liveTarget = this.getHeroCursorHoverTargetElement(x, y)
+            if (!liveTarget) return
+
+            const liveNodes = [liveTarget]
+            for (const selector of HERO_CURSOR_MIRROR_HOVER_ANCESTORS) {
+                const ancestor = liveTarget.closest(selector)
+                if (ancestor) liveNodes.push(ancestor)
+            }
+
+            for (const liveNode of liveNodes) {
+                const mirrorNode = this.getMirrorNodeForLive(liveNode, clone, source)
+                mirrorNode?.classList.add('hero-cursor-mirror-hover')
+            }
+        },
         updateHeroFinePointer(x, y) {
             const inRange = this.isHeroIntroPointerNear(x, y)
             const wasActive = this.heroCursorActive
@@ -1763,6 +1874,7 @@ export default {
             const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
             if (!root || !source) return
 
+            this.clearHeroCursorMirrorHoverState()
             root.innerHTML = ''
             const clone = source.cloneNode(true)
             clone.setAttribute('aria-hidden', 'true')
@@ -1808,6 +1920,7 @@ export default {
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
             if (hoverMix <= 0.02 || !this.heroCursorMirrorClone) {
                 this.heroCursorMagnifierLayout = null
+                this.clearHeroCursorMirrorHoverState()
                 return
             }
 
@@ -1819,6 +1932,10 @@ export default {
             const half = size / 2
 
             this.syncHeroCursorMirrorClone()
+            this.syncHeroCursorMirrorHoverState(
+                this.heroCursorPos.x,
+                this.heroCursorPos.y
+            )
 
             this.heroCursorMagnifierLayout = {
                 windowLeft: x - half,
@@ -1832,6 +1949,7 @@ export default {
             }
         },
         destroyHeroCursorMirror() {
+            this.clearHeroCursorMirrorHoverState()
             const root = this.$refs.heroCursorMirrorRoot
             if (root) root.innerHTML = ''
             this.heroCursorMirrorClone = null
@@ -4655,6 +4773,39 @@ export default {
 </style>
 
 <style>
+/* Magnifier clone: mirror interactive hover styles (clone cannot use :hover). */
+.hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover,
+.hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-hover {
+    background: var(--brand-hover) !important;
+}
+
+.hero-intro-cursor-mirror-clone .footer-email.hero-cursor-mirror-hover {
+    color: var(--brand) !important;
+}
+
+.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-title-link {
+    color: var(--brand) !important;
+}
+
+.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-image-link .project-image,
+.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-image-wrap {
+    border-radius: 700px 700px 20px 20px;
+}
+
+.hero-intro-cursor-mirror-clone .project--upcoming.hero-cursor-mirror-hover .project-upcoming-overlay {
+    opacity: 1;
+}
+
+.hero-intro-cursor-mirror-clone .nav-link--stacked.hero-cursor-mirror-hover {
+    height: 38px;
+    overflow: visible;
+}
+
+.hero-intro-cursor-mirror-clone .nav-link--stacked.hero-cursor-mirror-hover .nav-indicator {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+}
+
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */
 @media (max-width: 600px) {
     .about-ball.about-ball--dropped {
