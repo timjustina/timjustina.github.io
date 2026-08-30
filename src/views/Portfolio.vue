@@ -9,20 +9,16 @@
     >
     <Teleport to="body">
         <span
-            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive && heroCursorInRange"
-            class="hero-intro-cursor-ball hero-intro-cursor-ball--in-range hero-intro-cursor-ball--visible"
-            :style="heroCursorBallStyle"
-            aria-hidden="true"
-        />
-        <span
-            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive && !heroCursorInRange"
+            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
             class="hero-intro-cursor-ball hero-intro-cursor-ball--glass hero-intro-cursor-ball--visible"
+            :class="{ 'hero-intro-cursor-ball--in-range': heroCursorInRange }"
             :style="heroCursorGlassStyle"
             aria-hidden="true"
         />
         <span
-            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive && !heroCursorInRange"
+            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
             class="hero-intro-cursor-ball hero-intro-cursor-ball--dot hero-intro-cursor-ball--visible"
+            :class="{ 'hero-intro-cursor-ball--in-range': heroCursorInRange }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
         />
@@ -1550,17 +1546,18 @@ export default {
         updateHeroFinePointer(x, y) {
             const inRange = this.isHeroIntroPointerNear(x, y)
             const wasActive = this.heroCursorActive
-            const wasInRange = this.heroCursorInRange
+
             this.heroCursorPos = { x, y }
             this.heroCursorActive = true
             this.heroCursorInRange = inRange
 
-            if (!wasActive || wasInRange !== inRange) {
+            if (!wasActive) {
                 this.heroCursorGlassPos = { x, y }
             }
 
+            this.startHeroCursorGlassFollow()
+
             if (inRange) {
-                this.stopHeroCursorGlassFollow()
                 this.heroIntroPointer = { x, y }
                 if (this.heroIntroPointerRaf != null) return
                 this.heroIntroPointerRaf = requestAnimationFrame(() => {
@@ -1569,8 +1566,6 @@ export default {
                 })
                 return
             }
-
-            this.startHeroCursorGlassFollow()
 
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -1584,14 +1579,18 @@ export default {
 
             const tick = () => {
                 this.heroCursorGlassRaf = null
-                if (!this.heroCursorActive || this.heroCursorInRange) return
+                if (!this.heroCursorActive) return
 
                 const { x: tx, y: ty } = this.heroCursorPos
                 const { x: gx, y: gy } = this.heroCursorGlassPos
-                const follow = 0.13
-                this.heroCursorGlassPos = {
-                    x: gx + (tx - gx) * follow,
-                    y: gy + (ty - gy) * follow,
+                const follow = this.heroCursorInRange ? 0.34 : 0.13
+                const nx = gx + (tx - gx) * follow
+                const ny = gy + (ty - gy) * follow
+
+                if (this.heroCursorInRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
+                    this.heroCursorGlassPos = { x: tx, y: ty }
+                } else {
+                    this.heroCursorGlassPos = { x: nx, y: ny }
                 }
 
                 this.heroCursorGlassRaf = requestAnimationFrame(tick)
@@ -2547,6 +2546,24 @@ export default {
     -webkit-backdrop-filter: blur(4px) saturate(1.35);
     backdrop-filter: blur(4px) saturate(1.35);
     z-index: 110;
+    transition:
+        width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        margin 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.28s ease;
+}
+
+.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range {
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 4px rgba(0, 10, 170, 0.11),
+        0 0 8px rgba(0, 10, 170, 0.065),
+        0 0 13px rgba(0, 10, 170, 0.032),
+        0 0 18px rgba(0, 10, 170, 0.016);
 }
 
 .hero-intro-cursor-ball--dot {
@@ -2555,35 +2572,11 @@ export default {
     margin: -4px 0 0 -4px;
     background: #000aaa;
     z-index: 111;
+    transition: opacity 0.24s ease;
 }
 
-.hero-intro-cursor-ball--in-range {
-    width: 28px;
-    height: 28px;
-    margin: -14px 0 0 -14px;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.72) 0%,
-        rgba(255, 255, 255, 0.28) 45%,
-        rgba(255, 255, 255, 0.42) 100%
-    );
-    border: 0.5px solid rgba(255, 255, 255, 0.85);
-    box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, 0.9),
-        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
-        0 0 4px rgba(0, 10, 170, 0.11),
-        0 0 8px rgba(0, 10, 170, 0.065),
-        0 0 13px rgba(0, 10, 170, 0.032),
-        0 0 18px rgba(0, 10, 170, 0.016);
-    -webkit-backdrop-filter: blur(4px) saturate(1.35);
-    backdrop-filter: blur(4px) saturate(1.35);
-    z-index: 110;
-    transition:
-        width 0.22s ease,
-        height 0.22s ease,
-        margin 0.22s ease,
-        opacity 0.12s ease,
-        visibility 0.12s ease;
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--in-range {
+    opacity: 0;
 }
 
 .hero-intro-cursor-ball--visible {
