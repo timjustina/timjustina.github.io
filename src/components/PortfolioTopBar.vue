@@ -17,19 +17,17 @@
                     <nav ref="nav" class="nav" :class="{ 'nav--hidden': !showNav }">
                         <router-link
                             :to="{ path: '/', hash: '#work-first' }"
-                            class="nav-link nav-link--stacked nav-link--work"
+                            class="nav-link nav-link--work"
                             @click="onWorkClick"
                         >
                             <span class="nav-link-text"><span ref="workW" class="nav-link-w">W</span>ork</span>
-                            <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
                         </router-link>
                         <router-link
                             :to="{ path: '/', hash: '#about' }"
-                            class="nav-link nav-link--stacked nav-link--about"
+                            class="nav-link nav-link--about"
                             @click="onAboutClick"
                         >
                             <span class="nav-link-text">About</span>
-                            <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
                         </router-link>
                     </nav>
                 </div>
@@ -40,7 +38,6 @@
 
 <script>
 import logo from '../assets/TjyCutoutLogo.svg'
-import menuHover from '../assets/menu_hover.svg'
 import { MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
@@ -67,7 +64,6 @@ export default {
     data() {
         return {
             logo,
-            menuHover,
             navAlignObserver: null,
             decorLineSynced: false,
             navWorkWReady: false,
@@ -252,6 +248,7 @@ export default {
 .portfolio-top-bar {
     --brand: #000aaa;
     --brand-active: #000444;
+    --brand-hover: #1a2bff;
     --font-weight-scale: 0.95;
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
@@ -363,48 +360,11 @@ export default {
     color: var(--brand-active);
 }
 
-.nav-link--stacked {
-    position: relative;
-    display: block;
-    height: 30px;
-    padding: 0;
-    overflow: hidden;
-    transform-origin: bottom center;
-    transition: height 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.nav-link--stacked:hover,
-.nav-link--stacked:focus-visible {
-    height: 38px;
-    overflow: visible;
-}
-
-.nav-link--stacked > span:first-child,
-.nav-link--stacked > .nav-link-text {
-    display: block;
-    height: 30px;
-    line-height: 30px;
-}
-
-.nav-indicator {
-    position: absolute;
-    top: 28px;
-    left: 50%;
-    display: block;
-    width: 16px;
-    height: 8px;
-    opacity: 0;
-    transform: translateX(-50%) scaleY(0);
-    transform-origin: top center;
-    transition:
-        opacity 0.22s ease,
-        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.nav-link--stacked:hover .nav-indicator,
-.nav-link--stacked:focus-visible .nav-indicator {
-    opacity: 1;
-    transform: translateX(-50%) scaleY(1);
+@media (hover: hover) and (pointer: fine) {
+    .nav-link:hover,
+    .nav-link:focus-visible {
+        color: var(--brand-hover);
+    }
 }
 
 @media (max-width: 799px) {
@@ -444,10 +404,5 @@ export default {
         line-height: 30px;
     }
 
-    .nav-link--stacked > span:first-child,
-    .nav-link--stacked > .nav-link-text {
-        height: 30px;
-        line-height: 30px;
-    }
 }
 </style>

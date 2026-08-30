@@ -4804,14 +4804,8 @@ export default {
     opacity: 1;
 }
 
-.hero-intro-cursor-mirror-clone .nav-link--stacked.hero-cursor-mirror-hover {
-    height: 38px;
-    overflow: visible;
-}
-
-.hero-intro-cursor-mirror-clone .nav-link--stacked.hero-cursor-mirror-hover .nav-indicator {
-    opacity: 1;
-    transform: translateX(-50%) scaleY(1);
+.hero-intro-cursor-mirror-clone .nav-link.hero-cursor-mirror-hover {
+    color: var(--brand-hover);
 }
 
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */

@@ -1,0 +1,68 @@
+/*
+ * Backup: Work / About nav hover styles (pre light-blue color-only update)
+ * Source: PortfolioTopBar.vue — restore these blocks to revert.
+ *
+ * Template (nav-indicator under each link):
+ *
+ *   <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
+ *
+ * Script import:
+ *
+ *   import menuHover from '../assets/menu_hover.svg'
+ *   menuHover,  // in data()
+ */
+
+.nav-link--stacked {
+    position: relative;
+    display: block;
+    height: 30px;
+    padding: 0;
+    overflow: hidden;
+    transform-origin: bottom center;
+    transition: height 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-link--stacked:hover,
+.nav-link--stacked:focus-visible {
+    height: 38px;
+    overflow: visible;
+}
+
+.nav-link--stacked > span:first-child,
+.nav-link--stacked > .nav-link-text {
+    display: block;
+    height: 30px;
+    line-height: 30px;
+}
+
+.nav-indicator {
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    display: block;
+    width: 16px;
+    height: 8px;
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0);
+    transform-origin: top center;
+    transition:
+        opacity 0.22s ease,
+        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-link--stacked:hover .nav-indicator,
+.nav-link--stacked:focus-visible .nav-indicator {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+}
+
+/* Portfolio.vue — hero cursor mirror clone (unscoped block near end of file) */
+.hero-intro-cursor-mirror-clone .nav-link--stacked.hero-cursor-mirror-hover {
+    height: 38px;
+    overflow: visible;
+}
+
+.hero-intro-cursor-mirror-clone .nav-link--stacked.hero-cursor-mirror-hover .nav-indicator {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+}
