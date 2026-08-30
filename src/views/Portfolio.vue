@@ -446,6 +446,17 @@ function heroCursorHoverMorph(hoverMix) {
     return { hollow: 1, expand: 1 - (1 - t) * (1 - t) }
 }
 
+function heroCursorDistanceToRect(x, y, rect) {
+    const cx = Math.max(rect.left, Math.min(x, rect.right))
+    const cy = Math.max(rect.top, Math.min(y, rect.bottom))
+    return Math.hypot(x - cx, y - cy)
+}
+
+function heroCursorRangeSmoothstep(t) {
+    const x = Math.max(0, Math.min(1, t))
+    return x * x * (3 - 2 * x)
+}
+
 function heroCursorRangeBounceOut(t) {
     const n1 = 7.5625
     const d1 = 2.75
@@ -1655,6 +1666,25 @@ export default {
 
             return normalPad
         },
+        getHeroIntroRangeProximityMix(x, y) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return 0
+
+            const introStyles = getComputedStyle(intro)
+            const outerPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-default', 80)
+            const innerPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-tight', 4)
+            const distance = heroCursorDistanceToRect(
+                x,
+                y,
+                intro.getBoundingClientRect()
+            )
+
+            if (distance >= outerPad) return 0
+            if (distance <= innerPad) return 1
+
+            const linear = (outerPad - distance) / (outerPad - innerPad)
+            return heroCursorRangeSmoothstep(linear)
+        },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
@@ -1953,9 +1983,10 @@ export default {
                 if (!this.heroCursorActive) return
 
                 const { x: tx, y: ty } = this.heroCursorPos
-                const rangeTarget = this.heroCursorInRange ? 1 : 0
+                const proximityTarget = this.getHeroIntroRangeProximityMix(tx, ty)
+                const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.17
                 this.heroCursorRangeMix +=
-                    (rangeTarget - this.heroCursorRangeMix) * (rangeTarget ? 0.2 : 0.16)
+                    (proximityTarget - this.heroCursorRangeMix) * rangeLerp
 
                 const hoverTarget =
                     !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
