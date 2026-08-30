@@ -409,6 +409,7 @@ const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
 const HERO_CURSOR_MAGNIFY_BOOST = 0.2
+const HERO_CURSOR_HOVER_LOCK_PAD = 8
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
@@ -572,6 +573,7 @@ export default {
             heroCursorMagnifierLayout: null,
             heroCursorMirrorClone: null,
             heroCursorMirrorHoverTarget: 0,
+            heroCursorHoverLockEl: null,
         }
     },
     computed: {
@@ -1659,26 +1661,25 @@ export default {
             }
         },
         isHeroCursorOverHoverTarget(x, y) {
-            if (typeof document === 'undefined') return false
-
-            const stack =
-                document.elementsFromPoint?.(x, y) ??
-                [document.elementFromPoint(x, y)].filter(Boolean)
-
-            for (const el of stack) {
-                if (!(el instanceof Element)) continue
-                if (el.closest('.hero-intro-cursor-ball')) continue
-
-                if (el.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)) return true
-
-                const cursor = getComputedStyle(el).cursor
-                if (cursor === 'pointer') return true
-            }
-
-            return false
+            return this.getHeroCursorHoverTargetElement(x, y) != null
         },
         getHeroCursorHoverTargetElement(x, y) {
             if (typeof document === 'undefined') return null
+
+            const lock = this.heroCursorHoverLockEl
+            if (lock?.isConnected) {
+                const rect = lock.getBoundingClientRect()
+                const pad = HERO_CURSOR_HOVER_LOCK_PAD
+                if (
+                    x >= rect.left - pad &&
+                    x <= rect.right + pad &&
+                    y >= rect.top - pad &&
+                    y <= rect.bottom + pad
+                ) {
+                    return lock
+                }
+                this.heroCursorHoverLockEl = null
+            }
 
             const stack =
                 document.elementsFromPoint?.(x, y) ??
@@ -1689,9 +1690,15 @@ export default {
                 if (el.closest('.hero-intro-cursor-ball, .hero-intro-cursor-magnifier')) continue
 
                 const target = el.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)
-                if (target) return target
+                if (target) {
+                    this.heroCursorHoverLockEl = target
+                    return target
+                }
 
-                if (getComputedStyle(el).cursor === 'pointer') return el
+                if (getComputedStyle(el).cursor === 'pointer') {
+                    this.heroCursorHoverLockEl = el
+                    return el
+                }
             }
 
             return null
@@ -1925,7 +1932,7 @@ export default {
             }
 
             const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * hoverMix
-            const { x, y } = this.heroCursorGlassPos
+            const { x, y } = this.heroCursorPos
             const outSize = 46 + 18 * hoverMix
             const inSize = 32
             const size = outSize * (1 - rangeMix) + inSize * rangeMix
@@ -2035,6 +2042,7 @@ export default {
             this.heroCursorRangeMix = 0
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
             this.stopHeroCursorGlassFollow()
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
