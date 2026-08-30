@@ -21,7 +21,10 @@
         <span
             v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
             class="hero-intro-cursor-ball hero-intro-cursor-ball--glass hero-intro-cursor-ball--visible"
-            :class="{ 'hero-intro-cursor-ball--in-range': heroCursorInRange }"
+            :class="{
+                'hero-intro-cursor-ball--in-range': heroCursorInRange,
+                'hero-intro-cursor-ball--in-range-tight': heroCursorRangeTight,
+            }"
             :style="heroCursorGlassStyle"
             aria-hidden="true"
         />
@@ -664,6 +667,7 @@ export default {
             heroIntroTouchGuardActive: false,
             heroCursorActive: false,
             heroCursorInRange: false,
+            heroCursorRangeTight: false,
             heroCursorRangeMix: 0,
             heroCursorHoverMix: 0,
             heroCursorOverHover: false,
@@ -1685,6 +1689,19 @@ export default {
             const linear = (outerPad - distance) / (outerPad - innerPad)
             return heroCursorRangeSmoothstep(linear)
         },
+        isHeroIntroPointerTight(x, y) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return false
+
+            const introStyles = getComputedStyle(intro)
+            const innerPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-tight', 4)
+            const distance = heroCursorDistanceToRect(
+                x,
+                y,
+                intro.getBoundingClientRect()
+            )
+            return distance <= innerPad
+        },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
@@ -1947,6 +1964,7 @@ export default {
             this.heroCursorPos = { x, y }
             this.heroCursorActive = true
             this.heroCursorInRange = inRange
+            this.heroCursorRangeTight = inRange && this.isHeroIntroPointerTight(x, y)
             this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
             const magnifierVisible =
                 !inRange &&
@@ -2014,6 +2032,8 @@ export default {
                 this.heroCursorOverHover = hoverTarget === 1
                 const hoverLerp = this.heroCursorInRange ? 0.3 : 0.16
                 this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
+                this.heroCursorRangeTight =
+                    this.heroCursorInRange && this.isHeroIntroPointerTight(tx, ty)
 
                 if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
                     this.refreshHeroCursorMirror()
@@ -2194,6 +2214,7 @@ export default {
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
             this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
             this.heroCursorRangeMix = 0
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
@@ -3131,6 +3152,20 @@ export default {
         0 0 23px rgba(0, 10, 170, 0.032),
         0 0 32px rgba(0, 10, 170, 0.018),
         0 0 44px rgba(0, 10, 170, 0.008);
+}
+
+.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range.hero-intro-cursor-ball--in-range-tight {
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 3px rgba(0, 10, 170, 0.35),
+        0 0 6px rgba(0, 10, 170, 0.26),
+        0 0 10px rgba(0, 10, 170, 0.19),
+        0 0 16px rgba(0, 10, 170, 0.13),
+        0 0 24px rgba(0, 10, 170, 0.085),
+        0 0 34px rgba(0, 10, 170, 0.055),
+        0 0 48px rgba(0, 10, 170, 0.032),
+        0 0 64px rgba(0, 10, 170, 0.016);
 }
 
 .hero-intro-cursor-ball--dot {
