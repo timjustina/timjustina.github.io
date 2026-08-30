@@ -2227,7 +2227,7 @@ export default {
     --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
-    --top-bar-nav-height: 27px;
+    --top-bar-nav-height: 30px;
     --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
     --top-bar-logo-inset: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --hero-logo-gap: 150px;

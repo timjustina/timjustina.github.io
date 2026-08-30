@@ -22,7 +22,7 @@ export default {
     --muted: #757575;
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
-    --top-bar-nav-height: 27px;
+    --top-bar-nav-height: 30px;
     --top-bar-edge-pad-left: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
     --footer-edge-pad-vertical: var(--top-bar-edge-pad-left);

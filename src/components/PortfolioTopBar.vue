@@ -241,7 +241,7 @@ export default {
     --font-weight-scale: 0.95;
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
-    --top-bar-nav-height: 27px;
+    --top-bar-nav-height: 30px;
     /* Left matches logo→top; right matches nav text→top */
     --top-bar-edge-pad-left: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
@@ -319,7 +319,7 @@ export default {
     display: flex;
     align-items: center;
     gap: 40px;
-    height: 27px;
+    height: 30px;
     transition: gap 0.22s ease;
 }
 
@@ -329,9 +329,9 @@ export default {
 
 .nav-link {
     font-family: 'Work Sans', sans-serif;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 500;
-    line-height: 27px;
+    line-height: 30px;
     color: var(--brand);
     text-decoration: none;
 }
@@ -343,7 +343,7 @@ export default {
 .nav-link--stacked {
     position: relative;
     display: block;
-    height: 27px;
+    height: 30px;
     padding: 0;
     overflow: hidden;
     transform-origin: bottom center;
@@ -352,19 +352,19 @@ export default {
 
 .nav-link--stacked:hover,
 .nav-link--stacked:focus-visible {
-    height: 35px;
+    height: 38px;
     overflow: visible;
 }
 
 .nav-link--stacked > span:first-child {
     display: block;
-    height: 27px;
-    line-height: 27px;
+    height: 30px;
+    line-height: 30px;
 }
 
 .nav-indicator {
     position: absolute;
-    top: 25px;
+    top: 28px;
     left: 50%;
     display: block;
     width: 16px;
@@ -416,13 +416,13 @@ export default {
     }
 
     .nav-link {
-        font-size: 18px;
-        line-height: 27px;
+        font-size: 20px;
+        line-height: 30px;
     }
 
     .nav-link--stacked > span:first-child {
-        height: 27px;
-        line-height: 27px;
+        height: 30px;
+        line-height: 30px;
     }
 }
 </style>
