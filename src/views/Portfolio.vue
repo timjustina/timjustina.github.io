@@ -581,7 +581,7 @@ export default {
             const { x, y } = this.heroCursorGlassPos
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
-            const outSize = 46 + 14 * hoverMix
+            const outSize = 46 + 18 * hoverMix
             const inSize = 32
             const size = outSize * (1 - rangeMix) + inSize * rangeMix
             const half = size / 2
@@ -2632,24 +2632,31 @@ export default {
     height: 46px;
     margin: -23px 0 0 -23px;
     background: transparent;
-    border: 1px solid
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-mix, 0)) solid
         color-mix(
             in srgb,
             rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
-            rgba(0, 10, 170, 0.45) calc(var(--hero-cursor-hover-mix, 0) * 100%)
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-mix, 0) * 100%)
         );
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
         inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 2px rgba(0, 10, 170, calc(0.28 + 0.1 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(5px + 1px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.18 + 0.06 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(9px + 2px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.11 + 0.04 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(15px + 4px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.06 + 0.03 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(22px + 4px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.035 + 0.025 * var(--hero-cursor-hover-mix, 0)));
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.2 + 0.12 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(4px + 2px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.15 + 0.09 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(7px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.11 + 0.065 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(11px + 6px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.078 + 0.045 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(16px + 9px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.052 + 0.03 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(23px + 12px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.032 + 0.018 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(32px + 16px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.018 + 0.01 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(44px + 20px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.008 + 0.005 * var(--hero-cursor-hover-mix, 0)));
     z-index: 110;
     isolation: isolate;
 }
@@ -2673,11 +2680,14 @@ export default {
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, 0.9),
         inset 0 -1px 1px rgba(0, 10, 170, 0.06),
-        0 0 2px rgba(0, 10, 170, 0.28),
-        0 0 5px rgba(0, 10, 170, 0.18),
-        0 0 9px rgba(0, 10, 170, 0.11),
-        0 0 15px rgba(0, 10, 170, 0.06),
-        0 0 22px rgba(0, 10, 170, 0.035);
+        0 0 2px rgba(0, 10, 170, 0.2),
+        0 0 4px rgba(0, 10, 170, 0.15),
+        0 0 7px rgba(0, 10, 170, 0.11),
+        0 0 11px rgba(0, 10, 170, 0.078),
+        0 0 16px rgba(0, 10, 170, 0.052),
+        0 0 23px rgba(0, 10, 170, 0.032),
+        0 0 32px rgba(0, 10, 170, 0.018),
+        0 0 44px rgba(0, 10, 170, 0.008);
 }
 
 .hero-intro-cursor-ball--dot {
