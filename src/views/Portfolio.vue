@@ -1105,6 +1105,8 @@ export default {
             if (this.pageEntranceDone) return
             this.pageEntranceDone = true
             this.lockHeroViewportHeight()
+            this.syncHeroDecorHeight()
+            this.syncProjectCaptionLineOffset()
             this.markHeroLineClipSettled()
         },
         scheduleHeroLineClipSettle() {
@@ -1751,9 +1753,7 @@ export default {
                 line.style.removeProperty('transform')
             }
             if (!this.heroLineKnotClipped) {
-                this.bridgeSyncMode = 'retract'
                 this.heroLineKnotClipped = true
-                this.$nextTick(() => this.syncAboutLineBridge())
             }
             this.heroLinePhase = 'bouncing'
         },
@@ -1771,9 +1771,7 @@ export default {
             }
 
             if (this.heroLineKnotClipped) {
-                this.bridgeSyncMode = 'extend'
                 this.heroLineKnotClipped = false
-                this.$nextTick(() => this.syncAboutLineBridge())
             }
 
             // Freeze the animated position, then ease down (removing animation alone would jump).
@@ -2122,41 +2120,7 @@ export default {
             const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
 
             bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
-
-            if (this.heroLineKnotClipped) {
-                if (
-                    this.bridgeSyncMode === 'retract'
-                    && this.aboutLineBridgeSynced
-                    && !prefersReducedMotion()
-                ) {
-                    bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
-                    bridge.style.clipPath = 'inset(0 0 0 0)'
-                    void bridge.offsetWidth
-                    return
-                }
-
-                bridge.style.setProperty('--bridge-h', '0px')
-                bridge.style.clipPath = ''
-                if (!this.aboutLineBridgeSynced) {
-                    void bridge.offsetWidth
-                    this.aboutLineBridgeSynced = true
-                }
-                return
-            }
-
             bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
-
-            if (
-                this.bridgeSyncMode === 'extend'
-                && this.aboutLineBridgeSynced
-                && !prefersReducedMotion()
-            ) {
-                bridge.style.clipPath = 'inset(100% 0 0 0)'
-                void bridge.offsetWidth
-                bridge.style.clipPath = 'inset(0 0 0 0)'
-                return
-            }
-
             bridge.style.clipPath = 'inset(0 0 0 0)'
             if (!this.aboutLineBridgeSynced) {
                 void bridge.offsetWidth
