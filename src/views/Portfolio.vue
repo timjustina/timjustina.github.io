@@ -184,24 +184,24 @@
                         />
                     </router-link>
                     <div class="project-caption">
-                        <div class="project-caption-header">
-                            <h2 class="project-title">
-                                <router-link
-                                    to="/work/DashboardDesign"
-                                    class="project-title-link"
-                                    @pointerdown="onFeaturedProjectPress"
-                                    @pointerup="onFeaturedProjectPressEnd"
-                                    @pointercancel="onFeaturedProjectPressEnd"
-                                    @click="onFeaturedProjectNavigate"
-                                >
+                        <router-link
+                            to="/work/DashboardDesign"
+                            class="project-caption-link"
+                            @pointerdown="onFeaturedProjectPress"
+                            @pointerup="onFeaturedProjectPressEnd"
+                            @pointercancel="onFeaturedProjectPressEnd"
+                            @click="onFeaturedProjectNavigate"
+                        >
+                            <div class="project-caption-header">
+                                <h2 class="project-title">
                                     IoT Adherence Analytics for Caregivers
-                                </router-link>
-                            </h2>
-                            <span class="project-year">2026</span>
-                        </div>
-                        <p class="project-description">
-                            0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
-                        </p>
+                                </h2>
+                                <span class="project-year">2026</span>
+                            </div>
+                            <p class="project-description">
+                                0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
+                            </p>
+                        </router-link>
                     </div>
                 </article>
 
@@ -433,7 +433,7 @@ const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
     '.cta-button',
     '.nav-link',
     '.project-image-link',
-    '.project-title-link',
+    '.project-caption-link',
     '.about-action-btn',
     '.footer-email',
     '.project-tldr-trigger',
@@ -4031,22 +4031,27 @@ export default {
     transition: color 0.25s ease;
 }
 
-.project-title-link {
+.project-caption-link {
+    display: block;
     color: inherit;
     text-decoration: none;
+    cursor: pointer;
+}
+
+.project-caption-link .project-title {
     /* Match thumbnail border-radius timing */
     transition: color 0.45s ease;
 }
 
 /* Touch / press: blue while held, eases back on release (same as thumbnail) */
-.project:not(.project--upcoming):active .project-title-link {
+.project:not(.project--upcoming):active .project-caption-link .project-title {
     color: var(--brand);
 }
 
 /* Pointer devices: hover / focus */
 @media (hover: hover) and (pointer: fine) {
-    .project:hover .project-title-link,
-    .project:focus-within .project-title-link {
+    .project:hover .project-caption-link .project-title,
+    .project:focus-within .project-caption-link .project-title {
         color: var(--brand);
     }
 }
@@ -4645,12 +4650,6 @@ export default {
         width: 100%;
     }
 
-    /* Thumbnail only — title tap must not navigate */
-    .project-title-link {
-        pointer-events: none;
-        cursor: default;
-    }
-
     /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
     .cta-button,
     .project-upcoming-label,
@@ -4969,7 +4968,7 @@ export default {
     color: var(--brand) !important;
 }
 
-.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-title-link {
+.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-caption-link .project-title {
     color: var(--brand) !important;
 }
 
