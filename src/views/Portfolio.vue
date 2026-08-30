@@ -2641,13 +2641,15 @@ export default {
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
         inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 4px rgba(0, 10, 170, calc(0.11 + 0.05 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(8px + 2px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.065 + 0.035 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(13px + 5px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.032 + 0.018 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(18px + 4px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.016 + 0.034 * var(--hero-cursor-hover-mix, 0)));
+        0 0 2px rgba(0, 10, 170, calc(0.28 + 0.1 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(5px + 1px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.18 + 0.06 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(9px + 2px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.11 + 0.04 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(15px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.06 + 0.03 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(22px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.035 + 0.025 * var(--hero-cursor-hover-mix, 0)));
     z-index: 110;
     isolation: isolate;
 }
@@ -2671,10 +2673,11 @@ export default {
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, 0.9),
         inset 0 -1px 1px rgba(0, 10, 170, 0.06),
-        0 0 4px rgba(0, 10, 170, 0.11),
-        0 0 8px rgba(0, 10, 170, 0.065),
-        0 0 13px rgba(0, 10, 170, 0.032),
-        0 0 18px rgba(0, 10, 170, 0.016);
+        0 0 2px rgba(0, 10, 170, 0.28),
+        0 0 5px rgba(0, 10, 170, 0.18),
+        0 0 9px rgba(0, 10, 170, 0.11),
+        0 0 15px rgba(0, 10, 170, 0.06),
+        0 0 22px rgba(0, 10, 170, 0.035);
 }
 
 .hero-intro-cursor-ball--dot {
