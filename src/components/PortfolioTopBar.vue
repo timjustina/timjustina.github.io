@@ -6,6 +6,7 @@
                 'top-bar--hidden': topBarHidden && !isInFlowMobileHome,
                 'top-bar--transparent': isTransparent,
                 'top-bar--in-flow': isInFlowMobileHome,
+                'top-bar--nav-hero-align': navHeroAlign,
             }"
         >
             <div class="top-bar-inner">
@@ -13,13 +14,13 @@
                     <router-link to="/" class="logo-block">
                         <img class="logo" :src="logo" alt="Tim Justina Yeung" />
                     </router-link>
-                    <nav ref="nav" class="nav" :class="{ 'nav--compact': navCompact }">
+                    <nav ref="nav" class="nav">
                         <router-link
                             :to="{ path: '/', hash: '#work-first' }"
                             class="nav-link nav-link--stacked nav-link--work"
                             @click="onWorkClick"
                         >
-                            <span>Work</span>
+                            <span class="nav-link-text"><span ref="workW" class="nav-link-w">W</span>ork</span>
                             <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
                         </router-link>
                         <router-link
@@ -27,7 +28,7 @@
                             class="nav-link nav-link--stacked nav-link--about"
                             @click="onAboutClick"
                         >
-                            <span>About</span>
+                            <span class="nav-link-text">About</span>
                             <img class="nav-indicator" :src="menuHover" alt="" aria-hidden="true" />
                         </router-link>
                     </nav>
@@ -56,14 +57,16 @@ export default {
             type: Boolean,
             default: false,
         },
+        navHeroAlign: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
             logo,
             menuHover,
-            navCompact: false,
-            fullNavWidth: null,
-            navGapObserver: null,
+            navAlignObserver: null,
             topBarHidden: false,
             lastScrollY: 0,
             scrollTicking: false,
@@ -99,20 +102,20 @@ export default {
         this.updateHeroOverlap()
 
         this.$nextTick(() => {
-            this.updateNavCompact()
+            this.updateNavDecorAlign()
             this.updateHeroOverlap()
             if (this.$refs.topBarContent) {
-                this.navGapObserver = new ResizeObserver(() => this.updateNavCompact())
-                this.navGapObserver.observe(this.$refs.topBarContent)
+                this.navAlignObserver = new ResizeObserver(() => this.updateNavDecorAlign())
+                this.navAlignObserver.observe(this.$refs.topBarContent)
             }
-            document.fonts?.ready?.then(() => this.updateNavCompact())
+            document.fonts?.ready?.then(() => this.updateNavDecorAlign())
         })
     },
     beforeUnmount() {
         window.removeEventListener('scroll', this.onScroll)
         window.removeEventListener('resize', this.onResize)
         window.removeEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
-        this.navGapObserver?.disconnect()
+        this.navAlignObserver?.disconnect()
     },
     methods: {
         syncMobileTopBarState() {
@@ -123,7 +126,7 @@ export default {
         },
         onResize() {
             this.syncMobileTopBarState()
-            this.updateNavCompact()
+            this.updateNavDecorAlign()
             this.updateHeroOverlap()
         },
         onSectionJump() {
@@ -202,30 +205,22 @@ export default {
                 requestAnimationFrame(() => scrollToAbout())
             })
         },
-        updateNavCompact() {
-            if (window.matchMedia('(max-width: 799px)').matches) {
-                this.navCompact = false
+        updateNavDecorAlign() {
+            if (
+                !this.navHeroAlign ||
+                window.matchMedia('(max-width: 799px)').matches
+            ) {
+                this.$el?.style.removeProperty('--nav-work-w-center')
                 return
             }
 
-            const content = this.$refs.topBarContent
-            const logoBlock = content?.querySelector('.logo-block')
-            const nav = this.$refs.nav
-            if (!content || !logoBlock || !nav) return
+            const wEl = this.$refs.workW
+            if (!wEl) return
 
-            if (!this.navCompact) {
-                this.fullNavWidth = nav.offsetWidth
-            }
-
-            const fullWidth = this.fullNavWidth ?? nav.offsetWidth
-            const contentRect = content.getBoundingClientRect()
-            const logoRect = logoBlock.getBoundingClientRect()
-            const gapIfFull =
-                contentRect.width - fullWidth - (logoRect.right - contentRect.left)
-
-            // Tighter threshold for the two-link nav; compact keeps Work/About visible
-            // and only tightens spacing, like LinkedIn/CV did before.
-            this.navCompact = gapIfFull < 120
+            this.$el.style.setProperty(
+                '--nav-work-w-center',
+                `${wEl.getBoundingClientRect().width / 2}px`
+            )
         },
         getTopBarHeight() {
             return this.$el?.querySelector('.top-bar-inner')?.offsetHeight ?? 120
@@ -320,11 +315,15 @@ export default {
     align-items: center;
     gap: 40px;
     height: 30px;
-    transition: gap 0.22s ease;
 }
 
-.nav--compact {
-    gap: 24px;
+@media (min-width: 800px) {
+    .top-bar--nav-hero-align .nav {
+        position: absolute;
+        left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
+        top: calc(var(--top-bar-edge-pad-right) + 19px);
+        height: var(--top-bar-nav-height);
+    }
 }
 
 .nav-link {
@@ -356,7 +355,8 @@ export default {
     overflow: visible;
 }
 
-.nav-link--stacked > span:first-child {
+.nav-link--stacked > span:first-child,
+.nav-link--stacked > .nav-link-text {
     display: block;
     height: 30px;
     line-height: 30px;
@@ -420,7 +420,8 @@ export default {
         line-height: 30px;
     }
 
-    .nav-link--stacked > span:first-child {
+    .nav-link--stacked > span:first-child,
+    .nav-link--stacked > .nav-link-text {
         height: 30px;
         line-height: 30px;
     }

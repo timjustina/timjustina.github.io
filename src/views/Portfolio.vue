@@ -51,7 +51,7 @@
             :class="{ 'portfolio-content--logo-handoff': logoHandoff }"
             :aria-hidden="(showLoadingSplash || logoHandoff) && !pageRevealed ? 'true' : undefined"
         >
-        <PortfolioTopBar transparent always-transparent />
+        <PortfolioTopBar transparent always-transparent nav-hero-align />
 
         <p
             class="hero-location"
@@ -2242,6 +2242,7 @@ export default {
     --hero-decor-line-width: 2px;
     --hero-decor-line-natural-height: 3200px;
     --portfolio-main-inset-left: max(0px, (100vw - var(--page-max)) / 2);
+    --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     --portfolio-decor-line-x: calc(
         var(--portfolio-main-inset-left) + var(--page-pad) + var(--hero-squiggle-left) +
             var(--hero-decor-line-stroke-x)
@@ -2655,7 +2656,6 @@ export default {
 }
 
 .hero-intro-wrap {
-    --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     /* Match viewport-left→line stroke on the text box’s right edge */
     --hero-intro-right: calc(var(--hero-squiggle-left) + var(--hero-decor-line-stroke-x));
     position: relative;
