@@ -522,7 +522,6 @@ export default {
             heroIntroTouchGuardActive: false,
             heroCursorActive: false,
             heroCursorPos: { x: 0, y: 0 },
-            captionLineOffsetScrollTicking: false,
         }
     },
     computed: {
@@ -629,14 +628,15 @@ export default {
         }
 
         this.syncHeroDecorHeight()
+        this.syncProjectCaptionLineOffset()
         this.syncAboutBallPosition()
         this.syncAboutLocationTextClip()
         window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
         window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
         window.addEventListener('scroll', this.onHeroLocationScroll, { passive: true })
-        window.addEventListener('scroll', this.onCaptionLineOffsetScroll, { passive: true })
         document.fonts?.ready?.then(() => {
             this.syncHeroDecorHeight()
+            this.syncProjectCaptionLineOffset()
             this.syncAboutBallPosition()
             this.syncAboutLocationTextClip()
             if (!this.pageRevealed) {
@@ -714,7 +714,6 @@ export default {
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         window.removeEventListener('scroll', this.onHeroLocationScroll)
-        window.removeEventListener('scroll', this.onCaptionLineOffsetScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -1167,6 +1166,7 @@ export default {
                 this.heroDecorHidden = true
                 this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
+                this.syncProjectCaptionLineOffset()
                 this.$nextTick(() => this.lockHeroViewportHeight())
                 return
             }
@@ -1180,6 +1180,7 @@ export default {
                 this.beginHeroDecorResizeClip()
                 this.$nextTick(() => {
                     this.syncHeroDecorHeight()
+                    this.syncProjectCaptionLineOffset()
                     if (this.heroIntroLetterMode && !this.pageRevealed) {
                         this.syncHeroIntroCharColumns()
                     }
@@ -1197,6 +1198,7 @@ export default {
                     requestAnimationFrame(() => {
                         this.lockHeroViewportHeight()
                         this.syncHeroDecorHeight()
+                        this.syncProjectCaptionLineOffset()
                         this.syncAboutBallPosition()
                         this.syncAboutLocationTextClip()
                         if (this.heroIntroLetterMode && !this.pageRevealed) {
@@ -1847,6 +1849,7 @@ export default {
             requestAnimationFrame(() => {
                 this.lockHeroViewportHeight()
                 this.syncHeroDecorHeight()
+                this.syncProjectCaptionLineOffset()
                 this.syncAboutBallPosition()
                 this.syncAboutLocationTextClip()
                 if (!this.pageRevealed) {
@@ -2058,16 +2061,13 @@ export default {
             const heroIntro = this.$el?.querySelector('.hero-intro')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
             if (!decor || !heroIntro || !workLastAnchor) {
-                this.syncProjectCaptionLineOffset()
                 return
             }
 
             if (window.getComputedStyle(decor).display === 'none') {
-                this.syncProjectCaptionLineOffset()
                 return
             }
             if (!window.matchMedia('(min-width: 800px)').matches) {
-                this.syncProjectCaptionLineOffset()
                 return
             }
 
@@ -2098,82 +2098,70 @@ export default {
             const decor = this.$el?.querySelector('.hero-decor')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
 
-            try {
-                if (!bridge || !about || !decor || !workLastAnchor) return
-                if (window.getComputedStyle(decor).display === 'none') return
-                if (!window.matchMedia('(min-width: 800px)').matches) {
-                    bridge.style.height = '0px'
-                    return
-                }
+            if (!bridge || !about || !decor || !workLastAnchor) return
+            if (window.getComputedStyle(decor).display === 'none') return
+            if (!window.matchMedia('(min-width: 800px)').matches) {
+                bridge.style.height = '0px'
+                return
+            }
 
-                const pageTop = this.$el.getBoundingClientRect().top
-                const pageLeft = this.$el.getBoundingClientRect().left
-                const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
-                const decorRect = decor.getBoundingClientRect()
-                this.$el.style.setProperty(
-                    '--portfolio-decor-line-x',
-                    `${Math.round(decorRect.left - pageLeft + strokeX)}px`,
-                )
+            const pageTop = this.$el.getBoundingClientRect().top
+            const pageLeft = this.$el.getBoundingClientRect().left
+            const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
+            const decorRect = decor.getBoundingClientRect()
+            this.$el.style.setProperty(
+                '--portfolio-decor-line-x',
+                `${Math.round(decorRect.left - pageLeft + strokeX)}px`,
+            )
 
-                const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
-                const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
-                const bridgeOverlap = 2
-                const bridgeTop = Math.floor(workLastBottom - pageTop)
-                const bridgeBottom = Math.ceil(aboutLineTop) + bridgeOverlap
-                const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
+            const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
+            const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
+            const bridgeOverlap = 2
+            const bridgeTop = Math.floor(workLastBottom - pageTop)
+            const bridgeBottom = Math.ceil(aboutLineTop) + bridgeOverlap
+            const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
 
-                bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
+            bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
 
-                if (this.heroLineKnotClipped) {
-                    if (
-                        this.bridgeSyncMode === 'retract'
-                        && this.aboutLineBridgeSynced
-                        && !prefersReducedMotion()
-                    ) {
-                        bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
-                        bridge.style.clipPath = 'inset(0 0 0 0)'
-                        void bridge.offsetWidth
-                        return
-                    }
-
-                    bridge.style.setProperty('--bridge-h', '0px')
-                    bridge.style.clipPath = ''
-                    if (!this.aboutLineBridgeSynced) {
-                        void bridge.offsetWidth
-                        this.aboutLineBridgeSynced = true
-                    }
-                    return
-                }
-
-                bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
-
+            if (this.heroLineKnotClipped) {
                 if (
-                    this.bridgeSyncMode === 'extend'
+                    this.bridgeSyncMode === 'retract'
                     && this.aboutLineBridgeSynced
                     && !prefersReducedMotion()
                 ) {
-                    bridge.style.clipPath = 'inset(100% 0 0 0)'
-                    void bridge.offsetWidth
+                    bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
                     bridge.style.clipPath = 'inset(0 0 0 0)'
+                    void bridge.offsetWidth
                     return
                 }
 
-                bridge.style.clipPath = 'inset(0 0 0 0)'
+                bridge.style.setProperty('--bridge-h', '0px')
+                bridge.style.clipPath = ''
                 if (!this.aboutLineBridgeSynced) {
                     void bridge.offsetWidth
                     this.aboutLineBridgeSynced = true
                 }
-            } finally {
-                this.syncProjectCaptionLineOffset()
+                return
             }
-        },
-        onCaptionLineOffsetScroll() {
-            if (this.captionLineOffsetScrollTicking) return
-            this.captionLineOffsetScrollTicking = true
-            requestAnimationFrame(() => {
-                this.captionLineOffsetScrollTicking = false
-                this.syncProjectCaptionLineOffset()
-            })
+
+            bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+
+            if (
+                this.bridgeSyncMode === 'extend'
+                && this.aboutLineBridgeSynced
+                && !prefersReducedMotion()
+            ) {
+                bridge.style.clipPath = 'inset(100% 0 0 0)'
+                void bridge.offsetWidth
+                bridge.style.clipPath = 'inset(0 0 0 0)'
+                return
+            }
+
+            bridge.style.clipPath = 'inset(0 0 0 0)'
+            if (!this.aboutLineBridgeSynced) {
+                void bridge.offsetWidth
+                this.aboutLineBridgeSynced = true
+            }
         },
         syncProjectCaptionLineOffset() {
             const root = this.$el
