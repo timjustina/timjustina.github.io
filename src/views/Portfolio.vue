@@ -18,7 +18,10 @@
         <span
             v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
             class="hero-intro-cursor-ball hero-intro-cursor-ball--dot hero-intro-cursor-ball--visible"
-            :class="{ 'hero-intro-cursor-ball--in-range': heroCursorInRange }"
+            :class="{
+                'hero-intro-cursor-ball--in-range': heroCursorInRange,
+                'hero-intro-cursor-ball--over-hover': heroCursorOverHover,
+            }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
         />
@@ -395,6 +398,22 @@ const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
+const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
+    'a[href]',
+    'button:not(:disabled)',
+    '[role="button"]',
+    'label',
+    'input:not(:disabled)',
+    'textarea:not(:disabled)',
+    'select:not(:disabled)',
+    '.cta-button',
+    '.nav-link',
+    '.project-image-link',
+    '.project-title-link',
+    '.about-action-btn',
+    '.footer-email',
+    '.project-tldr-trigger',
+].join(', ')
 
 function parseCssTimeSec(styles, prop, fallback) {
     const raw = styles.getPropertyValue(prop).trim()
@@ -531,6 +550,8 @@ export default {
             heroIntroTouchGuardActive: false,
             heroCursorActive: false,
             heroCursorInRange: false,
+            heroCursorHoverMix: 0,
+            heroCursorOverHover: false,
             heroCursorPos: { x: 0, y: 0 },
             heroCursorGlassPos: { x: 0, y: 0 },
             heroCursorGlassRaf: null,
@@ -551,9 +572,21 @@ export default {
         },
         heroCursorGlassStyle() {
             const { x, y } = this.heroCursorGlassPos
-            return {
+            const mix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const style = {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
+                '--hero-cursor-hover-mix': mix,
             }
+
+            if (!this.heroCursorInRange) {
+                const size = 46 + 14 * mix
+                const half = size / 2
+                style.width = `${size}px`
+                style.height = `${size}px`
+                style.margin = `${-half}px 0 0 ${-half}px`
+            }
+
+            return style
         },
         loadingSplashFrameTransform() {
             return `rotate(${this.loadingRotationDeg}deg)`
@@ -1543,6 +1576,25 @@ export default {
                 /* ignore */
             }
         },
+        isHeroCursorOverHoverTarget(x, y) {
+            if (typeof document === 'undefined') return false
+
+            const stack =
+                document.elementsFromPoint?.(x, y) ??
+                [document.elementFromPoint(x, y)].filter(Boolean)
+
+            for (const el of stack) {
+                if (!(el instanceof Element)) continue
+                if (el.closest('.hero-intro-cursor-ball')) continue
+
+                if (el.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)) return true
+
+                const cursor = getComputedStyle(el).cursor
+                if (cursor === 'pointer') return true
+            }
+
+            return false
+        },
         updateHeroFinePointer(x, y) {
             const inRange = this.isHeroIntroPointerNear(x, y)
             const wasActive = this.heroCursorActive
@@ -1550,6 +1602,7 @@ export default {
             this.heroCursorPos = { x, y }
             this.heroCursorActive = true
             this.heroCursorInRange = inRange
+            this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
 
             if (!wasActive) {
                 this.heroCursorGlassPos = { x, y }
@@ -1592,6 +1645,12 @@ export default {
                 } else {
                     this.heroCursorGlassPos = { x: nx, y: ny }
                 }
+
+                const hoverTarget =
+                    !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
+                this.heroCursorOverHover = hoverTarget === 1
+                const hoverLerp = this.heroCursorInRange ? 0.3 : 0.16
+                this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
 
                 this.heroCursorGlassRaf = requestAnimationFrame(tick)
             }
@@ -1679,6 +1738,8 @@ export default {
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
             this.heroCursorInRange = false
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
             this.stopHeroCursorGlassFollow()
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -2529,28 +2590,42 @@ export default {
     width: 46px;
     height: 46px;
     margin: -23px 0 0 -23px;
+    background: transparent;
+    border: 1px solid
+        color-mix(
+            in srgb,
+            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
+            rgba(0, 10, 170, 0.45) calc(var(--hero-cursor-hover-mix, 0) * 100%)
+        );
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 + 0.05 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(8px + 2px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.065 + 0.035 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(13px + 5px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.032 + 0.018 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(18px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.016 + 0.034 * var(--hero-cursor-hover-mix, 0)));
+    z-index: 110;
+    isolation: isolate;
+}
+
+.hero-intro-cursor-ball--glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.72) 0%,
         rgba(255, 255, 255, 0.28) 45%,
         rgba(255, 255, 255, 0.42) 100%
     );
-    border: 0.5px solid rgba(255, 255, 255, 0.85);
-    box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, 0.9),
-        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
-        0 0 4px rgba(0, 10, 170, 0.11),
-        0 0 8px rgba(0, 10, 170, 0.065),
-        0 0 13px rgba(0, 10, 170, 0.032),
-        0 0 18px rgba(0, 10, 170, 0.016);
     -webkit-backdrop-filter: blur(4px) saturate(1.35);
     backdrop-filter: blur(4px) saturate(1.35);
-    z-index: 110;
-    transition:
-        width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        margin 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        box-shadow 0.28s ease;
+    opacity: calc(1 - var(--hero-cursor-hover-mix, 0));
+    pointer-events: none;
 }
 
 .hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range {
@@ -2572,16 +2647,24 @@ export default {
     margin: -4px 0 0 -4px;
     background: #000aaa;
     z-index: 111;
-    transition: opacity 0.24s ease;
-}
-
-.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--in-range {
-    opacity: 0;
 }
 
 .hero-intro-cursor-ball--visible {
     visibility: visible;
+}
+
+.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--visible {
     opacity: 1;
+}
+
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible {
+    opacity: 1;
+}
+
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible.hero-intro-cursor-ball--in-range,
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible.hero-intro-cursor-ball--over-hover {
+    visibility: hidden;
+    opacity: 0;
 }
 
 @media (hover: hover) and (pointer: fine) {
