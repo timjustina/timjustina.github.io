@@ -369,6 +369,11 @@ import menuLogo from '../assets/TjyCutoutLogo.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
+import {
+    setupMobileProjectScrollSnap,
+    suppressMobileProjectScrollSnap,
+    teardownMobileProjectScrollSnap,
+} from '../utils/mobileProjectScrollSnap.js'
 import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
 import {
     cancelImageExpand,
@@ -670,6 +675,10 @@ export default {
         this.setupProjectScrollFade(sectionHash)
         this.setupHeroLocationVisibility()
         this.scheduleFirstProjectPrefetch()
+        this.teardownMobileProjectScrollSnap = setupMobileProjectScrollSnap({
+            root: this.$el,
+            isDisabled: () => this.featuredExpandPending || prefersReducedMotion(),
+        })
 
         if (sectionHash) {
             this.$nextTick(() => {
@@ -711,6 +720,8 @@ export default {
         this.aboutRevealObserver?.disconnect()
         this.projectFadeObserver?.disconnect()
         this.heroLocationObserver?.disconnect()
+        this.teardownMobileProjectScrollSnap?.()
+        this.teardownMobileProjectScrollSnap = null
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         window.removeEventListener('scroll', this.onHeroLocationScroll)
@@ -773,6 +784,7 @@ export default {
             if (!img) return
 
             event.preventDefault()
+            suppressMobileProjectScrollSnap()
             clearTimeout(this.featuredPressClearTimer)
             clearTimeout(this.featuredExpandTimer)
             this.featuredPressClearTimer = null
@@ -811,6 +823,7 @@ export default {
             })
         },
         jumpToSectionHash(hash) {
+            suppressMobileProjectScrollSnap()
             scrollToPortfolioHash(hash, { duration: 0 })
             // Keep top bar hidden after the instant jump (no scroll delta to trigger it).
             window.dispatchEvent(new Event('portfolio-section-jump'))

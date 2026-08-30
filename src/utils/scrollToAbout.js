@@ -40,6 +40,13 @@ const DEFAULT_SCROLL_DURATION = 450
 
 let activeScrollAnimation = null
 
+export function cancelSmoothScroll() {
+    if (activeScrollAnimation !== null) {
+        cancelAnimationFrame(activeScrollAnimation)
+        activeScrollAnimation = null
+    }
+}
+
 function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
@@ -47,10 +54,7 @@ function easeInOutCubic(t) {
 export { easeInOutCubic }
 
 export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION, ease = easeInOutCubic } = {}) {
-    if (activeScrollAnimation !== null) {
-        cancelAnimationFrame(activeScrollAnimation)
-        activeScrollAnimation = null
-    }
+    cancelSmoothScroll()
 
     const startTop = window.scrollY
     const maxTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
