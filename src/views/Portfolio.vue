@@ -3707,8 +3707,13 @@ export default {
     }
 }
 
-/* 800–1084px: full-viewport intro (logo↔location edges); stack deco line below */
+/* 800–1084px: intro ⅓ down viewport (logo↔location edges); deco line stacks below */
 @media (min-width: 800px) and (max-width: 1084px) {
+    .hero {
+        justify-content: flex-start;
+        padding-top: 33.333vh;
+    }
+
     .hero-intro-wrap {
         width: calc(100% + 2 * var(--page-pad));
         max-width: none;
@@ -3729,7 +3734,7 @@ export default {
     }
 }
 
-@media (min-width: 800px) and (min-height: 800px) {
+@media (min-width: 1085px) and (min-height: 800px) {
     .hero-intro-wrap {
         transform: translateY(-2vh);
     }
