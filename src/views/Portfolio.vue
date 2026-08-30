@@ -2232,8 +2232,8 @@ export default {
     --top-bar-logo-inset: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
     --hero-logo-gap: 150px;
     --hero-squiggle-left: clamp(
-        61px,
-        calc(61px + (100vw - 997px) * 60 / 457),
+        120px,
+        calc(120px + (100vw - 997px) * 1 / 457),
         121px
     );
     --hero-squiggle-width: 56px;
@@ -3616,7 +3616,7 @@ export default {
 /* Tablet: tighter squiggle inset so line + paragraph stay side-by-side */
 @media (min-width: 800px) and (max-width: 997px) {
     .portfolio-page {
-        --hero-squiggle-left: 61px; /* clamp floor; explicit for 800–997 */
+        --hero-squiggle-left: 120px; /* clamp floor; explicit for 800–997 */
     }
 }
 
