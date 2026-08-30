@@ -387,6 +387,7 @@ const LOGO_HANDOFF_REVEAL_LEAD_MS = 140
 const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
+const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
 
 function parseCssTimeSec(styles, prop, fallback) {
     const raw = styles.getPropertyValue(prop).trim()
@@ -621,6 +622,11 @@ export default {
             this.heroDecorObserver.observe(heroIntro)
         }
 
+        const heroDecor = this.$el?.querySelector('.hero-decor')
+        if (heroDecor) {
+            heroDecor.addEventListener('animationend', this.onHeroDecorFlyEnd)
+        }
+
         for (const article of [workFirst, workLast]) {
             const heroImage = article?.querySelector('.project-image')
             if (heroImage && !heroImage.complete) {
@@ -679,6 +685,7 @@ export default {
                     this.syncAboutBallPosition()
                     this.syncAboutLocationTextClip()
                     this.jumpToSectionHash(sectionHash)
+                    this.publishDecorLineAlign()
                 })
             })
         } else {
@@ -732,6 +739,7 @@ export default {
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
+        this.$el?.querySelector('.hero-decor')?.removeEventListener('animationend', this.onHeroDecorFlyEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
         }
@@ -1054,6 +1062,9 @@ export default {
 
             if (prefersReducedMotion()) {
                 this.markPageEntranceDone()
+                this.$nextTick(() => {
+                    requestAnimationFrame(() => this.publishDecorLineAlign())
+                })
                 return
             }
 
@@ -1145,6 +1156,7 @@ export default {
             if (this.heroLineClipSettled) return
             this.heroLineClipSettled = true
             this.getHeroLineEl()?.classList.add('hero-decor-line--settled')
+            this.publishDecorLineAlign()
         },
         beginHeroDecorResizeClip({ force = false } = {}) {
             if (!force && !this.heroLineClipSettled) return
@@ -1210,6 +1222,7 @@ export default {
                         this.heroDecorHidden = false
                         this.endHeroDecorResizeClip()
                         this.updateHeroLocationVisibility()
+                        this.publishDecorLineAlign()
                     })
                 })
             })
@@ -2093,6 +2106,27 @@ export default {
             }
 
             this.syncAboutLineBridge()
+        },
+        onHeroDecorFlyEnd(event) {
+            if (!String(event.animationName).includes('portfolio-fly-from-right')) return
+            this.publishDecorLineAlign()
+        },
+        publishDecorLineAlign() {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (
+                !decor ||
+                this.heroDecorHidden ||
+                window.getComputedStyle(decor).display === 'none'
+            ) {
+                return
+            }
+
+            this.syncHeroDecorHeight()
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event(PORTFOLIO_DECOR_LINE_SYNCED_EVENT))
+            })
         },
         syncAboutLineBridge() {
             const bridge = this.$el?.querySelector('.about-line-bridge')

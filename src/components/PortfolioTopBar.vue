@@ -14,7 +14,7 @@
                     <router-link to="/" class="logo-block">
                         <img class="logo" :src="logo" alt="Tim Justina Yeung" />
                     </router-link>
-                    <nav ref="nav" class="nav">
+                    <nav ref="nav" class="nav" :class="{ 'nav--hidden': !showNav }">
                         <router-link
                             :to="{ path: '/', hash: '#work-first' }"
                             class="nav-link nav-link--stacked nav-link--work"
@@ -46,6 +46,7 @@ import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
 const SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const SECTION_JUMP_EVENT = 'portfolio-section-jump'
+const DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
 
 export default {
     name: 'PortfolioTopBar',
@@ -68,6 +69,8 @@ export default {
             logo,
             menuHover,
             navAlignObserver: null,
+            decorLineSynced: false,
+            navWorkWReady: false,
             topBarHidden: false,
             lastScrollY: 0,
             scrollTicking: false,
@@ -81,6 +84,13 @@ export default {
         },
         isInFlowMobileHome() {
             return this.$route.path === '/' && this.isMobileViewport
+        },
+        showNav() {
+            if (!this.navHeroAlign || window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+                return true
+            }
+            if (!this.decorLineSynced) return false
+            return this.navWorkWReady
         },
     },
     watch: {
@@ -100,6 +110,7 @@ export default {
         window.addEventListener('scroll', this.onScroll, { passive: true })
         window.addEventListener('resize', this.onResize, { passive: true })
         window.addEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
+        window.addEventListener(DECOR_LINE_SYNCED_EVENT, this.onDecorLineSynced)
         this.updateHeroOverlap()
 
         this.$nextTick(() => {
@@ -116,6 +127,7 @@ export default {
         window.removeEventListener('scroll', this.onScroll)
         window.removeEventListener('resize', this.onResize)
         window.removeEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
+        window.removeEventListener(DECOR_LINE_SYNCED_EVENT, this.onDecorLineSynced)
         this.navAlignObserver?.disconnect()
     },
     methods: {
@@ -206,6 +218,10 @@ export default {
                 requestAnimationFrame(() => scrollToAbout())
             })
         },
+        onDecorLineSynced() {
+            this.decorLineSynced = true
+            this.updateNavDecorAlign()
+        },
         updateNavDecorAlign() {
             if (
                 !this.navHeroAlign ||
@@ -216,12 +232,14 @@ export default {
             }
 
             const wEl = this.$refs.workW
-            if (!wEl) return
+            if (!wEl) {
+                this.navWorkWReady = false
+                return
+            }
 
-            this.$el.style.setProperty(
-                '--nav-work-w-center',
-                `${wEl.getBoundingClientRect().width / 2}px`
-            )
+            const workW = wEl.getBoundingClientRect().width
+            this.navWorkWReady = workW > 0
+            this.$el.style.setProperty('--nav-work-w-center', `${workW / 2}px`)
         },
         getTopBarHeight() {
             return this.$el?.querySelector('.top-bar-inner')?.offsetHeight ?? 120
@@ -324,6 +342,11 @@ export default {
         left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
         top: calc(var(--top-bar-edge-pad-right) + 19px);
         height: var(--top-bar-nav-height);
+    }
+
+    .nav--hidden {
+        visibility: hidden;
+        pointer-events: none;
     }
 }
 
