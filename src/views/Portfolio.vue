@@ -306,12 +306,12 @@
                         </p>
                     </div>
                     <p class="about-bio portfolio-fly portfolio-fly--from-left">
-                        Started in academia, ended up in the
+                        Started in the east, ended up in the west. Started in academia, ended up in the
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
                         <br><br>
-                        At work, value a good team. Understand
-                        context, metrics and specs before jumping in. UX-focused. Very comfortable with data.
+                        At work, value a good team. Figure out
+                        context, metrics and specs before jumping in. High tolerance for ambiguity. Think critically. Very comfortable with data.
                         Interrogate LLMs.
                         <br><br>
                         Like to work out in free time - old books and films for the brain,
