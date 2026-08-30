@@ -4035,7 +4035,6 @@ export default {
     display: block;
     color: inherit;
     text-decoration: none;
-    cursor: pointer;
 }
 
 .project-caption-link .project-title {
