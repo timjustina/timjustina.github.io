@@ -550,6 +550,7 @@ export default {
             heroIntroTouchGuardActive: false,
             heroCursorActive: false,
             heroCursorInRange: false,
+            heroCursorRangeMix: 0,
             heroCursorHoverMix: 0,
             heroCursorOverHover: false,
             heroCursorPos: { x: 0, y: 0 },
@@ -566,27 +567,32 @@ export default {
         },
         heroCursorBallStyle() {
             const { x, y } = this.heroCursorPos
+            let opacity = 1 - this.heroCursorRangeMix
+            if (this.heroCursorOverHover && !this.heroCursorInRange) {
+                opacity = 0
+            }
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
+                opacity,
+                visibility: opacity < 0.02 ? 'hidden' : 'visible',
             }
         },
         heroCursorGlassStyle() {
             const { x, y } = this.heroCursorGlassPos
-            const mix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
-            const style = {
+            const rangeMix = this.heroCursorRangeMix
+            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const outSize = 46 + 14 * hoverMix
+            const inSize = 32
+            const size = outSize * (1 - rangeMix) + inSize * rangeMix
+            const half = size / 2
+            return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
-                '--hero-cursor-hover-mix': mix,
+                '--hero-cursor-hover-mix': hoverMix,
+                '--hero-cursor-range-mix': rangeMix,
+                width: `${size}px`,
+                height: `${size}px`,
+                margin: `${-half}px 0 0 ${-half}px`,
             }
-
-            if (!this.heroCursorInRange) {
-                const size = 46 + 14 * mix
-                const half = size / 2
-                style.width = `${size}px`
-                style.height = `${size}px`
-                style.margin = `${-half}px 0 0 ${-half}px`
-            }
-
-            return style
         },
         loadingSplashFrameTransform() {
             return `rotate(${this.loadingRotationDeg}deg)`
@@ -1634,9 +1640,17 @@ export default {
                 this.heroCursorGlassRaf = null
                 if (!this.heroCursorActive) return
 
+                const rangeTarget = this.heroCursorInRange ? 1 : 0
+                this.heroCursorRangeMix +=
+                    (rangeTarget - this.heroCursorRangeMix) * (rangeTarget ? 0.2 : 0.16)
+
                 const { x: tx, y: ty } = this.heroCursorPos
                 const { x: gx, y: gy } = this.heroCursorGlassPos
-                const follow = this.heroCursorInRange ? 0.34 : 0.13
+                const transitionBoost =
+                    this.heroCursorRangeMix * (1 - this.heroCursorRangeMix) * 4
+                const follow = this.heroCursorInRange
+                    ? 0.34 + transitionBoost * 0.55
+                    : 0.13 + this.heroCursorRangeMix * 0.22 + transitionBoost * 0.35
                 const nx = gx + (tx - gx) * follow
                 const ny = gy + (ty - gy) * follow
 
@@ -1738,6 +1752,7 @@ export default {
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
             this.heroCursorInRange = false
+            this.heroCursorRangeMix = 0
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
             this.stopHeroCursorGlassFollow()
@@ -2624,14 +2639,14 @@ export default {
     );
     -webkit-backdrop-filter: blur(4px) saturate(1.35);
     backdrop-filter: blur(4px) saturate(1.35);
-    opacity: calc(1 - var(--hero-cursor-hover-mix, 0));
+    opacity: calc(
+        var(--hero-cursor-range-mix, 0) +
+            (1 - var(--hero-cursor-range-mix, 0)) * (1 - var(--hero-cursor-hover-mix, 0))
+    );
     pointer-events: none;
 }
 
 .hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range {
-    width: 28px;
-    height: 28px;
-    margin: -14px 0 0 -14px;
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, 0.9),
         inset 0 -1px 1px rgba(0, 10, 170, 0.06),
@@ -2661,7 +2676,6 @@ export default {
     opacity: 1;
 }
 
-.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible.hero-intro-cursor-ball--in-range,
 .hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible.hero-intro-cursor-ball--over-hover {
     visibility: hidden;
     opacity: 0;
