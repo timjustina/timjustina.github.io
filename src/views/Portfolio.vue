@@ -2455,16 +2455,26 @@ export default {
     position: fixed;
     left: 0;
     top: 0;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
     border-radius: 50%;
-    background: #fff;
-    filter:
-        drop-shadow(0 0 4px rgba(0, 10, 170, 0.11))
-        drop-shadow(0 0 8px rgba(0, 10, 170, 0.065))
-        drop-shadow(0 0 13px rgba(0, 10, 170, 0.032))
-        drop-shadow(0 0 18px rgba(0, 10, 170, 0.016));
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.72) 0%,
+        rgba(255, 255, 255, 0.28) 45%,
+        rgba(255, 255, 255, 0.42) 100%
+    );
+    border: 0.5px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 4px rgba(0, 10, 170, 0.11),
+        0 0 8px rgba(0, 10, 170, 0.065),
+        0 0 13px rgba(0, 10, 170, 0.032),
+        0 0 18px rgba(0, 10, 170, 0.016);
+    -webkit-backdrop-filter: blur(4px) saturate(1.35);
+    backdrop-filter: blur(4px) saturate(1.35);
     pointer-events: none;
     z-index: 110;
     visibility: hidden;
