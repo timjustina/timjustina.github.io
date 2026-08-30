@@ -585,14 +585,16 @@ export default {
         },
         heroCursorBallStyle() {
             const { x, y } = this.heroCursorPos
-            let opacity = 1 - this.heroCursorRangeMix
+            let shrink = 1 - this.heroCursorRangeMix
             if (this.heroCursorOverHover && !this.heroCursorInRange) {
-                opacity = 0
+                shrink = 0
             }
+            const scale = shrink * shrink
+            const opacity = shrink
             return {
-                transform: `translate3d(${x}px, ${y}px, 0)`,
+                transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
                 opacity,
-                visibility: opacity < 0.02 ? 'hidden' : 'visible',
+                visibility: scale < 0.02 ? 'hidden' : 'visible',
             }
         },
         heroCursorGlassStyle() {
@@ -2992,6 +2994,7 @@ export default {
     height: 8px;
     margin: -4px 0 0 -4px;
     background: #000aaa;
+    transform-origin: center center;
     z-index: 111;
 }
 
