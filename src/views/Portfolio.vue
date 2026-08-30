@@ -9,9 +9,20 @@
     >
     <Teleport to="body">
         <span
-            v-if="heroIntroLetterMode && heroIntroFinePointer"
-            class="hero-intro-cursor-ball"
-            :class="{ 'hero-intro-cursor-ball--visible': heroCursorActive }"
+            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive && heroCursorInRange"
+            class="hero-intro-cursor-ball hero-intro-cursor-ball--in-range hero-intro-cursor-ball--visible"
+            :style="heroCursorBallStyle"
+            aria-hidden="true"
+        />
+        <span
+            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive && !heroCursorInRange"
+            class="hero-intro-cursor-ball hero-intro-cursor-ball--glass hero-intro-cursor-ball--visible"
+            :style="heroCursorGlassStyle"
+            aria-hidden="true"
+        />
+        <span
+            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive && !heroCursorInRange"
+            class="hero-intro-cursor-ball hero-intro-cursor-ball--dot hero-intro-cursor-ball--visible"
             :style="heroCursorBallStyle"
             aria-hidden="true"
         />
@@ -523,7 +534,10 @@ export default {
             heroIntroTouchMode: null,
             heroIntroTouchGuardActive: false,
             heroCursorActive: false,
+            heroCursorInRange: false,
             heroCursorPos: { x: 0, y: 0 },
+            heroCursorGlassPos: { x: 0, y: 0 },
+            heroCursorGlassRaf: null,
         }
     },
     computed: {
@@ -535,6 +549,12 @@ export default {
         },
         heroCursorBallStyle() {
             const { x, y } = this.heroCursorPos
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+            }
+        },
+        heroCursorGlassStyle() {
+            const { x, y } = this.heroCursorGlassPos
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
             }
@@ -726,6 +746,7 @@ export default {
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
+        this.stopHeroCursorGlassFollow()
         clearTimeout(this.heroIntroTapLingerTimer)
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
@@ -1526,6 +1547,63 @@ export default {
                 /* ignore */
             }
         },
+        updateHeroFinePointer(x, y) {
+            const inRange = this.isHeroIntroPointerNear(x, y)
+            const wasActive = this.heroCursorActive
+            const wasInRange = this.heroCursorInRange
+            this.heroCursorPos = { x, y }
+            this.heroCursorActive = true
+            this.heroCursorInRange = inRange
+
+            if (!wasActive || wasInRange !== inRange) {
+                this.heroCursorGlassPos = { x, y }
+            }
+
+            if (inRange) {
+                this.stopHeroCursorGlassFollow()
+                this.heroIntroPointer = { x, y }
+                if (this.heroIntroPointerRaf != null) return
+                this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                    this.heroIntroPointerRaf = null
+                    this.applyHeroIntroPointerShift()
+                })
+                return
+            }
+
+            this.startHeroCursorGlassFollow()
+
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
+        },
+        startHeroCursorGlassFollow() {
+            if (this.heroCursorGlassRaf != null) return
+
+            const tick = () => {
+                this.heroCursorGlassRaf = null
+                if (!this.heroCursorActive || this.heroCursorInRange) return
+
+                const { x: tx, y: ty } = this.heroCursorPos
+                const { x: gx, y: gy } = this.heroCursorGlassPos
+                const follow = 0.13
+                this.heroCursorGlassPos = {
+                    x: gx + (tx - gx) * follow,
+                    y: gy + (ty - gy) * follow,
+                }
+
+                this.heroCursorGlassRaf = requestAnimationFrame(tick)
+            }
+
+            this.heroCursorGlassRaf = requestAnimationFrame(tick)
+        },
+        stopHeroCursorGlassFollow() {
+            if (this.heroCursorGlassRaf == null) return
+            cancelAnimationFrame(this.heroCursorGlassRaf)
+            this.heroCursorGlassRaf = null
+        },
         setHeroIntroPointer(x, y, { showBall = false, immediate = false } = {}) {
             if (showBall) {
                 this.heroCursorPos = { x, y }
@@ -1601,6 +1679,8 @@ export default {
             this.clearHeroIntroTapLinger()
             this.heroIntroActivePointerId = null
             this.heroCursorActive = false
+            this.heroCursorInRange = false
+            this.stopHeroCursorGlassFollow()
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
                 this.heroIntroPointerRaf = null
@@ -1641,17 +1721,7 @@ export default {
             if (!this.canHeroIntroPointerPlay()) return
 
             if (this.isHeroIntroFinePointer() && event.pointerType === 'mouse') {
-                const x = event.clientX
-                const y = event.clientY
-
-                if (!this.isHeroIntroPointerNear(x, y)) {
-                    if (this.heroCursorActive || this.heroIntroPointer) {
-                        this.onHeroPointerEndHandlerImpl()
-                    }
-                    return
-                }
-
-                this.setHeroIntroPointer(x, y, { showBall: true })
+                this.updateHeroFinePointer(event.clientX, event.clientY)
                 return
             }
 
@@ -1675,23 +1745,16 @@ export default {
         onHeroPointerScrollHandler() {
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroFinePointer()) return
-            if (!this.heroCursorActive && !this.heroIntroPointer) return
+            if (!this.heroCursorActive) return
 
             if (this.heroIntroScrollRaf != null) return
             this.heroIntroScrollRaf = requestAnimationFrame(() => {
                 this.heroIntroScrollRaf = null
 
-                if (!this.heroCursorActive && !this.heroIntroPointer) return
+                if (!this.heroCursorActive) return
 
                 const { x, y } = this.heroCursorPos
-                if (!this.isHeroIntroPointerNear(x, y)) {
-                    this.onHeroPointerEndHandlerImpl()
-                    return
-                }
-
-                if (this.heroIntroPointer) {
-                    this.applyHeroIntroPointerShift()
-                }
+                this.updateHeroFinePointer(x, y)
             })
         },
         applyHeroIntroPointerShift() {
@@ -2455,10 +2518,18 @@ export default {
     position: fixed;
     left: 0;
     top: 0;
-    width: 24px;
-    height: 24px;
-    margin: -12px 0 0 -12px;
     border-radius: 50%;
+    box-sizing: border-box;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    will-change: transform;
+}
+
+.hero-intro-cursor-ball--glass {
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
     background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.72) 0%,
@@ -2475,11 +2546,44 @@ export default {
         0 0 18px rgba(0, 10, 170, 0.016);
     -webkit-backdrop-filter: blur(4px) saturate(1.35);
     backdrop-filter: blur(4px) saturate(1.35);
-    pointer-events: none;
     z-index: 110;
-    visibility: hidden;
-    opacity: 0;
-    will-change: transform;
+}
+
+.hero-intro-cursor-ball--dot {
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    background: #000aaa;
+    z-index: 111;
+}
+
+.hero-intro-cursor-ball--in-range {
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.72) 0%,
+        rgba(255, 255, 255, 0.28) 45%,
+        rgba(255, 255, 255, 0.42) 100%
+    );
+    border: 0.5px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 4px rgba(0, 10, 170, 0.11),
+        0 0 8px rgba(0, 10, 170, 0.065),
+        0 0 13px rgba(0, 10, 170, 0.032),
+        0 0 18px rgba(0, 10, 170, 0.016);
+    -webkit-backdrop-filter: blur(4px) saturate(1.35);
+    backdrop-filter: blur(4px) saturate(1.35);
+    z-index: 110;
+    transition:
+        width 0.22s ease,
+        height 0.22s ease,
+        margin 0.22s ease,
+        opacity 0.12s ease,
+        visibility 0.12s ease;
 }
 
 .hero-intro-cursor-ball--visible {
@@ -2488,8 +2592,8 @@ export default {
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .portfolio-page--hero-cursor .hero,
-    .portfolio-page--hero-cursor .hero * {
+    .portfolio-page--hero-cursor,
+    .portfolio-page--hero-cursor * {
         cursor: none;
     }
 }
