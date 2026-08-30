@@ -408,7 +408,7 @@ const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
-const HERO_CURSOR_MAGNIFY_BOOST = 0.2
+const HERO_CURSOR_MAGNIFY_BOOST = 0.25
 const HERO_CURSOR_HOVER_LOCK_PAD = 8
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
