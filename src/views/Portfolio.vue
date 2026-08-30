@@ -677,7 +677,10 @@ export default {
         this.scheduleFirstProjectPrefetch()
         this.teardownMobileProjectScrollSnap = setupMobileProjectScrollSnap({
             root: this.$el,
-            isDisabled: () => this.featuredExpandPending || prefersReducedMotion(),
+            isDisabled: () =>
+                this.featuredExpandPending ||
+                prefersReducedMotion() ||
+                document.documentElement.classList.contains('image-expand-active'),
         })
 
         if (sectionHash) {
@@ -4273,6 +4276,24 @@ export default {
 <style>
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */
 @media (max-width: 799px) {
+    /* Case studies behave like scroll sections once work is in view. */
+    html.portfolio-work-snap {
+        scroll-padding-top: 20px;
+    }
+
+    html.portfolio-work-snap.portfolio-work-snap--active,
+    html.portfolio-work-snap.portfolio-work-snap--active body {
+        scroll-snap-type: y mandatory;
+    }
+
+    html.portfolio-work-snap .work .project {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        scroll-margin-top: 20px;
+        min-height: calc(100svh - 20px);
+        box-sizing: border-box;
+    }
+
     .about-ball.about-ball--dropped {
         animation: about-ball-fall 1.75s linear forwards;
     }
