@@ -30,7 +30,6 @@
             class="hero-intro-cursor-ball hero-intro-cursor-ball--dot hero-intro-cursor-ball--visible"
             :class="{
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
-                'hero-intro-cursor-ball--over-hover': heroCursorOverHover,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
@@ -410,6 +409,10 @@ const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
 const HERO_CURSOR_MAGNIFY_BOOST = 0.25
 const HERO_CURSOR_HOVER_LOCK_PAD = 8
+const HERO_CURSOR_DOT_SIZE = 8
+const HERO_CURSOR_GLASS_IDLE_SIZE = 46
+const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
+const HERO_CURSOR_HOLLOW_END = 0.42
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
@@ -428,6 +431,33 @@ const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
     '.footer-email',
     '.project-tldr-trigger',
 ].join(', ')
+
+function heroCursorHoverMorph(hoverMix) {
+    if (hoverMix <= 0) return { hollow: 0, expand: 0 }
+    if (hoverMix <= HERO_CURSOR_HOLLOW_END) {
+        const t = hoverMix / HERO_CURSOR_HOLLOW_END
+        return { hollow: t * t, expand: 0 }
+    }
+    const t = (hoverMix - HERO_CURSOR_HOLLOW_END) / (1 - HERO_CURSOR_HOLLOW_END)
+    return { hollow: 1, expand: 1 - (1 - t) * (1 - t) }
+}
+
+function heroCursorGlassOuterSize(hoverMix, rangeMix) {
+    const fullHover = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA
+    if (rangeMix > 0.001) {
+        const outSize = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA * hoverMix
+        return outSize * (1 - rangeMix) + 32 * rangeMix
+    }
+    if (hoverMix <= 0) return HERO_CURSOR_GLASS_IDLE_SIZE
+    const { hollow, expand } = heroCursorHoverMorph(hoverMix)
+    if (expand <= 0) {
+        return (
+            HERO_CURSOR_GLASS_IDLE_SIZE +
+            (HERO_CURSOR_DOT_SIZE - HERO_CURSOR_GLASS_IDLE_SIZE) * hollow
+        )
+    }
+    return HERO_CURSOR_DOT_SIZE + (fullHover - HERO_CURSOR_DOT_SIZE) * expand
+}
 
 function parseCssTimeSec(styles, prop, fallback) {
     const raw = styles.getPropertyValue(prop).trim()
@@ -585,25 +615,50 @@ export default {
         },
         heroCursorBallStyle() {
             const { x, y } = this.heroCursorPos
-            let shrink = 1 - this.heroCursorRangeMix
-            if (this.heroCursorOverHover && !this.heroCursorInRange) {
-                shrink = 0
+            const rangeMix = this.heroCursorRangeMix
+            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+
+            let size = HERO_CURSOR_DOT_SIZE
+            let scale = 1
+            let opacity = 1
+            let background = '#000aaa'
+            let borderWidth = 0
+
+            if (rangeMix > 0.001) {
+                const shrink = 1 - rangeMix
+                scale = shrink * shrink
+                opacity = shrink
+            } else if (hoverMix > 0) {
+                const { hollow, expand } = heroCursorHoverMorph(hoverMix)
+                if (expand <= 0) {
+                    background = `rgba(0, 10, 170, ${1 - hollow})`
+                    borderWidth = hollow * 1.5
+                } else {
+                    size = heroCursorGlassOuterSize(hoverMix, rangeMix)
+                    background = 'transparent'
+                    borderWidth = 1.5 + expand * 0.35
+                    opacity = 1 - expand * expand
+                }
             }
-            const scale = shrink * shrink
-            const opacity = shrink
+
+            const half = size / 2
             return {
                 transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
+                width: `${size}px`,
+                height: `${size}px`,
+                margin: `${-half}px 0 0 ${-half}px`,
+                background,
+                border: borderWidth > 0.01 ? `${borderWidth}px solid #000aaa` : 'none',
+                boxSizing: 'border-box',
                 opacity,
-                visibility: scale < 0.02 ? 'hidden' : 'visible',
+                visibility: opacity < 0.02 && scale < 0.02 ? 'hidden' : 'visible',
             }
         },
         heroCursorGlassStyle() {
             const { x, y } = this.heroCursorGlassPos
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
-            const outSize = 46 + 18 * hoverMix
-            const inSize = 32
-            const size = outSize * (1 - rangeMix) + inSize * rangeMix
+            const size = heroCursorGlassOuterSize(hoverMix, rangeMix)
             const half = size / 2
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
@@ -1936,17 +1991,16 @@ export default {
         updateHeroCursorMagnifierLayout() {
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
-            if (hoverMix <= 0.02 || !this.heroCursorMirrorClone) {
+            const { expand } = heroCursorHoverMorph(hoverMix)
+            if (expand <= 0.02 || !this.heroCursorMirrorClone) {
                 this.heroCursorMagnifierLayout = null
                 this.clearHeroCursorMirrorHoverState()
                 return
             }
 
-            const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * hoverMix
+            const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * expand
             const { x, y } = this.heroCursorGlassPos
-            const outSize = 46 + 18 * hoverMix
-            const inSize = 32
-            const size = outSize * (1 - rangeMix) + inSize * rangeMix
+            const size = heroCursorGlassOuterSize(hoverMix, rangeMix)
             const half = size / 2
 
             this.syncHeroCursorMirrorClone()
@@ -1963,7 +2017,7 @@ export default {
                 scale,
                 cx: x,
                 cy: y,
-                opacity: hoverMix * (1 - rangeMix),
+                opacity: expand * (1 - rangeMix),
             }
         },
         destroyHeroCursorMirror() {
@@ -3008,11 +3062,6 @@ export default {
 
 .hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible {
     opacity: 1;
-}
-
-.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible.hero-intro-cursor-ball--over-hover {
-    visibility: hidden;
-    opacity: 0;
 }
 
 @media (hover: hover) and (pointer: fine) {
