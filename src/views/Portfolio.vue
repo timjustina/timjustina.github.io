@@ -8,6 +8,16 @@
         }"
     >
     <Teleport to="body">
+        <div
+            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
+            class="hero-intro-cursor-magnifier"
+            :style="heroCursorMagnifierWindowStyle"
+            aria-hidden="true"
+        >
+            <div class="hero-intro-cursor-magnifier__content" :style="heroCursorMagnifierContentStyle">
+                <div ref="heroCursorMirrorRoot" class="hero-intro-cursor-magnifier__clone-host" />
+            </div>
+        </div>
         <span
             v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
             class="hero-intro-cursor-ball hero-intro-cursor-ball--glass hero-intro-cursor-ball--visible"
@@ -398,6 +408,8 @@ const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
+const HERO_CURSOR_MAGNIFY_BOOST = 0.2
+const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
     'a[href]',
     'button:not(:disabled)',
@@ -556,6 +568,9 @@ export default {
             heroCursorPos: { x: 0, y: 0 },
             heroCursorGlassPos: { x: 0, y: 0 },
             heroCursorGlassRaf: null,
+            heroCursorMagnifierLayout: null,
+            heroCursorMirrorClone: null,
+            heroCursorMirrorHoverTarget: 0,
         }
     },
     computed: {
@@ -592,6 +607,44 @@ export default {
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
+            }
+        },
+        heroCursorMagnifierWindowStyle() {
+            const layout = this.heroCursorMagnifierLayout
+            if (!layout) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
+            return {
+                position: 'fixed',
+                left: `${layout.windowLeft}px`,
+                top: `${layout.windowTop}px`,
+                width: `${layout.size}px`,
+                height: `${layout.size}px`,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                opacity: layout.opacity,
+                visibility: layout.opacity > 0.02 ? 'visible' : 'hidden',
+                pointerEvents: 'none',
+                zIndex: 109,
+            }
+        },
+        heroCursorMagnifierContentStyle() {
+            const layout = this.heroCursorMagnifierLayout
+            if (!layout || typeof window === 'undefined') return {}
+
+            return {
+                position: 'absolute',
+                left: `${layout.half - layout.cx}px`,
+                top: `${layout.half - layout.cy}px`,
+                width: `${window.innerWidth}px`,
+                height: `${window.innerHeight}px`,
+                transform: `scale(${layout.scale})`,
+                transformOrigin: `${layout.cx}px ${layout.cy}px`,
             }
         },
         loadingSplashFrameTransform() {
@@ -1688,6 +1741,12 @@ export default {
                 const hoverLerp = this.heroCursorInRange ? 0.3 : 0.16
                 this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
 
+                if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
+                    this.refreshHeroCursorMirror()
+                }
+                this.heroCursorMirrorHoverTarget = hoverTarget
+                this.updateHeroCursorMagnifierLayout()
+
                 this.heroCursorGlassRaf = requestAnimationFrame(tick)
             }
 
@@ -1697,6 +1756,87 @@ export default {
             if (this.heroCursorGlassRaf == null) return
             cancelAnimationFrame(this.heroCursorGlassRaf)
             this.heroCursorGlassRaf = null
+            this.destroyHeroCursorMirror()
+        },
+        refreshHeroCursorMirror() {
+            const root = this.$refs.heroCursorMirrorRoot
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            if (!root || !source) return
+
+            root.innerHTML = ''
+            const clone = source.cloneNode(true)
+            clone.setAttribute('aria-hidden', 'true')
+            clone.classList.add('hero-intro-cursor-mirror-clone')
+            clone.querySelectorAll('.hero-intro-cursor-ball, .hero-intro-cursor-magnifier').forEach(
+                (el) => el.remove()
+            )
+            root.appendChild(clone)
+            this.heroCursorMirrorClone = clone
+            this.syncHeroCursorMirrorClone()
+        },
+        syncHeroCursorMirrorClone() {
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            const clone = this.heroCursorMirrorClone
+            if (!source || !clone) return null
+
+            const sourceRect = source.getBoundingClientRect()
+            clone.style.position = 'absolute'
+            clone.style.left = `${sourceRect.left}px`
+            clone.style.top = `${sourceRect.top}px`
+            clone.style.width = `${source.offsetWidth}px`
+            clone.style.minHeight = `${source.offsetHeight}px`
+
+            for (const selector of HERO_CURSOR_MIRROR_FIXED_SELECTORS) {
+                const live = source.querySelector(selector)
+                const mirrored = clone.querySelector(selector)
+                if (!live || !mirrored) continue
+
+                const liveRect = live.getBoundingClientRect()
+                mirrored.style.position = 'absolute'
+                mirrored.style.left = `${liveRect.left - sourceRect.left}px`
+                mirrored.style.top = `${liveRect.top - sourceRect.top}px`
+                mirrored.style.width = `${liveRect.width}px`
+                mirrored.style.height = `${liveRect.height}px`
+                mirrored.style.right = 'auto'
+                mirrored.style.bottom = 'auto'
+            }
+
+            return sourceRect
+        },
+        updateHeroCursorMagnifierLayout() {
+            const rangeMix = this.heroCursorRangeMix
+            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            if (hoverMix <= 0.02 || !this.heroCursorMirrorClone) {
+                this.heroCursorMagnifierLayout = null
+                return
+            }
+
+            const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * hoverMix
+            const { x, y } = this.heroCursorGlassPos
+            const outSize = 46 + 18 * hoverMix
+            const inSize = 32
+            const size = outSize * (1 - rangeMix) + inSize * rangeMix
+            const half = size / 2
+
+            this.syncHeroCursorMirrorClone()
+
+            this.heroCursorMagnifierLayout = {
+                windowLeft: x - half,
+                windowTop: y - half,
+                size,
+                half,
+                scale,
+                cx: x,
+                cy: y,
+                opacity: hoverMix * (1 - rangeMix),
+            }
+        },
+        destroyHeroCursorMirror() {
+            const root = this.$refs.heroCursorMirrorRoot
+            if (root) root.innerHTML = ''
+            this.heroCursorMirrorClone = null
+            this.heroCursorMagnifierLayout = null
+            this.heroCursorMirrorHoverTarget = 0
         },
         setHeroIntroPointer(x, y, { showBall = false, immediate = false } = {}) {
             if (showBall) {
@@ -1843,6 +1983,10 @@ export default {
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroFinePointer()) return
             if (!this.heroCursorActive) return
+
+            if (this.heroCursorMirrorHoverTarget === 1) {
+                this.refreshHeroCursorMirror()
+            }
 
             if (this.heroIntroScrollRaf != null) return
             this.heroIntroScrollRaf = requestAnimationFrame(() => {
@@ -2663,6 +2807,15 @@ export default {
             rgba(0, 10, 170, calc(0.013 * var(--hero-cursor-hover-mix, 0)));
     z-index: 110;
     isolation: isolate;
+}
+
+.hero-intro-cursor-magnifier__content {
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__clone-host,
+.hero-intro-cursor-mirror-clone {
+    pointer-events: none;
 }
 
 .hero-intro-cursor-ball--glass::before {
