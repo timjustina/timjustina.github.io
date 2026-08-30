@@ -369,11 +369,6 @@ import menuLogo from '../assets/TjyCutoutLogo.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
-import {
-    setupMobileProjectScrollSnap,
-    suppressMobileProjectScrollSnap,
-    teardownMobileProjectScrollSnap,
-} from '../utils/mobileProjectScrollSnap.js'
 import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
 import {
     cancelImageExpand,
@@ -675,13 +670,6 @@ export default {
         this.setupProjectScrollFade(sectionHash)
         this.setupHeroLocationVisibility()
         this.scheduleFirstProjectPrefetch()
-        this.teardownMobileProjectScrollSnap = setupMobileProjectScrollSnap({
-            root: this.$el,
-            isDisabled: () =>
-                this.featuredExpandPending ||
-                prefersReducedMotion() ||
-                document.documentElement.classList.contains('image-expand-active'),
-        })
 
         if (sectionHash) {
             this.$nextTick(() => {
@@ -723,8 +711,6 @@ export default {
         this.aboutRevealObserver?.disconnect()
         this.projectFadeObserver?.disconnect()
         this.heroLocationObserver?.disconnect()
-        this.teardownMobileProjectScrollSnap?.()
-        this.teardownMobileProjectScrollSnap = null
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         window.removeEventListener('scroll', this.onHeroLocationScroll)
@@ -787,7 +773,6 @@ export default {
             if (!img) return
 
             event.preventDefault()
-            suppressMobileProjectScrollSnap()
             clearTimeout(this.featuredPressClearTimer)
             clearTimeout(this.featuredExpandTimer)
             this.featuredPressClearTimer = null
@@ -826,7 +811,6 @@ export default {
             })
         },
         jumpToSectionHash(hash) {
-            suppressMobileProjectScrollSnap()
             scrollToPortfolioHash(hash, { duration: 0 })
             // Keep top bar hidden after the instant jump (no scroll delta to trigger it).
             window.dispatchEvent(new Event('portfolio-section-jump'))
@@ -4276,24 +4260,6 @@ export default {
 <style>
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */
 @media (max-width: 799px) {
-    /* Case studies behave like scroll sections once work is in view. */
-    html.portfolio-work-snap {
-        scroll-padding-top: 20px;
-    }
-
-    html.portfolio-work-snap.portfolio-work-snap--active,
-    html.portfolio-work-snap.portfolio-work-snap--active body {
-        scroll-snap-type: y mandatory;
-    }
-
-    html.portfolio-work-snap .work .project {
-        scroll-snap-align: start;
-        scroll-snap-stop: always;
-        scroll-margin-top: 20px;
-        min-height: calc(100svh - 20px);
-        box-sizing: border-box;
-    }
-
     .about-ball.about-ball--dropped {
         animation: about-ball-fall 1.75s linear forwards;
     }
