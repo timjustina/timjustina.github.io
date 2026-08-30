@@ -1802,8 +1802,11 @@ export default {
             this.heroCursorActive = true
             this.heroCursorInRange = inRange
             this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
+            const magnifierVisible =
+                !inRange &&
+                (this.heroCursorOverHover || this.heroCursorHoverMix > 0.02)
 
-            if (!wasActive) {
+            if (!wasActive || magnifierVisible) {
                 this.heroCursorGlassPos = { x, y }
             }
 
@@ -1838,6 +1841,11 @@ export default {
                     (rangeTarget - this.heroCursorRangeMix) * (rangeTarget ? 0.2 : 0.16)
 
                 const { x: tx, y: ty } = this.heroCursorPos
+                const hoverTarget =
+                    !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
+                const magnifierVisible =
+                    !this.heroCursorInRange &&
+                    (hoverTarget === 1 || this.heroCursorHoverMix > 0.02)
                 const { x: gx, y: gy } = this.heroCursorGlassPos
                 const transitionBoost =
                     this.heroCursorRangeMix * (1 - this.heroCursorRangeMix) * 4
@@ -1847,14 +1855,15 @@ export default {
                 const nx = gx + (tx - gx) * follow
                 const ny = gy + (ty - gy) * follow
 
-                if (this.heroCursorInRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
+                // Keep the hover magnifier and its ring on one layer — no trailing ghost.
+                if (magnifierVisible) {
+                    this.heroCursorGlassPos = { x: tx, y: ty }
+                } else if (this.heroCursorInRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else {
                     this.heroCursorGlassPos = { x: nx, y: ny }
                 }
 
-                const hoverTarget =
-                    !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
                 this.heroCursorOverHover = hoverTarget === 1
                 const hoverLerp = this.heroCursorInRange ? 0.3 : 0.16
                 this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
@@ -1932,7 +1941,7 @@ export default {
             }
 
             const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * hoverMix
-            const { x, y } = this.heroCursorPos
+            const { x, y } = this.heroCursorGlassPos
             const outSize = 46 + 18 * hoverMix
             const inSize = 32
             const size = outSize * (1 - rangeMix) + inSize * rangeMix
@@ -1940,8 +1949,8 @@ export default {
 
             this.syncHeroCursorMirrorClone()
             this.syncHeroCursorMirrorHoverState(
-                this.heroCursorPos.x,
-                this.heroCursorPos.y
+                this.heroCursorGlassPos.x,
+                this.heroCursorGlassPos.y
             )
 
             this.heroCursorMagnifierLayout = {
