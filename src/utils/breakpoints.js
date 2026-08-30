@@ -1,13 +1,13 @@
 /** Viewports at or below this width use mobile layout (hidden nav, stacked projects, etc.). */
-export const MOBILE_MAX_WIDTH = 1084
+export const MOBILE_MAX_WIDTH = 799
 
 /** Viewports at or above this width use desktop layout. */
-export const DESKTOP_MIN_WIDTH = 1085
+export const DESKTOP_MIN_WIDTH = 800
 
 /** Viewports at or below this width use compact mobile type scale and stacked about layout. */
 export const SMALL_MOBILE_MAX_WIDTH = 600
 
-/** Lower bound for mobile layout with desktop text sizes (601–1084px). */
+/** Lower bound for mobile layout with desktop text sizes (601–799px). */
 export const TABLET_MOBILE_MIN_WIDTH = 601
 
 /** Case studies keep desktop layout (no mobile title/body lines) above this width. */

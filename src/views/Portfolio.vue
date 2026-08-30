@@ -495,7 +495,7 @@ export default {
             aboutLineBridgeSynced: false,
             bridgeSyncMode: null,
             heroLineClipSettled: false,
-            // JS-owned so we can measure while hidden, then show after sync (avoids <1085px flash)
+            // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
             heroDecorHidden:
                 typeof window !== 'undefined' &&
                 window.matchMedia(MOBILE_MEDIA_QUERY).matches,
@@ -2371,7 +2371,7 @@ export default {
     }
 }
 
-@media (max-width: 1084px) {
+@media (max-width: 799px) {
     .hero-intro.hero-intro--chars {
         --hero-intro-tap-linger: 280ms;
         --hero-intro-swipe-min-travel: 20px;
@@ -2557,7 +2557,7 @@ export default {
     transform-origin: center center;
 }
 
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .loading-splash {
         display: block;
     }
@@ -2631,7 +2631,7 @@ export default {
     transition: clip-path var(--hero-line-return-duration) ease;
 }
 
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .about-line-bridge {
         display: block;
     }
@@ -2948,7 +2948,7 @@ export default {
 }
 
 /* Desktop: type ":)" after the block fly-in — cursor first, then one char at a time */
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .hero-intro {
         --hero-intro-fly-end: 1.63s; /* 0.08s delay + 1.55s duration */
         --hero-intro-afterthought-beat: 0.06s;
@@ -3258,7 +3258,7 @@ export default {
     margin-top: 30px;
 }
 
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .project-caption {
         padding-left: var(--project-caption-line-offset, 0px);
         transition: padding-left 0.4s ease;
@@ -3314,7 +3314,7 @@ export default {
     color: var(--muted);
 }
 
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .project-caption {
         min-height: 95px;
     }
@@ -3608,7 +3608,7 @@ export default {
 }
 
 /* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .hero-location {
         position: fixed;
         right: var(--top-bar-edge-pad-right);
@@ -3702,13 +3702,13 @@ export default {
     }
 }
 
-@media (min-width: 1085px) and (min-height: 800px) {
+@media (min-width: 800px) and (min-height: 800px) {
     .hero-intro-wrap {
         transform: translateY(-2vh);
     }
 }
 
-@media (max-width: 1084px) {
+@media (max-width: 799px) {
     .portfolio-page {
         --page-pad: 20px;
         --top-bar-height: 86px;
@@ -3889,17 +3889,8 @@ export default {
     }
 }
 
-/* 800–1084px: desktop work card layout (natural aspect, offsets) on mobile hero */
-@media (min-width: 800px) and (max-width: 1084px) {
-    .project-caption {
-        padding-left: var(--project-caption-line-offset, 0px);
-        transition: padding-left 0.4s ease;
-        min-height: 120px;
-    }
-}
-
-/* 601–1084px: mobile hero, desktop work cards + about section */
-@media (min-width: 601px) and (max-width: 1084px) {
+/* 601–799px: mobile hero + tablet about/text tweaks */
+@media (min-width: 601px) and (max-width: 799px) {
     .about {
         --about-gap: 340px;
         --about-bottom-pad-base: 180px;
@@ -3938,8 +3929,8 @@ export default {
     }
 }
 
-/* 601–1084px: mobile layout with desktop text sizes */
-@media (min-width: 601px) and (max-width: 1084px) {
+/* 601–799px: mobile layout with desktop text sizes */
+@media (min-width: 601px) and (max-width: 799px) {
     .hero-intro {
         font-size: 25px;
         line-height: 37.5px;

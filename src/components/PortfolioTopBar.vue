@@ -318,7 +318,7 @@ export default {
     height: 30px;
 }
 
-@media (min-width: 1085px) {
+@media (min-width: 800px) {
     .top-bar--nav-hero-align .nav {
         position: absolute;
         left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
@@ -384,7 +384,7 @@ export default {
     transform: translateX(-50%) scaleY(1);
 }
 
-@media (max-width: 1084px) {
+@media (max-width: 799px) {
     .nav-link--work,
     .nav-link--about {
         display: none;
