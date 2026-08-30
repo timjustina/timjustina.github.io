@@ -3707,15 +3707,24 @@ export default {
     }
 }
 
-/* 800–1084px: stack deco line below intro; keep Work 80px from logo */
+/* 800–1084px: full-viewport intro (logo↔location edges); stack deco line below */
 @media (min-width: 800px) and (max-width: 1084px) {
+    .hero-intro-wrap {
+        width: calc(100% + 2 * var(--page-pad));
+        max-width: none;
+        margin-left: calc(-1 * var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        padding-left: var(--top-bar-logo-inset);
+        padding-right: var(--top-bar-edge-pad-right);
+        box-sizing: border-box;
+    }
+
     .hero-decor {
         --hero-decor-below-intro-gap: 80px;
         --hero-logo-work-gap: 80px;
         left: calc(
             var(--top-bar-logo-inset) + 104px + var(--hero-logo-work-gap) -
-                var(--portfolio-main-inset-left) - var(--page-pad) - var(--hero-decor-line-stroke-x) -
-                var(--hero-intro-left)
+                var(--portfolio-main-inset-left) - var(--hero-decor-line-stroke-x)
         );
     }
 }
