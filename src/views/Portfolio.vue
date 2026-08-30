@@ -1461,12 +1461,34 @@ export default {
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
         },
+        getHeroCursorZonePad(intro, introStyles) {
+            const normalPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-default', 80)
+            const tightPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-tight', 4)
+            const proximity = parseCssPx(introStyles, '--hero-cursor-nav-proximity', 80)
+
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                return normalPad
+            }
+
+            const introRect = intro.getBoundingClientRect()
+            const navLinks = document.querySelectorAll('.nav-link--work, .nav-link--about')
+
+            for (const nav of navLinks) {
+                const navRect = nav.getBoundingClientRect()
+                if (navRect.height === 0) continue
+                if (introRect.top - navRect.bottom < proximity) {
+                    return tightPad
+                }
+            }
+
+            return normalPad
+        },
         isHeroIntroPointerNear(x, y) {
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
 
             const introStyles = getComputedStyle(intro)
-            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 80)
+            const zonePad = this.getHeroCursorZonePad(intro, introStyles)
             const rect = intro.getBoundingClientRect()
             return (
                 x >= rect.left - zonePad &&
@@ -2518,7 +2540,9 @@ export default {
 
 @media (hover: hover) and (pointer: fine) {
     .hero-intro.hero-intro--chars {
-        --hero-cursor-zone-pad: 80px;
+        --hero-cursor-zone-pad-default: 80px;
+        --hero-cursor-zone-pad-tight: 4px;
+        --hero-cursor-nav-proximity: 80px;
         --hero-intro-hover-radius: 160px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
@@ -2553,7 +2577,9 @@ export default {
         --hero-intro-swipe-min-travel: 20px;
         --hero-intro-swipe-vertical-min: 36px;
         --hero-intro-swipe-ratio: 1.7;
-        --hero-cursor-zone-pad: 80px;
+        --hero-cursor-zone-pad-default: 80px;
+        --hero-cursor-zone-pad-tight: 4px;
+        --hero-cursor-nav-proximity: 80px;
         --hero-intro-hover-radius: 160px;
         --hero-intro-hover-shift: 102px;
         --hero-intro-hover-lift: 38px;
