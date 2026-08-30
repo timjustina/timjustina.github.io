@@ -2075,11 +2075,15 @@ export default {
             const offset =
                 parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-bottom-offset')) || 0
 
-            const introTop = heroIntro.getBoundingClientRect().top
+            const introRect = heroIntro.getBoundingClientRect()
             const wrapTop = wrap.getBoundingClientRect().top
+            const decorStyles = getComputedStyle(decor)
             const topOffset =
-                parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-top-offset')) || 0
-            const clipTop = introTop + topOffset
+                parseFloat(decorStyles.getPropertyValue('--hero-decor-top-offset')) || 0
+            const belowIntroGap =
+                parseFloat(decorStyles.getPropertyValue('--hero-decor-below-intro-gap')) || 0
+            const clipTop =
+                belowIntroGap > 0 ? introRect.bottom + belowIntroGap : introRect.top + topOffset
             decor.style.top = `${Math.round(clipTop - wrapTop)}px`
 
             const height = Math.round(imageTop - clipTop) + offset
@@ -2676,6 +2680,7 @@ export default {
     --hero-decor-height: 487px;
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
+    --hero-decor-below-intro-gap: 0;
     position: absolute;
     top: 7px;
     right: auto;
@@ -3699,6 +3704,19 @@ export default {
 
     .about-location {
         display: none;
+    }
+}
+
+/* 800–1084px: stack deco line below intro; keep Work 80px from logo */
+@media (min-width: 800px) and (max-width: 1084px) {
+    .hero-decor {
+        --hero-decor-below-intro-gap: 80px;
+        --hero-logo-work-gap: 80px;
+        left: calc(
+            var(--top-bar-logo-inset) + 104px + var(--hero-logo-work-gap) -
+                var(--portfolio-main-inset-left) - var(--page-pad) - var(--hero-decor-line-stroke-x) -
+                var(--hero-intro-left)
+        );
     }
 }
 
