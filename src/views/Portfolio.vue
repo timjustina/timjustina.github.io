@@ -2641,22 +2641,26 @@ export default {
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
         inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-mix, 0)))),
         0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.2 + 0.12 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.32 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(4px + 2px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.15 + 0.09 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.24 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(7px + 4px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.11 + 0.065 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.175 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(11px + 6px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.078 + 0.045 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.123 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(16px + 9px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.052 + 0.03 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.082 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(23px + 12px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.032 + 0.018 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.05 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(32px + 16px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.018 + 0.01 * var(--hero-cursor-hover-mix, 0))),
+            rgba(0, 10, 170, calc(0.028 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(44px + 20px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.008 + 0.005 * var(--hero-cursor-hover-mix, 0)));
+            rgba(0, 10, 170, calc(0.013 * var(--hero-cursor-hover-mix, 0)));
     z-index: 110;
     isolation: isolate;
 }
@@ -2666,7 +2670,12 @@ export default {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: rgba(255, 255, 255, 0.28);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.72) 0%,
+        rgba(255, 255, 255, 0.28) 45%,
+        rgba(255, 255, 255, 0.42) 100%
+    );
     -webkit-backdrop-filter: blur(4px) saturate(1.35);
     backdrop-filter: blur(4px) saturate(1.35);
     opacity: calc(
@@ -2674,6 +2683,10 @@ export default {
             (1 - var(--hero-cursor-range-mix, 0)) * (1 - var(--hero-cursor-hover-mix, 0))
     );
     pointer-events: none;
+}
+
+.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range::before {
+    background: rgba(255, 255, 255, 0.28);
 }
 
 .hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range {
