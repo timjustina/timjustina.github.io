@@ -413,6 +413,10 @@ const HERO_CURSOR_DOT_SIZE = 8
 const HERO_CURSOR_GLASS_IDLE_SIZE = 46
 const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
 const HERO_CURSOR_HOLLOW_END = 0.42
+const HERO_CURSOR_RANGE_END_SIZE = 32
+const HERO_CURSOR_RANGE_POP = 1.32
+const HERO_CURSOR_RANGE_DOT_PEAK = 1.85
+const HERO_CURSOR_RANGE_EXPAND_END = 0.28
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
@@ -442,11 +446,66 @@ function heroCursorHoverMorph(hoverMix) {
     return { hollow: 1, expand: 1 - (1 - t) * (1 - t) }
 }
 
+function heroCursorRangeBounceOut(t) {
+    const n1 = 7.5625
+    const d1 = 2.75
+    if (t < 1 / d1) return n1 * t * t
+    if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75
+    if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375
+    return n1 * (t -= 2.625 / d1) * t + 0.984375
+}
+
+function heroCursorRangeEaseOutBack(t) {
+    const c1 = 1.70158
+    const c3 = c1 + 1
+    return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+}
+
+function heroCursorRangeGlassSize(outSize, rangeMix) {
+    if (rangeMix <= 0.001) return outSize
+    if (rangeMix >= 1) return HERO_CURSOR_RANGE_END_SIZE
+
+    const peakSize = outSize * HERO_CURSOR_RANGE_POP
+    if (rangeMix <= HERO_CURSOR_RANGE_EXPAND_END) {
+        const t = rangeMix / HERO_CURSOR_RANGE_EXPAND_END
+        const eased = heroCursorRangeEaseOutBack(t)
+        return outSize + (peakSize - outSize) * eased
+    }
+
+    const t = (rangeMix - HERO_CURSOR_RANGE_EXPAND_END) / (1 - HERO_CURSOR_RANGE_EXPAND_END)
+    const shrink = heroCursorRangeBounceOut(t)
+    return HERO_CURSOR_RANGE_END_SIZE + (peakSize - HERO_CURSOR_RANGE_END_SIZE) * (1 - shrink)
+}
+
+function heroCursorRangeDotVisual(rangeMix) {
+    if (rangeMix <= 0) return { scale: 1, opacity: 1 }
+    if (rangeMix >= 1) return { scale: 0, opacity: 0 }
+
+    const peakScale = HERO_CURSOR_RANGE_DOT_PEAK
+    let scale
+    if (rangeMix <= HERO_CURSOR_RANGE_EXPAND_END) {
+        const t = rangeMix / HERO_CURSOR_RANGE_EXPAND_END
+        scale = 1 + (peakScale - 1) * heroCursorRangeEaseOutBack(t)
+    } else {
+        const t = (rangeMix - HERO_CURSOR_RANGE_EXPAND_END) / (1 - HERO_CURSOR_RANGE_EXPAND_END)
+        scale = peakScale * (1 - heroCursorRangeBounceOut(t))
+    }
+
+    const fadeStart = HERO_CURSOR_RANGE_EXPAND_END * 0.55
+    let opacity = 1
+    if (rangeMix > fadeStart) {
+        const t = (rangeMix - fadeStart) / (1 - fadeStart)
+        opacity = Math.max(0, 1 - heroCursorRangeBounceOut(t))
+    }
+
+    return { scale, opacity }
+}
+
 function heroCursorGlassOuterSize(hoverMix, rangeMix) {
     const fullHover = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA
     if (rangeMix > 0.001) {
         const outSize = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA * hoverMix
-        return outSize * (1 - rangeMix) + 32 * rangeMix
+        return heroCursorRangeGlassSize(outSize, rangeMix)
     }
     if (hoverMix <= 0) return HERO_CURSOR_GLASS_IDLE_SIZE
     const { hollow, expand } = heroCursorHoverMorph(hoverMix)
@@ -625,9 +684,9 @@ export default {
             let borderWidth = 0
 
             if (rangeMix > 0.001) {
-                const shrink = 1 - rangeMix
-                scale = shrink * shrink
-                opacity = shrink
+                const dotVisual = heroCursorRangeDotVisual(rangeMix)
+                scale = dotVisual.scale
+                opacity = dotVisual.opacity
             } else if (hoverMix > 0) {
                 const { hollow, expand } = heroCursorHoverMorph(hoverMix)
                 if (expand <= 0) {
@@ -1893,11 +1952,11 @@ export default {
                 this.heroCursorGlassRaf = null
                 if (!this.heroCursorActive) return
 
+                const { x: tx, y: ty } = this.heroCursorPos
                 const rangeTarget = this.heroCursorInRange ? 1 : 0
                 this.heroCursorRangeMix +=
                     (rangeTarget - this.heroCursorRangeMix) * (rangeTarget ? 0.2 : 0.16)
 
-                const { x: tx, y: ty } = this.heroCursorPos
                 const hoverTarget =
                     !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
                 const magnifierVisible =
