@@ -1460,7 +1460,7 @@ export default {
             if (!intro) return false
 
             const introStyles = getComputedStyle(intro)
-            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 160)
+            const zonePad = parseCssPx(introStyles, '--hero-cursor-zone-pad', 80)
             const rect = intro.getBoundingClientRect()
             return (
                 x >= rect.left - zonePad &&
@@ -2503,7 +2503,7 @@ export default {
 
 @media (hover: hover) and (pointer: fine) {
     .hero-intro.hero-intro--chars {
-        --hero-cursor-zone-pad: 160px;
+        --hero-cursor-zone-pad: 80px;
         --hero-intro-hover-radius: 160px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
@@ -2538,7 +2538,7 @@ export default {
         --hero-intro-swipe-min-travel: 20px;
         --hero-intro-swipe-vertical-min: 36px;
         --hero-intro-swipe-ratio: 1.7;
-        --hero-cursor-zone-pad: 160px;
+        --hero-cursor-zone-pad: 80px;
         --hero-intro-hover-radius: 160px;
         --hero-intro-hover-shift: 102px;
         --hero-intro-hover-lift: 38px;
