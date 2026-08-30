@@ -2959,8 +2959,9 @@ export default {
     inset: 0;
     border-radius: inherit;
     background: rgba(255, 255, 255, 0.28);
-    -webkit-backdrop-filter: blur(4px) saturate(1.35);
-    backdrop-filter: blur(4px) saturate(1.35);
+    -webkit-backdrop-filter: blur(calc(2.5px + 1.5px * var(--hero-cursor-range-mix, 0)))
+        saturate(1.35);
+    backdrop-filter: blur(calc(2.5px + 1.5px * var(--hero-cursor-range-mix, 0))) saturate(1.35);
     opacity: calc(
         var(--hero-cursor-range-mix, 0) +
             (1 - var(--hero-cursor-range-mix, 0)) * (1 - var(--hero-cursor-hover-mix, 0))
