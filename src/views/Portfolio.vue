@@ -3092,21 +3092,17 @@ export default {
         0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-mix, 0)))),
         0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-mix, 0)))),
         0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.32 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(4px + 2px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.24 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(7px + 4px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.175 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(11px + 6px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.123 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(16px + 9px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.082 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(23px + 12px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.05 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(32px + 16px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.028 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(44px + 20px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.013 * var(--hero-cursor-hover-mix, 0)));
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(2px + 3px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(3px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
     z-index: 110;
     isolation: isolate;
 }
