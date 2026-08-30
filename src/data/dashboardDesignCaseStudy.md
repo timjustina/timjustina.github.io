@@ -1,4 +1,4 @@
-# IoT Adherence Analytics for Caregivers: Dashboard Design
+# IoT Adherence Analytics for Caregivers
 
 **Client:** Kin Technology  
 **Period:** 2026

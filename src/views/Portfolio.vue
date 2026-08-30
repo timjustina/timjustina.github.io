@@ -158,7 +158,7 @@
                             height="1352"
                             decoding="async"
                             fetchpriority="high"
-                            alt="IoT Adherence Analytics for Caregivers: Dashboard Design"
+                            alt="IoT Adherence Analytics for Caregivers"
                         />
                     </router-link>
                     <div class="project-caption">
@@ -172,7 +172,7 @@
                                     @pointercancel="onFeaturedProjectPressEnd"
                                     @click="onFeaturedProjectNavigate"
                                 >
-                                    IoT Adherence Analytics for Caregivers: Dashboard Design
+                                    IoT Adherence Analytics for Caregivers
                                 </router-link>
                             </h2>
                             <span class="project-year">2026</span>
@@ -188,7 +188,7 @@
                         <img
                             class="project-image"
                             :src="multiplatformHero"
-                            alt="Home Medication Solution: IoT Multiplatform Design"
+                            alt="IoT Home Medication Solution"
                         />
                         <div class="project-upcoming-overlay" aria-hidden="true">
                             <span class="project-upcoming-label">Writing up ...</span>
@@ -197,7 +197,7 @@
                     <div class="project-caption">
                         <div class="project-caption-header">
                             <h2 class="project-title">
-                                Home Medication Solution: IoT Multiplatform Design
+                                IoT Home Medication Solution
                             </h2>
                             <span class="project-year">2024</span>
                         </div>
@@ -219,7 +219,7 @@
                         <img
                             class="project-image"
                             :src="marketplaceHero"
-                            alt="Art Curation and Marketplace: Mobile App Design"
+                            alt="Art Curation and Marketplace"
                         />
                         <div class="project-upcoming-overlay" aria-hidden="true">
                             <span class="project-upcoming-label">Writing up ...</span>
@@ -228,7 +228,7 @@
                     <div class="project-caption">
                         <div class="project-caption-header">
                             <h2 class="project-title">
-                                Art Curation and Marketplace: Mobile App Design
+                                Art Curation and Marketplace
                             </h2>
                             <span class="project-year">2019</span>
                         </div>

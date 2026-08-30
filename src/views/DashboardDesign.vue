@@ -468,7 +468,7 @@ import {
 } from '../data/dashboardDesignMedia.js'
 
 const DASHBOARD_TITLE =
-    'IoT Adherence Analytics\nfor Caregivers:\nDashboard Design'
+    'IoT Adherence Analytics\nfor Caregivers'
 
 const tldrSummaryItems = [
     {

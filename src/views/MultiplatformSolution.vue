@@ -1,7 +1,7 @@
 <template>
     <ProjectDetail>
         <ProjectDetailHeader
-            title="Home Medication Solution: IoT Multiplatform Design"
+            title="IoT Home Medication Solution"
             client="Kin Technology"
             period="2024"
         />

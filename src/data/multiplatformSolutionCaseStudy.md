@@ -1,4 +1,4 @@
-# Home Medication Solution: IoT Multiplatform Design
+# IoT Home Medication Solution
 
 **Client:** Kin Technology  
 **Period:** 2024
