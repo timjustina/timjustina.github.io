@@ -2958,12 +2958,7 @@ export default {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.72) 0%,
-        rgba(255, 255, 255, 0.28) 45%,
-        rgba(255, 255, 255, 0.42) 100%
-    );
+    background: rgba(255, 255, 255, 0.28);
     -webkit-backdrop-filter: blur(4px) saturate(1.35);
     backdrop-filter: blur(4px) saturate(1.35);
     opacity: calc(
