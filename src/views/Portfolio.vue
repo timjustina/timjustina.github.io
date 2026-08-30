@@ -4809,10 +4809,6 @@ export default {
     opacity: 1;
 }
 
-.hero-intro-cursor-mirror-clone .nav-link.hero-cursor-mirror-hover {
-    color: var(--brand-hover);
-}
-
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */
 @media (max-width: 600px) {
     .about-ball.about-ball--dropped {

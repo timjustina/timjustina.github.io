@@ -1,6 +1,9 @@
 /*
- * Backup: Work / About nav hover styles (pre light-blue color-only update)
- * Source: PortfolioTopBar.vue — restore these blocks to revert.
+ * OLD VERSION ONLY — not imported anywhere; do not add to the build.
+ * Work / About nav hover before the light-blue color-only update.
+ * Restore these blocks manually only when explicitly reverting to the old hover.
+ *
+ * Current live hover: no color change on Work/About (brand blue stays on hover).
  *
  * Template (nav-indicator under each link):
  *

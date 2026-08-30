@@ -248,7 +248,6 @@ export default {
 .portfolio-top-bar {
     --brand: #000aaa;
     --brand-active: #000444;
-    --brand-hover: #1a2bff;
     --font-weight-scale: 0.95;
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
@@ -358,13 +357,6 @@ export default {
 
 .nav-link:active {
     color: var(--brand-active);
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .nav-link:hover,
-    .nav-link:focus-visible {
-        color: var(--brand-hover);
-    }
 }
 
 @media (max-width: 799px) {
