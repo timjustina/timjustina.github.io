@@ -3138,7 +3138,7 @@ export default {
     background: var(--brand);
     font-family: 'Fira Code', monospace;
     font-size: 22px;
-    font-weight: calc(500 * var(--font-weight-scale));
+    font-weight: 500;
     line-height: 33px;
     letter-spacing: -0.02em;
     color: #fff;
@@ -3285,7 +3285,7 @@ export default {
     background: rgba(255, 255, 255, 0.1);
     font-family: 'Fira Code', monospace;
     font-style: normal;
-    font-weight: calc(500 * var(--font-weight-scale));
+    font-weight: 500;
     font-size: 18px;
     line-height: 27px;
     letter-spacing: -0.02em;
@@ -3355,7 +3355,7 @@ export default {
     margin: 16px 0 0;
     font-family: 'Fira Code', monospace;
     font-size: 16px;
-    font-weight: calc(400 * var(--font-weight-scale));
+    font-weight: 400;
     line-height: 25px;
     letter-spacing: -0.02em;
     color: var(--muted);
@@ -3379,7 +3379,7 @@ export default {
     margin-left: auto;
     font-family: 'Fira Code', monospace;
     font-size: 18px;
-    font-weight: calc(500 * var(--font-weight-scale));
+    font-weight: 500;
     line-height: 27px;
     letter-spacing: -0.02em;
     color: var(--muted);
@@ -3533,7 +3533,7 @@ export default {
     max-width: clamp(455px, calc(455px + (100vw - 997px) * 37 / 457), 492px);
     font-family: 'Fira Code', monospace;
     font-size: 16px;
-    font-weight: calc(400 * var(--font-weight-scale));
+    font-weight: 400;
     line-height: 26px;
     letter-spacing: -0.02em;
     color: var(--text);
