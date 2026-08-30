@@ -11,6 +11,7 @@
 <script>
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
+import { CASE_STUDY_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
   finishImageExpand,
   hasPendingImageExpand,
@@ -53,7 +54,7 @@ export default {
       window.setTimeout(() => this.lockMobileHeroHeight(), 250)
     },
     lockMobileHeroHeight() {
-      if (!window.matchMedia('(max-width: 799px)').matches) {
+      if (!window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) {
         this.clearMobileHeroHeight()
         return
       }

@@ -41,6 +41,7 @@
 <script>
 import logo from '../assets/TjyCutoutLogo.svg'
 import menuHover from '../assets/menu_hover.svg'
+import { MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
 const SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
@@ -119,7 +120,7 @@ export default {
     },
     methods: {
         syncMobileTopBarState() {
-            this.isMobileViewport = window.matchMedia('(max-width: 799px)').matches
+            this.isMobileViewport = window.matchMedia(MOBILE_MEDIA_QUERY).matches
             if (this.isInFlowMobileHome) {
                 this.topBarHidden = false
             }
@@ -208,7 +209,7 @@ export default {
         updateNavDecorAlign() {
             if (
                 !this.navHeroAlign ||
-                window.matchMedia('(max-width: 799px)').matches
+                window.matchMedia(MOBILE_MEDIA_QUERY).matches
             ) {
                 this.$el?.style.removeProperty('--nav-work-w-center')
                 return
@@ -317,7 +318,7 @@ export default {
     height: 30px;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 1085px) {
     .top-bar--nav-hero-align .nav {
         position: absolute;
         left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
@@ -383,7 +384,7 @@ export default {
     transform: translateX(-50%) scaleY(1);
 }
 
-@media (max-width: 799px) {
+@media (max-width: 1084px) {
     .nav-link--work,
     .nav-link--about {
         display: none;

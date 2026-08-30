@@ -455,6 +455,7 @@ import ZoomableImage from '../components/ZoomableImage.vue'
 import VideoPair from '../components/VideoPair.vue'
 import tldrMarkdown from '../data/dashboardDesignCaseStudy.md?raw'
 import aboutSquiggle from '../assets/squiggle_3.svg'
+import { CASE_STUDY_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     dashboardHero,
     svg1Cover,
@@ -704,7 +705,7 @@ export default {
         },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
-            if (window.matchMedia('(max-width: 799px)').matches) return
+            if (window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) return
             if (this.reduceMotionMq?.matches) return
 
             const footer = this.getFooterEl()
@@ -717,7 +718,7 @@ export default {
         },
         startAboutBallDrop() {
             if (this.aboutBallDropped) return
-            if (window.matchMedia('(max-width: 799px)').matches) return
+            if (window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) return
             this.syncAboutBallPosition()
             this.aboutBallDropped = true
             window.removeEventListener('scroll', this.onAboutBallScroll)
@@ -756,7 +757,7 @@ export default {
             const lines = [
                 ...title.querySelectorAll('.project-header-title-line'),
             ]
-            const isMobile = window.matchMedia('(max-width: 799px)').matches
+            const isMobile = window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches
             const minPx = isMobile ? 12 : 40
             const maxPxOneLine = Math.max(minPx, Math.floor(targetWidth / 6))
 

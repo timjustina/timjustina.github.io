@@ -370,6 +370,7 @@ import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
+import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY, CASE_STUDY_DESKTOP_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
     prefersReducedMotion,
@@ -494,10 +495,10 @@ export default {
             aboutLineBridgeSynced: false,
             bridgeSyncMode: null,
             heroLineClipSettled: false,
-            // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
+            // JS-owned so we can measure while hidden, then show after sync (avoids <1085px flash)
             heroDecorHidden:
                 typeof window !== 'undefined' &&
-                window.matchMedia('(max-width: 799px)').matches,
+                window.matchMedia(MOBILE_MEDIA_QUERY).matches,
             heroLocationVisible: false,
             heroLocationScrollTicking: false,
             firstProjectPrefetchStarted: false,
@@ -557,7 +558,7 @@ export default {
             document.documentElement.classList.add('portfolio-booting')
         }
 
-        this.heroIntroLetterMq = window.matchMedia('(max-width: 799px)')
+        this.heroIntroLetterMq = window.matchMedia(MOBILE_MEDIA_QUERY)
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.onHeroIntroLetterMqChange = () => {
             this.onMobileHeroLayoutChange()
@@ -739,7 +740,7 @@ export default {
         onFeaturedProjectPress(event) {
             if (event.pointerType === 'mouse' && event.button !== 0) return
             if (prefersReducedMotion()) return
-            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
             const article = event.currentTarget.closest('.project')
             clearTimeout(this.featuredPressClearTimer)
             this.featuredPressClearTimer = null
@@ -748,7 +749,7 @@ export default {
             this.featuredPressAt = performance.now()
         },
         onFeaturedProjectPressEnd(event) {
-            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
             // pointerup fires before click — delay the undo so a real tap can
             // cancel it and keep the round for the expand.
             if (this.featuredExpandPending) return
@@ -791,7 +792,7 @@ export default {
             }
 
             // Same expand path on mobile and desktop
-            const isMobile = window.matchMedia('(max-width: 799px)').matches
+            const isMobile = window.matchMedia(MOBILE_MEDIA_QUERY).matches
             if (isMobile) article.classList.add('project--press-expand')
 
             startImageExpand({
@@ -840,8 +841,8 @@ export default {
                 return
             }
 
-            // Desktop (800px+): no scroll fade; mobile uses observer below.
-            if (window.matchMedia('(min-width: 800px)').matches) {
+            // Desktop work cards (800px+): no scroll fade; narrower mobile uses observer below.
+            if (window.matchMedia(CASE_STUDY_DESKTOP_MEDIA_QUERY).matches) {
                 this.revealAllProjects()
                 return
             }
@@ -888,14 +889,14 @@ export default {
             const about = this.$el?.querySelector('#about')
             if (!about) return
 
-            const isMobile = window.matchMedia('(max-width: 799px)').matches
+            const isMobileAbout = window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches
 
             this.aboutRevealObserver = new IntersectionObserver(
                 (entries) => {
                     const entry = entries[0]
                     if (!entry) return
 
-                    if (isMobile) {
+                    if (isMobileAbout) {
                         // Start once the beige about background fills 1/3 of the viewport
                         const viewportHeight = entry.rootBounds?.height ?? 0
                         const visibleHeight = entry.intersectionRect.height
@@ -909,7 +910,7 @@ export default {
                     this.aboutRevealObserver = null
                     this.scheduleAboutEntranceEnd()
                 },
-                isMobile
+                isMobileAbout
                     ? {
                           root: null,
                           // Dense steps so we can measure visible height as it scrolls in
@@ -966,7 +967,7 @@ export default {
         },
         finishLoadingSplash() {
             this.clearLoadingTimer()
-            const isMobile = window.matchMedia('(max-width: 799px)').matches
+            const isMobile = window.matchMedia(MOBILE_MEDIA_QUERY).matches
             if (!isMobile || prefersReducedMotion()) {
                 this.completeLoadingHandoff()
                 return
@@ -1225,7 +1226,7 @@ export default {
             this.updateHeroLocationVisibility()
         },
         updateHeroLocationVisibility() {
-            if (window.matchMedia('(max-width: 799px)').matches) {
+            if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
                 this.heroLocationVisible = false
                 return
             }
@@ -1241,7 +1242,7 @@ export default {
             this.heroLocationVisible = top >= window.innerHeight - 1
         },
         onHeroLocationScroll() {
-            if (window.matchMedia('(max-width: 799px)').matches) return
+            if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
             if (this.heroLocationScrollTicking) return
             this.heroLocationScrollTicking = true
             requestAnimationFrame(() => {
@@ -1355,7 +1356,7 @@ export default {
                 const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
                 const height = Math.max(0, Math.round(window.innerHeight - topBarHeight))
                 this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
-            } else if (window.matchMedia('(min-width: 800px)').matches) {
+            } else if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 this.$el?.style.removeProperty('--mobile-hero-height')
                 this.$el?.style.setProperty(
                     '--desktop-hero-min-height',
@@ -1807,7 +1808,7 @@ export default {
         },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
-            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
             if (prefersReducedMotion()) return
 
             const footer = this.$el?.querySelector('.site-footer')
@@ -1820,7 +1821,7 @@ export default {
         },
         startAboutBallDrop() {
             if (this.aboutBallDropped) return
-            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
             if (prefersReducedMotion()) return
             // Don't start the drop while the about slide-in is still moving
             if (this.aboutRevealed && !this.aboutEntranceDone) {
@@ -1832,7 +1833,7 @@ export default {
             window.removeEventListener('scroll', this.onAboutBallScroll)
         },
         syncAboutBallPosition() {
-            if (!window.matchMedia('(max-width: 799px)').matches) return
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
             // Skip while about fly-ins are running — mutating those elements
             // to measure was restarting the entrance animations.
             if (this.aboutRevealed && !this.aboutEntranceDone) return
@@ -2065,7 +2066,7 @@ export default {
             if (window.getComputedStyle(decor).display === 'none') {
                 return
             }
-            if (!window.matchMedia('(min-width: 800px)').matches) {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 return
             }
 
@@ -2098,7 +2099,7 @@ export default {
 
             if (!bridge || !about || !decor || !workLastAnchor) return
             if (window.getComputedStyle(decor).display === 'none') return
-            if (!window.matchMedia('(min-width: 800px)').matches) {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 bridge.style.height = '0px'
                 return
             }
@@ -2134,7 +2135,7 @@ export default {
             const captions = root.querySelectorAll('.work .project-caption')
             if (!captions.length) return
 
-            if (!window.matchMedia('(min-width: 800px)').matches) {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 for (const caption of captions) {
                     caption.style.removeProperty('--project-caption-line-offset')
                 }
@@ -2370,7 +2371,7 @@ export default {
     }
 }
 
-@media (max-width: 799px) {
+@media (max-width: 1084px) {
     .hero-intro.hero-intro--chars {
         --hero-intro-tap-linger: 280ms;
         --hero-intro-swipe-min-travel: 20px;
@@ -2556,7 +2557,7 @@ export default {
     transform-origin: center center;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 1085px) {
     .loading-splash {
         display: block;
     }
@@ -2630,7 +2631,7 @@ export default {
     transition: clip-path var(--hero-line-return-duration) ease;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 1085px) {
     .about-line-bridge {
         display: block;
     }
@@ -2947,7 +2948,7 @@ export default {
 }
 
 /* Desktop: type ":)" after the block fly-in — cursor first, then one char at a time */
-@media (min-width: 800px) {
+@media (min-width: 1085px) {
     .hero-intro {
         --hero-intro-fly-end: 1.63s; /* 0.08s delay + 1.55s duration */
         --hero-intro-afterthought-beat: 0.06s;
@@ -3257,7 +3258,7 @@ export default {
     margin-top: 30px;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 1085px) {
     .project-caption {
         padding-left: var(--project-caption-line-offset, 0px);
         transition: padding-left 0.4s ease;
@@ -3313,14 +3314,7 @@ export default {
     color: var(--muted);
 }
 
-/* Keep image-to-image rhythm even when descriptions wrap unevenly */
-@media (min-width: 800px) and (max-width: 997px) {
-    .project-caption {
-        min-height: 120px;
-    }
-}
-
-@media (min-width: 998px) {
+@media (min-width: 1085px) {
     .project-caption {
         min-height: 95px;
     }
@@ -3613,76 +3607,8 @@ export default {
     }
 }
 
-/* Tablet: tighter squiggle inset so line + paragraph stay side-by-side */
-@media (min-width: 800px) and (max-width: 997px) {
-    .portfolio-page {
-        --hero-squiggle-left: 120px; /* clamp floor; explicit for 800–997 */
-    }
-}
-
-/* ≤997px: 997px artboard lock before tablet layout */
-@media (max-width: 997px) {
-    .portfolio-page {
-        /* Logo sits above the bar bottom: (120px bar − 50px nav block) / 2 */
-        --top-bar-logo-inset: 35px;
-    }
-
-    .hero {
-        margin-bottom: var(--hero-text-to-image);
-    }
-
-    .project + .project {
-        margin-top: 120px;
-    }
-
-    .project--offset {
-        margin-left: 0;
-    }
-
-    .project-description {
-        line-height: 25px;
-    }
-
-    .about {
-        --about-gap: 340px;
-        --about-bottom-pad-base: 180px;
-        margin-top: 340px;
-        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
-    }
-
-    .about-inner {
-        grid-template-columns: 345px 1fr;
-        max-width: 800px;
-        padding: 0;
-    }
-
-    .about-photo-column {
-        padding-left: var(--about-image-text-gap);
-    }
-
-    .about-photo,
-    .about-photo--placeholder {
-        width: 281px;
-        height: 402px;
-    }
-
-    .about-text-column {
-        padding-top: 100px;
-        padding-right: var(--about-image-text-gap);
-    }
-
-    .about-heading {
-        margin: 0 0 32px;
-    }
-
-    .about-bio {
-        max-width: 455px;
-        line-height: 25px;
-    }
-}
-
 /* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
-@media (min-width: 800px) {
+@media (min-width: 1085px) {
     .hero-location {
         position: fixed;
         right: var(--top-bar-edge-pad-right);
@@ -3776,20 +3702,17 @@ export default {
     }
 }
 
-@media (min-width: 800px) and (min-height: 800px) {
+@media (min-width: 1085px) and (min-height: 800px) {
     .hero-intro-wrap {
         transform: translateY(-2vh);
     }
 }
 
-@media (max-width: 799px) {
+@media (max-width: 1084px) {
     .portfolio-page {
         --page-pad: 20px;
         --top-bar-height: 86px;
         --hero-logo-gap: 74px;
-        --project-w: 100%;
-        --project-w-wide: 100%;
-        --project-stack-gap: 80px;
         /* Logo top 20px + 50.4px tall (20% bigger) in the 86px bar */
         --top-bar-logo-inset: 20px;
         --mobile-block-gap: calc(2 * 84px - 25px - 20px - 15px);
@@ -3816,23 +3739,12 @@ export default {
         margin-bottom: 120px;
     }
 
-    .about {
-        margin-top: calc(2 * var(--mobile-block-gap));
-        --about-bottom-pad: 326px;
-        --about-photo-h: 288px;
-        --about-stack-gap: 50px;
-        --about-heading-location-gap: 32px;
-        --about-content-shift: 50px;
-        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
-    }
-
     .portfolio-main {
         padding: 0 var(--page-pad) 0;
         box-sizing: border-box;
     }
 
-    .project--featured,
-    #about {
+    .project--featured {
         scroll-margin-top: 0;
     }
 
@@ -3870,6 +3782,189 @@ export default {
 
     .about-line {
         display: none;
+    }
+}
+
+/* ≤799px: square work cards and stacked project layout */
+@media (max-width: 799px) {
+    .portfolio-page {
+        --project-w: 100%;
+        --project-w-wide: 100%;
+        --project-stack-gap: 80px;
+    }
+
+    .work {
+        gap: 0;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        align-items: stretch;
+    }
+
+    /* Mobile: no fly-in; off-screen cards use scroll fade */
+    .portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade),
+    .portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade) {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+        will-change: auto;
+    }
+
+    .project,
+    .project--featured,
+    .project--offset,
+    .project:last-child {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        margin-top: 0;
+        margin-left: 0;
+    }
+
+    .project + .project {
+        margin-top: var(--project-stack-gap);
+    }
+
+    .project-image-link,
+    .project-image-wrap {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        border-radius: 20px;
+        transition: border-radius 0.45s ease;
+    }
+
+    .project:active .project-image-link,
+    .project:active .project-image-wrap,
+    .project--press-expand .project-image-link,
+    .project--press-expand .project-image-wrap,
+    .project--press-expand .project-image {
+        border-radius: 700px 700px 20px 20px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .project:hover .project-image-link,
+        .project:hover .project-image-wrap,
+        .project:focus-within .project-image-link,
+        .project:focus-within .project-image-wrap {
+            border-radius: 700px 700px 20px 20px;
+        }
+    }
+
+    .project-image {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+    }
+
+    .project-caption {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .project-caption-header {
+        padding-top: 0;
+        gap: 0;
+        width: 100%;
+    }
+
+    /* Thumbnail only — title tap must not navigate */
+    .project-title-link {
+        pointer-events: none;
+        cursor: default;
+    }
+
+    /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
+    .cta-button,
+    .project-upcoming-label,
+    .project-year {
+        font-weight: 500;
+    }
+
+    .project-description {
+        font-weight: 400;
+    }
+}
+
+/* 800–1084px: desktop work card layout (natural aspect, offsets) on mobile hero */
+@media (min-width: 800px) and (max-width: 1084px) {
+    .project-caption {
+        padding-left: var(--project-caption-line-offset, 0px);
+        transition: padding-left 0.4s ease;
+        min-height: 120px;
+    }
+}
+
+/* 601–1084px: mobile hero, desktop work cards + about section */
+@media (min-width: 601px) and (max-width: 1084px) {
+    .about {
+        --about-gap: 340px;
+        --about-bottom-pad-base: 180px;
+        margin-top: 340px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
+    }
+
+    .about-inner {
+        grid-template-columns: 345px 1fr;
+        max-width: 800px;
+        padding: 0;
+    }
+
+    .about-photo-column {
+        padding-left: var(--about-image-text-gap);
+    }
+
+    .about-photo,
+    .about-photo--placeholder {
+        width: 281px;
+        height: 402px;
+    }
+
+    .about-text-column {
+        padding-top: 100px;
+        padding-right: var(--about-image-text-gap);
+    }
+
+    .about-heading {
+        margin: 0 0 32px;
+    }
+
+    .about-bio {
+        max-width: 455px;
+        line-height: 25px;
+    }
+}
+
+/* 601–1084px: mobile layout with desktop text sizes */
+@media (min-width: 601px) and (max-width: 1084px) {
+    .hero-intro {
+        font-size: 25px;
+        line-height: 37.5px;
+    }
+
+    .project-description {
+        margin: 16px 0 0;
+        line-height: 25px;
+    }
+}
+
+/* ≤600px: smaller type and mobile about layout */
+@media (max-width: 600px) {
+    #about {
+        scroll-margin-top: 0;
+    }
+
+    .about {
+        margin-top: calc(2 * var(--mobile-block-gap));
+        --about-bottom-pad: 326px;
+        --about-photo-h: 288px;
+        --about-stack-gap: 50px;
+        --about-heading-location-gap: 32px;
+        --about-content-shift: 50px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
     }
 
     .about-ball {
@@ -4047,124 +4142,13 @@ export default {
         max-width: 100%;
         font-size: 16px;
         line-height: 25px;
+        font-weight: 400;
     }
 
     .about-actions {
         margin-top: 96px;
     }
 
-    .work {
-        gap: 0;
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        align-items: stretch;
-    }
-
-    /* Mobile: no fly-in; off-screen cards use scroll fade */
-    .portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade),
-    .portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade) {
-        opacity: 1;
-        transform: none;
-        animation: none !important;
-        will-change: auto;
-    }
-
-    .project,
-    .project--featured,
-    .project--offset,
-    .project:last-child {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        margin-top: 0;
-        margin-left: 0;
-    }
-
-    .project + .project {
-        margin-top: var(--project-stack-gap);
-    }
-
-    .project-image-link,
-    .project-image-wrap {
-        width: 100%;
-        max-width: 100%;
-        aspect-ratio: 1 / 1;
-        overflow: hidden;
-        border-radius: 20px;
-        transition: border-radius 0.45s ease;
-    }
-
-    .project:active .project-image-link,
-    .project:active .project-image-wrap,
-    .project--press-expand .project-image-link,
-    .project--press-expand .project-image-wrap,
-    .project--press-expand .project-image {
-        border-radius: 700px 700px 20px 20px;
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-        .project:hover .project-image-link,
-        .project:hover .project-image-wrap,
-        .project:focus-within .project-image-link,
-        .project:focus-within .project-image-wrap {
-            border-radius: 700px 700px 20px 20px;
-        }
-    }
-
-    .project-image {
-        width: 100%;
-        max-width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center center;
-    }
-
-    .project-caption {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .project-caption-header {
-        padding-top: 0;
-        gap: 0;
-        width: 100%;
-    }
-
-    /* Thumbnail only — title tap must not navigate */
-    .project-title-link {
-        pointer-events: none;
-        cursor: default;
-    }
-
-    /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
-    .cta-button,
-    .project-upcoming-label,
-    .project-year {
-        font-weight: 500;
-    }
-
-    .project-description,
-    .about-bio {
-        font-weight: 400;
-    }
-}
-
-/* 601–799px: mobile layout with desktop text sizes */
-@media (min-width: 601px) and (max-width: 799px) {
-    .hero-intro {
-        font-size: 25px;
-        line-height: 37.5px;
-    }
-
-    .project-description {
-        margin: 16px 0 0;
-        line-height: 25px;
-    }
-}
-
-/* ≤600px: smaller type and mobile about layout */
-@media (max-width: 600px) {
     .hero-intro {
         max-width: 100%;
         font-size: 22px;
@@ -4211,7 +4195,7 @@ export default {
 
 <style>
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */
-@media (max-width: 799px) {
+@media (max-width: 600px) {
     .about-ball.about-ball--dropped {
         animation: about-ball-fall 1.75s linear forwards;
     }

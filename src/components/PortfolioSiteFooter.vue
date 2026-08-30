@@ -84,7 +84,7 @@ export default {
     color: var(--brand);
 }
 
-@media (max-width: 799px) {
+@media (max-width: 1084px) {
     .site-footer {
         --top-bar-height: 86px;
         --top-bar-edge-pad-left: 20px;

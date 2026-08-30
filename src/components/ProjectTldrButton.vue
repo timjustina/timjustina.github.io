@@ -100,8 +100,7 @@ import chevronDefault from '../assets/tldr-chevron-default.svg'
 import chevronHover from '../assets/tldr-chevron-hover.svg'
 import chevronClicked from '../assets/tldr-chevron-clicked.svg'
 import { easeInOutCubic, smoothScrollTo } from '../utils/scrollToAbout.js'
-
-const MOBILE_VIEWPORT_QUERY = '(max-width: 799px)'
+import { CASE_STUDY_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 const TLDR_TRIGGER_TOP_OFFSET = 60
 const TLDR_SCROLL_DURATION_MS = 260
 
@@ -132,7 +131,7 @@ export default {
   },
   methods: {
     isMobileViewport() {
-      return window.matchMedia(MOBILE_VIEWPORT_QUERY).matches
+      return window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches
     },
     getOpenSectionHeight(root) {
       const liveHeight = root.getBoundingClientRect().height

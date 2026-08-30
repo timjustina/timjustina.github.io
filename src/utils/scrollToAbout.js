@@ -1,5 +1,6 @@
+import { SMALL_MOBILE_MEDIA_QUERY } from './breakpoints.js'
+
 const ABOUT_EXTRA_OFFSET = 85
-const SMALL_SCREEN_QUERY = '(max-width: 600px)'
 
 function getHeaderOffset() {
     const topBar = document.querySelector('.top-bar')
@@ -19,7 +20,7 @@ export function getAboutScrollTop() {
     const scrollY = window.scrollY
     const aboutTop = aboutSection.getBoundingClientRect().top + scrollY
     const bioTop = aboutBio.getBoundingClientRect().top + scrollY
-    const isSmall = window.matchMedia(SMALL_SCREEN_QUERY).matches
+    const isSmall = window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches
     const headerOffset = getHeaderOffset()
 
     const colorTop = aboutTop - headerOffset
