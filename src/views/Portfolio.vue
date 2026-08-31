@@ -685,7 +685,7 @@ export default {
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
             heroIntroTouchGuardActive: false,
-            heroCursorActive: isHeroCursorEnvironment(),
+            heroCursorActive: false,
             heroCursorInRange: false,
             heroCursorRangeTight: false,
             heroCursorRangeMix: 0,
@@ -717,7 +717,7 @@ export default {
             return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
         },
         heroCursorVisible() {
-            return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
+            return this.heroCursorEligible && this.heroCursorActive
         },
         heroCursorBallStyle() {
             if (!this.heroCursorVisible) {
@@ -896,9 +896,6 @@ export default {
             this.updateHeroFinePointer(event.clientX, event.clientY, {
                 introEffects: this.canHeroIntroPointerPlay(),
             })
-        }
-        if (this.heroIntroLetterMode && this.isHeroIntroFinePointer()) {
-            this.primeHeroCursor()
         }
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
         document.addEventListener('pointerenter', this.onHeroPointerEnter, { passive: true })
@@ -2047,12 +2044,6 @@ export default {
             } else {
                 document.documentElement.classList.remove('portfolio-hero-cursor')
             }
-        },
-        primeHeroCursor() {
-            if (!this.heroIntroLetterMode || !this.isHeroIntroFinePointer()) return
-            this.heroCursorActive = true
-            this.syncHeroCursorDocumentClass()
-            this.startHeroCursorGlassFollow()
         },
         updateHeroFinePointer(x, y, { introEffects = true } = {}) {
             const inRange = introEffects && this.isHeroIntroPointerNear(x, y)
