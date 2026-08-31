@@ -338,10 +338,15 @@ export default {
         left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
         top: calc(var(--top-bar-edge-pad-right) + 19px);
         height: var(--top-bar-nav-height);
+        opacity: 1;
+        transition:
+            opacity 0.3s ease,
+            visibility 0.3s ease;
     }
 
     .nav--hidden {
         visibility: hidden;
+        opacity: 0;
         pointer-events: none;
     }
 }

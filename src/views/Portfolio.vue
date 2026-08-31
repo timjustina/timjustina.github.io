@@ -96,6 +96,7 @@
         <main class="portfolio-main">
             <section class="hero">
                 <div class="hero-intro-wrap">
+                    <div class="hero-decor-anchor" aria-hidden="true"></div>
                     <div
                         class="hero-decor portfolio-fly portfolio-fly--from-right"
                         :class="{ 'hero-decor--hidden': heroDecorHidden }"
@@ -953,6 +954,7 @@ export default {
             }
         }
 
+        this.syncDecorLineX()
         this.syncHeroDecorHeight()
         this.syncProjectCaptionLineOffset()
         this.syncAboutBallPosition()
@@ -1375,6 +1377,8 @@ export default {
             this.syncAboutLocationTextClip()
             this.syncHeroIntroCharColumns()
             this.pageRevealed = true
+            this.syncDecorLineX()
+            this.publishDecorLineAlign()
             this.schedulePageEntranceSettle()
             scrollToPortfolioHash(this.$route.hash)
         },
@@ -2565,6 +2569,7 @@ export default {
             this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
                 this.lockHeroViewportHeight()
+                this.syncDecorLineX()
                 this.syncHeroDecorHeight()
                 this.syncProjectCaptionLineOffset()
                 this.syncAboutBallPosition()
@@ -2816,18 +2821,28 @@ export default {
             if (!String(event.animationName).includes('portfolio-fly-from-right')) return
             this.publishDecorLineAlign()
         },
-        publishDecorLineAlign() {
+        syncDecorLineX() {
             if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
 
-            const decor = this.$el?.querySelector('.hero-decor')
-            if (
-                !decor ||
-                this.heroDecorHidden ||
-                window.getComputedStyle(decor).display === 'none'
-            ) {
-                return
-            }
+            const anchor = this.$el?.querySelector('.hero-decor-anchor')
+            if (!anchor || window.getComputedStyle(anchor).display === 'none') return
 
+            const pageLeft = this.$el.getBoundingClientRect().left
+            const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
+            const anchorRect = anchor.getBoundingClientRect()
+            this.$el.style.setProperty(
+                '--portfolio-decor-line-x',
+                `${Math.round(anchorRect.left - pageLeft + strokeX)}px`,
+            )
+        },
+        publishDecorLineAlign() {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (this.heroDecorHidden) return
+
+            const anchor = this.$el?.querySelector('.hero-decor-anchor')
+            if (!anchor || window.getComputedStyle(anchor).display === 'none') return
+
+            this.syncDecorLineX()
             this.syncHeroDecorHeight()
             requestAnimationFrame(() => {
                 window.dispatchEvent(new Event(PORTFOLIO_DECOR_LINE_SYNCED_EVENT))
@@ -2848,13 +2863,7 @@ export default {
             }
 
             const pageTop = this.$el.getBoundingClientRect().top
-            const pageLeft = this.$el.getBoundingClientRect().left
-            const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
-            const decorRect = decor.getBoundingClientRect()
-            this.$el.style.setProperty(
-                '--portfolio-decor-line-x',
-                `${Math.round(decorRect.left - pageLeft + strokeX)}px`,
-            )
+            this.syncDecorLineX()
 
             const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
             const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
@@ -3511,6 +3520,18 @@ export default {
     max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
     margin: var(--hero-logo-gap) 0 0
         var(--hero-intro-left);
+}
+
+/* Resting decor-line X for nav/header sync — not affected by fly-in transform */
+.hero-decor-anchor {
+    position: absolute;
+    top: 0;
+    left: calc(var(--hero-squiggle-left) - var(--hero-intro-left));
+    width: var(--hero-squiggle-width);
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .hero-decor {
@@ -4563,6 +4584,11 @@ export default {
     }
 
     .hero-intro-wrap {
+        --hero-logo-work-gap: 80px;
+        --hero-decor-left: calc(
+            var(--top-bar-logo-inset) + 104px + var(--hero-logo-work-gap) -
+                var(--portfolio-main-inset-left) - var(--hero-decor-line-stroke-x)
+        );
         width: calc(100% + 2 * var(--page-pad));
         max-width: none;
         margin-left: calc(-1 * var(--page-pad));
@@ -4574,11 +4600,11 @@ export default {
 
     .hero-decor {
         --hero-decor-below-intro-gap: 80px;
-        --hero-logo-work-gap: 80px;
-        left: calc(
-            var(--top-bar-logo-inset) + 104px + var(--hero-logo-work-gap) -
-                var(--portfolio-main-inset-left) - var(--hero-decor-line-stroke-x)
-        );
+        left: var(--hero-decor-left);
+    }
+
+    .hero-decor-anchor {
+        left: var(--hero-decor-left);
     }
 }
 
