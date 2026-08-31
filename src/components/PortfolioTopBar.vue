@@ -315,6 +315,8 @@ export default {
 .logo-block {
     display: flex;
     align-items: center;
+    padding: 20px;
+    margin: -20px;
     text-decoration: none;
     color: inherit;
 }
@@ -356,6 +358,8 @@ export default {
     font-size: 20px;
     font-weight: 500;
     line-height: 30px;
+    padding: 10px;
+    margin: -10px;
     color: var(--brand);
     text-decoration: none;
 }
@@ -388,7 +392,7 @@ export default {
 
     .logo-block {
         align-self: flex-start;
-        margin-top: 20px;
+        margin: 0 -20px -20px -20px;
     }
 
     .logo {
