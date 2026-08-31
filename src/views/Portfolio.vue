@@ -4,12 +4,12 @@
         :class="{
             'portfolio-page--reveal': pageRevealed,
             'portfolio-page--settled': pageEntranceDone,
-            'portfolio-page--hero-cursor': heroCursorActive,
+            'portfolio-page--hero-cursor': heroCursorHideNative,
         }"
     >
     <Teleport to="body">
         <div
-            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
+            v-if="heroCursorEligible"
             class="hero-intro-cursor-magnifier"
             :style="heroCursorMagnifierWindowStyle"
             aria-hidden="true"
@@ -19,9 +19,10 @@
             </div>
         </div>
         <span
-            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
-            class="hero-intro-cursor-ball hero-intro-cursor-ball--glass hero-intro-cursor-ball--visible"
+            v-if="heroCursorEligible"
+            class="hero-intro-cursor-ball hero-intro-cursor-ball--glass"
             :class="{
+                'hero-intro-cursor-ball--visible': heroCursorVisible,
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
                 'hero-intro-cursor-ball--in-range-tight': heroCursorRangeTight,
             }"
@@ -29,9 +30,10 @@
             aria-hidden="true"
         />
         <span
-            v-if="heroIntroLetterMode && heroIntroFinePointer && heroCursorActive"
-            class="hero-intro-cursor-ball hero-intro-cursor-ball--dot hero-intro-cursor-ball--visible"
+            v-if="heroCursorEligible"
+            class="hero-intro-cursor-ball hero-intro-cursor-ball--dot"
             :class="{
+                'hero-intro-cursor-ball--visible': heroCursorVisible,
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
             }"
             :style="heroCursorBallStyle"
@@ -411,6 +413,7 @@ const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
 const HERO_CURSOR_MAGNIFY_BOOST = 0.25
+const HERO_CURSOR_LAYER_Z = 10002
 const HERO_CURSOR_HOVER_LOCK_PAD = 8
 const HERO_CURSOR_DOT_SIZE = 8
 const HERO_CURSOR_GLASS_IDLE_SIZE = 46
@@ -703,7 +706,27 @@ export default {
                 window.matchMedia('(hover: hover) and (pointer: fine)').matches
             )
         },
+        heroCursorEligible() {
+            return this.heroIntroLetterMode && this.heroIntroFinePointer
+        },
+        heroCursorBootLocked() {
+            return this.showLoadingSplash || this.logoHandoff || !this.pageEntranceDone
+        },
+        heroCursorHideNative() {
+            return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
+        },
+        heroCursorVisible() {
+            return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
+        },
         heroCursorBallStyle() {
+            if (!this.heroCursorVisible) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
             const { x, y } = this.heroCursorPos
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
@@ -745,6 +768,14 @@ export default {
             }
         },
         heroCursorGlassStyle() {
+            if (!this.heroCursorVisible) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
             const { x, y } = this.heroCursorGlassPos
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
@@ -780,7 +811,7 @@ export default {
                 opacity: layout.opacity,
                 visibility: layout.opacity > 0.02 ? 'visible' : 'hidden',
                 pointerEvents: 'none',
-                zIndex: 109,
+                zIndex: HERO_CURSOR_LAYER_Z - 1,
             }
         },
         heroCursorMagnifierContentStyle() {
@@ -801,7 +832,16 @@ export default {
             return `rotate(${this.loadingRotationDeg}deg)`
         },
     },
+    watch: {
+        heroCursorHideNative() {
+            this.syncHeroCursorDocumentClass()
+        },
+    },
     mounted() {
+        if (this.heroCursorEligible) {
+            this.syncHeroCursorDocumentClass()
+        }
+
         const sectionHash = PORTFOLIO_SECTION_HASHES.has(this.$route.hash)
             ? this.$route.hash
             : ''
@@ -835,6 +875,16 @@ export default {
         this.onHeroPointerEndHandler = () => this.onHeroPointerEndHandlerImpl()
         this.onHeroPointerLeaveWindow = (event) => {
             if (event.relatedTarget != null) return
+            const { clientX: x, clientY: y } = event
+            const margin = 2
+            if (
+                x >= -margin &&
+                y >= -margin &&
+                x <= window.innerWidth + margin &&
+                y <= window.innerHeight + margin
+            ) {
+                return
+            }
             this.onHeroPointerEndHandlerImpl()
         }
         this.onHeroPointerScroll = () => this.onHeroPointerScrollHandler()
@@ -1388,6 +1438,7 @@ export default {
             this.pageEntranceSettleTimer = null
             if (this.pageEntranceDone) return
             this.pageEntranceDone = true
+            this.syncHeroCursorDocumentClass()
             this.lockHeroViewportHeight()
             this.syncHeroDecorHeight()
             this.syncProjectCaptionLineOffset()
@@ -1987,11 +2038,7 @@ export default {
             }
         },
         syncHeroCursorDocumentClass() {
-            if (
-                this.heroIntroLetterMode &&
-                this.isHeroIntroFinePointer() &&
-                this.heroCursorActive
-            ) {
+            if (this.heroCursorHideNative) {
                 document.documentElement.classList.add('portfolio-hero-cursor')
             } else {
                 document.documentElement.classList.remove('portfolio-hero-cursor')
@@ -2252,6 +2299,8 @@ export default {
             }, lingerMs)
         },
         onHeroPointerEndHandlerImpl() {
+            if (this.heroCursorBootLocked) return
+
             this.disableHeroIntroTouchGuard()
             this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
             this.heroIntroTouchStart = null
@@ -3151,9 +3200,9 @@ export default {
             rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
             rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
+            0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
             rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
-    z-index: 110;
+    z-index: 10002;
     isolation: isolate;
 }
 
@@ -3220,7 +3269,7 @@ export default {
     margin: -4px 0 0 -4px;
     background: #000aaa;
     transform-origin: center center;
-    z-index: 111;
+    z-index: 10003;
 }
 
 .hero-intro-cursor-ball--visible {
@@ -3238,9 +3287,10 @@ export default {
 @media (hover: hover) and (pointer: fine) {
     :global(html.portfolio-hero-cursor),
     :global(html.portfolio-hero-cursor body),
+    :global(html.portfolio-hero-cursor) *,
     .portfolio-page--hero-cursor,
     .portfolio-page--hero-cursor * {
-        cursor: none;
+        cursor: none !important;
     }
 }
 
