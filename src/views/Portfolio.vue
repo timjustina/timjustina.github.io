@@ -438,6 +438,8 @@ const HERO_CURSOR_RANGE_END_SIZE = 32
 const HERO_CURSOR_RANGE_POP = 1.5
 const HERO_CURSOR_RANGE_DOT_PEAK = 1.85
 const HERO_CURSOR_RANGE_EXPAND_END = 0.34
+const HERO_CURSOR_INTRO_GLASS_ON = 0.04
+const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 
@@ -491,6 +493,10 @@ function heroCursorHoverDiskOpacity(hoverMix) {
     return heroCursorRangeSmoothstep(
         (expand - HERO_CURSOR_HOVER_DISK_HANDOFF) / HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE
     )
+}
+
+function heroCursorDotDiskShouldShow(introGlassHandoff) {
+    return !introGlassHandoff
 }
 
 function heroCursorHoverExpandSize(hoverMix) {
@@ -732,6 +738,7 @@ export default {
             heroCursorMirrorHoverTarget: 0,
             heroCursorHoverLockEl: null,
             heroCursorScrollHoverSuppressUntil: 0,
+            heroCursorIntroGlassHandoff: false,
         }
     },
     computed: {
@@ -754,10 +761,11 @@ export default {
             return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
         },
         heroCursorDotDiskVisible() {
-            return this.heroCursorVisible && this.heroCursorRangeMix < 0.001
+            if (!this.heroCursorVisible) return false
+            return heroCursorDotDiskShouldShow(this.heroCursorIntroGlassHandoff)
         },
         heroCursorIntroGlassVisible() {
-            return this.heroCursorVisible && this.heroCursorRangeMix >= 0.001
+            return this.heroCursorVisible && this.heroCursorIntroGlassHandoff
         },
         heroCursorIntroGlassFromDisk() {
             const mix = this.heroCursorRangeMix
@@ -770,7 +778,7 @@ export default {
             )
         },
         heroCursorDotHoverExpand() {
-            if (this.heroCursorInRange || this.heroCursorRangeMix >= 0.001) return false
+            if (this.heroCursorIntroGlassHandoff) return false
             const hoverMix = this.heroCursorHoverMix
             if (hoverMix <= 0) return false
             const { expand } = heroCursorHoverMorph(hoverMix)
@@ -798,7 +806,7 @@ export default {
             let hoverExpand = 0
             let useGlassRingBorder = false
 
-            if (rangeMix > 0.001) {
+            if (this.heroCursorIntroGlassHandoff) {
                 const dotVisual = heroCursorRangeDotVisual(rangeMix)
                 scale = dotVisual.scale
                 opacity = dotVisual.opacity
@@ -2044,11 +2052,6 @@ export default {
                     this.heroCursorHoverLockEl = target
                     return target
                 }
-
-                if (getComputedStyle(el).cursor === 'pointer') {
-                    this.heroCursorHoverLockEl = el
-                    return el
-                }
             }
 
             return null
@@ -2207,12 +2210,19 @@ export default {
 
                 const { x: tx, y: ty } = this.heroCursorPos
                 const proximityTarget = this.getHeroIntroRangeProximityMix(tx, ty)
-                if (proximityTarget < 0.001) {
+                if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
                     this.heroCursorRangeMix = 0
+                    this.heroCursorIntroGlassHandoff = false
                 } else {
-                    const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.17
+                    const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.2
                     this.heroCursorRangeMix +=
                         (proximityTarget - this.heroCursorRangeMix) * rangeLerp
+                    if (
+                        !this.heroCursorIntroGlassHandoff &&
+                        proximityTarget >= HERO_CURSOR_INTRO_GLASS_ON
+                    ) {
+                        this.heroCursorIntroGlassHandoff = true
+                    }
                 }
 
                 const scrollHoverSuppressed =
@@ -2246,8 +2256,17 @@ export default {
                 }
 
                 this.heroCursorOverHover = hoverTarget === 1
-                const hoverLerp = this.heroCursorInRange ? 0.3 : HERO_CURSOR_HOVER_LERP
+                const hoverLerp =
+                    hoverTarget === 1
+                        ? this.heroCursorInRange
+                            ? 0.3
+                            : HERO_CURSOR_HOVER_LERP
+                        : 0.45
                 this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
+                if (hoverTarget === 0 && this.heroCursorHoverMix < 0.04) {
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorHoverLockEl = null
+                }
                 this.heroCursorRangeTight =
                     this.heroCursorInRange && this.isHeroIntroPointerTight(tx, ty)
 
@@ -2437,6 +2456,7 @@ export default {
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
+            this.heroCursorIntroGlassHandoff = false
             this.syncHeroCursorDocumentClass()
             this.stopHeroCursorGlassFollow()
             if (this.heroIntroPointerRaf != null) {
@@ -3463,10 +3483,10 @@ export default {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: rgba(255, 255, 255, 0.28);
-    -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
-    backdrop-filter: blur(2.5px) saturate(1.35);
-    opacity: calc(0.35 + var(--hero-cursor-hover-expand, 0) * 0.65);
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    opacity: 0;
     pointer-events: none;
 }
 
