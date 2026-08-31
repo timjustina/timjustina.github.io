@@ -249,9 +249,6 @@
                             :src="multiplatformHero"
                             alt="IoT Home Medication Solution"
                         />
-                        <div class="project-upcoming-overlay" aria-hidden="true">
-                            <span class="project-upcoming-label">Writing up ...</span>
-                        </div>
                     </div>
                     <div class="project-caption">
                         <div class="project-caption-header">
@@ -280,9 +277,6 @@
                             :src="marketplaceHero"
                             alt="Art Curation and Marketplace"
                         />
-                        <div class="project-upcoming-overlay" aria-hidden="true">
-                            <span class="project-upcoming-label">Writing up ...</span>
-                        </div>
                     </div>
                     <div class="project-caption">
                         <div class="project-caption-header">
@@ -1118,7 +1112,6 @@ export default {
                 this.endHeroDecorResizeClip()
             })
         })
-
         const main = this.$el?.querySelector('.portfolio-main')
         const work = this.$el?.querySelector('.work')
         const workFirst = this.$el?.querySelector('#work-first')
@@ -1148,7 +1141,10 @@ export default {
         for (const article of [workFirst, workLast]) {
             const heroImage = article?.querySelector('.project-image')
             if (heroImage && !heroImage.complete) {
-                heroImage.addEventListener('load', () => this.syncHeroDecorHeight(), { once: true })
+                heroImage.addEventListener('load', () => {
+                    this.syncHeroDecorHeight()
+                    this.syncProjectCaptionLineOffset()
+                }, { once: true })
             }
         }
 
@@ -3262,6 +3258,7 @@ export default {
             }
 
             this.syncAboutLineBridge()
+            this.syncProjectCaptionLineOffset()
         },
         onHeroDecorFlyEnd(event) {
             if (!String(event.animationName).includes('portfolio-fly-from-right')) return
@@ -3321,8 +3318,8 @@ export default {
             bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
             bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
             bridge.style.clipPath = 'inset(0 0 0 0)'
+            void bridge.offsetWidth
             if (!this.aboutLineBridgeSynced) {
-                void bridge.offsetWidth
                 this.aboutLineBridgeSynced = true
             }
         },
@@ -3341,8 +3338,12 @@ export default {
             }
 
             const pageStyles = getComputedStyle(root)
-            const strokeX = parseCssPx(pageStyles, '--hero-decor-line-stroke-x', 34)
             const lineWidth = parseCssPx(pageStyles, '--hero-decor-line-width', 2)
+            this.syncDecorLineX()
+            const pageLeft = root.getBoundingClientRect().left
+            const lineLeft =
+                pageLeft + parseCssPx(getComputedStyle(root), '--portfolio-decor-line-x', 0)
+            const lineRight = lineLeft + lineWidth
             const segments = []
 
             const decor = root.querySelector('.hero-decor')
@@ -3352,27 +3353,25 @@ export default {
                     segments.push({
                         top: decorRect.top,
                         bottom: decorRect.bottom,
-                        lineLeft: decorRect.left + strokeX,
-                        lineRight: decorRect.left + strokeX + lineWidth,
+                        lineLeft,
+                        lineRight,
                     })
                 }
             }
 
-            if (!this.heroLineKnotClipped) {
-                const bridge = root.querySelector('.about-line-bridge')
-                if (bridge && getComputedStyle(bridge).display !== 'none') {
-                    const bridgeHeight =
-                        parseFloat(getComputedStyle(bridge).getPropertyValue('--bridge-h')) || 0
-                    if (bridgeHeight > 0) {
-                        const bridgeRect = bridge.getBoundingClientRect()
-                        if (bridgeRect.height > 0) {
-                            segments.push({
-                                top: bridgeRect.top,
-                                bottom: bridgeRect.bottom,
-                                lineLeft: bridgeRect.left + strokeX,
-                                lineRight: bridgeRect.left + strokeX + lineWidth,
-                            })
-                        }
+            const bridge = root.querySelector('.about-line-bridge')
+            if (bridge && getComputedStyle(bridge).display !== 'none') {
+                const bridgeHeight =
+                    parseFloat(getComputedStyle(bridge).getPropertyValue('--bridge-h')) || 0
+                if (bridgeHeight > 0) {
+                    const bridgeRect = bridge.getBoundingClientRect()
+                    if (bridgeRect.height > 0) {
+                        segments.push({
+                            top: bridgeRect.top,
+                            bottom: bridgeRect.bottom,
+                            lineLeft,
+                            lineRight,
+                        })
                     }
                 }
             }
@@ -4625,55 +4624,19 @@ export default {
 }
 
 /* Touch: press feedback — clears on release so the radius can ease back */
-.project:active .project-image-link .project-image,
-.project:active .project-image-wrap {
+.project:not(.project--upcoming):active .project-image-link .project-image,
+.project:not(.project--upcoming):active .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
 }
 
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
 @media (hover: hover) and (pointer: fine) {
-    .project:hover .project-image-link .project-image,
-    .project:focus-within .project-image-link .project-image,
-    .project:hover .project-image-wrap,
-    .project:focus-within .project-image-wrap {
+    .project:not(.project--upcoming):hover .project-image-link .project-image,
+    .project:not(.project--upcoming):focus-within .project-image-link .project-image,
+    .project:not(.project--upcoming):hover .project-image-wrap,
+    .project:not(.project--upcoming):focus-within .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
     }
-}
-
-.project-upcoming-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-    background: rgba(255, 255, 255, 0.88);
-    opacity: 0;
-    transition: opacity 0.35s ease;
-    pointer-events: none;
-}
-
-.project--upcoming:hover .project-upcoming-overlay,
-.project--upcoming:focus-within .project-upcoming-overlay {
-    opacity: 1;
-}
-
-.project-upcoming-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 152px;
-    height: 27px;
-    background: rgba(255, 255, 255, 0.1);
-    font-family: 'Fira Code', monospace;
-    font-style: normal;
-    font-weight: 500;
-    font-size: 18px;
-    line-height: 27px;
-    letter-spacing: -0.02em;
-    color: #757575;
 }
 
 .project--upcoming {
@@ -5302,8 +5265,8 @@ export default {
         transition: border-radius 0.45s ease;
     }
 
-    .project:active .project-image-link,
-    .project:active .project-image-wrap,
+    .project:not(.project--upcoming):active .project-image-link,
+    .project:not(.project--upcoming):active .project-image-wrap,
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap,
     .project--press-expand .project-image {
@@ -5311,10 +5274,10 @@ export default {
     }
 
     @media (hover: hover) and (pointer: fine) {
-        .project:hover .project-image-link,
-        .project:hover .project-image-wrap,
-        .project:focus-within .project-image-link,
-        .project:focus-within .project-image-wrap {
+        .project:not(.project--upcoming):hover .project-image-link,
+        .project:not(.project--upcoming):hover .project-image-wrap,
+        .project:not(.project--upcoming):focus-within .project-image-link,
+        .project:not(.project--upcoming):focus-within .project-image-wrap {
             border-radius: 700px 700px 20px 20px;
         }
     }
@@ -5340,7 +5303,6 @@ export default {
 
     /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
     .cta-button,
-    .project-upcoming-label,
     .project-year {
         font-weight: 500;
     }
@@ -5660,13 +5622,9 @@ export default {
     color: var(--brand) !important;
 }
 
-.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-image-link .project-image,
-.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-image-wrap {
+.hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link .project-image,
+.hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
-}
-
-.hero-intro-cursor-mirror-clone .project--upcoming.hero-cursor-mirror-hover .project-upcoming-overlay {
-    opacity: 1;
 }
 
 /* Unscoped so the keyframe name isn't rewritten away from the animation. */

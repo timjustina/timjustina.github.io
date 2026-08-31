@@ -537,7 +537,7 @@ export default {
 @media (min-width: 800px) {
     .top-bar--nav-hero-align .nav {
         position: absolute;
-        left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px) - 14.3px);
+        left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
         top: calc(var(--top-bar-edge-pad-right) + 19px);
         height: var(--top-bar-nav-height);
         opacity: 1;
