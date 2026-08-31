@@ -22,7 +22,7 @@
             v-if="heroCursorEligible"
             class="hero-intro-cursor-ball hero-intro-cursor-ball--glass"
             :class="{
-                'hero-intro-cursor-ball--visible': heroCursorVisible,
+                'hero-intro-cursor-ball--visible': heroCursorGlassVisible,
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
                 'hero-intro-cursor-ball--in-range-tight': heroCursorRangeTight,
             }"
@@ -685,7 +685,7 @@ export default {
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
             heroIntroTouchGuardActive: false,
-            heroCursorActive: false,
+            heroCursorActive: isHeroCursorEnvironment(),
             heroCursorInRange: false,
             heroCursorRangeTight: false,
             heroCursorRangeMix: 0,
@@ -717,7 +717,10 @@ export default {
             return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
         },
         heroCursorVisible() {
-            return this.heroCursorEligible && this.heroCursorActive
+            return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
+        },
+        heroCursorGlassVisible() {
+            return this.heroCursorVisible && !this.heroCursorBootLocked
         },
         heroCursorBallStyle() {
             if (!this.heroCursorVisible) {
@@ -769,7 +772,7 @@ export default {
             }
         },
         heroCursorGlassStyle() {
-            if (!this.heroCursorVisible) {
+            if (!this.heroCursorGlassVisible) {
                 return {
                     opacity: 0,
                     visibility: 'hidden',
@@ -792,6 +795,14 @@ export default {
             }
         },
         heroCursorMagnifierWindowStyle() {
+            if (this.heroCursorBootLocked) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
             const layout = this.heroCursorMagnifierLayout
             if (!layout) {
                 return {
@@ -896,6 +907,9 @@ export default {
             this.updateHeroFinePointer(event.clientX, event.clientY, {
                 introEffects: this.canHeroIntroPointerPlay(),
             })
+        }
+        if (this.heroIntroLetterMode && this.isHeroIntroFinePointer()) {
+            this.primeHeroCursor()
         }
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
         document.addEventListener('pointerenter', this.onHeroPointerEnter, { passive: true })
@@ -2044,6 +2058,12 @@ export default {
             } else {
                 document.documentElement.classList.remove('portfolio-hero-cursor')
             }
+        },
+        primeHeroCursor() {
+            if (!this.heroIntroLetterMode || !this.isHeroIntroFinePointer()) return
+            this.heroCursorActive = true
+            this.syncHeroCursorDocumentClass()
+            this.startHeroCursorGlassFollow()
         },
         updateHeroFinePointer(x, y, { introEffects = true } = {}) {
             const inRange = introEffects && this.isHeroIntroPointerNear(x, y)
