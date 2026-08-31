@@ -20,13 +20,23 @@
         </div>
         <span
             v-if="heroCursorEligible"
-            class="hero-intro-cursor-ball hero-intro-cursor-ball--glass"
+            class="hero-intro-cursor-ball hero-intro-cursor-dot-disk"
             :class="{
-                'hero-intro-cursor-ball--visible': heroCursorGlassVisible,
-                'hero-intro-cursor-ball--in-range': heroCursorInRange,
-                'hero-intro-cursor-ball--in-range-tight': heroCursorRangeTight,
+                'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
             }"
-            :style="heroCursorGlassStyle"
+            :style="heroCursorDotDiskStyle"
+            aria-hidden="true"
+        />
+        <span
+            v-if="heroCursorEligible"
+            class="hero-intro-cursor-ball hero-intro-cursor-glass-ball"
+            :class="{
+                'hero-intro-cursor-ball--visible': heroCursorIntroGlassVisible,
+                'hero-intro-cursor-glass-ball--from-disk': heroCursorIntroGlassFromDisk,
+                'hero-intro-cursor-glass-ball--in-range': heroCursorIntroGlassInRangeGlow,
+                'hero-intro-cursor-glass-ball--in-range-tight': heroCursorRangeTight,
+            }"
+            :style="heroCursorIntroGlassStyle"
             aria-hidden="true"
         />
         <span
@@ -35,6 +45,7 @@
             :class="{
                 'hero-intro-cursor-ball--visible': heroCursorVisible,
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
+                'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
@@ -419,11 +430,14 @@ const HERO_CURSOR_HOVER_LOCK_PAD = 8
 const HERO_CURSOR_DOT_SIZE = 8
 const HERO_CURSOR_GLASS_IDLE_SIZE = 46
 const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
-const HERO_CURSOR_HOLLOW_END = 0.42
+const HERO_CURSOR_HOLLOW_END = 0.28
+const HERO_CURSOR_HOVER_LERP = 0.3
+const HERO_CURSOR_HOVER_DISK_HANDOFF = 0.66
+const HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE = 0.18
 const HERO_CURSOR_RANGE_END_SIZE = 32
-const HERO_CURSOR_RANGE_POP = 1.32
+const HERO_CURSOR_RANGE_POP = 1.5
 const HERO_CURSOR_RANGE_DOT_PEAK = 1.85
-const HERO_CURSOR_RANGE_EXPAND_END = 0.28
+const HERO_CURSOR_RANGE_EXPAND_END = 0.34
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 
@@ -463,10 +477,28 @@ function heroCursorHoverMorph(hoverMix) {
     if (hoverMix <= 0) return { hollow: 0, expand: 0 }
     if (hoverMix <= HERO_CURSOR_HOLLOW_END) {
         const t = hoverMix / HERO_CURSOR_HOLLOW_END
-        return { hollow: t * t, expand: 0 }
+        return { hollow: 1 - (1 - t) ** 2.2, expand: 0 }
     }
     const t = (hoverMix - HERO_CURSOR_HOLLOW_END) / (1 - HERO_CURSOR_HOLLOW_END)
-    return { hollow: 1, expand: 1 - (1 - t) * (1 - t) }
+    return { hollow: 1, expand: 1 - (1 - t) ** 3 }
+}
+
+function heroCursorHoverDiskOpacity(hoverMix) {
+    if (hoverMix <= 0) return 1
+    const { expand } = heroCursorHoverMorph(hoverMix)
+    if (expand < HERO_CURSOR_HOVER_DISK_HANDOFF) return 0
+    if (expand >= 1) return 1
+    return heroCursorRangeSmoothstep(
+        (expand - HERO_CURSOR_HOVER_DISK_HANDOFF) / HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE
+    )
+}
+
+function heroCursorHoverExpandSize(hoverMix) {
+    const { expand } = heroCursorHoverMorph(hoverMix)
+    if (expand <= 0) return HERO_CURSOR_DOT_SIZE
+    const targetSize = heroCursorDotDiskSize(hoverMix)
+    const easedExpand = 1 - (1 - expand) ** 2.8
+    return HERO_CURSOR_DOT_SIZE + (targetSize - HERO_CURSOR_DOT_SIZE) * easedExpand
 }
 
 function heroCursorDistanceToRect(x, y, rect) {
@@ -489,8 +521,8 @@ function heroCursorRangeBounceOut(t) {
     return n1 * (t -= 2.625 / d1) * t + 0.984375
 }
 
-function heroCursorRangeEaseOutBack(t) {
-    const c1 = 1.70158
+function heroCursorRangeExpandEase(t) {
+    const c1 = 2.9
     const c3 = c1 + 1
     return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
 }
@@ -502,7 +534,7 @@ function heroCursorRangeGlassSize(outSize, rangeMix) {
     const peakSize = outSize * HERO_CURSOR_RANGE_POP
     if (rangeMix <= HERO_CURSOR_RANGE_EXPAND_END) {
         const t = rangeMix / HERO_CURSOR_RANGE_EXPAND_END
-        const eased = heroCursorRangeEaseOutBack(t)
+        const eased = heroCursorRangeExpandEase(t)
         return outSize + (peakSize - outSize) * eased
     }
 
@@ -519,7 +551,7 @@ function heroCursorRangeDotVisual(rangeMix) {
     let scale
     if (rangeMix <= HERO_CURSOR_RANGE_EXPAND_END) {
         const t = rangeMix / HERO_CURSOR_RANGE_EXPAND_END
-        scale = 1 + (peakScale - 1) * heroCursorRangeEaseOutBack(t)
+        scale = 1 + (peakScale - 1) * heroCursorRangeExpandEase(t)
     } else {
         const t = (rangeMix - HERO_CURSOR_RANGE_EXPAND_END) / (1 - HERO_CURSOR_RANGE_EXPAND_END)
         scale = peakScale * (1 - heroCursorRangeBounceOut(t))
@@ -535,12 +567,8 @@ function heroCursorRangeDotVisual(rangeMix) {
     return { scale, opacity }
 }
 
-function heroCursorGlassOuterSize(hoverMix, rangeMix) {
+function heroCursorDotDiskSize(hoverMix) {
     const fullHover = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA
-    if (rangeMix > 0.001) {
-        const outSize = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA * hoverMix
-        return heroCursorRangeGlassSize(outSize, rangeMix)
-    }
     if (hoverMix <= 0) return HERO_CURSOR_GLASS_IDLE_SIZE
     const { hollow, expand } = heroCursorHoverMorph(hoverMix)
     if (expand <= 0) {
@@ -550,6 +578,11 @@ function heroCursorGlassOuterSize(hoverMix, rangeMix) {
         )
     }
     return HERO_CURSOR_DOT_SIZE + (fullHover - HERO_CURSOR_DOT_SIZE) * expand
+}
+
+function heroCursorIntroBallSize(hoverMix, rangeMix) {
+    const outSize = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA * hoverMix
+    return heroCursorRangeGlassSize(outSize, rangeMix)
 }
 
 function parseCssTimeSec(styles, prop, fallback) {
@@ -719,8 +752,28 @@ export default {
         heroCursorVisible() {
             return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
         },
-        heroCursorGlassVisible() {
-            return this.heroCursorVisible && !this.heroCursorBootLocked
+        heroCursorDotDiskVisible() {
+            return this.heroCursorVisible && this.heroCursorRangeMix <= 0
+        },
+        heroCursorIntroGlassVisible() {
+            return this.heroCursorVisible && this.heroCursorRangeMix > 0
+        },
+        heroCursorIntroGlassFromDisk() {
+            const mix = this.heroCursorRangeMix
+            return mix > 0 && mix <= HERO_CURSOR_RANGE_EXPAND_END
+        },
+        heroCursorIntroGlassInRangeGlow() {
+            return (
+                this.heroCursorInRange &&
+                this.heroCursorRangeMix > HERO_CURSOR_RANGE_EXPAND_END
+            )
+        },
+        heroCursorDotHoverExpand() {
+            if (this.heroCursorInRange || this.heroCursorRangeMix > 0) return false
+            const hoverMix = this.heroCursorHoverMix
+            if (hoverMix <= 0) return false
+            const { expand } = heroCursorHoverMorph(hoverMix)
+            return expand > 0.001 && expand < HERO_CURSOR_HOVER_DISK_HANDOFF + 0.04
         },
         heroCursorBallStyle() {
             if (!this.heroCursorVisible) {
@@ -731,15 +784,18 @@ export default {
                 }
             }
 
-            const { x, y } = this.heroCursorPos
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
 
+            let x = this.heroCursorPos.x
+            let y = this.heroCursorPos.y
             let size = HERO_CURSOR_DOT_SIZE
             let scale = 1
             let opacity = 1
             let background = '#000aaa'
             let borderWidth = 0
+            let hoverExpand = 0
+            let useGlassRingBorder = false
 
             if (rangeMix > 0.001) {
                 const dotVisual = heroCursorRangeDotVisual(rangeMix)
@@ -751,28 +807,70 @@ export default {
                     background = `rgba(0, 10, 170, ${1 - hollow})`
                     borderWidth = hollow * 1.5
                 } else {
-                    size = heroCursorGlassOuterSize(hoverMix, rangeMix)
+                    hoverExpand = expand
+                    size = heroCursorHoverExpandSize(hoverMix)
                     background = 'transparent'
-                    borderWidth = 1.5 + expand * 0.35
-                    opacity = 1 - expand * expand
+                    useGlassRingBorder = true
+                    ;({ x, y } = this.heroCursorGlassPos)
+                    if (expand >= HERO_CURSOR_HOVER_DISK_HANDOFF) {
+                        const t =
+                            (expand - HERO_CURSOR_HOVER_DISK_HANDOFF) /
+                            HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE
+                        opacity = Math.max(0, 1 - t * t)
+                    }
                 }
             }
 
             const half = size / 2
-            return {
+            const style = {
                 transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
                 background,
-                border: borderWidth > 0.01 ? `${borderWidth}px solid #000aaa` : 'none',
                 boxSizing: 'border-box',
                 opacity,
                 visibility: opacity < 0.02 && scale < 0.02 ? 'hidden' : 'visible',
             }
+
+            if (useGlassRingBorder) {
+                style['--hero-cursor-hover-expand'] = hoverExpand
+                style.border = 'none'
+            } else if (borderWidth > 0.01) {
+                style.border = `${borderWidth}px solid #000aaa`
+            } else {
+                style.border = 'none'
+            }
+
+            return style
         },
-        heroCursorGlassStyle() {
-            if (!this.heroCursorGlassVisible) {
+        heroCursorDotDiskStyle() {
+            if (!this.heroCursorDotDiskVisible) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
+            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const { x, y } = this.heroCursorGlassPos
+            const size = heroCursorDotDiskSize(hoverMix)
+            const half = size / 2
+            const opacity = heroCursorHoverDiskOpacity(hoverMix)
+
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+                '--hero-cursor-hover-mix': hoverMix,
+                width: `${size}px`,
+                height: `${size}px`,
+                margin: `${-half}px 0 0 ${-half}px`,
+                opacity,
+                visibility: opacity < 0.02 ? 'hidden' : 'visible',
+            }
+        },
+        heroCursorIntroGlassStyle() {
+            if (!this.heroCursorIntroGlassVisible) {
                 return {
                     opacity: 0,
                     visibility: 'hidden',
@@ -783,26 +881,19 @@ export default {
             const { x, y } = this.heroCursorGlassPos
             const rangeMix = this.heroCursorRangeMix
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
-            const size = heroCursorGlassOuterSize(hoverMix, rangeMix)
+            const size = heroCursorIntroBallSize(hoverMix, rangeMix)
             const half = size / 2
+
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
-                '--hero-cursor-hover-mix': hoverMix,
                 '--hero-cursor-range-mix': rangeMix,
+                '--hero-cursor-hover-mix': hoverMix,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
             }
         },
         heroCursorMagnifierWindowStyle() {
-            if (this.heroCursorBootLocked) {
-                return {
-                    opacity: 0,
-                    visibility: 'hidden',
-                    pointerEvents: 'none',
-                }
-            }
-
             const layout = this.heroCursorMagnifierLayout
             if (!layout) {
                 return {
@@ -2139,7 +2230,7 @@ export default {
                 }
 
                 this.heroCursorOverHover = hoverTarget === 1
-                const hoverLerp = this.heroCursorInRange ? 0.3 : 0.16
+                const hoverLerp = this.heroCursorInRange ? 0.3 : HERO_CURSOR_HOVER_LERP
                 this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
                 this.heroCursorRangeTight =
                     this.heroCursorInRange && this.isHeroIntroPointerTight(tx, ty)
@@ -2219,7 +2310,7 @@ export default {
 
             const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * expand
             const { x, y } = this.heroCursorGlassPos
-            const size = heroCursorGlassOuterSize(hoverMix, rangeMix)
+            const size = heroCursorDotDiskSize(hoverMix)
             const half = size / 2
 
             this.syncHeroCursorMirrorClone()
@@ -3192,7 +3283,7 @@ export default {
     will-change: transform;
 }
 
-.hero-intro-cursor-ball--glass {
+.hero-intro-cursor-dot-disk {
     width: 46px;
     height: 46px;
     margin: -23px 0 0 -23px;
@@ -3220,22 +3311,70 @@ export default {
             rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
         0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
             rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
-            0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
             rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
     z-index: 10002;
     isolation: isolate;
 }
 
-.hero-intro-cursor-magnifier__content {
+.hero-intro-cursor-dot-disk::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.28);
+    -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
+    backdrop-filter: blur(2.5px) saturate(1.35);
+    opacity: calc(1 - var(--hero-cursor-hover-mix, 0));
     pointer-events: none;
 }
 
-.hero-intro-cursor-magnifier__clone-host,
-.hero-intro-cursor-mirror-clone {
-    pointer-events: none;
+.hero-intro-cursor-glass-ball {
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    z-index: 10002;
+    isolation: isolate;
 }
 
-.hero-intro-cursor-ball--glass::before {
+/* Early intro approach: same look as the dot disk while the ring resizes outward */
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--from-disk {
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-mix, 0)) solid
+        color-mix(
+            in srgb,
+            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-mix, 0) * 100%)
+        );
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(2px + 3px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(3px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
+}
+
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--from-disk::before {
+    -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
+    backdrop-filter: blur(2.5px) saturate(1.35);
+    opacity: calc(1 - var(--hero-cursor-hover-mix, 0));
+}
+
+.hero-intro-cursor-glass-ball::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -3244,18 +3383,11 @@ export default {
     -webkit-backdrop-filter: blur(calc(2.5px + 1.5px * var(--hero-cursor-range-mix, 0)))
         saturate(1.35);
     backdrop-filter: blur(calc(2.5px + 1.5px * var(--hero-cursor-range-mix, 0))) saturate(1.35);
-    opacity: calc(
-        var(--hero-cursor-range-mix, 0) +
-            (1 - var(--hero-cursor-range-mix, 0)) * (1 - var(--hero-cursor-hover-mix, 0))
-    );
+    opacity: 1;
     pointer-events: none;
 }
 
-.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range::before {
-    background: rgba(255, 255, 255, 0.28);
-}
-
-.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range {
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--in-range {
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, 0.9),
         inset 0 -1px 1px rgba(0, 10, 170, 0.06),
@@ -3269,7 +3401,7 @@ export default {
         0 0 44px rgba(0, 10, 170, 0.008);
 }
 
-.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--in-range.hero-intro-cursor-ball--in-range-tight {
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--in-range.hero-intro-cursor-glass-ball--in-range-tight {
     box-shadow:
         inset 0 1px 2px rgba(255, 255, 255, 0.9),
         inset 0 -1px 1px rgba(0, 10, 170, 0.06),
@@ -3292,11 +3424,52 @@ export default {
     z-index: 10003;
 }
 
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--hover-expand {
+    isolation: isolate;
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
+        color-mix(
+            in srgb,
+            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-expand, 0)) * 100%),
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-expand, 0) * 100%)
+        );
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-expand, 0)));
+}
+
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--hover-expand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.28);
+    -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
+    backdrop-filter: blur(2.5px) saturate(1.35);
+    opacity: calc(0.35 + var(--hero-cursor-hover-expand, 0) * 0.65);
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__content {
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__clone-host,
+.hero-intro-cursor-mirror-clone {
+    pointer-events: none;
+}
+
 .hero-intro-cursor-ball--visible {
     visibility: visible;
 }
 
-.hero-intro-cursor-ball--glass.hero-intro-cursor-ball--visible {
+.hero-intro-cursor-dot-disk.hero-intro-cursor-ball--visible,
+.hero-intro-cursor-glass-ball.hero-intro-cursor-ball--visible {
     opacity: 1;
 }
 
