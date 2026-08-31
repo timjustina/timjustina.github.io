@@ -9,6 +9,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tim Justina</title>
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@300;400;500;600&family=Maven+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      @media (hover: hover) and (pointer: fine) {
+        html.portfolio-hero-cursor,
+        html.portfolio-hero-cursor body {
+          cursor: none;
+        }
+      }
+    </style>
+    <script>
+      (function () {
+        var path = location.pathname
+        if (path !== '/' && path !== '') return
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+        document.documentElement.classList.add('portfolio-hero-cursor')
+      })()
+    </script>
   </head>
 
 <body>

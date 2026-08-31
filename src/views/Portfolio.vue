@@ -422,6 +422,22 @@ const HERO_CURSOR_RANGE_DOT_PEAK = 1.85
 const HERO_CURSOR_RANGE_EXPAND_END = 0.28
 const HERO_CURSOR_MIRROR_FIXED_SELECTORS = ['.top-bar']
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
+
+function isHeroCursorEnvironment() {
+    return (
+        typeof window !== 'undefined' &&
+        window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+}
+
+function getHeroCursorInitialPos() {
+    return {
+        x: Math.round(window.innerWidth / 2),
+        y: Math.round(window.innerHeight / 2),
+    }
+}
+
 const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
     'a[href]',
     'button:not(:disabled)',
@@ -665,14 +681,14 @@ export default {
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
             heroIntroTouchGuardActive: false,
-            heroCursorActive: false,
+            heroCursorActive: isHeroCursorEnvironment(),
             heroCursorInRange: false,
             heroCursorRangeTight: false,
             heroCursorRangeMix: 0,
             heroCursorHoverMix: 0,
             heroCursorOverHover: false,
-            heroCursorPos: { x: 0, y: 0 },
-            heroCursorGlassPos: { x: 0, y: 0 },
+            heroCursorPos: isHeroCursorEnvironment() ? getHeroCursorInitialPos() : { x: 0, y: 0 },
+            heroCursorGlassPos: isHeroCursorEnvironment() ? getHeroCursorInitialPos() : { x: 0, y: 0 },
             heroCursorGlassRaf: null,
             heroCursorMagnifierLayout: null,
             heroCursorMirrorClone: null,
@@ -823,7 +839,18 @@ export default {
         }
         this.onHeroPointerScroll = () => this.onHeroPointerScrollHandler()
         this.onHeroTouchMove = (event) => this.onHeroTouchMoveHandler(event)
+        this.onHeroPointerEnter = (event) => {
+            if (!this.isHeroIntroFinePointer() || event.pointerType !== 'mouse') return
+            if (!this.heroIntroLetterMode) return
+            this.updateHeroFinePointer(event.clientX, event.clientY, {
+                introEffects: this.canHeroIntroPointerPlay(),
+            })
+        }
+        if (this.heroIntroLetterMode && this.isHeroIntroFinePointer()) {
+            this.primeHeroCursor()
+        }
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
+        document.addEventListener('pointerenter', this.onHeroPointerEnter, { passive: true })
         window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
         window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
         window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
@@ -954,6 +981,7 @@ export default {
         clearTimeout(this.featuredPressClearTimer)
         this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
         document.documentElement.classList.remove('portfolio-booting')
+        document.documentElement.classList.remove('portfolio-hero-cursor')
         this.heroDecorObserver?.disconnect()
         this.aboutBallObserver?.disconnect()
         this.aboutLocationClipObserver?.disconnect()
@@ -973,6 +1001,7 @@ export default {
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
         window.removeEventListener('pointermove', this.onHeroPointerMove)
+        document.removeEventListener('pointerenter', this.onHeroPointerEnter)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
         window.removeEventListener('pointerup', this.onHeroPointerUp)
         window.removeEventListener('pointercancel', this.onHeroPointerUp)
@@ -1957,12 +1986,30 @@ export default {
                 mirrorNode?.classList.add('hero-cursor-mirror-hover')
             }
         },
-        updateHeroFinePointer(x, y) {
-            const inRange = this.isHeroIntroPointerNear(x, y)
+        syncHeroCursorDocumentClass() {
+            if (
+                this.heroIntroLetterMode &&
+                this.isHeroIntroFinePointer() &&
+                this.heroCursorActive
+            ) {
+                document.documentElement.classList.add('portfolio-hero-cursor')
+            } else {
+                document.documentElement.classList.remove('portfolio-hero-cursor')
+            }
+        },
+        primeHeroCursor() {
+            if (!this.heroIntroLetterMode || !this.isHeroIntroFinePointer()) return
+            this.heroCursorActive = true
+            this.syncHeroCursorDocumentClass()
+            this.startHeroCursorGlassFollow()
+        },
+        updateHeroFinePointer(x, y, { introEffects = true } = {}) {
+            const inRange = introEffects && this.isHeroIntroPointerNear(x, y)
             const wasActive = this.heroCursorActive
 
             this.heroCursorPos = { x, y }
             this.heroCursorActive = true
+            this.syncHeroCursorDocumentClass()
             this.heroCursorInRange = inRange
             this.heroCursorRangeTight = inRange && this.isHeroIntroPointerTight(x, y)
             this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
@@ -2219,6 +2266,7 @@ export default {
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
+            this.syncHeroCursorDocumentClass()
             this.stopHeroCursorGlassFollow()
             if (this.heroIntroPointerRaf != null) {
                 cancelAnimationFrame(this.heroIntroPointerRaf)
@@ -2257,12 +2305,14 @@ export default {
             this.onHeroPointerEndHandlerImpl()
         },
         onHeroPointerMoveHandler(event) {
-            if (!this.canHeroIntroPointerPlay()) return
-
-            if (this.isHeroIntroFinePointer() && event.pointerType === 'mouse') {
-                this.updateHeroFinePointer(event.clientX, event.clientY)
+            if (this.isHeroIntroFinePointer() && event.pointerType === 'mouse' && this.heroIntroLetterMode) {
+                this.updateHeroFinePointer(event.clientX, event.clientY, {
+                    introEffects: this.canHeroIntroPointerPlay(),
+                })
                 return
             }
+
+            if (!this.canHeroIntroPointerPlay()) return
 
             if (
                 this.isHeroIntroMobileTouch() &&
@@ -3186,6 +3236,8 @@ export default {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    :global(html.portfolio-hero-cursor),
+    :global(html.portfolio-hero-cursor body),
     .portfolio-page--hero-cursor,
     .portfolio-page--hero-cursor * {
         cursor: none;
