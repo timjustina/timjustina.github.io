@@ -41,6 +41,71 @@ import logo from '../assets/TjyCutoutLogo.svg'
 import { MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
 
+function parseCssPx(styles, prop, fallback) {
+    const value = parseFloat(styles.getPropertyValue(prop))
+    return Number.isFinite(value) ? value : fallback
+}
+
+function rectsOverlap(a, b) {
+    return a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom
+}
+
+function getDecorLineStrokeSegments(page, pageStyles) {
+    const pageRect = page.getBoundingClientRect()
+    const lineX = parseCssPx(pageStyles, '--portfolio-decor-line-x', 0)
+    const lineWidth = parseCssPx(pageStyles, '--hero-decor-line-width', 2)
+    const strokeX = parseCssPx(pageStyles, '--hero-decor-line-stroke-x', 34)
+    const segments = []
+
+    const decor = document.querySelector('.hero-decor')
+    const lineEl = document.querySelector('.hero-decor-line')
+    if (
+        decor &&
+        lineEl &&
+        !decor.classList.contains('hero-decor--hidden') &&
+        window.getComputedStyle(lineEl).display !== 'none'
+    ) {
+        const decorRect = decor.getBoundingClientRect()
+        const lineRect = lineEl.getBoundingClientRect()
+        if (decorRect.height > 0) {
+            segments.push({
+                left: pageRect.left + lineX,
+                right: pageRect.left + lineX + lineWidth,
+                top: Math.max(decorRect.top, lineRect.top),
+                bottom: Math.min(decorRect.bottom, lineRect.bottom),
+            })
+        }
+    }
+
+    const bridge = document.querySelector('.about-line-bridge')
+    if (bridge && window.getComputedStyle(bridge).display !== 'none') {
+        const bridgeRect = bridge.getBoundingClientRect()
+        if (bridgeRect.height > 0) {
+            segments.push({
+                left: bridgeRect.left + strokeX,
+                right: bridgeRect.left + strokeX + lineWidth,
+                top: bridgeRect.top,
+                bottom: bridgeRect.bottom,
+            })
+        }
+    }
+
+    const aboutLine = document.querySelector('.about-line')
+    if (aboutLine && window.getComputedStyle(aboutLine).display !== 'none') {
+        const aboutRect = aboutLine.getBoundingClientRect()
+        if (aboutRect.height > 0) {
+            segments.push({
+                left: aboutRect.left + strokeX,
+                right: aboutRect.left + strokeX + lineWidth,
+                top: aboutRect.top,
+                bottom: aboutRect.bottom,
+            })
+        }
+    }
+
+    return segments.filter((segment) => segment.bottom > segment.top && segment.right > segment.left)
+}
+
 const SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
 const SECTION_JUMP_EVENT = 'portfolio-section-jump'
 const DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
@@ -72,6 +137,7 @@ export default {
             scrollTicking: false,
             overHero: true,
             isMobileViewport: false,
+            workLineClipRaf: null,
         }
     },
     computed: {
@@ -113,10 +179,19 @@ export default {
             this.updateNavDecorAlign()
             this.updateHeroOverlap()
             if (this.$refs.topBarContent) {
-                this.navAlignObserver = new ResizeObserver(() => this.updateNavDecorAlign())
+                this.navAlignObserver = new ResizeObserver(() => {
+                    this.updateNavDecorAlign()
+                    this.syncWorkLineTextClip()
+                })
                 this.navAlignObserver.observe(this.$refs.topBarContent)
             }
-            document.fonts?.ready?.then(() => this.updateNavDecorAlign())
+            document.fonts?.ready?.then(() => {
+                this.updateNavDecorAlign()
+                this.syncWorkLineTextClip()
+                this.startWorkLineClipPoll()
+            })
+            this.syncWorkLineTextClip()
+            this.startWorkLineClipPoll()
         })
     },
     beforeUnmount() {
@@ -125,6 +200,7 @@ export default {
         window.removeEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
         window.removeEventListener(DECOR_LINE_SYNCED_EVENT, this.onDecorLineSynced)
         this.navAlignObserver?.disconnect()
+        this.stopWorkLineClipPoll()
     },
     methods: {
         syncMobileTopBarState() {
@@ -137,6 +213,8 @@ export default {
             this.syncMobileTopBarState()
             this.updateNavDecorAlign()
             this.updateHeroOverlap()
+            this.syncWorkLineTextClip()
+            this.startWorkLineClipPoll()
         },
         onSectionJump() {
             if (this.isInFlowMobileHome) return
@@ -152,6 +230,8 @@ export default {
                 if (this.isInFlowMobileHome) {
                     this.topBarHidden = false
                     this.updateHeroOverlap()
+                    this.syncWorkLineTextClip()
+                    this.startWorkLineClipPoll()
                     this.lastScrollY = window.scrollY
                     this.scrollTicking = false
                     return
@@ -169,6 +249,8 @@ export default {
                 }
 
                 this.updateHeroOverlap()
+                this.syncWorkLineTextClip()
+                this.startWorkLineClipPoll()
                 this.lastScrollY = y
                 this.scrollTicking = false
             })
@@ -217,6 +299,8 @@ export default {
         onDecorLineSynced() {
             this.decorLineSynced = true
             this.updateNavDecorAlign()
+            this.syncWorkLineTextClip()
+            this.startWorkLineClipPoll()
         },
         updateNavDecorAlign() {
             if (
@@ -236,6 +320,100 @@ export default {
             const workW = wEl.getBoundingClientRect().width
             this.navWorkWReady = workW > 0
             this.$el.style.setProperty('--nav-work-w-center', `${workW / 2}px`)
+            this.syncWorkLineTextClip()
+        },
+        clearWorkLineTextClip() {
+            const workLink = this.$el?.querySelector('.nav-link--work')
+            if (!workLink) return
+
+            workLink.classList.remove('nav-link--line-overlap')
+            workLink.style.removeProperty('--nav-work-line-clip-left')
+            workLink.style.removeProperty('--nav-work-line-clip-right')
+        },
+        syncWorkLineTextClip() {
+            const workLink = this.$el?.querySelector('.nav-link--work')
+            const workText = workLink?.querySelector('.nav-link-text')
+            if (!workLink || !workText) return
+
+            if (
+                !this.navHeroAlign ||
+                window.matchMedia(MOBILE_MEDIA_QUERY).matches ||
+                !this.isTransparent
+            ) {
+                this.clearWorkLineTextClip()
+                return
+            }
+
+            const page = document.querySelector('.portfolio-page')
+            if (!page) {
+                this.clearWorkLineTextClip()
+                return
+            }
+
+            const pageStyles = getComputedStyle(page)
+            const textRect = workText.getBoundingClientRect()
+            if (textRect.width <= 0 || textRect.height <= 0) {
+                this.clearWorkLineTextClip()
+                return
+            }
+
+            const segments = getDecorLineStrokeSegments(page, pageStyles)
+            let clipLeft = Infinity
+            let clipRight = -Infinity
+            let hasOverlap = false
+
+            for (const segment of segments) {
+                if (!rectsOverlap(textRect, segment)) continue
+
+                const left = Math.max(0, segment.left - textRect.left)
+                const right = Math.min(textRect.width, segment.right - textRect.left)
+                if (right <= left) continue
+
+                hasOverlap = true
+                clipLeft = Math.min(clipLeft, left)
+                clipRight = Math.max(clipRight, right)
+            }
+
+            if (!hasOverlap || clipRight <= clipLeft) {
+                this.clearWorkLineTextClip()
+                return
+            }
+
+            workLink.classList.add('nav-link--line-overlap')
+            workLink.style.setProperty('--nav-work-line-clip-left', `${clipLeft}px`)
+            workLink.style.setProperty('--nav-work-line-clip-right', `${clipRight}px`)
+        },
+        shouldPollWorkLineClip() {
+            return (
+                this.navHeroAlign &&
+                !window.matchMedia(MOBILE_MEDIA_QUERY).matches &&
+                this.isTransparent &&
+                this.$route.path === '/'
+            )
+        },
+        startWorkLineClipPoll() {
+            if (!this.shouldPollWorkLineClip()) {
+                this.stopWorkLineClipPoll()
+                return
+            }
+            if (this.workLineClipRaf != null) return
+
+            const tick = () => {
+                this.syncWorkLineTextClip()
+                if (this.shouldPollWorkLineClip()) {
+                    this.workLineClipRaf = requestAnimationFrame(tick)
+                } else {
+                    this.workLineClipRaf = null
+                }
+            }
+            tick()
+        },
+        stopWorkLineClipPoll() {
+            if (this.workLineClipRaf != null) {
+                cancelAnimationFrame(this.workLineClipRaf)
+                this.workLineClipRaf = null
+            }
+            this.clearWorkLineTextClip()
         },
         getTopBarHeight() {
             return this.$el?.querySelector('.top-bar-inner')?.offsetHeight ?? 120
@@ -337,7 +515,7 @@ export default {
 @media (min-width: 800px) {
     .top-bar--nav-hero-align .nav {
         position: absolute;
-        left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
+        left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px) - 14.3px);
         top: calc(var(--top-bar-edge-pad-right) + 19px);
         height: var(--top-bar-nav-height);
         opacity: 1;
@@ -366,6 +544,36 @@ export default {
 
 .nav-link:active {
     color: var(--brand-active);
+}
+
+@media (min-width: 800px) {
+    .top-bar--nav-hero-align .nav-link--work.nav-link--line-overlap .nav-link-text {
+        background-image: linear-gradient(
+            to right,
+            var(--brand) 0,
+            var(--brand) var(--nav-work-line-clip-left, 0px),
+            #fff var(--nav-work-line-clip-left, 0px),
+            #fff var(--nav-work-line-clip-right, 0px),
+            var(--brand) var(--nav-work-line-clip-right, 0px),
+            var(--brand) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+
+    .top-bar--nav-hero-align .nav-link--work.nav-link--line-overlap:active .nav-link-text {
+        background-image: linear-gradient(
+            to right,
+            var(--brand-active) 0,
+            var(--brand-active) var(--nav-work-line-clip-left, 0px),
+            #fff var(--nav-work-line-clip-left, 0px),
+            #fff var(--nav-work-line-clip-right, 0px),
+            var(--brand-active) var(--nav-work-line-clip-right, 0px),
+            var(--brand-active) 100%
+        );
+    }
 }
 
 @media (max-width: 799px) {
