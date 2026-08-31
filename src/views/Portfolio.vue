@@ -753,10 +753,10 @@ export default {
             return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
         },
         heroCursorDotDiskVisible() {
-            return this.heroCursorVisible && this.heroCursorRangeMix <= 0
+            return this.heroCursorVisible && this.heroCursorRangeMix < 0.001
         },
         heroCursorIntroGlassVisible() {
-            return this.heroCursorVisible && this.heroCursorRangeMix > 0
+            return this.heroCursorVisible && this.heroCursorRangeMix >= 0.001
         },
         heroCursorIntroGlassFromDisk() {
             const mix = this.heroCursorRangeMix
@@ -769,7 +769,7 @@ export default {
             )
         },
         heroCursorDotHoverExpand() {
-            if (this.heroCursorInRange || this.heroCursorRangeMix > 0) return false
+            if (this.heroCursorInRange || this.heroCursorRangeMix >= 0.001) return false
             const hoverMix = this.heroCursorHoverMix
             if (hoverMix <= 0) return false
             const { expand } = heroCursorHoverMorph(hoverMix)
@@ -2205,6 +2205,9 @@ export default {
                 const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.17
                 this.heroCursorRangeMix +=
                     (proximityTarget - this.heroCursorRangeMix) * rangeLerp
+                if (this.heroCursorRangeMix < 0.001) {
+                    this.heroCursorRangeMix = 0
+                }
 
                 const hoverTarget =
                     !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
