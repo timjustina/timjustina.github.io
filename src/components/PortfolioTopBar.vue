@@ -637,3 +637,32 @@ export default {
 
 }
 </style>
+
+<style>
+/* Magnifier frost overlay — same spec as .top-bar, outside the scaled clone layer. */
+.hero-intro-cursor-magnifier__top-bar-frost {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: none;
+    border-bottom: none;
+    transition: none;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost.top-bar--transparent {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    box-shadow: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost.top-bar--glass {
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(28px) saturate(2);
+    -webkit-backdrop-filter: blur(28px) saturate(2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+</style>
