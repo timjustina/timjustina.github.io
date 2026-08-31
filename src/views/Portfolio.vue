@@ -731,6 +731,7 @@ export default {
             heroCursorMirrorClone: null,
             heroCursorMirrorHoverTarget: 0,
             heroCursorHoverLockEl: null,
+            heroCursorScrollHoverSuppressUntil: 0,
         }
     },
     computed: {
@@ -2156,7 +2157,7 @@ export default {
             this.syncHeroCursorDocumentClass()
             this.startHeroCursorGlassFollow()
         },
-        updateHeroFinePointer(x, y, { introEffects = true } = {}) {
+        updateHeroFinePointer(x, y, { introEffects = true, skipHover = false } = {}) {
             const inRange = introEffects && this.isHeroIntroPointerNear(x, y)
             const wasActive = this.heroCursorActive
 
@@ -2165,7 +2166,11 @@ export default {
             this.syncHeroCursorDocumentClass()
             this.heroCursorInRange = inRange
             this.heroCursorRangeTight = inRange && this.isHeroIntroPointerTight(x, y)
-            this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
+            if (skipHover) {
+                this.heroCursorOverHover = false
+            } else {
+                this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
+            }
             const magnifierVisible =
                 !inRange &&
                 (this.heroCursorOverHover || this.heroCursorHoverMix > 0.02)
@@ -2202,15 +2207,23 @@ export default {
 
                 const { x: tx, y: ty } = this.heroCursorPos
                 const proximityTarget = this.getHeroIntroRangeProximityMix(tx, ty)
-                const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.17
-                this.heroCursorRangeMix +=
-                    (proximityTarget - this.heroCursorRangeMix) * rangeLerp
-                if (this.heroCursorRangeMix < 0.001) {
+                if (proximityTarget < 0.001) {
                     this.heroCursorRangeMix = 0
+                } else {
+                    const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.17
+                    this.heroCursorRangeMix +=
+                        (proximityTarget - this.heroCursorRangeMix) * rangeLerp
                 }
 
+                const scrollHoverSuppressed =
+                    typeof performance !== 'undefined' &&
+                    performance.now() < this.heroCursorScrollHoverSuppressUntil
                 const hoverTarget =
-                    !this.heroCursorInRange && this.isHeroCursorOverHoverTarget(tx, ty) ? 1 : 0
+                    scrollHoverSuppressed || this.heroCursorInRange
+                        ? 0
+                        : this.isHeroCursorOverHoverTarget(tx, ty)
+                          ? 1
+                          : 0
                 const magnifierVisible =
                     !this.heroCursorInRange &&
                     (hoverTarget === 1 || this.heroCursorHoverMix > 0.02)
@@ -2494,6 +2507,12 @@ export default {
             if (!this.isHeroIntroFinePointer()) return
             if (!this.heroCursorActive) return
 
+            // Scrolling moves content under a stationary cursor — not intentional hover.
+            this.heroCursorScrollHoverSuppressUntil = performance.now() + 140
+            this.heroCursorHoverLockEl = null
+            this.heroCursorOverHover = false
+            this.heroCursorHoverMix *= 0.45
+
             if (this.heroCursorMirrorHoverTarget === 1) {
                 this.refreshHeroCursorMirror()
             }
@@ -2505,7 +2524,7 @@ export default {
                 if (!this.heroCursorActive) return
 
                 const { x, y } = this.heroCursorPos
-                this.updateHeroFinePointer(x, y)
+                this.updateHeroFinePointer(x, y, { skipHover: true })
             })
         },
         applyHeroIntroPointerShift() {
