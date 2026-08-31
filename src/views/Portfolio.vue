@@ -2261,8 +2261,8 @@ export default {
                 const transitionBoost =
                     this.heroCursorRangeMix * (1 - this.heroCursorRangeMix) * 4
                 const follow = this.heroCursorInRange
-                    ? 0.34 + transitionBoost * 0.55
-                    : 0.13 + this.heroCursorRangeMix * 0.22 + transitionBoost * 0.35
+                    ? 0.27 + transitionBoost * 0.46
+                    : 0.10 + this.heroCursorRangeMix * 0.18 + transitionBoost * 0.28
                 const nx = gx + (tx - gx) * follow
                 const ny = gy + (ty - gy) * follow
 

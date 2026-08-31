@@ -5,6 +5,7 @@
             :class="{
                 'top-bar--hidden': topBarHidden && !isInFlowMobileHome,
                 'top-bar--transparent': isTransparent,
+                'top-bar--glass': topBarRecalled && !isInFlowMobileHome,
                 'top-bar--in-flow': isInFlowMobileHome,
                 'top-bar--nav-hero-align': navHeroAlign,
             }"
@@ -133,6 +134,7 @@ export default {
             decorLineSynced: false,
             navWorkWReady: false,
             topBarHidden: false,
+            topBarRecalled: false,
             lastScrollY: 0,
             scrollTicking: false,
             overHero: true,
@@ -142,7 +144,8 @@ export default {
     },
     computed: {
         isTransparent() {
-            return this.transparent && (this.alwaysTransparent || this.overHero)
+            if (!this.transparent || this.topBarRecalled) return false
+            return this.alwaysTransparent || this.overHero
         },
         isInFlowMobileHome() {
             return this.$route.path === '/' && this.isMobileViewport
@@ -207,6 +210,7 @@ export default {
             this.isMobileViewport = window.matchMedia(MOBILE_MEDIA_QUERY).matches
             if (this.isInFlowMobileHome) {
                 this.topBarHidden = false
+                this.topBarRecalled = false
             }
         },
         onResize() {
@@ -242,10 +246,12 @@ export default {
 
                 if (y <= 0) {
                     this.topBarHidden = false
+                    this.topBarRecalled = false
                 } else if (delta > 5 && y > this.getTopBarHeight()) {
                     this.topBarHidden = true
                 } else if (delta < -5) {
                     this.topBarHidden = false
+                    this.topBarRecalled = true
                 }
 
                 this.updateHeroOverlap()
@@ -443,21 +449,37 @@ export default {
     z-index: 100;
     width: 100%;
     height: var(--top-bar-height);
-    background: #fff;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    /* Cover subpixel seam where content peeks through during slide */
-    box-shadow: 0 1px 0 0 #fff;
+    border-bottom: none;
+    box-shadow: none;
     transition:
         transform 0.3s ease,
         background-color 0.25s ease,
-        box-shadow 0.25s ease;
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        backdrop-filter 0.25s ease,
+        -webkit-backdrop-filter 0.25s ease;
 }
 
 .top-bar--transparent {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    border-bottom: none;
     box-shadow: none;
+}
+
+.top-bar--glass {
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(28px) saturate(2);
+    -webkit-backdrop-filter: blur(28px) saturate(2);
+    border-bottom: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .top-bar--hidden {
