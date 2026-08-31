@@ -3334,7 +3334,7 @@ export default {
     height: 46px;
     margin: -23px 0 0 -23px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.8);
     z-index: 10002;
     isolation: isolate;
 }
@@ -3344,7 +3344,7 @@ export default {
     border: calc(1px - 0.5px * var(--hero-cursor-hover-mix, 0)) solid
         color-mix(
             in srgb,
-            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
+            rgba(255, 255, 255, 0.8) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
             rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-mix, 0) * 100%)
         );
     box-shadow:
@@ -3368,22 +3368,15 @@ export default {
             rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
 }
 
-.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--from-disk::before {
-    -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
-    backdrop-filter: blur(2.5px) saturate(1.35);
-    opacity: calc(1 - var(--hero-cursor-hover-mix, 0));
-}
-
 .hero-intro-cursor-glass-ball::before {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: rgba(255, 255, 255, 0.28);
-    -webkit-backdrop-filter: blur(calc(2.5px + 1.5px * var(--hero-cursor-range-mix, 0)))
-        saturate(1.35);
-    backdrop-filter: blur(calc(2.5px + 1.5px * var(--hero-cursor-range-mix, 0))) saturate(1.35);
-    opacity: 1;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    opacity: 0;
     pointer-events: none;
 }
 
