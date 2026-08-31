@@ -432,8 +432,8 @@ const HERO_CURSOR_GLASS_IDLE_SIZE = 46
 const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
 const HERO_CURSOR_HOLLOW_END = 0.28
 const HERO_CURSOR_HOVER_LERP = 0.3
-const HERO_CURSOR_HOVER_DISK_HANDOFF = 0.66
-const HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE = 0.18
+const HERO_CURSOR_HOVER_DISK_EXPAND_IN = 0.1
+const HERO_CURSOR_HOVER_DOT_RING_OUT = 0.22
 const HERO_CURSOR_RANGE_END_SIZE = 32
 const HERO_CURSOR_RANGE_POP = 1.5
 const HERO_CURSOR_RANGE_DOT_PEAK = 1.85
@@ -485,14 +485,27 @@ function heroCursorHoverMorph(hoverMix) {
     return { hollow: 1, expand: 1 - (1 - t) ** 3 }
 }
 
+function heroCursorHoverDiskForward(hoverMix) {
+    if (hoverMix <= 0) return 0
+    const t = Math.min(1, hoverMix)
+    const crest = Math.sin(Math.min(t, 0.92) / 0.92 * Math.PI)
+    const settle = t > 0.78 ? (t - 0.78) / 0.22 : 0
+    return crest * 0.14 * (1 - settle)
+}
+
 function heroCursorHoverDiskOpacity(hoverMix) {
     if (hoverMix <= 0) return 1
-    const { expand } = heroCursorHoverMorph(hoverMix)
-    if (expand < HERO_CURSOR_HOVER_DISK_HANDOFF) return 0
-    if (expand >= 1) return 1
-    return heroCursorRangeSmoothstep(
-        (expand - HERO_CURSOR_HOVER_DISK_HANDOFF) / HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE
-    )
+    const { hollow, expand } = heroCursorHoverMorph(hoverMix)
+    if (expand <= 0) {
+        return Math.max(0.4, 1 - hollow * 0.42)
+    }
+    if (expand < HERO_CURSOR_HOVER_DISK_EXPAND_IN) {
+        return (
+            0.4 +
+            heroCursorRangeSmoothstep(expand / HERO_CURSOR_HOVER_DISK_EXPAND_IN) * 0.6
+        )
+    }
+    return 1
 }
 
 function heroCursorDotDiskShouldShow(introGlassHandoff) {
@@ -782,7 +795,7 @@ export default {
             const hoverMix = this.heroCursorHoverMix
             if (hoverMix <= 0) return false
             const { expand } = heroCursorHoverMorph(hoverMix)
-            return expand > 0.001 && expand < HERO_CURSOR_HOVER_DISK_HANDOFF + 0.04
+            return expand > 0.001 && expand < HERO_CURSOR_HOVER_DOT_RING_OUT
         },
         heroCursorBallStyle() {
             if (!this.heroCursorVisible) {
@@ -821,11 +834,13 @@ export default {
                     background = 'transparent'
                     useGlassRingBorder = true
                     ;({ x, y } = this.heroCursorGlassPos)
-                    if (expand >= HERO_CURSOR_HOVER_DISK_HANDOFF) {
-                        const t =
-                            (expand - HERO_CURSOR_HOVER_DISK_HANDOFF) /
-                            HERO_CURSOR_HOVER_DISK_HANDOFF_RANGE
-                        opacity = Math.max(0, 1 - t * t)
+                    if (expand >= HERO_CURSOR_HOVER_DISK_EXPAND_IN * 0.45) {
+                        const t = Math.min(
+                            1,
+                            (expand - HERO_CURSOR_HOVER_DISK_EXPAND_IN * 0.45) /
+                                HERO_CURSOR_HOVER_DOT_RING_OUT
+                        )
+                        opacity = Math.max(0, 1 - heroCursorRangeSmoothstep(t))
                     }
                 }
             }
@@ -863,14 +878,17 @@ export default {
             }
 
             const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const { expand } = heroCursorHoverMorph(hoverMix)
             const { x, y } = this.heroCursorGlassPos
             const size = heroCursorDotDiskSize(hoverMix)
             const half = size / 2
             const opacity = heroCursorHoverDiskOpacity(hoverMix)
+            const forwardScale = 1 + heroCursorHoverDiskForward(hoverMix)
 
             return {
-                transform: `translate3d(${x}px, ${y}px, 0)`,
+                transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale})`,
                 '--hero-cursor-hover-mix': hoverMix,
+                '--hero-cursor-hover-expand': expand,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
@@ -924,6 +942,8 @@ export default {
                 visibility: layout.opacity > 0.02 ? 'visible' : 'hidden',
                 pointerEvents: 'none',
                 zIndex: HERO_CURSOR_LAYER_Z - 1,
+                transform: `scale(${layout.forwardScale})`,
+                transformOrigin: `${layout.half}px ${layout.half}px`,
             }
         },
         heroCursorMagnifierContentStyle() {
@@ -2343,7 +2363,8 @@ export default {
                 return
             }
 
-            const scale = 1 + HERO_CURSOR_MAGNIFY_BOOST * expand
+            const magnifyScale = 1 + HERO_CURSOR_MAGNIFY_BOOST * expand
+            const forwardScale = 1 + heroCursorHoverDiskForward(hoverMix)
             const { x, y } = this.heroCursorGlassPos
             const size = heroCursorDotDiskSize(hoverMix)
             const half = size / 2
@@ -2359,7 +2380,8 @@ export default {
                 windowTop: y - half,
                 size,
                 half,
-                scale,
+                scale: magnifyScale,
+                forwardScale,
                 cx: x,
                 cy: y,
                 opacity: expand * (1 - rangeMix),
@@ -3330,31 +3352,32 @@ export default {
     height: 46px;
     margin: -23px 0 0 -23px;
     background: transparent;
-    border: calc(1px - 0.5px * var(--hero-cursor-hover-mix, 0)) solid
+    transform-origin: center center;
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
         color-mix(
             in srgb,
-            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
-            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-mix, 0) * 100%)
+            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-expand, 0)) * 100%),
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-expand, 0) * 100%)
         );
     box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-mix, 0)))),
-        0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(1px + 2px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(2px + 3px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(3px + 4px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
-        0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
-            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(2px + 3px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(3px + 4px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(5px + 5px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-expand, 0)));
     z-index: 10002;
     isolation: isolate;
 }
@@ -3367,7 +3390,7 @@ export default {
     background: rgba(255, 255, 255, 0.28);
     -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
     backdrop-filter: blur(2.5px) saturate(1.35);
-    opacity: calc(1 - var(--hero-cursor-hover-mix, 0));
+    opacity: calc(1 - var(--hero-cursor-hover-expand, 0));
     pointer-events: none;
 }
 
