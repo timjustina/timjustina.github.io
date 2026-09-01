@@ -4763,7 +4763,7 @@ export default {
     --about-image-text-gap: clamp(32px, calc(32px + (100vw - 997px) * 32 / 457), 64px);
     --about-photo-w: clamp(281px, calc(281px + (100vw - 997px) * 12 / 457), 293px);
     --about-photo-h: clamp(402px, calc(402px + (100vw - 997px) * 18 / 457), 420px);
-    --about-line-bottom-trim: 17px;
+    --about-line-bottom-trim: 37px;
     --about-photo-col-w: calc(2 * var(--about-image-text-gap) + var(--about-photo-w));
     --about-inner-max-w: clamp(800px, calc(800px + (100vw - 997px) * 187 / 457), 987px);
     --about-top-pad: 80px;
