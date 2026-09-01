@@ -320,7 +320,9 @@ export default {
 }
 
 .footer-email {
-    text-decoration: none;
+    text-decoration: underline;
+    text-decoration-thickness: 0.8px;
+    text-underline-offset: 3px;
 }
 
 .footer-email:hover {
