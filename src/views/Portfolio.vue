@@ -4692,9 +4692,9 @@ export default {
     min-width: 0;
     margin: 0;
     font-family: 'Work Sans', sans-serif;
-    font-size: 18px;
-    font-weight: calc(500 * var(--font-weight-scale));
-    line-height: 27px;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 33px;
     color: var(--title);
     transition: color 0.25s ease;
 }
@@ -4743,9 +4743,9 @@ export default {
     flex-shrink: 0;
     margin-left: auto;
     font-family: 'Fira Code', monospace;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 500;
-    line-height: 27px;
+    line-height: 33px;
     letter-spacing: -0.02em;
     color: var(--muted);
 }
@@ -5599,9 +5599,9 @@ export default {
         flex: 1 1 auto;
         max-width: none;
         font-family: 'Work Sans', sans-serif;
-        font-size: 18px;
-        font-weight: calc(500 * var(--font-weight-scale));
-        line-height: 27px;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 33px;
         color: #4d4d4d;
     }
 
@@ -5620,9 +5620,9 @@ export default {
         margin-left: auto;
         flex-shrink: 0;
         font-family: 'Fira Code', monospace;
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 500;
-        line-height: 27px;
+        line-height: 33px;
         letter-spacing: -0.02em;
         color: #757575;
     }
