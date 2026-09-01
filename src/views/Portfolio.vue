@@ -1960,7 +1960,7 @@ export default {
             const styles = getComputedStyle(el)
             if (el.classList.contains('footer-contact-title--push')) {
                 return {
-                    outerPad: parseCssPx(styles, '--push-char-zone-pad', 80),
+                    outerPad: parseCssPx(styles, '--push-char-zone-pad', 4),
                     innerPad: parseCssPx(styles, '--push-char-zone-pad-tight', 1),
                 }
             }
@@ -1972,7 +1972,7 @@ export default {
         getPushTargetZonePad(el) {
             if (el.classList.contains('footer-contact-title--push')) {
                 const styles = getComputedStyle(el)
-                return parseCssPx(styles, '--push-char-zone-pad', 80)
+                return parseCssPx(styles, '--push-char-zone-pad', 4)
             }
             return this.getHeroCursorZonePad(el, getComputedStyle(el))
         },
@@ -2997,7 +2997,7 @@ export default {
             if (prefersReducedMotion()) return
 
             const footer = this.$el?.querySelector('.site-footer')
-            const threshold = footer?.offsetHeight || 120
+            const threshold = footer?.offsetHeight || 128
             const doc = document.documentElement
             const remaining = doc.scrollHeight - (window.scrollY + window.innerHeight)
             if (remaining <= threshold) {

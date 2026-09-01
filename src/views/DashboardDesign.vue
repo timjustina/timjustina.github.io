@@ -1121,7 +1121,7 @@ export default {
 .dashboard-ball-stage {
     --about-ball-size: 49px;
     --about-ball-height: 46px;
-    --site-footer-height: 120px;
+    --site-footer-height: 128px;
     position: relative;
     width: 100%;
     height: 0;

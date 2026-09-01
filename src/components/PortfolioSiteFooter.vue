@@ -111,7 +111,7 @@ export default {
             if (!root) return false
 
             const styles = getComputedStyle(root)
-            const pad = parseCssPx(styles, '--push-char-zone-pad', 80)
+            const pad = parseCssPx(styles, '--push-char-zone-pad', 4)
             return distanceToRect(x, y, root.getBoundingClientRect()) <= pad
         },
         scheduleApply({ immediate = false } = {}) {
@@ -203,7 +203,7 @@ export default {
 
     display: flex;
     align-items: center;
-    min-height: 120px;
+    min-height: 128px;
     padding: var(--footer-edge-pad-vertical) var(--top-bar-edge-pad-right) var(--footer-edge-pad-vertical)
         var(--top-bar-edge-pad-left);
     box-sizing: border-box;
@@ -211,7 +211,7 @@ export default {
 }
 
 .footer-inner {
-    --footer-item-gap: 4px;
+    --footer-item-gap: 12px;
     display: flex;
     flex-direction: row;
     align-items: flex-end;
@@ -241,7 +241,7 @@ export default {
 
 .footer-contact-title--push {
     --push-char-duration: 0.85s;
-    --push-char-zone-pad: 80px;
+    --push-char-zone-pad: 4px;
     --push-char-zone-pad-tight: 1px;
     --push-char-hover-radius: 160px;
     --push-char-hover-shift: 84px;
@@ -339,7 +339,7 @@ export default {
     }
 
     .footer-inner {
-        --footer-item-gap: 2px;
+        --footer-item-gap: 12px;
         flex-direction: column;
         align-items: stretch;
     }
