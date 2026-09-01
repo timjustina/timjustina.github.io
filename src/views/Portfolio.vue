@@ -1948,51 +1948,72 @@ export default {
 
             return normalPad
         },
-        getHeroIntroRangeProximityMix(x, y) {
+        getHeroCursorPushTargets() {
+            const targets = []
             const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return 0
+            const footer = this.$el?.querySelector('.footer-contact-title--push')
+            if (intro) targets.push(intro)
+            if (footer) targets.push(footer)
+            return targets
+        },
+        getPushTargetRangePads(el) {
+            const styles = getComputedStyle(el)
+            if (el.classList.contains('footer-contact-title--push')) {
+                return {
+                    outerPad: parseCssPx(styles, '--push-char-zone-pad', 80),
+                    innerPad: parseCssPx(styles, '--push-char-zone-pad-tight', 1),
+                }
+            }
+            return {
+                outerPad: parseCssPx(styles, '--hero-cursor-zone-pad-default', 80),
+                innerPad: parseCssPx(styles, '--hero-cursor-zone-pad-tight', 4),
+            }
+        },
+        getPushTargetZonePad(el) {
+            if (el.classList.contains('footer-contact-title--push')) {
+                const styles = getComputedStyle(el)
+                return parseCssPx(styles, '--push-char-zone-pad', 80)
+            }
+            return this.getHeroCursorZonePad(el, getComputedStyle(el))
+        },
+        getHeroIntroRangeProximityMix(x, y) {
+            let maxMix = 0
 
-            const introStyles = getComputedStyle(intro)
-            const outerPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-default', 80)
-            const innerPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-tight', 4)
-            const distance = heroCursorDistanceToRect(
-                x,
-                y,
-                intro.getBoundingClientRect()
-            )
+            for (const el of this.getHeroCursorPushTargets()) {
+                const { outerPad, innerPad } = this.getPushTargetRangePads(el)
+                const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
 
-            if (distance >= outerPad) return 0
-            if (distance <= innerPad) return 1
+                if (distance >= outerPad) continue
+                if (distance <= innerPad) return 1
 
-            const linear = (outerPad - distance) / (outerPad - innerPad)
-            return heroCursorRangeSmoothstep(linear)
+                const linear = (outerPad - distance) / (outerPad - innerPad)
+                maxMix = Math.max(maxMix, heroCursorRangeSmoothstep(linear))
+            }
+
+            return maxMix
         },
         isHeroIntroPointerTight(x, y) {
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return false
-
-            const introStyles = getComputedStyle(intro)
-            const innerPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-tight', 4)
-            const distance = heroCursorDistanceToRect(
-                x,
-                y,
-                intro.getBoundingClientRect()
-            )
-            return distance <= innerPad
+            for (const el of this.getHeroCursorPushTargets()) {
+                const { innerPad } = this.getPushTargetRangePads(el)
+                const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
+                if (distance <= innerPad) return true
+            }
+            return false
         },
         isHeroIntroPointerNear(x, y) {
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return false
-
-            const introStyles = getComputedStyle(intro)
-            const zonePad = this.getHeroCursorZonePad(intro, introStyles)
-            const rect = intro.getBoundingClientRect()
-            return (
-                x >= rect.left - zonePad &&
-                x <= rect.right + zonePad &&
-                y >= rect.top - zonePad &&
-                y <= rect.bottom + zonePad
-            )
+            for (const el of this.getHeroCursorPushTargets()) {
+                const zonePad = this.getPushTargetZonePad(el)
+                const rect = el.getBoundingClientRect()
+                if (
+                    x >= rect.left - zonePad &&
+                    x <= rect.right + zonePad &&
+                    y >= rect.top - zonePad &&
+                    y <= rect.bottom + zonePad
+                ) {
+                    return true
+                }
+            }
+            return false
         },
         classifyHeroIntroTouchGesture(event) {
             const start = this.heroIntroTouchStart
