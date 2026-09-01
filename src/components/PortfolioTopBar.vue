@@ -456,7 +456,9 @@ export default {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     border-bottom: none;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 -1px 0 rgba(255, 255, 255, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.35);
     transition:
         transform 0.3s ease,
         background-color 0.25s ease,
@@ -479,7 +481,9 @@ export default {
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
     border-bottom: none;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 -1px 0 rgba(255, 255, 255, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .top-bar--hidden {
@@ -644,7 +648,9 @@ export default {
     background: rgba(255, 255, 255, 0.20);
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 -1px 0 rgba(255, 255, 255, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.35);
     border-bottom: none;
     transition: none;
     transform: translateZ(0);
@@ -663,6 +669,8 @@ export default {
     background: rgba(255, 255, 255, 0.20);
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow:
+        0 -1px 0 rgba(255, 255, 255, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.35);
 }
 </style>
