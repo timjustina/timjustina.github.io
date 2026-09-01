@@ -3591,7 +3591,7 @@ export default {
     }
 }
 
-@media (max-width: 799px) {
+@media (width < 800px) {
     .hero-intro.hero-intro--chars {
         --hero-intro-tap-linger: 280ms;
         --hero-intro-swipe-min-travel: 20px;
@@ -5159,7 +5159,7 @@ export default {
     }
 }
 
-@media (max-width: 799px) {
+@media (width < 800px) {
     .portfolio-page {
         --page-pad: 20px;
         --top-bar-height: 86px;
@@ -5236,8 +5236,8 @@ export default {
     }
 }
 
-/* ≤799px: square work cards and stacked project layout */
-@media (max-width: 799px) {
+/* <800px: square work cards and stacked project layout */
+@media (width < 800px) {
     .portfolio-page {
         --project-w: 100%;
         --project-w-wide: 100%;
@@ -5333,8 +5333,8 @@ export default {
     }
 }
 
-/* 601–799px: mobile hero + tablet about/text tweaks */
-@media (min-width: 601px) and (max-width: 799px) {
+/* 601px–<800px: mobile hero + tablet about/text tweaks */
+@media (min-width: 601px) and (width < 800px) {
     .about {
         --about-gap: 340px;
         --about-bottom-pad-base: 180px;
@@ -5373,8 +5373,8 @@ export default {
     }
 }
 
-/* 601–799px: mobile layout with desktop text sizes */
-@media (min-width: 601px) and (max-width: 799px) {
+/* 601px–<800px: mobile layout with desktop text sizes */
+@media (min-width: 601px) and (width < 800px) {
     .hero-intro {
         font-size: 25px;
         line-height: 37.5px;

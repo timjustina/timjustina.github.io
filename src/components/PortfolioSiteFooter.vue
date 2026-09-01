@@ -32,8 +32,8 @@ import {
     distanceToRect,
     parseCssPx,
 } from '../utils/pushText.js'
+import { MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 
-const MOBILE_MEDIA_QUERY = '(max-width: 799px)'
 const FINE_POINTER_MEDIA_QUERY = '(hover: hover) and (pointer: fine)'
 
 export default {
@@ -278,7 +278,7 @@ export default {
     }
 }
 
-@media (max-width: 799px) {
+@media (width < 800px) {
     .footer-contact-title--push {
         --push-char-hover-radius: 160px;
         --push-char-hover-shift: 102px;
@@ -327,7 +327,7 @@ export default {
     color: var(--brand);
 }
 
-@media (max-width: 799px) {
+@media (width < 800px) {
     .site-footer {
         --top-bar-height: 86px;
         --top-bar-edge-pad-left: 20px;

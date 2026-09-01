@@ -1079,7 +1079,7 @@ export default {
     content: ' ';
 }
 
-@media (max-width: 799px) {
+@media (width < 800px) {
     .dashboard-project-header.project-header {
         width: 100% !important;
         max-width: none !important;

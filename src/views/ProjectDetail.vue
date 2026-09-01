@@ -521,7 +521,7 @@ export default {
 }
 
 /* Phone layout — after desktop rules so type/spacing aren’t overridden */
-@media (max-width: 799px) {
+@media (width < 800px) {
   .page {
     --project-content-offset: 0px;
     --top-bar-height: 86px;

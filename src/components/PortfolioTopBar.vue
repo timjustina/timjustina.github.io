@@ -602,7 +602,7 @@ export default {
     }
 }
 
-@media (max-width: 799px) {
+@media (width < 800px) {
     .nav-link--work,
     .nav-link--about {
         display: none;
