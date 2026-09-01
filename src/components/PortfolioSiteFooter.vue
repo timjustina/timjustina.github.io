@@ -311,8 +311,8 @@ export default {
 .footer-email,
 .footer-copy {
     font-family: 'Work Sans', sans-serif;
-    font-size: 18px;
-    font-weight: calc(400 * var(--font-weight-scale));
+    font-size: 20px;
+    font-weight: 300;
     line-height: 27px;
     color: var(--muted);
     white-space: nowrap;
