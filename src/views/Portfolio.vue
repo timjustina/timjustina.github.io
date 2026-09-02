@@ -970,6 +970,7 @@ export default {
                 height: `${window.innerHeight}px`,
                 transform: `scale(${combinedScale})`,
                 transformOrigin: `${layout.cx}px ${layout.cy}px`,
+                '--hero-cursor-magnifier-scale': String(combinedScale),
             }
         },
         heroCursorMagnifierChromeStyle() {
@@ -989,6 +990,7 @@ export default {
                 opacity: 1,
                 transform: `scale(${combinedScale})`,
                 transformOrigin: `${layout.cx}px ${layout.cy}px`,
+                '--hero-cursor-magnifier-scale': String(combinedScale),
             }
         },
         loadingSplashFrameTransform() {
@@ -5324,6 +5326,12 @@ export default {
 
 <style>
 /* Magnifier clone: mirror interactive hover styles (clone cannot use :hover). */
+.hero-intro-cursor-mirror-clone .about-link,
+.hero-intro-cursor-mirror-clone .footer-email {
+    text-decoration-thickness: calc(0.8px / var(--hero-cursor-magnifier-scale, 1));
+    text-underline-offset: calc(3px / var(--hero-cursor-magnifier-scale, 1));
+}
+
 .hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover,
 .hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-hover {
     background: var(--brand-hover) !important;
