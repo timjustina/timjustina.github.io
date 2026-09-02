@@ -4590,7 +4590,14 @@ export default {
 }
 
 .about-link {
-    color: var(--brand);
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 0.8px;
+    text-underline-offset: 3px;
+}
+
+.about-link:hover {
+    color: inherit;
 }
 
 .about-ball {
