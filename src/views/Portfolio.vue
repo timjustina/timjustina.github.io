@@ -3985,7 +3985,7 @@ export default {
     top: calc(140px - var(--about-gap));
     z-index: 2;
     width: var(--hero-squiggle-width);
-    height: var(--about-photo-h);
+    height: calc(var(--about-photo-h) - 40px);
     overflow: hidden;
     pointer-events: none;
 }
