@@ -139,14 +139,8 @@
                         <picture>
                             <img
                                 class="hero-decor-line"
-                                :class="{
-                                    'hero-decor-line--bouncing': heroLinePhase === 'bouncing',
-                                    'hero-decor-line--up': heroLinePhase === 'up',
-                                    'hero-decor-line--knot-clipped': heroLineKnotClipped,
-                                }"
                                 :src="lineAnimationExtended"
                                 alt=""
-                                @animationend="onHeroLineBounceEnd"
                             />
                         </picture>
                     </div>
@@ -197,10 +191,6 @@
                 <article
                     id="work-first"
                     class="project project--featured portfolio-fly portfolio-fly--from-right"
-                    @mouseenter="liftHeroLine"
-                    @mouseleave="dropHeroLine"
-                    @focusin="liftHeroLine"
-                    @focusout="onFeaturedFocusOut"
                 >
                     <router-link
                         to="/work/DashboardDesign"
@@ -266,10 +256,6 @@
                 <article
                     id="work-last"
                     class="project project--upcoming portfolio-fly portfolio-fly--from-right"
-                    @mouseenter="liftHeroLine"
-                    @mouseleave="dropHeroLine"
-                    @focusin="liftHeroLine"
-                    @focusout="onFeaturedFocusOut"
                 >
                     <div class="project-image-wrap">
                         <img
@@ -293,14 +279,7 @@
             </section>
         </main>
 
-        <span
-            class="about-line-bridge"
-            :class="{
-                'about-line-bridge--retract': bridgeSyncMode === 'retract',
-                'about-line-bridge--extend': bridgeSyncMode === 'extend',
-            }"
-            aria-hidden="true"
-        >
+        <span class="about-line-bridge" aria-hidden="true">
             <img
                 class="about-line-bridge-img portfolio-decor-line-img"
                 :src="lineAnimationExtended"
@@ -313,11 +292,7 @@
             class="about"
             :class="{ 'about--reveal': aboutRevealed, 'about--settled': aboutEntranceDone }"
         >
-            <span
-                class="about-line"
-                :class="{ 'about-line--knot-clipped': heroLineKnotClipped }"
-                aria-hidden="true"
-            >
+            <span class="about-line" aria-hidden="true">
                 <img
                     class="about-line-img portfolio-decor-line-img"
                     :src="lineAnimationExtended"
@@ -744,11 +719,6 @@ export default {
             aboutEntranceDone: false,
             pendingAboutBallDrop: false,
             aboutBallDropped: false,
-            heroLinePhase: 'rest',
-            heroLineKnotClipped: false,
-            aboutLineBridgeSynced: false,
-            bridgeSyncMode: null,
-            heroLineClipSettled: false,
             // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
             heroDecorHidden:
                 typeof window !== 'undefined' &&
@@ -1045,7 +1015,6 @@ export default {
             this.showLoadingSplash = false
             this.pageRevealed = true
             this.pageEntranceDone = true
-            this.heroLineClipSettled = true
         } else {
             document.documentElement.classList.add('portfolio-booting')
         }
@@ -1106,10 +1075,8 @@ export default {
         window.addEventListener('orientationchange', this.onMobileHeroOrientation)
 
         this.heroDecorObserver = new ResizeObserver(() => {
-            this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
-                this.endHeroDecorResizeClip()
             })
         })
         const main = this.$el?.querySelector('.portfolio-main')
@@ -1209,23 +1176,15 @@ export default {
 
         if (this.pageRevealed) {
             this.schedulePageEntranceSettle()
-            if (this.pageEntranceDone) {
-                this.$nextTick(() => {
-                    this.getHeroLineEl()?.classList.add('hero-decor-line--settled')
-                })
-            }
         }
     },
     beforeUnmount() {
         this.clearLoadingTimer()
         this.clearLogoHandoffTimer()
         clearTimeout(this.aboutEntranceTimer)
-        clearTimeout(this.heroLineClipSettleTimer)
         clearTimeout(this.pageEntranceSettleTimer)
-        clearTimeout(this.heroDecorResizeClipTimer)
         clearTimeout(this.featuredExpandTimer)
         clearTimeout(this.featuredPressClearTimer)
-        this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
         document.documentElement.classList.remove('portfolio-booting')
         document.documentElement.classList.remove('portfolio-hero-cursor')
         this.heroDecorObserver?.disconnect()
@@ -1256,7 +1215,6 @@ export default {
         window.removeEventListener('blur', this.onHeroPointerEndHandler)
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
-        this.getHeroLineEl()?.removeEventListener('transitionend', this.onHeroLineReturnEnd)
         this.$el?.querySelector('.hero-decor')?.removeEventListener('animationend', this.onHeroDecorFlyEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -1588,9 +1546,6 @@ export default {
                 return
             }
 
-            // Lock the line fly-in once the entrance sequence finishes
-            this.scheduleHeroLineClipSettle()
-
             // Wait until the longest hero motion finishes.
             let settleMs = 2300
             const intro = this.$el?.querySelector('.hero-intro')
@@ -1640,57 +1595,7 @@ export default {
             this.lockHeroViewportHeight()
             this.syncHeroDecorHeight()
             this.syncProjectCaptionLineOffset()
-            this.markHeroLineClipSettled()
-        },
-        scheduleHeroLineClipSettle() {
-            if (this.heroLineClipSettled || this.heroLineClipSettleScheduled) return
-            this.heroLineClipSettleScheduled = true
-
-            if (prefersReducedMotion()) {
-                this.markHeroLineClipSettled()
-                return
-            }
-
-            const line = this.getHeroLineEl()
-            if (!line) {
-                this.markHeroLineClipSettled()
-                return
-            }
-
-            this.onHeroLineClipSettleEnd = (event) => {
-                if (event.propertyName !== 'clip-path') return
-                line.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
-                this.markHeroLineClipSettled()
-            }
-            line.addEventListener('transitionend', this.onHeroLineClipSettleEnd)
-
-            // Fly-in duration (+ buffer) — knot stays clipped; no clip-path reveal on load
-            clearTimeout(this.heroLineClipSettleTimer)
-            this.heroLineClipSettleTimer = setTimeout(() => {
-                line.removeEventListener('transitionend', this.onHeroLineClipSettleEnd)
-                this.markHeroLineClipSettled()
-            }, 1300)
-        },
-        markHeroLineClipSettled() {
-            clearTimeout(this.heroLineClipSettleTimer)
-            this.heroLineClipSettleTimer = null
-            if (this.heroLineClipSettled) return
-            this.heroLineClipSettled = true
-            this.getHeroLineEl()?.classList.add('hero-decor-line--settled')
             this.publishDecorLineAlign()
-        },
-        beginHeroDecorResizeClip({ force = false } = {}) {
-            if (!force && !this.heroLineClipSettled) return
-            this.$el?.querySelector('.hero-decor')?.classList.add('hero-decor--resizing')
-            clearTimeout(this.heroDecorResizeClipTimer)
-        },
-        endHeroDecorResizeClip() {
-            clearTimeout(this.heroDecorResizeClipTimer)
-            // Debounce so continuous resize / breakpoint settles before showing the knot
-            this.heroDecorResizeClipTimer = setTimeout(() => {
-                this.$el?.querySelector('.hero-decor')?.classList.remove('hero-decor--resizing')
-                this.heroDecorResizeClipTimer = null
-            }, 150)
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
@@ -1713,21 +1618,18 @@ export default {
 
             // Tablet↔desktop letter/motion-only: sync without hiding the line
             if (!leavingMobile) {
-                this.beginHeroDecorResizeClip()
                 this.$nextTick(() => {
                     this.syncHeroDecorHeight()
                     this.syncProjectCaptionLineOffset()
                     if (this.heroIntroLetterMode && !this.pageRevealed) {
                         this.syncHeroIntroCharColumns()
                     }
-                    this.endHeroDecorResizeClip()
                 })
                 return
             }
 
             // Leaving mobile → tablet/desktop: keep line invisible until height matches layout
             this.heroDecorHidden = true
-            this.beginHeroDecorResizeClip({ force: true })
 
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
@@ -1741,7 +1643,6 @@ export default {
                             this.syncHeroIntroCharColumns()
                         }
                         this.heroDecorHidden = false
-                        this.endHeroDecorResizeClip()
                         this.updateHeroLocationVisibility()
                         this.publishDecorLineAlign()
                     })
@@ -1905,9 +1806,6 @@ export default {
         clearHeroViewportHeight() {
             this.$el?.style.removeProperty('--mobile-hero-height')
             this.$el?.style.removeProperty('--desktop-hero-min-height')
-        },
-        getHeroLineEl() {
-            return this.$el?.querySelector('.hero-decor-line')
         },
         canHeroIntroPointerPlay() {
             return (
@@ -2931,66 +2829,6 @@ export default {
                 el.style.removeProperty('--hero-intro-push-y')
             }
         },
-        liftHeroLine() {
-            if (this.heroLinePhase === 'bouncing' || this.heroLinePhase === 'up') return
-            const line = this.getHeroLineEl()
-            if (line) {
-                line.removeEventListener('transitionend', this.onHeroLineReturnEnd)
-                line.style.removeProperty('transform')
-            }
-            if (!this.heroLineKnotClipped) {
-                this.heroLineKnotClipped = true
-            }
-            this.heroLinePhase = 'bouncing'
-        },
-        onHeroLineBounceEnd(event) {
-            if (!String(event.animationName).includes('hero-line-bounce-up')) return
-            if (this.heroLinePhase !== 'bouncing') return
-            this.heroLinePhase = 'up'
-        },
-        dropHeroLine() {
-            if (this.heroLinePhase === 'rest') return
-            const line = this.getHeroLineEl()
-            if (!line) {
-                this.heroLinePhase = 'rest'
-                return
-            }
-
-            if (this.heroLineKnotClipped) {
-                this.heroLineKnotClipped = false
-            }
-
-            // Freeze the animated position, then ease down (removing animation alone would jump).
-            const computed = getComputedStyle(line).transform
-            const duration =
-                getComputedStyle(line).getPropertyValue('--hero-line-return-duration').trim() || '3s'
-            line.style.transition = 'none'
-            if (computed && computed !== 'none') {
-                line.style.transform = computed
-            }
-            this.heroLinePhase = 'rest'
-            void line.offsetWidth
-            line.style.transition = `transform ${duration} ease, clip-path 0.35s ease`
-            line.removeEventListener('transitionend', this.onHeroLineReturnEnd)
-            line.addEventListener('transitionend', this.onHeroLineReturnEnd)
-            requestAnimationFrame(() => {
-                line.style.transform = 'translateY(0)'
-            })
-        },
-        onHeroLineReturnEnd(event) {
-            if (event.propertyName !== 'transform') return
-            const line = event.currentTarget
-            if (this.heroLinePhase === 'rest') {
-                line.style.removeProperty('transform')
-                line.style.removeProperty('transition')
-            }
-            line.removeEventListener('transitionend', this.onHeroLineReturnEnd)
-        },
-        onFeaturedFocusOut(event) {
-            if (!event.currentTarget.contains(event.relatedTarget)) {
-                this.dropHeroLine()
-            }
-        },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
             if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
@@ -3029,7 +2867,6 @@ export default {
             about.style.removeProperty('--about-ball-x')
         },
         onHeroDecorResize() {
-            this.beginHeroDecorResizeClip()
             requestAnimationFrame(() => {
                 this.lockHeroViewportHeight()
                 this.syncDecorLineX()
@@ -3040,7 +2877,6 @@ export default {
                 if (!this.pageRevealed) {
                     this.syncHeroIntroCharColumns()
                 }
-                this.endHeroDecorResizeClip()
                 this.updateHeroLocationVisibility()
             })
         },
@@ -3338,11 +3174,6 @@ export default {
 
             bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
             bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
-            bridge.style.clipPath = 'inset(0 0 0 0)'
-            void bridge.offsetWidth
-            if (!this.aboutLineBridgeSynced) {
-                this.aboutLineBridgeSynced = true
-            }
         },
         syncProjectCaptionLineOffset() {
             const root = this.$el
@@ -3884,13 +3715,6 @@ export default {
     }
 }
 
-.portfolio-page--settled .hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up),
-.portfolio-page--settled
-    .hero-decor-line.hero-decor-line--settled.hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
-    clip-path: inset(0 0 45px 0);
-    transition: transform var(--hero-line-return-duration) ease;
-}
-
 .about-heading.portfolio-fly--from-left {
     --fly-distance: min(56vw, 480px);
 }
@@ -3939,12 +3763,6 @@ export default {
 
     .hero-intro-afterthought-cursor {
         display: none;
-    }
-
-    .hero-decor-line,
-    .portfolio-page--reveal .hero-decor-line {
-        clip-path: none;
-        transition: transform var(--hero-line-return-duration) ease;
     }
 }
 
@@ -4044,8 +3862,6 @@ export default {
 }
 
 .about-line-bridge {
-    --hero-line-bounce-duration: 1.2s;
-    --hero-line-return-duration: 0.4s;
     --bridge-bottom: 0px;
     --bridge-h: 0px;
     position: absolute;
@@ -4056,17 +3872,7 @@ export default {
     overflow: hidden;
     pointer-events: none;
     z-index: 2;
-    clip-path: inset(0 0 0 0);
-    transition: none;
     display: none;
-}
-
-.about-line-bridge--retract {
-    animation: about-line-bridge-retract var(--hero-line-bounce-duration) forwards;
-}
-
-.about-line-bridge--extend {
-    transition: clip-path var(--hero-line-return-duration) ease;
 }
 
 @media (min-width: 800px) {
@@ -4116,13 +3922,6 @@ export default {
 }
 
 .hero-decor {
-    --hero-line-lift: 72px;
-    --hero-line-bounce-1: 2.2*30px;
-    --hero-line-bounce-2: 2.2*12.75px;
-    --hero-line-bounce-3: 2.2*5.25px;
-    --hero-line-bounce-4: 2.2*2.25px;
-    --hero-line-bounce-duration: 1.2s;
-    --hero-line-return-duration: 0.4s;
     --hero-decor-height: 487px;
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
@@ -4171,9 +3970,6 @@ export default {
 .hero-decor-line {
     bottom: 0;
     object-position: left bottom;
-    transform: translateY(0);
-    clip-path: inset(0);
-    transition: transform var(--hero-line-return-duration) ease;
 }
 
 .portfolio-decor-line-img {
@@ -4187,126 +3983,15 @@ export default {
     top: calc(140px - var(--about-gap));
     z-index: 2;
     width: var(--hero-squiggle-width);
-    height: calc(var(--about-photo-h) - var(--about-line-bottom-trim));
+    height: var(--about-photo-h);
     overflow: hidden;
     pointer-events: none;
-}
-
-.hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
-    clip-path: inset(0 0 45px 0);
-}
-
-.portfolio-page--reveal .hero-decor-line {
-    transition: transform var(--hero-line-return-duration) ease;
-}
-
-/* After entrance: ease into clipped knot once the bounce has been triggered */
-.portfolio-page--reveal
-    .hero-decor-line.hero-decor-line--settled.hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
-    clip-path: inset(0 0 45px 0);
-    transition:
-        transform var(--hero-line-return-duration) ease,
-        clip-path 0.35s ease;
-}
-
-/* While viewport/layout is syncing, hide the knot so it can’t flash in the CTA gap */
-.hero-decor.hero-decor--resizing .hero-decor-line--knot-clipped:not(.hero-decor-line--bouncing):not(.hero-decor-line--up) {
-    clip-path: inset(0 0 45px 0);
-    transition: transform var(--hero-line-return-duration) ease;
 }
 
 /* Mobile / breakpoint handoff: invisible but still layout-measurable */
 .hero-decor.hero-decor--hidden {
     visibility: hidden;
     opacity: 0;
-}
-
-.hero-decor-line--bouncing {
-    clip-path: inset(0);
-    transition: none;
-    animation: hero-line-bounce-up var(--hero-line-bounce-duration) forwards;
-}
-
-.hero-decor-line--up {
-    clip-path: inset(0);
-    transform: translateY(calc(-1 * var(--hero-line-lift)));
-    transition: none;
-}
-
-@keyframes about-line-bridge-retract {
-    0% {
-        clip-path: inset(0 0 0 0);
-    }
-
-    22% {
-        clip-path: inset(97% 0 0 0);
-    }
-
-    38% {
-        clip-path: inset(76% 0 0 0);
-    }
-
-    49% {
-        clip-path: inset(93% 0 0 0);
-    }
-
-    60% {
-        clip-path: inset(84% 0 0 0);
-    }
-
-    67% {
-        clip-path: inset(96% 0 0 0);
-    }
-
-    73% {
-        clip-path: inset(91% 0 0 0);
-    }
-
-    78% {
-        clip-path: inset(98.5% 0 0 0);
-    }
-
-    100% {
-        clip-path: inset(100% 0 0 0);
-    }
-}
-
-@keyframes hero-line-bounce-up {
-    0% {
-        transform: translateY(0);
-    }
-
-    22% {
-        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-1)));
-    }
-
-    38% {
-        transform: translateY(calc(-1 * var(--hero-line-lift)));
-    }
-
-    49% {
-        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-2)));
-    }
-
-    60% {
-        transform: translateY(calc(-1 * var(--hero-line-lift)));
-    }
-
-    67% {
-        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-3)));
-    }
-
-    73% {
-        transform: translateY(calc(-1 * var(--hero-line-lift)));
-    }
-
-    78% {
-        transform: translateY(calc(-1 * var(--hero-line-lift) - var(--hero-line-bounce-4)));
-    }
-
-    100% {
-        transform: translateY(calc(-1 * var(--hero-line-lift)));
-    }
 }
 
 .hero-intro {
@@ -4767,7 +4452,6 @@ export default {
     --about-image-text-gap: clamp(32px, calc(32px + (100vw - 997px) * 32 / 457), 64px);
     --about-photo-w: clamp(281px, calc(281px + (100vw - 997px) * 12 / 457), 293px);
     --about-photo-h: clamp(402px, calc(402px + (100vw - 997px) * 18 / 457), 420px);
-    --about-line-bottom-trim: 37px;
     --about-photo-col-w: calc(2 * var(--about-image-text-gap) + var(--about-photo-w));
     --about-inner-max-w: clamp(800px, calc(800px + (100vw - 997px) * 187 / 457), 987px);
     --about-top-pad: 80px;
@@ -4802,10 +4486,6 @@ export default {
     flex-direction: column;
     padding-left: var(--about-image-text-gap);
     box-sizing: border-box;
-}
-
-.about-line--knot-clipped {
-    border-radius: 1px 1px 0 0;
 }
 
 .about-photo {
