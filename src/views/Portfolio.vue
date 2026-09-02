@@ -233,11 +233,11 @@
                                 <h2 class="project-title">
                                     IoT Adherence Analytics for Caregivers
                                 </h2>
-                                <span class="project-year">2026</span>
                             </div>
                             <p class="project-description">
                                 0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
                             </p>
+                            <span class="project-year">Kin Technology<span class="project-year-sep">//</span>2026</span>
                         </router-link>
                     </div>
                 </article>
@@ -255,11 +255,11 @@
                             <h2 class="project-title">
                                 IoT Home Medication Solution
                             </h2>
-                            <span class="project-year">2024</span>
                         </div>
                         <p class="project-description">
                             End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT medication adherence platform
                         </p>
+                        <span class="project-year">Kin Technology<span class="project-year-sep">//</span>2024</span>
                     </div>
                 </article>
 
@@ -283,11 +283,11 @@
                             <h2 class="project-title">
                                 Art Curation and Marketplace
                             </h2>
-                            <span class="project-year">2019</span>
                         </div>
                         <p class="project-description">
                             0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
                         </p>
+                        <span class="project-year">2019</span>
                     </div>
                 </article>
             </section>
@@ -4665,7 +4665,7 @@ export default {
 }
 
 .project--upcoming .project-title {
-    color: var(--title);
+    color: var(--text);
 }
 
 .project-caption {
@@ -4695,7 +4695,7 @@ export default {
     font-size: 22px;
     font-weight: 400;
     line-height: 33px;
-    color: var(--title);
+    color: var(--text);
     transition: color 0.25s ease;
 }
 
@@ -4740,14 +4740,18 @@ export default {
 }
 
 .project-year {
-    flex-shrink: 0;
-    margin-left: auto;
-    font-family: 'Fira Code', monospace;
-    font-size: 22px;
-    font-weight: 500;
-    line-height: 33px;
+    display: block;
+    margin: 16px 0 0;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 25px;
     letter-spacing: -0.02em;
-    color: var(--muted);
+    color: var(--title);
+}
+
+.project-year-sep {
+    margin: 0 0.7em;
 }
 
 .about {
@@ -5324,12 +5328,15 @@ export default {
     }
 
     /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
-    .cta-button,
-    .project-year {
+    .cta-button {
         font-weight: 500;
     }
 
     .project-description {
+        font-weight: 400;
+    }
+
+    .project-year {
         font-weight: 400;
     }
 }
@@ -5602,7 +5609,7 @@ export default {
         font-size: 22px;
         font-weight: 400;
         line-height: 33px;
-        color: #4d4d4d;
+        color: #2c2c2c;
     }
 
     .project-description {
@@ -5617,14 +5624,13 @@ export default {
     }
 
     .project-year {
-        margin-left: auto;
-        flex-shrink: 0;
-        font-family: 'Fira Code', monospace;
-        font-size: 22px;
-        font-weight: 500;
-        line-height: 33px;
+        margin-top: 20px;
+        font-family: 'Work Sans', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 25px;
         letter-spacing: -0.02em;
-        color: #757575;
+        color: #4d4d4d;
     }
 }
 </style>
