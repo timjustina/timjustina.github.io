@@ -4574,7 +4574,7 @@ export default {
     font-family: 'Work Sans', sans-serif;
     font-size: 18px;
     font-style: normal;
-    font-weight: calc(400 * var(--font-weight-scale));
+    font-weight: 400;
     line-height: 27px;
     letter-spacing: -0.02em;
     color: #928a81;
@@ -4816,6 +4816,7 @@ export default {
 
     .about {
         --about-bio-cta-gap: 58px;
+        --about-bottom-pad-base: clamp(239px, calc(239px + (100vw - 997px) * 100 / 457), 280px);
     }
 
     .about-heading {
