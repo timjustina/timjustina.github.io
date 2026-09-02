@@ -4708,7 +4708,7 @@ export default {
     }
 
     .about-heading {
-        margin: 0 0 var(--about-text-gap);
+        margin: 0 0 58px;
     }
 
     .about-bio {
@@ -4812,6 +4812,14 @@ export default {
 
     .about-location {
         display: none;
+    }
+
+    .about {
+        --about-bio-cta-gap: 58px;
+    }
+
+    .about-heading {
+        margin-bottom: 58px;
     }
 }
 
