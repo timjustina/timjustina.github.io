@@ -188,12 +188,25 @@ export default {
         contentSpan = Math.max(0, bodyRight - contentLeft)
       }
 
-      const pad = 120
+      const contentPad = 120
+      const sideMargin = 40
+      const fullBleedWhenSideSpaceBelow = 80
       const viewport = document.documentElement.clientWidth
-      const glassWidth = Math.min(
-        viewport,
-        Math.max(titleWidth, contentSpan) + pad * 2
-      )
+      const longest = Math.max(titleWidth, contentSpan)
+      const idealGlass = longest + contentPad * 2
+      // Space between the longest content edge and the viewport (glass is centered)
+      const contentSideSpace = (viewport - longest) / 2
+
+      let glassWidth
+      if (longest <= 0) {
+        glassWidth = 0
+      } else if (contentSideSpace < fullBleedWhenSideSpaceBelow) {
+        // Content within <80px of each edge — allow full bleed
+        glassWidth = viewport
+      } else {
+        // Prefer content + 120px pad, but never eat into the 40px L/R margin
+        glassWidth = Math.min(idealGlass, viewport - sideMargin * 2)
+      }
 
       if (glassWidth > 0) {
         root.style.setProperty('--project-hero-glass-width', `${Math.round(glassWidth)}px`)
@@ -292,9 +305,9 @@ export default {
 .pageOverlayTopBar {
   --project-hero-glass-panel-height: 140px;
   --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
-  /* Fallback until JS measures title vs h2→text span (+ 120px each side) */
+  /* Fallback until JS measures title vs h2→text span (+ 120px each side, 40px gutters) */
   --project-hero-glass-width: min(
-    100vw,
+    calc(100vw - 80px),
     calc(var(--project-content-w) + var(--project-title-hang) + 240px)
   );
   --project-hero-title-line-height: 48px;
