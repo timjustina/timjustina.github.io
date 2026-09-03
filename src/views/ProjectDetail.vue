@@ -392,10 +392,14 @@ export default {
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid transparent;
   box-shadow:
-    0 -4px 28px rgba(15, 23, 42, 0.08),
-    -14px 0 36px rgba(15, 23, 42, 0.04),
-    14px 0 36px rgba(15, 23, 42, 0.04);
-  clip-path: inset(-40px -40px 0 -40px);
+    0 -2px 8px rgba(15, 23, 42, 0.025),
+    0 -6px 18px rgba(15, 23, 42, 0.03),
+    0 -12px 28px rgba(15, 23, 42, 0.02),
+    -4px 0 12px rgba(15, 23, 42, 0.018),
+    4px 0 12px rgba(15, 23, 42, 0.018),
+    -8px 0 20px rgba(15, 23, 42, 0.015),
+    8px 0 20px rgba(15, 23, 42, 0.015);
+  clip-path: inset(-32px -22px 0 -22px);
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header)::before {
