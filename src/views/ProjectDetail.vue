@@ -682,7 +682,7 @@ export default {
 }
 
 .main :global(.project-body section > h2:not(:first-child)) {
-  margin-top: 100px;
+  margin-top: 200px;
 }
 
 .main :global(.project-body h3) {
@@ -1022,7 +1022,7 @@ export default {
   }
 
   .main :global(.project-body section > h2:not(:first-child)) {
-    margin-top: 52px;
+    margin-top: 104px;
   }
 
   .main :global(.project-body h3) {
