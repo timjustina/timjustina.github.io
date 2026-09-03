@@ -284,18 +284,24 @@ export default {
       var(--project-hero-glass-panel-height)
   );
   pointer-events: none;
-  /* Soft white→grey around the text bottom; soft grey→white into the footer */
+  /* Flatter grey peak at bottom glass lower edge — eased in/out, extends up */
   background: linear-gradient(
     180deg,
+    rgba(224, 224, 224, 0) 0%,
     rgba(224, 224, 224, 0)
-      calc(var(--project-hero-glass-image-cover) + var(--project-hero-glass-panel-height) - 180px),
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 320px),
+    rgba(224, 224, 224, 0.4)
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 180px),
+    rgba(224, 224, 224, 0.82)
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 60px),
     #e0e0e0
-      calc(var(--project-hero-glass-image-cover) + var(--project-hero-glass-panel-height) + 110px),
-    #e0e0e0 58%,
-    #e4e4e4 68%,
-    #ececec 78%,
-    #f3f3f3 88%,
-    #f9f9f9 95%,
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 8px),
+    #e0e0e0
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) + 40px),
+    rgba(224, 224, 224, 0.5)
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) + 130px),
+    #fff
+      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) + 240px),
     #fff 100%
   );
 }
