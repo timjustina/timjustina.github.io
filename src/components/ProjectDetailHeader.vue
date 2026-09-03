@@ -208,7 +208,7 @@ export default {
     width: min(896px, calc(100% - 40px));
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 100px;
+    margin-bottom: 120px;
     text-align: center;
     display: flex;
     flex-direction: column;
