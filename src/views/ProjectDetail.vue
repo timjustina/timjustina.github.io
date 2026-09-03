@@ -163,6 +163,8 @@ export default {
   --project-hero-title-overlap: calc(
     0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height)
   );
+  /* Room for the closing glass under the last paragraph */
+  --project-bottom-pad: calc(var(--project-hero-glass-image-cover) + 40px);
 }
 
 .pageOverlayTopBar :global(.project-hero) {
@@ -251,6 +253,74 @@ export default {
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
   letter-spacing: -0.02em;
+}
+
+/* Closing glass — grey wash behind, glass on top, bottom corners rounded */
+.pageOverlayTopBar :global(.project-body) {
+  position: relative;
+  isolation: isolate;
+}
+
+.pageOverlayTopBar :global(.project-body > *) {
+  position: relative;
+  z-index: 2;
+}
+
+.pageOverlayTopBar :global(.project-body)::before,
+.pageOverlayTopBar :global(.project-body)::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  pointer-events: none;
+}
+
+.pageOverlayTopBar :global(.project-body)::before {
+  top: calc(
+    100% - var(--project-hero-glass-image-cover) - var(--project-hero-glass-panel-height)
+  );
+  left: calc(-1 * var(--project-body-left));
+  z-index: 0;
+  width: 100vw;
+  height: calc(
+    var(--project-bottom-pad) + var(--project-hero-glass-image-cover) +
+      var(--project-hero-glass-panel-height)
+  );
+  background: linear-gradient(
+    180deg,
+    rgba(224, 224, 224, 0) 20%,
+    #e0e0e0 100%
+  );
+}
+
+.pageOverlayTopBar :global(.project-body)::after {
+  top: calc(100% - var(--project-hero-glass-panel-height));
+  left: calc(-1 * var(--project-body-left) + var(--project-hero-glass-side-inset));
+  z-index: 1;
+  width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
+  height: var(--project-hero-glass-image-cover);
+  border-radius: 0 0 40px 40px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(52px) saturate(2.5);
+  -webkit-backdrop-filter: blur(52px) saturate(2.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+    0 6px 24px rgba(15, 23, 42, 0.05);
+  -webkit-mask-image: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.58) 48%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.58) 48%,
+    transparent 100%
+  );
 }
 
 @media (min-width: 800px) {
@@ -639,6 +709,10 @@ export default {
   .page {
     --project-bottom-pad: 180px;
   }
+
+  .pageOverlayTopBar {
+    --project-bottom-pad: calc(var(--project-hero-glass-image-cover) + 40px);
+  }
 }
 
 @media (max-width: 480px) {
@@ -671,6 +745,7 @@ export default {
     --project-hero-title-overlap: calc(
       0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height)
     );
+    --project-bottom-pad: calc(var(--project-hero-glass-image-cover) + 40px);
   }
 
   .main :global(.project-hero) {
