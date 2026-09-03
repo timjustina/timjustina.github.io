@@ -363,18 +363,39 @@ export default {
   z-index: 2;
   margin-top: calc(-1 * var(--project-hero-title-overlap));
   isolation: isolate;
+  overflow: visible;
+}
+
+.pageOverlayTopBar :global(.project-hero + .project-header)::before,
+.pageOverlayTopBar :global(.project-hero + .project-header)::after {
+  content: '';
+  position: absolute;
+  top: calc(-1 * (var(--project-hero-glass-panel-height) - var(--project-hero-title-overlap)));
+  width: var(--project-hero-glass-width);
+  border-radius: 40px 40px 0 0;
+  pointer-events: none;
+}
+
+/* Soft top/left/right shadow — bottom clipped */
+.pageOverlayTopBar :global(.project-hero + .project-header)::after {
+  z-index: 0;
+  left: calc(50% - var(--project-hero-glass-width) / 2);
+  width: var(--project-hero-glass-width);
+  height: var(--project-hero-glass-image-cover);
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid transparent;
+  box-shadow:
+    0 -4px 28px rgba(15, 23, 42, 0.08),
+    -14px 0 36px rgba(15, 23, 42, 0.04),
+    14px 0 36px rgba(15, 23, 42, 0.04);
+  clip-path: inset(-40px -40px 0 -40px);
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header)::before {
-  content: '';
-  position: absolute;
+  z-index: 1;
   left: 50%;
-  top: calc(-1 * (var(--project-hero-glass-panel-height) - var(--project-hero-title-overlap)));
-  z-index: 0;
-  width: var(--project-hero-glass-width);
   height: var(--project-hero-glass-image-cover);
   transform: translate3d(-50%, 0, 0);
-  border-radius: 40px 40px 0 0;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.45);
@@ -383,9 +404,7 @@ export default {
   -webkit-backdrop-filter: blur(52px) saturate(2.5);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
-    0 6px 24px rgba(15, 23, 42, 0.05);
-  filter: drop-shadow(0 -6px 16px rgba(15, 23, 42, 0.1));
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3);
   -webkit-mask-image: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.92) 0%,
@@ -398,13 +417,34 @@ export default {
     rgba(0, 0, 0, 0.58) 48%,
     transparent 100%
   );
+}
+
+/* White wash: covers side shadows under the title/meta; behind text, above glass */
+.pageOverlayTopBar :global(.project-hero + .project-header .project-header-glass-wash) {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  /* Bottom of glass, minus fixed height — taller so it reaches nearer the hero edge */
+  top: calc(
+    var(--project-hero-glass-panel-height) + var(--project-hero-title-overlap) - 500px
+  );
+  width: calc(var(--project-hero-glass-width) + 96px);
+  height: 500px;
+  transform: translate3d(-50%, 0, 0);
+  background: linear-gradient(
+    to top,
+    #fff 0%,
+    #fff 28%,
+    rgba(255, 255, 255, 0.7) 55%,
+    transparent 100%
+  );
   pointer-events: none;
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title),
 .pageOverlayTopBar :global(.project-hero + .project-header .project-header-meta) {
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {

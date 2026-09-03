@@ -1,5 +1,6 @@
 <template>
     <header class="project-header">
+        <span class="project-header-glass-wash" aria-hidden="true"></span>
         <h1
             ref="titleEl"
             class="project-header-title"
@@ -254,10 +255,10 @@ export default {
 .project-header-meta {
     display: block;
     font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 400;
-    line-height: 25px;
-    letter-spacing: -0.02em;
+    line-height: 34px;
+    letter-spacing: 0;
     color: #4d4d4d;
 }
 
@@ -286,7 +287,7 @@ export default {
 
     .project-header-meta {
         font-size: 16px;
-        line-height: 25px;
+        line-height: calc(24px * var(--project-type-scale));
         color: #4d4d4d;
     }
 }
