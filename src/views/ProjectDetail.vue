@@ -303,7 +303,7 @@ export default {
 
 /* Hero flush to viewport top; frosted panel between image and title */
 .pageOverlayTopBar {
-  --project-hero-glass-panel-height: 140px;
+  --project-hero-glass-panel-height: 280px;
   --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
   /* Fallback until JS measures title vs h2→text span (+ 120px each side, 40px gutters) */
   --project-hero-glass-width: min(
@@ -313,7 +313,7 @@ export default {
   --project-hero-title-line-height: 48px;
   --project-hero-title-line-count: 2;
   --project-hero-title-overlap: calc(
-    0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height)
+    0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height) + 140px
   );
   /* Room for the closing glass under the last paragraph */
   --project-bottom-pad: calc(var(--project-hero-glass-image-cover) + 40px);
@@ -346,12 +346,13 @@ export default {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(255, 255, 255, 0.06) 18%,
-    rgba(255, 255, 255, 0.18) 34%,
-    rgba(255, 255, 255, 0.38) 48%,
-    rgba(255, 255, 255, 0.62) 60%,
-    rgba(255, 255, 255, 0.88) 70%,
-    #fff 75%,
+    rgba(255, 255, 255, 0.04) 10%,
+    rgba(255, 255, 255, 0.10) 22%,
+    rgba(255, 255, 255, 0.22) 36%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(255, 255, 255, 0.65) 62%,
+    rgba(255, 255, 255, 0.88) 72%,
+    #fff 78%,
     #fff 100%
   );
   pointer-events: none;
@@ -418,7 +419,7 @@ export default {
 
 .pageOverlayTopBar :global(.project-body) {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   isolation: isolate;
 }
 
@@ -927,12 +928,12 @@ export default {
   }
 
   .pageOverlayTopBar {
-    --project-hero-glass-panel-height: 100px;
+    --project-hero-glass-panel-height: 200px;
     --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
     --project-hero-title-line-height: 30px;
     --project-hero-title-line-count: 2;
     --project-hero-title-overlap: calc(
-      0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height)
+      0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height) + 100px
     );
     --project-bottom-pad: calc(var(--project-hero-glass-image-cover) + 40px);
   }
