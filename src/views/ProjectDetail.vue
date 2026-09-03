@@ -763,10 +763,6 @@ export default {
   margin-top: 18px;
 }
 
-.main :global(.project-body .project-role li + li) {
-  margin-top: 0;
-}
-
 .main :global(.project-body li::marker) {
   color: #3c3f41;
 }
@@ -1104,10 +1100,6 @@ export default {
 
   .main :global(.project-body li + li) {
     margin-top: 12px;
-  }
-
-  .main :global(.project-body .project-role li + li) {
-    margin-top: 0;
   }
 
   .main :global(.project-body p:last-child) {

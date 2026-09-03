@@ -17,17 +17,6 @@ Kin is a healthcare startup that needed to showcase the full digital experience 
 ## My role
 
 Sole designer on this project. Reported directly to the head of product.
-Responsible for:
-
-- UX
-- UI
-- User research
-- Product strategy
-- Problem framing
-- Stakeholder communication
-- Data visualisation
-- Design system
-- Prototyping
 
 ## Problem framing
 

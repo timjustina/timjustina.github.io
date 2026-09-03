@@ -26,18 +26,7 @@
 
             <section class="project-role">
                 <h2>My role</h2>
-                <p>Sole designer on this project. Reported directly to the head of product.<br>Responsible for:</p>
-                <ul>
-                    <li>UX</li>
-                    <li>UI</li>
-                    <li>User research</li>
-                    <li>Product strategy</li>
-                    <li>Problem framing</li>
-                    <li>Stakeholder communication</li>
-                    <li>Data visualisation</li>
-                    <li>Design system</li>
-                    <li>Prototyping</li>
-                </ul>
+                <p>Sole designer on this project. Reported directly to the head of product.</p>
             </section>
 
             <section>
