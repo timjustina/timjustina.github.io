@@ -291,7 +291,11 @@ export default {
       calc(var(--project-hero-glass-image-cover) + var(--project-hero-glass-panel-height) - 180px),
     #e0e0e0
       calc(var(--project-hero-glass-image-cover) + var(--project-hero-glass-panel-height) + 110px),
-    #e0e0e0 78%,
+    #e0e0e0 58%,
+    #e4e4e4 68%,
+    #ececec 78%,
+    #f3f3f3 88%,
+    #f9f9f9 95%,
     #fff 100%
   );
 }
