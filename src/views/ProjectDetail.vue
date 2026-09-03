@@ -1034,7 +1034,7 @@ export default {
     max-width: 320px;
     font-family: 'Work Sans', sans-serif;
     font-weight: 400;
-    font-size: 16px;
+    font-size: 17px;
     line-height: calc(24px * var(--project-type-scale));
     color: #3c3f41;
   }
@@ -1061,7 +1061,7 @@ export default {
 
   .main :global(.project-body p:not(.caption)) {
     margin-bottom: 24px;
-    font-size: 16px;
+    font-size: 17px;
     line-height: calc(24px * var(--project-type-scale));
   }
 
@@ -1076,7 +1076,7 @@ export default {
   /* Same caption:body ratio as desktop (14/22) */
   .main :global(.project-body .caption),
   .main :global(.caption) {
-    font-size: calc(16px * 14 / 22 * var(--project-type-scale));
+    font-size: calc(17px * 14 / 22 * var(--project-type-scale));
     line-height: calc(24px * 14 / 22 * var(--project-type-scale));
     margin-top: 16px;
   }
@@ -1109,7 +1109,7 @@ export default {
   .main :global(.project-body strong) {
     font-family: 'Work Sans', sans-serif;
     font-weight: calc(600 * var(--font-weight-scale));
-    font-size: 16px;
+    font-size: 17px;
     line-height: calc(24px * var(--project-type-scale));
   }
 
