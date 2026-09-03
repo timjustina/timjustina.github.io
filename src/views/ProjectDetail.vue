@@ -153,13 +153,98 @@ export default {
   margin-top: calc(var(--top-bar-height, 120px) + 160px);
 }
 
-/* Hero flush to viewport top; title sits below the image */
+/* Hero flush to viewport top; frosted panel between image and title */
+.pageOverlayTopBar {
+  --project-hero-glass-panel-height: 140px;
+  --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
+  --project-hero-glass-side-inset: 40px;
+  --project-hero-title-line-height: 48px;
+  --project-hero-title-line-count: 2;
+  --project-hero-title-overlap: calc(
+    0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height)
+  );
+}
+
 .pageOverlayTopBar :global(.project-hero) {
   margin-top: 0;
+  position: relative;
+  z-index: 0;
+}
+
+.pageOverlayTopBar :global(.project-hero img),
+.pageOverlayTopBar :global(.project-hero picture) {
+  position: relative;
+  z-index: 0;
+}
+
+/* Fade hero only under the glass footprint on the image */
+.pageOverlayTopBar :global(.project-hero)::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 1;
+  width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
+  height: var(--project-hero-glass-panel-height);
+  transform: translate3d(-50%, 0, 0);
+  border-radius: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 40%,
+    rgba(255, 255, 255, 0.85) 60%,
+    #fff 75%,
+    #fff 100%
+  );
+  pointer-events: none;
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header) {
-  margin-top: 100px;
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--project-hero-title-overlap));
+  isolation: isolate;
+}
+
+.pageOverlayTopBar :global(.project-hero + .project-header)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: calc(-1 * (var(--project-hero-glass-panel-height) - var(--project-hero-title-overlap)));
+  z-index: 0;
+  width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
+  height: var(--project-hero-glass-image-cover);
+  transform: translate3d(-50%, 0, 0);
+  border-radius: 40px 40px 0 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(52px) saturate(2.5);
+  -webkit-backdrop-filter: blur(52px) saturate(2.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+    0 6px 24px rgba(15, 23, 42, 0.05);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.58) 48%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.58) 48%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.pageOverlayTopBar :global(.project-hero + .project-header .project-header-title),
+.pageOverlayTopBar :global(.project-hero + .project-header .project-header-meta) {
+  position: relative;
+  z-index: 1;
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
@@ -240,6 +325,11 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+}
+
+.pageOverlayTopBar :global(.project-hero) {
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .main :global(.project-header + .project-hero) {
@@ -573,8 +663,14 @@ export default {
     margin-bottom: 52px;
   }
 
-  .pageOverlayTopBar :global(.project-hero + .project-header) {
-    margin-top: 20px;
+  .pageOverlayTopBar {
+    --project-hero-glass-panel-height: 100px;
+    --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
+    --project-hero-title-line-height: 30px;
+    --project-hero-title-line-count: 2;
+    --project-hero-title-overlap: calc(
+      0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height)
+    );
   }
 
   .main :global(.project-hero) {
@@ -584,7 +680,8 @@ export default {
     height: 125svh;
     height: var(--project-hero-mobile-height, 125svh);
     max-height: none;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   .main :global(.project-hero picture),
