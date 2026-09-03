@@ -27,11 +27,12 @@
             </template>
             <template v-else>{{ title }}</template>
         </h1>
-        <div v-if="client || period" class="project-header-meta">
-            <span v-if="client">{{ client }}</span>
-            <span v-if="client && period" class="project-header-meta-divider" aria-hidden="true" />
-            <span v-if="period">{{ period }}</span>
-        </div>
+        <span v-if="client || period" class="project-header-meta">
+            <template v-if="client">{{ client }}</template><span
+                v-if="client && period"
+                class="project-header-meta-sep"
+            >//</span><template v-if="period">{{ period }}</template>
+        </span>
     </header>
 </template>
 
@@ -251,30 +252,17 @@ export default {
 }
 
 .project-header-meta {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    font-family: 'Fira Code', monospace;
-    font-weight: calc(400 * var(--font-weight-scale));
-    font-style: normal;
-    font-size: 18px;
-    line-height: 30px;
+    display: block;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 25px;
     letter-spacing: -0.02em;
-    color: #757575;
+    color: #4d4d4d;
 }
 
-.project-header-meta span:not(.project-header-meta-divider) {
-    display: flex;
-    align-items: center;
-}
-
-.project-header-meta-divider {
-    width: 1px;
-    height: 28px;
-    background: #757575;
-    flex-shrink: 0;
+.project-header-meta-sep {
+    margin: 0 0.7em;
 }
 
 @media (width < 800px) {
@@ -297,19 +285,9 @@ export default {
     }
 
     .project-header-meta {
-        font-family: 'Fira Code', monospace;
-        font-weight: calc(400 * var(--font-weight-scale));
         font-size: 16px;
-        line-height: 21px;
-        letter-spacing: -0.02em;
-        gap: 16px;
-        color: #757575;
-    }
-
-    .project-header-meta-divider {
-        width: 1px;
-        height: 21px;
-        background: #757575;
+        line-height: 25px;
+        color: #4d4d4d;
     }
 }
 </style>

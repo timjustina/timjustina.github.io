@@ -5,7 +5,7 @@
                 fetchpriority="high" />
         </div>
 
-        <ProjectDetailHeader :title="dashboardTitle" fluid-lines />
+        <ProjectDetailHeader :title="dashboardTitle" client="KIN" period="2026" fluid-lines />
 
         <div class="project-body">
             <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />
