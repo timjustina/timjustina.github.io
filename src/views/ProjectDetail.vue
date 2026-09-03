@@ -245,7 +245,7 @@ export default {
   background: #fff;
   color: #3c3f41;
   font-family: 'Work Sans', sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   min-height: 100vh;
   overflow-x: hidden;
   overflow-x: clip;
@@ -291,8 +291,8 @@ export default {
   font-family: 'Work Sans', sans-serif;
   font-weight: 400;
   font-style: normal;
-  font-size: 22px;
-  line-height: 37px;
+  font-size: 20px;
+  line-height: 34px;
   letter-spacing: 0;
   color: #3c3f41;
 }
@@ -875,8 +875,8 @@ export default {
   font-family: 'Work Sans', sans-serif;
   font-weight: calc(600 * var(--font-weight-scale));
   font-style: normal;
-  font-size: 22px;
-  line-height: 37px;
+  font-size: 20px;
+  line-height: 34px;
   letter-spacing: 0;
 }
 
@@ -996,7 +996,7 @@ export default {
     max-width: 320px;
     font-family: 'Work Sans', sans-serif;
     font-weight: 400;
-    font-size: calc(16px * var(--project-type-scale));
+    font-size: 16px;
     line-height: calc(24px * var(--project-type-scale));
     color: #3c3f41;
   }
@@ -1023,7 +1023,7 @@ export default {
 
   .main :global(.project-body p:not(.caption)) {
     margin-bottom: 24px;
-    font-size: calc(16px * var(--project-type-scale));
+    font-size: 16px;
     line-height: calc(24px * var(--project-type-scale));
   }
 
@@ -1075,7 +1075,7 @@ export default {
   .main :global(.project-body strong) {
     font-family: 'Work Sans', sans-serif;
     font-weight: calc(600 * var(--font-weight-scale));
-    font-size: calc(16px * var(--project-type-scale));
+    font-size: 16px;
     line-height: calc(24px * var(--project-type-scale));
   }
 
