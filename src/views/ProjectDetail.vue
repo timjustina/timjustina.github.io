@@ -957,6 +957,8 @@ export default {
     --project-media-gap: 52px;
     --project-bottom-pad: 276px;
     --project-type-scale: 1.25;
+    /* Half the desktop gray-rule↔text gap (24px → 12px) */
+    --project-rule-inset: 12px;
   }
 
   .main :global(.project-header) {
@@ -1005,9 +1007,9 @@ export default {
   }
 
   .main :global(.project-body) {
-    /* Same geometry as desktop: gray-line↔left-edge === text↔right-edge.
-       Rule sits in the left inset; text column is capped at 320px and the
-       (rule + text) block is centered when the viewport is wider. */
+    /* Shift rule+text left so the gray rule shares the H2 left edge;
+       paragraph stays --project-rule-inset to the right of the rule.
+       Grow the column so only edge-pad (20px) remains on the right. */
     --project-text-width: min(
       320px,
       calc(100vw - 2 * var(--project-edge-pad) - var(--project-rule-inset))
@@ -1016,25 +1018,21 @@ export default {
       var(--project-edge-pad),
       calc((100vw - var(--project-text-width) - var(--project-rule-inset)) / 2)
     );
-    --project-body-left: calc(var(--project-side) + var(--project-rule-inset));
-    --project-space-left: max(
-      0px,
-      calc(var(--project-body-left) - var(--project-edge-pad))
+    --project-h2-left: max(
+      var(--project-edge-pad),
+      calc(var(--project-side) + var(--project-rule-inset) - var(--project-title-hang))
     );
-    --project-rule-offset: min(var(--project-rule-inset), var(--project-space-left));
-    --project-title-offset: clamp(
-      var(--project-rule-offset),
-      var(--project-space-left),
-      var(--project-title-hang)
-    );
+    --project-body-left: calc(var(--project-h2-left) + var(--project-rule-inset));
+    --project-rule-offset: var(--project-rule-inset);
+    --project-title-offset: var(--project-rule-inset);
     margin-left: var(--project-body-left);
     margin-right: auto;
     padding: 0;
-    width: var(--project-text-width);
-    max-width: 320px;
+    width: calc(100vw - var(--project-body-left) - var(--project-edge-pad));
+    max-width: none;
     font-family: 'Work Sans', sans-serif;
     font-weight: 400;
-    font-size: 17px;
+    font-size: 18px;
     line-height: calc(24px * var(--project-type-scale));
     color: #3c3f41;
   }
@@ -1061,7 +1059,7 @@ export default {
 
   .main :global(.project-body p:not(.caption)) {
     margin-bottom: 24px;
-    font-size: 17px;
+    font-size: 18px;
     line-height: calc(24px * var(--project-type-scale));
   }
 
@@ -1076,7 +1074,7 @@ export default {
   /* Same caption:body ratio as desktop (14/22) */
   .main :global(.project-body .caption),
   .main :global(.caption) {
-    font-size: calc(17px * 14 / 22 * var(--project-type-scale));
+    font-size: calc(18px * 14 / 22 * var(--project-type-scale));
     line-height: calc(24px * 14 / 22 * var(--project-type-scale));
     margin-top: 16px;
   }
@@ -1109,7 +1107,7 @@ export default {
   .main :global(.project-body strong) {
     font-family: 'Work Sans', sans-serif;
     font-weight: calc(600 * var(--font-weight-scale));
-    font-size: 17px;
+    font-size: 18px;
     line-height: calc(24px * var(--project-type-scale));
   }
 
