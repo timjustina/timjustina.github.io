@@ -52,7 +52,7 @@ For the caregiver dashboard, a narrative of ***synopsis*** is needed, providing 
 
 Based on user research, although the caregivers have more **ability** to explore data than their clients, they do not necessarily have the time for lengthy data discovery in their daily work. Therefore, while they can handle multivariate plots, the data visualisation should be simple, highlight **straightforward patterns and trends**, and show a **limited number of widgets** compared to typical analytical dashboard.
 
-## Design
+## Design highlights
 
 ### 1. Prompts for stakeholders and AI
 

@@ -123,7 +123,7 @@
             </section>
 
             <section>
-                <h2>Design 1/6</h2>
+                <h2>Design highlights 1/6</h2>
 
                 <h3>Prompts for stakeholders and AI</h3>
                 <p>The contents take priority here. I began by <strong>sketching a range of data visualisation
@@ -152,7 +152,7 @@
                         mockups of the primary user's mobile dashboard</p>
                 </div>
 
-                <h2>Design 2/6</h2>
+                <h2>Design highlights 2/6</h2>
 
                 <h3>Design for accessibility</h3>
                 <p>Working within the constraints of the existing design system, I updated the colour system of the
@@ -185,7 +185,7 @@
                         compliance</p>
                 </div>
 
-                <h2>Design 3/6</h2>
+                <h2>Design highlights 3/6</h2>
 
                 <h3>Optimising visual perception for the narrative</h3>
                 <p>To <strong>optimise comprehension</strong> of multivariate data, I prioritised <strong>familiar chart
@@ -230,7 +230,7 @@
                     <p class="caption">Design iterations of Dispense Summary</p>
                 </div>
 
-                <h2>Design 4/6</h2>
+                <h2>Design highlights 4/6</h2>
 
                 <h3>Integrating multiple variables without losing clarity</h3>
                 <p><strong>Adherence</strong> is the most important KPI of the product for users. Although a
@@ -257,7 +257,7 @@
                 <VideoPair :left-src="vid5" :right-src="vid6"
                     caption="Designs of Adherence Trend and Missed Dose Insights widgets" />
 
-                <h2>Design 5/6</h2>
+                <h2>Design highlights 5/6</h2>
 
                 <h3>From logs to insights</h3>
                 <p>I have also <strong>anticipated the log data</strong> that can be used to generate insights on client
@@ -308,7 +308,7 @@
                 </p>
 
 
-                <h2>Design 6/6</h2>
+                <h2>Design highlights 6/6</h2>
 
                 <h3>Divide and conquer</h3>
                 <p>Earlier in discovery, I identified <strong>two distinct user goals</strong> when engaging with the

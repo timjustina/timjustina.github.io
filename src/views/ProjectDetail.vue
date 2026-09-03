@@ -630,7 +630,7 @@ export default {
 }
 
 .main :global(.project-body section + section) {
-  margin-top: 84px;
+  margin-top: 168px;
 }
 
 .main :global(.project-body .project-tldr-list) {
@@ -1094,7 +1094,7 @@ export default {
   }
 
   .main :global(.project-body section + section) {
-    margin-top: 52px;
+    margin-top: 104px;
   }
 }
 </style>
