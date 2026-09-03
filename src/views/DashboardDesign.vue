@@ -25,12 +25,12 @@
             </section>
 
             <section class="project-role">
-                <h2>My role</h2>
+                <h2>My Role</h2>
                 <p>Sole designer on this project. Reported directly to the head of product.</p>
             </section>
 
             <section>
-                <h2>Problem framing 1/2</h2>
+                <h2>Problem Framing 1/2</h2>
 
                 <h3>Identify the scope of content</h3>
                 <p>The caregiver user group here and their corresponding business context provide an important
@@ -69,7 +69,7 @@
                     caption="Hybrid affinity-interrelationship diagram based on user research findings"
                 />
 
-                <h2>Problem framing 2/2</h2>
+                <h2>Problem Framing 2/2</h2>
 
                 <h3>Define the narrative</h3>
                 <p>With the requirements set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
@@ -109,7 +109,7 @@
             </section>
 
             <section>
-                <h2>Design highlights 1/6</h2>
+                <h2>Design Highlights 1/6</h2>
 
                 <h3>Prompts for stakeholders and AI</h3>
                 <p>The contents take priority here. I began by <strong>sketching a range of data visualisation
@@ -138,7 +138,7 @@
                         mockups of the primary user's mobile dashboard</p>
                 </div>
 
-                <h2>Design highlights 2/6</h2>
+                <h2>Design Highlights 2/6</h2>
 
                 <h3>Design for accessibility</h3>
                 <p>Working within the constraints of the existing design system, I updated the colour system of the
@@ -171,7 +171,7 @@
                         compliance</p>
                 </div>
 
-                <h2>Design highlights 3/6</h2>
+                <h2>Design Highlights 3/6</h2>
 
                 <h3>Optimising visual perception for the narrative</h3>
                 <p>To <strong>optimise comprehension</strong> of multivariate data, I prioritised <strong>familiar chart
@@ -216,7 +216,7 @@
                     <p class="caption">Design iterations of Dispense Summary</p>
                 </div>
 
-                <h2>Design highlights 4/6</h2>
+                <h2>Design Highlights 4/6</h2>
 
                 <h3>Integrating multiple variables without losing clarity</h3>
                 <p><strong>Adherence</strong> is the most important KPI of the product for users. Although a
@@ -243,7 +243,7 @@
                 <VideoPair :left-src="vid5" :right-src="vid6"
                     caption="Designs of Adherence Trend and Missed Dose Insights widgets" />
 
-                <h2>Design highlights 5/6</h2>
+                <h2>Design Highlights 5/6</h2>
 
                 <h3>From logs to insights</h3>
                 <p>I have also <strong>anticipated the log data</strong> that can be used to generate insights on client
@@ -294,7 +294,7 @@
                 </p>
 
 
-                <h2>Design highlights 6/6</h2>
+                <h2>Design Highlights 6/6</h2>
 
                 <h3>Divide and conquer</h3>
                 <p>Earlier in discovery, I identified <strong>two distinct user goals</strong> when engaging with the

@@ -511,6 +511,39 @@ export default {
   }
 }
 
+@media (min-width: 601px) {
+  .project-tldr-label {
+    font-size: 20px;
+    line-height: 30px;
+    font-weight: 500;
+  }
+
+  .project-tldr-heading {
+    font-size: 24px;
+    line-height: 36px;
+  }
+
+  .project-tldr-list {
+    font-size: 16px;
+    line-height: 26px;
+  }
+
+  .project-tldr-list li + li {
+    margin-top: 26px;
+  }
+
+  .project-tldr-note {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .project-tldr-copy {
+    font-size: 20px;
+    line-height: 30px;
+    font-weight: calc(500 * var(--font-weight-scale, 0.95));
+  }
+}
+
 @media (min-width: 800px) {
   .project-tldr {
     --project-tldr-trigger-height: 44px;
@@ -521,17 +554,6 @@ export default {
 
   .project-tldr-trigger {
     gap: 12px;
-  }
-
-  .project-tldr-label {
-    font-size: 20px;
-    line-height: 30px;
-    font-weight: 500;
-  }
-
-  .project-tldr-heading {
-    font-size: 24px;
-    line-height: 36px;
   }
 
   /* Desktop: text column + title hang (not full page) */
@@ -553,26 +575,9 @@ export default {
     gap: 64px;
   }
 
-  .project-tldr-list {
-    font-size: 16px;
-    line-height: 26px;
-  }
-
-  .project-tldr-list li + li {
-    margin-top: 26px;
-  }
-
-  .project-tldr-note {
-    font-size: 16px;
-    line-height: 24px;
-  }
-
   .project-tldr-copy {
     width: 223px;
     height: 54px;
-    font-size: 20px;
-    line-height: 30px;
-    font-weight: calc(500 * var(--font-weight-scale, 0.95));
   }
 }
 
@@ -604,7 +609,7 @@ export default {
   pointer-events: none;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 601px) {
   .project-tldr-toast {
     font-size: 20px;
     line-height: 30px;

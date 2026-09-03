@@ -388,7 +388,7 @@ import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
-import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY, CASE_STUDY_DESKTOP_MEDIA_QUERY } from '../utils/breakpoints.js'
+import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
     prefersReducedMotion,
@@ -1301,7 +1301,7 @@ export default {
             }
 
             // Desktop work cards (800px+): no scroll fade; narrower mobile uses observer below.
-            if (window.matchMedia(CASE_STUDY_DESKTOP_MEDIA_QUERY).matches) {
+            if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 this.revealAllProjects()
                 return
             }

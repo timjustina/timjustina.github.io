@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import { DESKTOP_MEDIA_QUERY } from '../utils/breakpoints.js'
+import { CASE_STUDY_DESKTOP_MEDIA_QUERY } from '../utils/breakpoints.js'
 
 const FLUID_SIDE_MARGIN = 39
 
@@ -138,7 +138,7 @@ export default {
             const words = this.titleWords
             if (words.length === 0) return
 
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+            if (!window.matchMedia(CASE_STUDY_DESKTOP_MEDIA_QUERY).matches) {
                 this.fluidLineMode = 'default'
                 this.fluidDisplayLines = []
                 this.measureProbeText = ''
@@ -268,20 +268,28 @@ export default {
 
 @media (width < 800px) {
     .project-header {
-        width: min(318px, calc(100% - 40px));
+        width: calc(100% - 80px);
+        max-width: calc(100vw - 80px);
         gap: 20px;
         min-height: 0;
         margin-bottom: 52px;
     }
 
     .project-header-title {
-        max-width: 318px;
+        max-width: none;
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ≤600px: compact type; 601–799 keeps desktop font sizes on mobile layout */
+@media (max-width: 600px) {
+    .project-header-title {
         font-family: 'Work Sans', sans-serif;
         font-weight: calc(300 * var(--font-weight-scale));
         font-size: 20px;
         line-height: 30px;
         letter-spacing: 0;
-        text-align: center;
         color: #3c3f41;
     }
 

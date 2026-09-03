@@ -173,6 +173,14 @@ export default {
       const root = this.$el
       if (!root || !this.overlayTopBar) return
 
+      const viewport = document.documentElement.clientWidth
+
+      // Mobile case study: glass is always full-bleed
+      if (window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) {
+        root.style.setProperty('--project-hero-glass-width', `${viewport}px`)
+        return
+      }
+
       const titleEl = root.querySelector('.project-header-title')
       const bodyEl = root.querySelector('.project-body')
       const h2El = bodyEl?.querySelector('h2')
@@ -191,7 +199,6 @@ export default {
       const contentPad = 120
       const sideMargin = 40
       const fullBleedWhenSideSpaceBelow = 80
-      const viewport = document.documentElement.clientWidth
       const longest = Math.max(titleWidth, contentSpan)
       const idealGlass = longest + contentPad * 2
       // Space between the longest content edge and the viewport (glass is centered)
@@ -704,7 +711,7 @@ export default {
   font-family: 'Fira Code', monospace;
   font-weight: 400;
   font-style: normal;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 30px;
   letter-spacing: -0.02em;
   color: #757575;
@@ -948,7 +955,7 @@ export default {
   }
 }
 
-/* Phone layout — after desktop rules so type/spacing aren’t overridden */
+/* Mobile layout (<800) — geometry/spacing only; type stays desktop unless compact below */
 @media (width < 800px) {
   .page {
     --project-content-offset: 0px;
@@ -956,7 +963,7 @@ export default {
     --page-pad: 20px;
     --project-media-gap: 52px;
     --project-bottom-pad: 276px;
-    --project-type-scale: 1.25;
+    --project-edge-pad: 40px;
     /* Half the desktop gray-rule↔text gap (24px → 12px) */
     --project-rule-inset: 12px;
   }
@@ -969,12 +976,25 @@ export default {
   .pageOverlayTopBar {
     --project-hero-glass-panel-height: 200px;
     --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
-    --project-hero-title-line-height: 30px;
+    /* Full-bleed glass on mobile */
+    --project-hero-glass-width: 100vw;
+    --project-hero-title-line-height: 48px;
     --project-hero-title-line-count: 2;
     --project-hero-title-overlap: calc(
       0.5 * var(--project-hero-title-line-count) * var(--project-hero-title-line-height) + 100px
     );
     --project-bottom-pad: calc(var(--project-hero-glass-image-cover) + 40px);
+  }
+
+  /* Main title: full width minus 40px L/R */
+  .pageOverlayTopBar :global(.project-hero + .project-header) {
+    width: calc(100vw - 80px);
+    max-width: calc(100vw - 80px);
+  }
+
+  .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
+    width: 100%;
+    max-width: 100%;
   }
 
   .main :global(.project-hero) {
@@ -1007,40 +1027,16 @@ export default {
   }
 
   .main :global(.project-body) {
-    /* Shift rule+text left so the gray rule shares the H2 left edge;
-       paragraph stays --project-rule-inset to the right of the rule.
-       Grow the column so only edge-pad (20px) remains on the right. */
-    --project-text-width: min(
-      320px,
-      calc(100vw - 2 * var(--project-edge-pad) - var(--project-rule-inset))
-    );
-    --project-side: max(
-      var(--project-edge-pad),
-      calc((100vw - var(--project-text-width) - var(--project-rule-inset)) / 2)
-    );
-    --project-h2-left: max(
-      var(--project-edge-pad),
-      calc(var(--project-side) + var(--project-rule-inset) - var(--project-title-hang))
-    );
-    --project-body-left: calc(var(--project-h2-left) + var(--project-rule-inset));
+    /* Left-aligned body with 20px side padding; rule sits rule-inset left of text */
+    --project-body-left: var(--project-edge-pad);
     --project-rule-offset: var(--project-rule-inset);
     --project-title-offset: var(--project-rule-inset);
     margin-left: var(--project-body-left);
     margin-right: auto;
     padding: 0;
-    width: calc(100vw - var(--project-body-left) - var(--project-edge-pad));
+    width: calc(100vw - 2 * var(--project-edge-pad));
     max-width: none;
-    font-family: 'Work Sans', sans-serif;
-    font-weight: 400;
-    font-size: 18px;
-    line-height: calc(24px * var(--project-type-scale));
-    color: #3c3f41;
-  }
-
-  .main :global(.project-body h2) {
-    font-size: 18px;
-    line-height: 30px;
-    letter-spacing: -0.02em;
+    text-align: left;
   }
 
   .main :global(.project-body section > h2:not(:first-child)) {
@@ -1049,18 +1045,10 @@ export default {
 
   .main :global(.project-body h3) {
     margin-top: 52px;
-    font-family: 'Work Sans', sans-serif;
-    font-weight: 300;
-    font-size: 24px;
-    line-height: calc(27px * 24 / 22);
-    letter-spacing: -0.02em;
-    color: #2c2c2c;
   }
 
   .main :global(.project-body p:not(.caption)) {
     margin-bottom: 24px;
-    font-size: 18px;
-    line-height: calc(24px * var(--project-type-scale));
   }
 
   /* After p rule so margin-top isn’t zeroed by a margin shorthand */
@@ -1071,11 +1059,8 @@ export default {
     margin-top: 32px;
   }
 
-  /* Same caption:body ratio as desktop (14/22) */
   .main :global(.project-body .caption),
   .main :global(.caption) {
-    font-size: calc(18px * 14 / 22 * var(--project-type-scale));
-    line-height: calc(24px * 14 / 22 * var(--project-type-scale));
     margin-top: 16px;
   }
 
@@ -1104,15 +1089,61 @@ export default {
     margin-bottom: 0;
   }
 
+  .main :global(.project-body section + section) {
+    margin-top: 104px;
+  }
+}
+
+/* ≤600px: compact (mobile) type on top of mobile layout */
+@media (max-width: 600px) {
+  .page {
+    --project-type-scale: 1.25;
+  }
+
+  .pageOverlayTopBar {
+    --project-hero-title-line-height: 30px;
+  }
+
+  .main :global(.project-body) {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: calc(24px * var(--project-type-scale));
+    color: #3c3f41;
+  }
+
+  .main :global(.project-body h2) {
+    font-size: 18px;
+    line-height: 30px;
+    letter-spacing: -0.02em;
+  }
+
+  .main :global(.project-body h3) {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 300;
+    font-size: 24px;
+    line-height: calc(27px * 24 / 22);
+    letter-spacing: -0.02em;
+    color: #2c2c2c;
+  }
+
+  .main :global(.project-body p:not(.caption)) {
+    font-size: 18px;
+    line-height: calc(24px * var(--project-type-scale));
+  }
+
+  /* Same caption:body ratio as desktop (14/22) */
+  .main :global(.project-body .caption),
+  .main :global(.caption) {
+    font-size: calc(18px * 14 / 22 * var(--project-type-scale));
+    line-height: calc(24px * 14 / 22 * var(--project-type-scale));
+  }
+
   .main :global(.project-body strong) {
     font-family: 'Work Sans', sans-serif;
     font-weight: calc(600 * var(--font-weight-scale));
     font-size: 18px;
     line-height: calc(24px * var(--project-type-scale));
-  }
-
-  .main :global(.project-body section + section) {
-    margin-top: 104px;
   }
 }
 </style>

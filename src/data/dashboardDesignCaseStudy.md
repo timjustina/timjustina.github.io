@@ -14,11 +14,11 @@
 
 Kin is a healthcare startup that needed to showcase the full digital experience of its product to secure **future investments and partnerships**, particularly in **healthcare sectors**. One thing we wanted to demonstrate in pitches is how **user data** collected from our **IoT medication adherence platform** can be transformed into **easy‑to‑digest insights for caregivers** – helping them better understand their clients' behavioural patterns and providing **better quality of care with less effort**. The task given was to design a **caregiver‑facing dashboard** for the primary user's account within the web app that would help them better understand and assist their client.
 
-## My role
+## My Role
 
 Sole designer on this project. Reported directly to the head of product.
 
-## Problem framing
+## Problem Framing
 
 ### 1. Identify the scope of content
 
@@ -41,7 +41,7 @@ For the caregiver dashboard, a narrative of ***synopsis*** is needed, providing 
 
 Based on user research, although the caregivers have more **ability** to explore data than their clients, they do not necessarily have the time for lengthy data discovery in their daily work. Therefore, while they can handle multivariate plots, the data visualisation should be simple, highlight **straightforward patterns and trends**, and show a **limited number of widgets** compared to typical analytical dashboard.
 
-## Design highlights
+## Design Highlights
 
 ### 1. Prompts for stakeholders and AI
 
