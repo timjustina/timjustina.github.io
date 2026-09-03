@@ -1,6 +1,6 @@
 <template>
   <div :class="[$style.page, overlayTopBar && $style.pageOverlayTopBar]">
-    <PortfolioTopBar :transparent="overlayTopBar" />
+    <PortfolioTopBar :transparent="overlayTopBar" nav-hero-align />
     <main :class="[$style.main, fullWidthImages && $style.mainFullWidthImages]">
       <slot />
     </main>
@@ -71,6 +71,19 @@ export default {
 <style module>
 .page {
   --page-max: 1454px;
+  /* Match portfolio homepage nav alignment (Work sits on the decor line). */
+  --portfolio-main-inset-left: max(0px, (100vw - var(--page-max)) / 2);
+  --portfolio-nav-page-pad: max(39px, min(100px, calc((100vw - 939px) / 2)));
+  --portfolio-hero-squiggle-left: clamp(
+    120px,
+    calc(120px + (100vw - 997px) * 1 / 457),
+    121px
+  );
+  --portfolio-decor-line-stroke-x: 34px;
+  --portfolio-decor-line-x: calc(
+    var(--portfolio-main-inset-left) + var(--portfolio-nav-page-pad) +
+      var(--portfolio-hero-squiggle-left) + var(--portfolio-decor-line-stroke-x)
+  );
   --page-pad: clamp(100px, calc(100px + (100vw - 997px) * 40 / 457), 140px);
   --project-content-w: 668px;
   --project-content-offset: 22.5px;

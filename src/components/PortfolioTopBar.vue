@@ -161,10 +161,12 @@ export default {
     watch: {
         '$route'() {
             this.syncMobileTopBarState()
+            this.syncDecorLineSyncState()
         },
     },
     created() {
         this.syncMobileTopBarState()
+        this.syncDecorLineSyncState()
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
         if (SECTION_HASHES.has(this.$route.hash) && !this.isInFlowMobileHome) {
             this.topBarHidden = true
@@ -212,6 +214,16 @@ export default {
                 this.topBarHidden = false
                 this.topBarRecalled = false
             }
+        },
+        syncDecorLineSyncState() {
+            if (!this.navHeroAlign) return
+
+            if (this.$route.path !== '/') {
+                this.decorLineSynced = true
+                return
+            }
+
+            this.decorLineSynced = false
         },
         onResize() {
             this.syncMobileTopBarState()
