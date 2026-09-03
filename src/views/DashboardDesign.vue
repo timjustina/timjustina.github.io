@@ -442,17 +442,6 @@
                 </ul>
             </section>
         </div>
-
-        <div class="dashboard-ball-stage" aria-hidden="true">
-            <img
-                class="about-ball"
-                :class="{ 'about-ball--dropped': aboutBallDropped }"
-                :src="aboutSquiggle"
-                alt=""
-                width="59"
-                height="56"
-            />
-        </div>
     </ProjectDetail>
 </template>
 
@@ -463,8 +452,6 @@ import ProjectTldrButton from '../components/ProjectTldrButton.vue'
 import ZoomableImage from '../components/ZoomableImage.vue'
 import VideoPair from '../components/VideoPair.vue'
 import tldrMarkdown from '../data/dashboardDesignCaseStudy.md?raw'
-import aboutSquiggle from '../assets/squiggle_3.svg'
-import { CASE_STUDY_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     dashboardHero,
     svg1Cover,
@@ -515,75 +502,7 @@ export default {
             tldrSummaryItems,
             tldrMarkdown,
             dashboardTitle: DASHBOARD_TITLE,
-            aboutSquiggle,
-            aboutBallDropped: false,
-            reduceMotionMq: null,
-            ballPosObserver: null,
         }
-    },
-    mounted() {
-        this.$nextTick(() => {
-            this.reduceMotionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-            this.syncAboutBallPosition()
-            window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
-            window.addEventListener('resize', this.syncAboutBallPosition, { passive: true })
-            const body = this.$el?.querySelector?.('.project-body')
-            if (body && typeof ResizeObserver !== 'undefined') {
-                this.ballPosObserver = new ResizeObserver(() => this.syncAboutBallPosition())
-                this.ballPosObserver.observe(body)
-            }
-            this.onAboutBallScroll()
-        })
-    },
-    beforeUnmount() {
-        this.ballPosObserver?.disconnect()
-        window.removeEventListener('scroll', this.onAboutBallScroll)
-        window.removeEventListener('resize', this.syncAboutBallPosition)
-    },
-    methods: {
-        getFooterEl() {
-            return this.$el?.querySelector?.('.site-footer') ?? null
-        },
-        onAboutBallScroll() {
-            if (this.aboutBallDropped) return
-            if (window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) return
-            if (this.reduceMotionMq?.matches) return
-
-            const footer = this.getFooterEl()
-            if (!footer) return
-
-            // Trigger when the top edge of the bottom bar reaches the viewport bottom
-            if (footer.getBoundingClientRect().top <= window.innerHeight) {
-                this.startAboutBallDrop()
-            }
-        },
-        startAboutBallDrop() {
-            if (this.aboutBallDropped) return
-            if (window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) return
-            this.syncAboutBallPosition()
-            this.aboutBallDropped = true
-            window.removeEventListener('scroll', this.onAboutBallScroll)
-        },
-        syncAboutBallPosition() {
-            const stage = this.$el?.querySelector?.('.dashboard-ball-stage')
-            const body = this.$el?.querySelector?.('.project-body')
-            if (!stage || !body) return
-
-            const stageRect = stage.getBoundingClientRect()
-            const bodyRect = body.getBoundingClientRect()
-            const styles = getComputedStyle(stage)
-            const ballSize =
-                parseFloat(styles.getPropertyValue('--about-ball-size')) || 49
-            const gap = 16
-            const maxX = Math.max(16, stage.clientWidth - ballSize - 16)
-            // Nudge 100px right of the body edge
-            const x = Math.max(
-                16,
-                Math.min(bodyRect.right - stageRect.left + gap + 100, maxX)
-            )
-            stage.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
-        },
     },
 }
 </script>
@@ -591,110 +510,5 @@ export default {
 <style>
 .full-image.affinity-figure .caption {
     margin-top: 35px;
-}
-
-/* Floor at the bottom of the footer */
-.dashboard-ball-stage {
-    --about-ball-size: 49px;
-    --about-ball-height: 46px;
-    --site-footer-height: 128px;
-    position: relative;
-    width: 100%;
-    height: 0;
-    /* Through the main bottom pad, then to the footer's bottom edge */
-    top: calc(var(--project-bottom-pad, 180px) + var(--site-footer-height));
-    z-index: 5;
-    pointer-events: none;
-}
-
-.dashboard-ball-stage .about-ball {
-    position: absolute;
-    left: var(--about-ball-x, 50%);
-    bottom: 0;
-    z-index: 5;
-    width: var(--about-ball-size);
-    height: var(--about-ball-height);
-    display: block;
-    pointer-events: none;
-    opacity: 0;
-    transform: translate3d(0, -1100px, 0) rotate(0deg);
-    transform-origin: center center;
-}
-
-.dashboard-ball-stage .about-ball--dropped {
-    opacity: 1;
-}
-
-@media (width < 800px) {
-    .dashboard-ball-stage {
-        display: none;
-    }
-}
-</style>
-
-<style>
-/* Unscoped so the keyframe name isn’t rewritten away from the animation. */
-.dashboard-ball-stage .about-ball.about-ball--dropped {
-    animation: about-ball-fall 1.4s linear forwards;
-}
-
-@keyframes about-ball-fall {
-    /* Fall + 4 decaying bounces left, rolling counter-clockwise */
-    0% {
-        opacity: 1;
-        transform: translate3d(0, -1100px, 0) rotate(0deg);
-        animation-timing-function: cubic-bezier(0.55, 0.05, 0.8, 0.4);
-    }
-
-    /* First impact */
-    40% {
-        transform: translate3d(0, 0, 0) rotate(-460deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 1 */
-    49% {
-        transform: translate3d(-15px, -78px, 0) rotate(-510deg);
-        animation-timing-function: ease-in;
-    }
-
-    57% {
-        transform: translate3d(-29px, 0, 0) rotate(-550deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 2 */
-    64% {
-        transform: translate3d(-39px, -34px, 0) rotate(-585deg);
-        animation-timing-function: ease-in;
-    }
-
-    71% {
-        transform: translate3d(-49px, 0, 0) rotate(-615deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 3 */
-    77% {
-        transform: translate3d(-55px, -15px, 0) rotate(-640deg);
-        animation-timing-function: ease-in;
-    }
-
-    83% {
-        transform: translate3d(-62px, 0, 0) rotate(-660deg);
-        animation-timing-function: ease-out;
-    }
-
-    /* Bounce 4 → settle */
-    88% {
-        transform: translate3d(-66px, -6px, 0) rotate(-675deg);
-        animation-timing-function: ease-in;
-    }
-
-    93%,
-    100% {
-        opacity: 1;
-        transform: translate3d(-70px, 0, 0) rotate(-690deg);
-    }
 }
 </style>
