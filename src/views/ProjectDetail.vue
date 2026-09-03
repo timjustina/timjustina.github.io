@@ -426,23 +426,21 @@ export default {
   );
 }
 
-/* White wash: covers side shadows under the title/meta; behind text, above glass */
+/* White wash: covers side shadows under the title/meta; behind text, above glass.
+   Starts at the hero bottom so it never paints beside the glass over the image. */
 .pageOverlayTopBar :global(.project-hero + .project-header .project-header-glass-wash) {
   position: absolute;
   z-index: 2;
   left: 50%;
-  /* Bottom of glass, minus fixed height — taller so it reaches nearer the hero edge */
-  top: calc(
-    var(--project-hero-glass-panel-height) + var(--project-hero-title-overlap) - 500px
-  );
+  top: var(--project-hero-title-overlap);
   width: calc(var(--project-hero-glass-width) + 96px);
   height: 500px;
   transform: translate3d(-50%, 0, 0);
   background: linear-gradient(
     to top,
     #fff 0%,
-    #fff 28%,
-    rgba(255, 255, 255, 0.7) 55%,
+    #fff 62%,
+    rgba(255, 255, 255, 0.92) 82%,
     transparent 100%
   );
   pointer-events: none;
