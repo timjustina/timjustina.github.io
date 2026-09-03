@@ -1,6 +1,6 @@
 # IoT Adherence Analytics for Caregivers
 
-**Client:** Kin Technology  
+**Client:** KIN  
 **Period:** 2026
 
 ## Summary

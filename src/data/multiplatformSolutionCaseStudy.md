@@ -1,4 +1,4 @@
 # IoT Home Medication Solution
 
-**Client:** Kin Technology  
+**Client:** KIN  
 **Period:** 2024

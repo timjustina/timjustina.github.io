@@ -227,7 +227,7 @@
                             <p class="project-description">
                                 0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
                             </p>
-                            <span class="project-year">Kin Technology<span class="project-year-sep">//</span>2026</span>
+                            <span class="project-year">KIN<span class="project-year-sep">//</span>2026</span>
                         </router-link>
                     </div>
                 </article>
@@ -247,9 +247,9 @@
                             </h2>
                         </div>
                         <p class="project-description">
-                            End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT medication adherence platform
+                            End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT platform for improving medication adherence
                         </p>
-                        <span class="project-year">Kin Technology<span class="project-year-sep">//</span>2024</span>
+                        <span class="project-year">KIN<span class="project-year-sep">//</span>2024</span>
                     </div>
                 </article>
 
@@ -273,7 +273,7 @@
                         <p class="project-description">
                             0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
                         </p>
-                        <span class="project-year">2019</span>
+                        <span class="project-year">PONS<span class="project-year-sep">//</span>2019</span>
                     </div>
                 </article>
             </section>
