@@ -28,15 +28,15 @@
                 <h2>My role</h2>
                 <p>Sole designer on this project. Reported directly to the head of product.<br>Responsible for:</p>
                 <ul>
-                    <li><strong>UX</strong></li>
-                    <li><strong>UI</strong></li>
-                    <li><strong>User research</strong></li>
-                    <li><strong>Product strategy</strong></li>
-                    <li><strong>Problem framing</strong></li>
-                    <li><strong>Stakeholder communication</strong></li>
-                    <li><strong>Data visualisation</strong></li>
-                    <li><strong>Design system</strong></li>
-                    <li><strong>Prototyping</strong></li>
+                    <li>UX</li>
+                    <li>UI</li>
+                    <li>User research</li>
+                    <li>Product strategy</li>
+                    <li>Problem framing</li>
+                    <li>Stakeholder communication</li>
+                    <li>Data visualisation</li>
+                    <li>Design system</li>
+                    <li>Prototyping</li>
                 </ul>
             </section>
 
@@ -469,7 +469,7 @@ const DASHBOARD_TITLE = 'IoT Adherence Analytics for Caregivers'
 const tldrSummaryItems = [
     {
         lead: 'Sole designer',
-        body: '0-to-1 design of a customer-facing dashboard of the web app of an IoT medication platform.',
+        body: '0-to-1 design of a caregiver-facing dashboard of the web app of an IoT medication platform.',
     },
     {
         lead: 'Turned user research into architecture',
