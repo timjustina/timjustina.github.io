@@ -546,7 +546,7 @@ export default {
         var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
       )
       var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
-    border-radius: 12px;
+    border-radius: 0 0 40px 40px;
   }
 
   .project-tldr-panel-inner {
