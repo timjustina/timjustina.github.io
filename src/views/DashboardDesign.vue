@@ -5,10 +5,7 @@
                 fetchpriority="high" />
         </div>
 
-        <ProjectDetailHeader
-            class="dashboard-project-header"
-            :title="dashboardTitle"
-        />
+        <ProjectDetailHeader :title="dashboardTitle" fluid-lines />
 
         <div class="project-body">
             <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />
@@ -44,9 +41,9 @@
             </section>
 
             <section>
-                <h2>Problem framing</h2>
+                <h2>Problem framing 1/2</h2>
 
-                <h3>1. Identify the scope of content</h3>
+                <h3>Identify the scope of content</h3>
                 <p>The caregiver user group here and their corresponding business context provide an important
                     <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
                         consumer dashboard</strong>. In order
@@ -86,7 +83,9 @@
                     caption="Hybrid affinity-interrelationship diagram based on user research findings"
                 />
 
-                <h3>2. Define the narrative</h3>
+                <h2>Problem framing 2/2</h2>
+
+                <h3>Define the narrative</h3>
                 <p>With the requirements set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
                     users can
                     experience fatigue or miss key insights. It is also an opportunity to <strong>highlight and
@@ -124,9 +123,9 @@
             </section>
 
             <section>
-                <h2>Design</h2>
+                <h2>Design 1/6</h2>
 
-                <h3>1. Prompts for stakeholders and AI</h3>
+                <h3>Prompts for stakeholders and AI</h3>
                 <p>The contents take priority here. I began by <strong>sketching a range of data visualisation
                         widgets</strong> without worrying
                     about screen layout. Some charts were discarded early; others moved into <strong>high‑fidelity
@@ -153,7 +152,9 @@
                         mockups of the primary user's mobile dashboard</p>
                 </div>
 
-                <h3>2. Design for accessibility</h3>
+                <h2>Design 2/6</h2>
+
+                <h3>Design for accessibility</h3>
                 <p>Working within the constraints of the existing design system, I updated the colour system of the
                     product by <strong>adding new accent colours</strong> to accommodate the dashboard design.
                     Consistent with the rest of the product, I improved accessibility the design according to
@@ -184,7 +185,9 @@
                         compliance</p>
                 </div>
 
-                <h3>3. Optimising visual perception for the narrative</h3>
+                <h2>Design 3/6</h2>
+
+                <h3>Optimising visual perception for the narrative</h3>
                 <p>To <strong>optimise comprehension</strong> of multivariate data, I prioritised <strong>familiar chart
                         types</strong>, such as bar, pie,
                     and line, as they are already stored in our collective psyche. Nonetheless, choosing the suitable
@@ -227,7 +230,9 @@
                     <p class="caption">Design iterations of Dispense Summary</p>
                 </div>
 
-                <h3>4. Integrating multiple variables without losing clarity</h3>
+                <h2>Design 4/6</h2>
+
+                <h3>Integrating multiple variables without losing clarity</h3>
                 <p><strong>Adherence</strong> is the most important KPI of the product for users. Although a
                     <strong>single‑number cumulative average</strong> is an impactful quick overview, a <strong>daily
                         trend</strong> is highly informative. It helps track the primary user's performance in
@@ -252,7 +257,9 @@
                 <VideoPair :left-src="vid5" :right-src="vid6"
                     caption="Designs of Adherence Trend and Missed Dose Insights widgets" />
 
-                <h3>5. From logs to insights</h3>
+                <h2>Design 5/6</h2>
+
+                <h3>From logs to insights</h3>
                 <p>I have also <strong>anticipated the log data</strong> that can be used to generate insights on client
                     behaviour. For
                     example, the caregivers wanted to know more about <strong>when their clients usually miss
@@ -301,7 +308,9 @@
                 </p>
 
 
-                <h3>6. Divide and conquer</h3>
+                <h2>Design 6/6</h2>
+
+                <h3>Divide and conquer</h3>
                 <p>Earlier in discovery, I identified <strong>two distinct user goals</strong> when engaging with the
                     dashboard:
                 </p>
@@ -468,8 +477,7 @@ import {
     vid7,
 } from '../data/dashboardDesignMedia.js'
 
-const DASHBOARD_TITLE =
-    'IoT Adherence Analytics\nfor Caregivers'
+const DASHBOARD_TITLE = 'IoT Adherence Analytics for Caregivers'
 
 const tldrSummaryItems = [
     {
@@ -509,33 +517,13 @@ export default {
             dashboardTitle: DASHBOARD_TITLE,
             aboutSquiggle,
             aboutBallDropped: false,
-            titleFitRaf: null,
-            titleFitObserver: null,
-            titleExitRaf: null,
-            titleExitActive: false,
-            titleExitOrigin: null,
-            titleFitDeferred: false,
             reduceMotionMq: null,
             ballPosObserver: null,
         }
     },
     mounted() {
         this.$nextTick(() => {
-            this.fitTitleToWidth()
-            document.fonts?.ready?.then(() => this.fitTitleToWidth())
-
-            const header = this.getTitleEl()?.closest('.dashboard-project-header')
-            if (typeof ResizeObserver !== 'undefined') {
-                this.titleFitObserver = new ResizeObserver(() => this.scheduleFitTitleToWidth())
-                if (header) this.titleFitObserver.observe(header)
-                this.titleFitObserver.observe(document.documentElement)
-            }
-            window.addEventListener('resize', this.scheduleFitTitleToWidth, { passive: true })
-
             this.reduceMotionMq = window.matchMedia('(prefers-reduced-motion: reduce)')
-            this.reduceMotionMq.addEventListener?.('change', this.onTitleExitScroll)
-            window.addEventListener('scroll', this.onTitleExitScroll, { passive: true })
-            this.onTitleExitScroll()
 
             this.syncAboutBallPosition()
             window.addEventListener('scroll', this.onAboutBallScroll, { passive: true })
@@ -549,159 +537,13 @@ export default {
         })
     },
     beforeUnmount() {
-        if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
-        if (this.titleExitRaf != null) cancelAnimationFrame(this.titleExitRaf)
-        this.titleFitObserver?.disconnect()
         this.ballPosObserver?.disconnect()
-        window.removeEventListener('resize', this.scheduleFitTitleToWidth)
-        window.removeEventListener('scroll', this.onTitleExitScroll)
         window.removeEventListener('scroll', this.onAboutBallScroll)
         window.removeEventListener('resize', this.syncAboutBallPosition)
-        this.reduceMotionMq?.removeEventListener?.('change', this.onTitleExitScroll)
-        this.clearTitleExitStyles()
-        const title = this.getTitleEl()
-        if (title) {
-            title.style.fontSize = ''
-            title.style.removeProperty('font-size')
-            title.style.removeProperty('font-family')
-            title.style.removeProperty('letter-spacing')
-            title.style.removeProperty('max-width')
-            title.style.whiteSpace = ''
-            title.style.width = ''
-            title.style.maxWidth = ''
-            title.classList.remove('is-one-line', 'is-two-line')
-            title.querySelectorAll('.project-header-title-line').forEach((line) => {
-                line.style.removeProperty('display')
-                line.style.removeProperty('width')
-                line.style.removeProperty('max-width')
-                line.style.removeProperty('white-space')
-                line.style.removeProperty('font-size')
-                line.style.removeProperty('line-height')
-            })
-        }
     },
     methods: {
-        getTitleEl() {
-            return this.$el?.querySelector?.('.dashboard-project-header .project-header-title') ?? null
-        },
-        getHeroEl() {
-            return this.$el?.querySelector?.('.project-hero') ?? null
-        },
         getFooterEl() {
             return this.$el?.querySelector?.('.site-footer') ?? null
-        },
-        scheduleFitTitleToWidth() {
-            // Refitting mid-exit reflows line widths and can flash a corner-scale frame.
-            if (this.titleExitActive) {
-                this.titleFitDeferred = true
-                return
-            }
-            if (this.titleFitRaf != null) cancelAnimationFrame(this.titleFitRaf)
-            this.titleFitRaf = requestAnimationFrame(() => {
-                this.titleFitRaf = null
-                this.fitTitleToWidth()
-            })
-        },
-        onTitleExitScroll() {
-            if (this.titleExitRaf != null) return
-            this.titleExitRaf = requestAnimationFrame(() => {
-                this.titleExitRaf = null
-                this.updateTitleExit()
-            })
-        },
-        clearTitleExitStyles() {
-            const title = this.getTitleEl()
-            const wasActive = this.titleExitActive
-            this.titleExitActive = false
-            this.titleExitOrigin = null
-            if (!title) {
-                if (wasActive && this.titleFitDeferred) {
-                    this.titleFitDeferred = false
-                    this.scheduleFitTitleToWidth()
-                }
-                return
-            }
-            title.style.transform = ''
-            title.style.opacity = ''
-            title.style.filter = ''
-            title.style.removeProperty('transform-origin')
-            if (wasActive && this.titleFitDeferred) {
-                this.titleFitDeferred = false
-                this.scheduleFitTitleToWidth()
-            }
-        },
-        measureTitleExitOrigin(title) {
-            // Layout sizes only (offsetWidth ignores transform). Reject tiny
-            // readings from mid-reflow so we never lock onto a corner origin.
-            const lines = [...title.querySelectorAll('.project-header-title-line')].filter(
-                (line) => line.textContent.trim().length > 0
-            )
-            const textWidth = lines.length
-                ? Math.max(...lines.map((line) => line.offsetWidth))
-                : title.offsetWidth
-            const textHeight = title.offsetHeight
-            if (textWidth < 32 || textHeight < 8) return null
-            return { x: textWidth / 2, y: textHeight / 2 }
-        },
-        updateTitleExit() {
-            const title = this.getTitleEl()
-            const hero = this.getHeroEl()
-            if (!title || !hero) return
-
-            if (this.reduceMotionMq?.matches) {
-                this.clearTitleExitStyles()
-                return
-            }
-
-            // Progress is tied only to hero position, so scroll-up is the exact
-            // reverse of scroll-down through the same enlarge + fade curve.
-            const heroBottom = hero.getBoundingClientRect().bottom
-            const startBottom = 300
-            const titleHeight = title.offsetHeight || 1
-
-            // Don't finish the fade until the title itself has left the top of
-            // the viewport (layout box, ignore transform).
-            let offsetTop = 0
-            for (let el = title; el; el = el.offsetParent) {
-                offsetTop += el.offsetTop
-            }
-            const layoutBottom = offsetTop + titleHeight - window.scrollY
-            const scrolledPastStart = Math.max(0, startBottom - heroBottom)
-            const titleBottomAtStart = layoutBottom + scrolledPastStart
-            const endBottom = startBottom - Math.max(titleBottomAtStart, titleHeight * 2)
-            const range = startBottom - endBottom
-
-            if (range <= 0 || heroBottom > startBottom) {
-                this.clearTitleExitStyles()
-                return
-            }
-
-            const progress = Math.min(1, Math.max(0, (startBottom - heroBottom) / range))
-            const scale = 1 + progress * 2
-            const opacity = 1 - progress
-
-            // Blur only once type is already large; ramp hard so it reads on mobile
-            const blurStart = 0.22
-            const blurProgress =
-                progress <= blurStart ? 0 : (progress - blurStart) / (1 - blurStart)
-            const blurPx = blurProgress * blurProgress * 28
-
-            // Lock origin for the whole exit — remasuring every frame (and during
-            // mobile URL-bar reflows) was snapping scale into the corner again.
-            if (!this.titleExitOrigin) {
-                this.titleExitOrigin = this.measureTitleExitOrigin(title)
-            }
-
-            if (this.titleExitOrigin) {
-                title.style.transformOrigin = `${this.titleExitOrigin.x}px ${this.titleExitOrigin.y}px`
-            } else {
-                title.style.transformOrigin = 'left center'
-            }
-
-            this.titleExitActive = true
-            title.style.transform = `scale(${scale})`
-            title.style.opacity = String(opacity)
-            title.style.filter = blurPx > 0.05 ? `blur(${blurPx}px)` : 'none'
         },
         onAboutBallScroll() {
             if (this.aboutBallDropped) return
@@ -742,273 +584,6 @@ export default {
             )
             stage.style.setProperty('--about-ball-x', `${Math.round(x)}px`)
         },
-        fitTitleToWidth() {
-            if (this.titleExitActive) {
-                this.titleFitDeferred = true
-                return
-            }
-
-            const title = this.getTitleEl()
-            if (!title) return
-
-            const targetWidth = document.documentElement.clientWidth
-            if (targetWidth <= 0) return
-
-            const lines = [
-                ...title.querySelectorAll('.project-header-title-line'),
-            ]
-            const isMobile = window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches
-            const minPx = isMobile ? 12 : 40
-            const maxPxOneLine = Math.max(minPx, Math.floor(targetWidth / 6))
-
-            const setMode = (mode) => {
-                title.classList.toggle('is-one-line', mode === 'one')
-                title.classList.toggle('is-two-line', mode === 'two')
-            }
-
-            const visibleLines = () =>
-                lines.filter((line) => line.textContent.trim().length > 0)
-
-            const prepareLineForMeasure = (line) => {
-                line.style.setProperty('display', 'block', 'important')
-                line.style.setProperty('width', 'max-content', 'important')
-                line.style.setProperty('max-width', 'none', 'important')
-                line.style.setProperty('white-space', 'nowrap', 'important')
-            }
-
-            const maxLineWidth = () => {
-                const active = visibleLines()
-                if (!active.length) return title.scrollWidth
-                let max = 0
-                for (const line of active) {
-                    prepareLineForMeasure(line)
-                    max = Math.max(max, line.getBoundingClientRect().width)
-                }
-                return max
-            }
-
-            // Distribute words across `count` lines with the most even widths
-            const balanceLineBreak = (count) => {
-                if (lines.length < 2 || count < 2) return
-                const words = lines
-                    .map((line) => line.textContent.trim())
-                    .join(' ')
-                    .split(/\s+/)
-                    .filter(Boolean)
-                if (words.length < count) return
-
-                title.style.setProperty('font-size', '40px', 'important')
-                setMode('two')
-                lines.forEach((line) => {
-                    line.style.removeProperty('display')
-                })
-                void title.offsetWidth
-
-                const applySplits = (splits) => {
-                    const ends = [...splits, words.length]
-                    let start = 0
-                    for (let i = 0; i < lines.length; i++) {
-                        if (i < count) {
-                            const end = ends[i]
-                            lines[i].textContent = words.slice(start, end).join(' ')
-                            lines[i].style.removeProperty('display')
-                            prepareLineForMeasure(lines[i])
-                            start = end
-                        } else {
-                            lines[i].textContent = ''
-                            lines[i].style.setProperty('display', 'none', 'important')
-                        }
-                    }
-                }
-
-                let bestSplits = null
-                let bestDiff = Infinity
-
-                if (count === 2) {
-                    for (let i = 1; i < words.length; i++) {
-                        applySplits([i])
-                        void title.offsetWidth
-                        const widths = visibleLines().map(
-                            (line) => line.getBoundingClientRect().width
-                        )
-                        const diff = Math.max(...widths) - Math.min(...widths)
-                        if (diff < bestDiff) {
-                            bestDiff = diff
-                            bestSplits = [i]
-                        }
-                    }
-                } else if (count === 3) {
-                    for (let i = 1; i < words.length - 1; i++) {
-                        for (let j = i + 1; j < words.length; j++) {
-                            applySplits([i, j])
-                            void title.offsetWidth
-                            const widths = visibleLines().map(
-                                (line) => line.getBoundingClientRect().width
-                            )
-                            const diff = Math.max(...widths) - Math.min(...widths)
-                            if (diff < bestDiff) {
-                                bestDiff = diff
-                                bestSplits = [i, j]
-                            }
-                        }
-                    }
-                }
-
-                if (bestSplits) applySplits(bestSplits)
-            }
-
-            const fitMultiLines = (count) => {
-                setMode('two')
-                title.style.whiteSpace = ''
-                title.style.width = '100%'
-                title.style.setProperty('font-family', "'Fira Code', monospace", 'important')
-                title.style.setProperty('letter-spacing', '-0.02em', 'important')
-                title.style.setProperty('max-width', 'none', 'important')
-
-                balanceLineBreak(count)
-
-                const fitLineToViewport = (line) => {
-                    prepareLineForMeasure(line)
-                    const probe = 20
-                    line.style.setProperty('font-size', `${probe}px`, 'important')
-                    line.style.setProperty('line-height', '1.15', 'important')
-                    void line.offsetWidth
-                    const probed = line.getBoundingClientRect().width
-                    if (probed <= 0) return
-
-                    const scaled = Math.ceil(probe * (targetWidth / probed))
-                    let lo = minPx
-                    let hi = Math.max(scaled + 40, Math.ceil(targetWidth / 2))
-                    let best = minPx
-                    while (lo <= hi) {
-                        const mid = (lo + hi) >> 1
-                        line.style.setProperty('font-size', `${mid}px`, 'important')
-                        void line.offsetWidth
-                        if (line.getBoundingClientRect().width <= targetWidth + 0.5) {
-                            best = mid
-                            lo = mid + 1
-                        } else {
-                            hi = mid - 1
-                        }
-                    }
-                    line.style.setProperty('font-size', `${best}px`, 'important')
-                }
-
-                if (count >= 3) {
-                    // Each line gets its own size so all three fill the viewport width
-                    title.style.removeProperty('font-size')
-                    visibleLines().forEach(fitLineToViewport)
-                } else {
-                    // Shared size: scale so the longest line fills the viewport
-                    const probe = 20
-                    title.style.setProperty('font-size', `${probe}px`, 'important')
-                    visibleLines().forEach((line) => {
-                        line.style.removeProperty('font-size')
-                        prepareLineForMeasure(line)
-                    })
-                    void title.offsetWidth
-                    const probed = maxLineWidth()
-                    if (probed <= 0) {
-                        this.onTitleExitScroll()
-                        return
-                    }
-
-                    const scaled = Math.ceil(probe * (targetWidth / probed))
-                    let lo = minPx
-                    let hi = Math.max(scaled + 40, Math.ceil(targetWidth / 2))
-                    let best = minPx
-                    while (lo <= hi) {
-                        const mid = (lo + hi) >> 1
-                        title.style.setProperty('font-size', `${mid}px`, 'important')
-                        void title.offsetWidth
-                        if (maxLineWidth() <= targetWidth + 0.5) {
-                            best = mid
-                            lo = mid + 1
-                        } else {
-                            hi = mid - 1
-                        }
-                    }
-                    title.style.setProperty('font-size', `${best}px`, 'important')
-                }
-
-                this.onTitleExitScroll()
-            }
-
-            // Mobile: always three nowrap lines spanning the viewport width
-            if (isMobile) {
-                fitMultiLines(3)
-                return
-            }
-
-            if (lines.length > 1) {
-                // Desktop: prefer one line when it fits at ≥40px
-                setMode('one')
-                lines.forEach((line) => {
-                    line.style.removeProperty('display')
-                    line.style.removeProperty('font-size')
-                    line.style.removeProperty('line-height')
-                    line.style.removeProperty('width')
-                    line.style.removeProperty('max-width')
-                    line.style.removeProperty('white-space')
-                })
-                title.style.whiteSpace = 'nowrap'
-                title.style.width = 'max-content'
-                title.style.maxWidth = 'none'
-                title.style.fontSize = `${minPx}px`
-                void title.offsetWidth
-
-                if (title.scrollWidth > targetWidth + 0.5) {
-                    fitMultiLines(2)
-                    return
-                }
-
-                let lo = minPx
-                let hi = maxPxOneLine
-                let best = minPx
-                while (lo <= hi) {
-                    const mid = (lo + hi) >> 1
-                    title.style.fontSize = `${mid}px`
-                    void title.offsetWidth
-                    if (title.scrollWidth <= targetWidth + 0.5) {
-                        best = mid
-                        lo = mid + 1
-                    } else {
-                        hi = mid - 1
-                    }
-                }
-
-                title.style.fontSize = `${best}px`
-                title.style.whiteSpace = 'nowrap'
-                title.style.width = '100%'
-                this.onTitleExitScroll()
-                return
-            }
-
-            // Single-line titles (no explicit break)
-            setMode('one')
-            title.style.whiteSpace = 'nowrap'
-            title.style.width = 'max-content'
-            title.style.maxWidth = 'none'
-
-            let lo = minPx
-            let hi = maxPxOneLine
-            let best = minPx
-            while (lo <= hi) {
-                const mid = (lo + hi) >> 1
-                title.style.fontSize = `${mid}px`
-                void title.offsetWidth
-                if (title.scrollWidth <= targetWidth + 0.5) {
-                    best = mid
-                    lo = mid + 1
-                } else {
-                    hi = mid - 1
-                }
-            }
-
-            title.style.fontSize = `${best}px`
-            title.style.width = '100%'
-            this.onTitleExitScroll()
-        },
     },
 }
 </script>
@@ -1016,105 +591,6 @@ export default {
 <style>
 .full-image.affinity-figure .caption {
     margin-top: 35px;
-}
-
-.dashboard-project-header.project-header {
-    /* Beat scoped header max-width so the title can span the viewport */
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    /* Match TL;DR → next section spacing (.project-tldr margin-bottom) + 30px */
-    margin-bottom: 150px;
-    padding: 0 !important;
-    box-sizing: border-box;
-    text-align: left;
-    align-items: stretch !important;
-    gap: 0;
-}
-
-.dashboard-project-header.project-header h1.project-header-title {
-    width: 100% !important;
-    max-width: none !important;
-    font-family: 'Fira Code', monospace;
-    font-style: normal;
-    font-weight: calc(400 * var(--font-weight-scale));
-    font-size: 64px; /* fallback; JS fits to page width above mobile */
-    line-height: 1.15;
-    letter-spacing: -0.02em;
-    text-align: left;
-    color: #bababa;
-    white-space: nowrap;
-    /* Fallback only — JS locks a stable glyph-centre origin during exit */
-    transform-origin: left center;
-    will-change: transform, opacity, filter;
-}
-
-/* Explicit two-line layout: each line is nowrap so it never spills to 3+ */
-.dashboard-project-header.project-header h1.project-header-title.is-two-line {
-    white-space: normal;
-}
-
-.dashboard-project-header.project-header
-    h1.project-header-title.is-two-line
-    .project-header-title-line {
-    display: block;
-    white-space: nowrap;
-    /* Intrinsic width so we can scale text to fill the viewport */
-    width: max-content;
-    max-width: none;
-}
-
-.dashboard-project-header.project-header
-    h1.project-header-title.is-one-line
-    .project-header-title-line {
-    display: inline;
-    white-space: nowrap;
-}
-
-.dashboard-project-header.project-header
-    h1.project-header-title.is-one-line
-    .project-header-title-line
-    + .project-header-title-line::before {
-    content: ' ';
-}
-
-@media (width < 800px) {
-    .dashboard-project-header.project-header {
-        width: 100% !important;
-        max-width: none !important;
-        margin-left: 0 !important;
-        margin-bottom: 132px;
-        padding: 0 !important;
-        gap: 0;
-    }
-
-    .dashboard-project-header.project-header h1.project-header-title {
-        width: 100% !important;
-        max-width: none !important;
-        font-size: 40px; /* fallback; JS scales so both lines fill the viewport */
-        line-height: 1.15;
-        letter-spacing: -0.02em;
-        white-space: normal !important;
-        text-align: left;
-        color: #bababa;
-        font-family: 'Fira Code', monospace;
-        font-weight: calc(400 * var(--font-weight-scale));
-    }
-
-    /* Always three nowrap lines on mobile (even before JS adds .is-two-line) */
-    .dashboard-project-header.project-header
-        h1.project-header-title
-        .project-header-title-line {
-        display: block !important;
-        white-space: nowrap !important;
-        width: max-content;
-        max-width: none;
-    }
-
-    .dashboard-ball-stage {
-        display: none;
-    }
 }
 
 /* Floor at the bottom of the footer */
@@ -1147,6 +623,12 @@ export default {
 
 .dashboard-ball-stage .about-ball--dropped {
     opacity: 1;
+}
+
+@media (width < 800px) {
+    .dashboard-ball-stage {
+        display: none;
+    }
 }
 </style>
 

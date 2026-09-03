@@ -159,7 +159,27 @@ export default {
 }
 
 .pageOverlayTopBar :global(.project-hero + .project-header) {
-  margin-top: 20px;
+  margin-top: 100px;
+}
+
+.pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
+  font-family: 'Fira Code', monospace;
+  font-weight: calc(400 * var(--font-weight-scale));
+  letter-spacing: -0.02em;
+}
+
+@media (min-width: 800px) {
+  .pageOverlayTopBar :global(.project-hero + .project-header) {
+    width: calc(100vw - 78px);
+    max-width: calc(100vw - 78px);
+  }
+
+  .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
+    width: 100%;
+    max-width: 100%;
+    font-size: 32px;
+    line-height: 48px;
+  }
 }
 
 .main :global(.project-body section) {
@@ -290,12 +310,16 @@ export default {
   /* Hang left up to 52px; tuck in with the gray rule, never past edge padding */
   margin: 0 0 0 calc(-1 * var(--project-title-offset));
   font-family: 'Fira Code', monospace;
-  font-weight: calc(400 * var(--font-weight-scale));
+  font-weight: 400;
   font-style: normal;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 30px;
   letter-spacing: -0.02em;
   color: #757575;
+}
+
+.main :global(.project-body section > h2:not(:first-child)) {
+  margin-top: 100px;
 }
 
 .main :global(.project-body h3) {
@@ -617,9 +641,13 @@ export default {
   }
 
   .main :global(.project-body h2) {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 30px;
     letter-spacing: -0.02em;
+  }
+
+  .main :global(.project-body section > h2:not(:first-child)) {
+    margin-top: 52px;
   }
 
   .main :global(.project-body h3) {
