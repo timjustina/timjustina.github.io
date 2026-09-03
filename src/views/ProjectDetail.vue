@@ -920,11 +920,12 @@ export default {
 
 .main :global(.project-body strong) {
   font-family: 'Work Sans', sans-serif;
-  font-weight: calc(600 * var(--font-weight-scale));
+  font-weight: calc(500 * var(--font-weight-scale));
   font-style: normal;
   font-size: 20px;
   line-height: 34px;
   letter-spacing: 0;
+  color: #2c2c2c;
 }
 
 .main :global(.caption) {
@@ -1143,7 +1144,7 @@ export default {
 
   .main :global(.project-body strong) {
     font-family: 'Work Sans', sans-serif;
-    font-weight: calc(600 * var(--font-weight-scale));
+    font-weight: calc(500 * var(--font-weight-scale));
     font-size: 18px;
     line-height: calc(24px * var(--project-type-scale));
   }
