@@ -33,7 +33,7 @@ Responsible for:
 
 ### 1. Identify the scope of content
 
-The caregiver user group here and their corresponding business context provide an important **constraint** on the type of dashboard to aim for – a **slightly data-rich consumer dashboard**. In order to identify the scope of content relevant to such a dashboard, I turned to the **user research** material available at hand. Taking a holistic approach, I summarised the findings in a **hybrid affinity-interrelationship diagram** by synthesising **user interview insights** with **product features**, encompassing details on functionality, primary user datasets, metrics, and end user needs. This helped to identify dashboard contents that are most relevant to our users
+The caregiver user group here and their corresponding business context provide an important **constraint** on the type of dashboard to aim for – a **slightly data-rich consumer dashboard**. Taking a holistic approach, I summarised the **user research** findings in a **hybrid affinity-interrelationship diagram** by synthesising **user interview insights** with **product features**. It encompasses details on functionality, primary user datasets, metrics, and end user needs. This helped to identify dashboard contents that are most relevant to our users
 
 Although the project was set out to mainly show **simple adherence-related analytics** for caregivers, the **analysis** revealed **two main expectations** on the functionality of the dashboard:
 

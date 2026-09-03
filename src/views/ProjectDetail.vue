@@ -717,9 +717,9 @@ export default {
 .main :global(.project-body h3) {
   margin: 100px 0 0;
   font-family: 'Work Sans', sans-serif;
-  font-weight: 400;
+  font-weight: 300;
   font-style: normal;
-  font-size: 30px;
+  font-size: 32px;
   line-height: 45px;
   letter-spacing: -0.02em;
   color: #2c2c2c;
@@ -1056,7 +1056,7 @@ export default {
   .main :global(.project-body h3) {
     margin-top: 52px;
     font-family: 'Work Sans', sans-serif;
-    font-weight: 400;
+    font-weight: 300;
     font-size: 24px;
     line-height: calc(27px * 24 / 22);
     letter-spacing: -0.02em;

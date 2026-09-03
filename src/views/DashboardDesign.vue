@@ -46,14 +46,11 @@
                 <h3>Identify the scope of content</h3>
                 <p>The caregiver user group here and their corresponding business context provide an important
                     <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
-                        consumer dashboard</strong>. In order
-                    to identify the scope of content relevant to such a dashboard, I turned to the <strong>user
-                        research</strong>
-                    material available at hand. Taking a holistic approach, I summarised the findings in a
+                        consumer dashboard</strong>. Taking a holistic approach, I summarised the <strong>user research</strong> findings in a
                     <strong>hybrid
                         affinity-interrelationship diagram</strong> by synthesising <strong>user interview</strong>
-                    and <strong>user observation</strong> insights with <strong>product features</strong>,
-                    encompassing details on functionality, primary user datasets, metrics, and end user needs. This
+                    and <strong>user observation</strong> insights with <strong>product features</strong>.
+                    It encompasses details on functionality, primary user datasets, metrics, and end user needs. This
                     helped to identify dashboard contents that are most relevant to our users
                 </p>
 
