@@ -255,9 +255,14 @@ export default {
   letter-spacing: -0.02em;
 }
 
-/* Closing glass — grey wash behind, glass on top, bottom corners rounded */
+/* Closing glass — grey wash behind, fade under glass, glass on top */
+.pageOverlayTopBar .main {
+  position: relative;
+}
+
 .pageOverlayTopBar :global(.project-body) {
   position: relative;
+  z-index: 1;
   isolation: isolate;
 }
 
@@ -266,41 +271,70 @@ export default {
   z-index: 2;
 }
 
-.pageOverlayTopBar :global(.project-body)::before,
-.pageOverlayTopBar :global(.project-body)::after {
+/* Full-bleed grey wash (on main so body can host fade + glass) */
+.pageOverlayTopBar .main::before {
   content: '';
   position: absolute;
-  top: 100%;
-  pointer-events: none;
-}
-
-.pageOverlayTopBar :global(.project-body)::before {
-  top: calc(
-    100% - var(--project-hero-glass-image-cover) - var(--project-hero-glass-panel-height)
-  );
-  left: calc(-1 * var(--project-body-left));
+  left: 0;
+  bottom: 0;
   z-index: 0;
   width: 100vw;
   height: calc(
     var(--project-bottom-pad) + var(--project-hero-glass-image-cover) +
       var(--project-hero-glass-panel-height)
   );
+  pointer-events: none;
+  /* Soft white→grey around the text bottom; soft grey→white into the footer */
   background: linear-gradient(
     180deg,
-    rgba(224, 224, 224, 0) 20%,
-    #e0e0e0 100%
+    rgba(224, 224, 224, 0)
+      calc(var(--project-hero-glass-image-cover) + var(--project-hero-glass-panel-height) - 180px),
+    #e0e0e0
+      calc(var(--project-hero-glass-image-cover) + var(--project-hero-glass-panel-height) + 110px),
+    #e0e0e0 78%,
+    #fff 100%
   );
 }
 
+.pageOverlayTopBar :global(.project-body)::before,
 .pageOverlayTopBar :global(.project-body)::after {
+  content: '';
+  position: absolute;
   top: calc(100% - var(--project-hero-glass-panel-height));
   left: calc(-1 * var(--project-body-left) + var(--project-hero-glass-side-inset));
-  z-index: 1;
   width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
   height: var(--project-hero-glass-image-cover);
   border-radius: 0 0 40px 40px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+  pointer-events: none;
+}
+
+/* Fade box under the glass — same footprint + 40px bottom corners */
+.pageOverlayTopBar :global(.project-body)::before {
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    #fff 0%,
+    rgba(255, 255, 255, 0.85) 40%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.58) 48%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.58) 48%,
+    transparent 100%
+  );
+}
+
+.pageOverlayTopBar :global(.project-body)::after {
+  z-index: 1;
   border: 1px solid rgba(255, 255, 255, 0.45);
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(52px) saturate(2.5);

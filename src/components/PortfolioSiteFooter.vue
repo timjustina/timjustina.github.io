@@ -201,6 +201,8 @@ export default {
     --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
     --footer-edge-pad-vertical: var(--top-bar-edge-pad-left);
 
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     min-height: 128px;
