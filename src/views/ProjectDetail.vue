@@ -399,7 +399,7 @@ export default {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.58);
   backdrop-filter: blur(52px) saturate(2.5);
   -webkit-backdrop-filter: blur(52px) saturate(2.5);
   box-shadow:
