@@ -329,11 +329,15 @@ export default {
   height: var(--project-hero-glass-panel-height);
   transform: translate3d(-50%, 0, 0);
   border-radius: 0;
+  /* Soft ramp; solid white for the last 1/4 to the hero bottom edge */
   background: linear-gradient(
     to bottom,
-    transparent 0,
-    transparent 40%,
-    rgba(255, 255, 255, 0.85) 60%,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 18%,
+    rgba(255, 255, 255, 0.18) 34%,
+    rgba(255, 255, 255, 0.38) 48%,
+    rgba(255, 255, 255, 0.62) 60%,
+    rgba(255, 255, 255, 0.88) 70%,
     #fff 75%,
     #fff 100%
   );
