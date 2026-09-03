@@ -440,25 +440,11 @@ export default {
       var(--project-hero-glass-panel-height)
   );
   pointer-events: none;
-  /* Flatter grey peak at bottom glass lower edge — eased in/out, extends up */
+  /* Linear grey wash — transparent at top, full #e0e0e0 at footer edge */
   background: linear-gradient(
-    180deg,
+    to bottom,
     rgba(224, 224, 224, 0) 0%,
-    rgba(224, 224, 224, 0)
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 320px),
-    rgba(224, 224, 224, 0.4)
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 180px),
-    rgba(224, 224, 224, 0.82)
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 60px),
-    #e0e0e0
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) - 8px),
-    #e0e0e0
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) + 40px),
-    rgba(224, 224, 224, 0.5)
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) + 130px),
-    #fff
-      calc(var(--project-hero-glass-image-cover) + 2 * var(--project-hero-glass-panel-height) + 240px),
-    #fff 100%
+    #e0e0e0 100%
   );
 }
 
@@ -466,13 +452,14 @@ export default {
 .pageOverlayTopBar :global(.project-body)::after {
   content: '';
   position: absolute;
-  top: calc(100% - var(--project-hero-glass-panel-height));
+  /* Top aligns with the grey box top edge; bottom edge unchanged from original */
+  top: calc(100% - var(--project-hero-glass-image-cover) - var(--project-hero-glass-panel-height));
   /* Match top glass: centered on viewport at measured width */
   left: calc(
     50vw - var(--project-body-left) - var(--project-hero-glass-width) / 2
   );
   width: var(--project-hero-glass-width);
-  height: var(--project-hero-glass-image-cover);
+  height: calc(2 * var(--project-hero-glass-image-cover));
   border-radius: 0 0 40px 40px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
@@ -858,7 +845,6 @@ export default {
   display: block;
   border: 0;
   outline: none;
-  vertical-align: top;
   backface-visibility: hidden;
   transform: translateZ(0) scale(1.004);
   transform-origin: center center;
