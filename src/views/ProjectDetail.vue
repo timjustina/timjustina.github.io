@@ -30,11 +30,22 @@ export default {
       default: false,
     },
   },
+  data() {
+    return {
+      glassWidthRaf: null,
+      glassWidthObserver: null,
+      glassTitleMutationObserver: null,
+    }
+  },
   mounted() {
     // Lock mobile hero height to the initial viewport so URL-bar show/hide
     // (vh changes on scroll) doesn't make the image look like it's zooming.
     this.lockMobileHeroHeight()
     window.addEventListener('orientationchange', this.onMobileHeroOrientation)
+
+    if (this.overlayTopBar) {
+      this.bindHeroGlassWidth()
+    }
 
     if (!hasPendingImageExpand()) return
 
@@ -48,10 +59,14 @@ export default {
   beforeUnmount() {
     window.removeEventListener('orientationchange', this.onMobileHeroOrientation)
     this.clearMobileHeroHeight()
+    this.unbindHeroGlassWidth()
   },
   methods: {
     onMobileHeroOrientation() {
-      window.setTimeout(() => this.lockMobileHeroHeight(), 250)
+      window.setTimeout(() => {
+        this.lockMobileHeroHeight()
+        this.scheduleHeroGlassWidth()
+      }, 250)
     },
     lockMobileHeroHeight() {
       if (!window.matchMedia(CASE_STUDY_MOBILE_MEDIA_QUERY).matches) {
@@ -63,6 +78,126 @@ export default {
     },
     clearMobileHeroHeight() {
       this.$el?.style?.removeProperty('--project-hero-mobile-height')
+    },
+    bindHeroGlassWidth() {
+      this.scheduleHeroGlassWidth()
+      window.addEventListener('resize', this.scheduleHeroGlassWidth, { passive: true })
+      document.fonts?.ready?.then(() => this.scheduleHeroGlassWidth())
+
+      this.$nextTick(() => {
+        const title = this.$el?.querySelector('.project-header-title')
+        const body = this.$el?.querySelector('.project-body')
+
+        if (typeof ResizeObserver !== 'undefined') {
+          this.glassWidthObserver = new ResizeObserver(() => this.scheduleHeroGlassWidth())
+          if (title) this.glassWidthObserver.observe(title)
+          if (body) this.glassWidthObserver.observe(body)
+        }
+
+        // Fluid title lines change text without resizing the h1 box
+        if (typeof MutationObserver !== 'undefined' && title) {
+          this.glassTitleMutationObserver = new MutationObserver(() =>
+            this.scheduleHeroGlassWidth()
+          )
+          this.glassTitleMutationObserver.observe(title, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ['class'],
+          })
+        }
+
+        this.scheduleHeroGlassWidth()
+      })
+    },
+    unbindHeroGlassWidth() {
+      if (this.glassWidthRaf != null) cancelAnimationFrame(this.glassWidthRaf)
+      this.glassWidthRaf = null
+      this.glassWidthObserver?.disconnect()
+      this.glassWidthObserver = null
+      this.glassTitleMutationObserver?.disconnect()
+      this.glassTitleMutationObserver = null
+      window.removeEventListener('resize', this.scheduleHeroGlassWidth)
+      this.$el?.style?.removeProperty('--project-hero-glass-width')
+    },
+    scheduleHeroGlassWidth() {
+      if (!this.overlayTopBar) return
+      if (this.glassWidthRaf != null) cancelAnimationFrame(this.glassWidthRaf)
+      this.glassWidthRaf = requestAnimationFrame(() => {
+        this.glassWidthRaf = null
+        this.updateHeroGlassWidth()
+      })
+    },
+    measureTitleTextWidth(titleEl) {
+      if (!titleEl) return 0
+
+      const measureNode = (node) => {
+        const range = document.createRange()
+        range.selectNodeContents(node)
+        return range.getBoundingClientRect().width
+      }
+
+      const lines = titleEl.querySelectorAll('.project-header-title-line')
+      if (lines.length) {
+        let widest = 0
+        lines.forEach((line) => {
+          widest = Math.max(widest, measureNode(line))
+        })
+        return widest
+      }
+
+      // Plain title text — skip the hidden fluid-line measure probe
+      let widest = 0
+      titleEl.childNodes.forEach((node) => {
+        if (
+          node.nodeType === Node.ELEMENT_NODE &&
+          node.classList?.contains('project-header-measure')
+        ) {
+          return
+        }
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (!node.textContent?.trim()) return
+          const range = document.createRange()
+          range.selectNodeContents(node)
+          widest = Math.max(widest, range.getBoundingClientRect().width)
+          return
+        }
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          widest = Math.max(widest, measureNode(node))
+        }
+      })
+      return widest
+    },
+    updateHeroGlassWidth() {
+      const root = this.$el
+      if (!root || !this.overlayTopBar) return
+
+      const titleEl = root.querySelector('.project-header-title')
+      const bodyEl = root.querySelector('.project-body')
+      const h2El = bodyEl?.querySelector('h2')
+
+      const titleWidth = this.measureTitleTextWidth(titleEl)
+
+      let contentSpan = 0
+      if (bodyEl) {
+        const bodyRight = bodyEl.getBoundingClientRect().right
+        const contentLeft = h2El
+          ? h2El.getBoundingClientRect().left
+          : bodyEl.getBoundingClientRect().left
+        contentSpan = Math.max(0, bodyRight - contentLeft)
+      }
+
+      const pad = 120
+      const viewport = document.documentElement.clientWidth
+      const glassWidth = Math.min(
+        viewport,
+        Math.max(titleWidth, contentSpan) + pad * 2
+      )
+
+      if (glassWidth > 0) {
+        root.style.setProperty('--project-hero-glass-width', `${Math.round(glassWidth)}px`)
+      }
     },
   },
 }
@@ -157,7 +292,11 @@ export default {
 .pageOverlayTopBar {
   --project-hero-glass-panel-height: 140px;
   --project-hero-glass-image-cover: calc(2 * var(--project-hero-glass-panel-height));
-  --project-hero-glass-side-inset: 40px;
+  /* Fallback until JS measures title vs h2→text span (+ 120px each side) */
+  --project-hero-glass-width: min(
+    100vw,
+    calc(var(--project-content-w) + var(--project-title-hang) + 240px)
+  );
   --project-hero-title-line-height: 48px;
   --project-hero-title-line-count: 2;
   --project-hero-title-overlap: calc(
@@ -186,7 +325,7 @@ export default {
   left: 50%;
   bottom: 0;
   z-index: 1;
-  width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
+  width: var(--project-hero-glass-width);
   height: var(--project-hero-glass-panel-height);
   transform: translate3d(-50%, 0, 0);
   border-radius: 0;
@@ -214,7 +353,7 @@ export default {
   left: 50%;
   top: calc(-1 * (var(--project-hero-glass-panel-height) - var(--project-hero-title-overlap)));
   z-index: 0;
-  width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
+  width: var(--project-hero-glass-width);
   height: var(--project-hero-glass-image-cover);
   transform: translate3d(-50%, 0, 0);
   border-radius: 40px 40px 0 0;
@@ -311,8 +450,11 @@ export default {
   content: '';
   position: absolute;
   top: calc(100% - var(--project-hero-glass-panel-height));
-  left: calc(-1 * var(--project-body-left) + var(--project-hero-glass-side-inset));
-  width: calc(100vw - 2 * var(--project-hero-glass-side-inset));
+  /* Match top glass: centered on viewport at measured width */
+  left: calc(
+    50vw - var(--project-body-left) - var(--project-hero-glass-width) / 2
+  );
+  width: var(--project-hero-glass-width);
   height: var(--project-hero-glass-image-cover);
   border-radius: 0 0 40px 40px;
   border-top-left-radius: 0;
