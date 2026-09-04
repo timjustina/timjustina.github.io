@@ -12,7 +12,7 @@
 
 ## The Challenge
 
-KIN is a healthcare startup that needed to showcase the full digital experience of its product to secure **future investments and partnerships** in **healthcare sectors**. One thing we wanted to demonstrate is how **user data** collected from our **IoT medication adherence platform** can be transformed into **easy‑to‑digest insights for caregivers** – helping them better understand their clients' behavioural patterns and providing **better quality of care with less effort**. The task given was to design a **pitch-ready caregiver‑facing dashboard** for the primary user's account within the web/desktop app. The goal of the design is to help them better understand and assist their clients.
+KIN is a healthcare startup that needed to showcase the full digital experience of its product to secure **future investments and partnerships** in **healthcare sectors**. One thing we wanted to demonstrate is how **user data** collected from our **IoT medication adherence platform** can be transformed into **easy‑to‑digest insights for caregivers** – helping them better understand their clients' behavioural patterns and providing **better quality of care with less effort**. The task given was to design a pitch-ready **caregiver‑facing dashboard** for the primary user's account within the web/desktop app. The goal of the design was to help caregiver better understand and assist their clients.
 
 ## My Role
 
