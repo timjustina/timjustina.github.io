@@ -604,6 +604,12 @@ export default {
   pointer-events: none;
 }
 
+/* First block after h2: extend rule up to 20px below the title (h2→* margin is 48px). */
+.main :global(.project-body section > h2 + h3)::before,
+.main :global(.project-body section > h2 + p:not(.caption))::before {
+  top: calc(20px - 48px);
+}
+
 /* Bridge gaps between consecutive text blocks so the rule reads continuous.
    Extra 11px so the bridge meets the next block’s top inset. */
 .main :global(.project-body section > h3:has(+ p:not(.caption)))::before {
@@ -1074,6 +1080,12 @@ export default {
 
   .main :global(.full-image--captioned .caption) {
     margin-top: 0;
+  }
+
+  /* First block after h2: same 20px gap; h2→* margin is 32px on mobile. */
+  .main :global(.project-body section > h2 + h3)::before,
+  .main :global(.project-body section > h2 + p:not(.caption))::before {
+    top: calc(20px - 32px);
   }
 
   .main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {
