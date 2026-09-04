@@ -348,6 +348,11 @@ export default {
         align-items: stretch;
     }
 
+    .footer-email,
+    .footer-copy {
+        font-size: 18px;
+    }
+
     .footer-copy {
         align-self: flex-end;
         margin-top: 80px;
