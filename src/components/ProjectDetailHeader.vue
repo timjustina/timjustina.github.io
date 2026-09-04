@@ -272,7 +272,7 @@ export default {
         max-width: calc(100vw - 80px);
         gap: 20px;
         min-height: 0;
-        margin-bottom: 120px;
+        margin-bottom: 100px;
     }
 
     .project-header-title {

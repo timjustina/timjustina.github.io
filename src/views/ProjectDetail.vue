@@ -762,7 +762,7 @@ export default {
   margin-bottom: 0;
 }
 
-.main :global(.project-body ul),
+.main :global(.project-body ul:not(.project-tldr-list)),
 .main :global(.project-body ol) {
   margin: 32px 0;
   padding: 0 0 0 52px;
@@ -979,7 +979,7 @@ export default {
 
   .main :global(.project-header) {
     margin-top: calc(var(--top-bar-height) + 64px);
-    margin-bottom: 120px;
+    margin-bottom: 100px;
   }
 
   .pageOverlayTopBar {

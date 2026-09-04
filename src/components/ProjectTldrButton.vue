@@ -254,8 +254,8 @@ export default {
   display: block;
   width: 100%;
   max-width: none;
-  /* Match title → TL;DR spacing (header margin-bottom) */
-  margin: 0 0 120px;
+  /* Match title → TL;DR spacing (header margin-bottom); mobile uses 100 */
+  margin: 0 0 100px;
   z-index: 2;
 }
 
@@ -267,7 +267,8 @@ export default {
   align-items: center;
   gap: 10px;
   height: var(--project-tldr-trigger-height);
-  margin-left: auto;
+  /* Align with section h2 hang */
+  margin-left: calc(-1 * var(--project-title-offset, 0px));
   padding: 0;
   border: 0;
   background: transparent;
@@ -280,7 +281,7 @@ export default {
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 30px;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -371,7 +372,7 @@ export default {
   width: 100%;
   max-width: none;
   padding: calc(
-      var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
+      var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 80px
     )
     var(--project-body-left) 52px var(--project-body-left);
   box-sizing: border-box;
@@ -412,8 +413,8 @@ export default {
 }
 
 .project-tldr-heading {
-  margin: 0;
-  width: 100%;
+  margin: 0 0 0 calc(-1 * var(--project-title-offset, 0px));
+  width: calc(100% + var(--project-title-offset, 0px));
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 500;
@@ -478,7 +479,7 @@ export default {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin: 0;
+  margin: 0 0 0 calc(-1 * var(--project-title-offset, 0px));
   padding: 12px 24px;
   min-width: 0;
   width: auto;
@@ -556,16 +557,18 @@ export default {
     gap: 12px;
   }
 
-  /* Desktop: text column + title hang (not full page) */
+  /* Desktop: hang left 2× and right 1× title-offset so
+     - headings/CTA sit on the TL;DR line with the same inset from the box
+     - list/note can span the full body text column L→R with the same inset */
   .project-tldr-panel-slot {
-    width: calc(100% + var(--project-title-offset, 0px));
+    width: calc(100% + 3 * var(--project-title-offset, 0px));
     max-width: none;
-    margin-left: calc(-1 * var(--project-title-offset, 0px));
+    margin-left: calc(-2 * var(--project-title-offset, 0px));
   }
 
   .project-tldr-panel {
     padding: calc(
-        var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 32px
+        var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 100px
       )
       var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
     border-radius: 0 0 40px 40px;
@@ -575,7 +578,26 @@ export default {
     gap: 64px;
   }
 
+  .project-tldr-heading {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Same text column for summary bullets and Also paragraph */
+  .project-tldr-list,
+  .project-tldr-note {
+    margin-left: var(--project-title-offset, 0px);
+    width: calc(100% - var(--project-title-offset, 0px));
+  }
+
+  /* Drop li indent so bullet text shares the Also paragraph left edge;
+     outside markers hang into the title-offset gutter */
+  .project-tldr-list li {
+    margin-left: 0;
+  }
+
   .project-tldr-copy {
+    margin-left: 0;
     width: 223px;
     height: 54px;
   }
