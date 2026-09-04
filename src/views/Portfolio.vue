@@ -1289,6 +1289,13 @@ export default {
             const projects = [...(this.$el?.querySelectorAll('.work .project') ?? [])]
             if (!projects.length) return
 
+            // Clear prior state so breakpoint changes don't leave the wrong mode.
+            this.projectFadeObserver?.disconnect()
+            this.projectFadeObserver = null
+            for (const project of projects) {
+                project.classList.remove('project--scroll-fade', 'project--in-view')
+            }
+
             if (prefersReducedMotion()) {
                 this.revealAllProjects()
                 return
@@ -1300,8 +1307,9 @@ export default {
                 return
             }
 
-            // Desktop work cards (800px+): no scroll fade; narrower mobile uses observer below.
-            if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+            // Deco line present (desktop): cards stay put — no scroll fade.
+            // Deco line hidden (mobile): off-screen cards fade in on scroll.
+            if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
                 this.revealAllProjects()
                 return
             }
@@ -1335,6 +1343,7 @@ export default {
             this.projectFadeObserver?.disconnect()
             this.projectFadeObserver = null
             for (const project of this.$el?.querySelectorAll('.work .project') ?? []) {
+                project.classList.remove('project--scroll-fade')
                 project.classList.add('project--in-view')
             }
         },
@@ -1577,10 +1586,16 @@ export default {
                 this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
                 this.syncProjectCaptionLineOffset()
-                this.$nextTick(() => this.lockHeroViewportHeight())
+                this.$nextTick(() => {
+                    this.lockHeroViewportHeight()
+                    // Deco line gone → enable scroll fade for off-screen cards
+                    requestAnimationFrame(() => this.setupProjectScrollFade())
+                })
                 return
             }
 
+            // Deco line back → cards should just be there (no scroll fade)
+            this.revealAllProjects()
             this.lockHeroViewportHeight()
 
             if (letterChanged) this.heroIntroLetterMode = nextLetter
