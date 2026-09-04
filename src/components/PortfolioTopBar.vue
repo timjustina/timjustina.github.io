@@ -12,7 +12,7 @@
         >
             <div class="top-bar-inner">
                 <div ref="topBarContent" class="top-bar-content">
-                    <router-link to="/" class="logo-block">
+                    <router-link to="/" class="logo-block" @click="onLogoClick">
                         <img class="logo" :src="logo" alt="Tim Justina Yeung" />
                     </router-link>
                     <nav ref="nav" class="nav" :class="{ 'nav--hidden': !showNav }">
@@ -289,6 +289,13 @@ export default {
 
             // Transparent while any part of the hero still sits under the fixed bar.
             this.overHero = hero.getBoundingClientRect().bottom > 0
+        },
+        onLogoClick(event) {
+            // Already on the home page — full reload so the intro plays again.
+            if (this.$route.path === '/') {
+                event.preventDefault()
+                window.location.reload()
+            }
         },
         onWorkClick(event) {
             // From a case study, let the router navigate; Portfolio scrolls after ready.
