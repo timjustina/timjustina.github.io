@@ -30,11 +30,33 @@ export function getAboutScrollTop() {
     return Math.max(0, top + ABOUT_EXTRA_OFFSET)
 }
 
+const WORK_BOTTOM_GAP = 30
+
 export function getWorkScrollTop() {
     const el = document.getElementById('work-first') || document.getElementById('work')
     if (!el) return null
+
     const headerOffset = getHeaderOffset()
-    return Math.max(0, el.getBoundingClientRect().top + window.scrollY - headerOffset)
+    const scrollY = window.scrollY
+    const rect = el.getBoundingClientRect()
+    const setTop = rect.top + scrollY
+    const setHeight = rect.height
+    const viewportH = window.innerHeight
+    const availableH = Math.max(0, viewportH - headerOffset)
+    // Keep the company line (.project-year) at least WORK_BOTTOM_GAP above the viewport bottom
+    const bottomAligned = setTop + setHeight - viewportH + WORK_BOTTOM_GAP
+
+    let top
+    if (setHeight + WORK_BOTTOM_GAP <= availableH) {
+        // Center the thumbnail + caption set in the area below the top bar
+        const centered = setTop - headerOffset - (availableH - setHeight) / 2
+        top = Math.max(centered, bottomAligned)
+    } else {
+        // Viewport too short: bottom-align so the caption stays visible with gap
+        top = bottomAligned
+    }
+
+    return Math.max(0, top)
 }
 
 const DEFAULT_SCROLL_DURATION = 450
