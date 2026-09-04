@@ -254,8 +254,8 @@ export default {
   display: block;
   width: 100%;
   max-width: none;
-  /* Match title → TL;DR spacing on mobile (DashboardDesign header margin-bottom) */
-  margin: 0 0 132px;
+  /* Match title → TL;DR spacing (header margin-bottom) */
+  margin: 0 0 120px;
   z-index: 2;
 }
 

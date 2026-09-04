@@ -259,7 +259,7 @@ export default {
     font-weight: 400;
     line-height: 34px;
     letter-spacing: 0;
-    color: #4d4d4d;
+    color: #757575;
 }
 
 .project-header-meta-sep {
@@ -272,7 +272,7 @@ export default {
         max-width: calc(100vw - 80px);
         gap: 20px;
         min-height: 0;
-        margin-bottom: 52px;
+        margin-bottom: 120px;
     }
 
     .project-header-title {
@@ -287,8 +287,8 @@ export default {
     .project-header-title {
         font-family: 'Work Sans', sans-serif;
         font-weight: calc(300 * var(--font-weight-scale));
-        font-size: 20px;
-        line-height: 30px;
+        font-size: 28px;
+        line-height: 42px;
         letter-spacing: 0;
         color: #3c3f41;
     }
@@ -296,7 +296,7 @@ export default {
     .project-header-meta {
         font-size: 16px;
         line-height: calc(24px * var(--project-type-scale));
-        color: #4d4d4d;
+        color: #757575;
     }
 }
 </style>
