@@ -146,7 +146,11 @@
                     </div>
                     <p
                         class="hero-intro portfolio-fly portfolio-fly--from-right"
-                        :class="{ 'hero-intro--chars': heroIntroLetterMode }"
+                        :class="{
+                            'hero-intro--chars': heroIntroLetterMode,
+                            'hero-intro--dissipated': heroIntroDissipated,
+                            'hero-intro--reconsolidating': heroIntroReconsolidating,
+                        }"
                         :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
                     >
                         <template v-if="heroIntroLetterMode">
@@ -180,7 +184,7 @@
                         </template>
                         <template v-else>
                             <span class="hero-intro-lead">I'm Tim Justina Yeung, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and research.
-                            I enjoy turning ambiguous problems into clear solutions
+                            I deeply enjoy understanding complex problems and providing creative solutions
                             <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
                         </template>
                     </p>
@@ -627,7 +631,7 @@ const HERO_INTRO_PARTS = [
     { text: "I'm Tim Justina Yeung, a ", em: false },
     { text: 'Product Designer', em: true, keep: true },
     {
-        text: ' with a background in Neuroscience and research. I enjoy turning ambiguous problems into clear solutions ',
+        text: ' with a background in Neuroscience and research. I deeply enjoy understanding complex problems and providing creative solutions ',
         em: false,
     },
     { text: 'for people :)', em: true, keep: true, afterthoughtSuffix: ':)' },
@@ -732,6 +736,15 @@ export default {
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
             heroIntroTouchGuardActive: false,
+            // Mobile (<800): text lifts off viewport bottom → fan out; same spot → reconsolidate.
+            heroIntroDissipated: false,
+            heroIntroDissipatePrepared: false,
+            heroIntroDissipateMaxDelay: 0,
+            heroIntroDissipateRaf: null,
+            heroIntroReconsolidating: false,
+            heroIntroReconsolidateTimer: null,
+            // Intro bottom (viewport Y) while parked at scroll top — shared leave/return floor.
+            heroIntroRestBottom: null,
             heroCursorActive: isHeroCursorEnvironment(),
             heroCursorInRange: false,
             heroCursorRangeTight: false,
@@ -1058,6 +1071,8 @@ export default {
         window.addEventListener('blur', this.onHeroPointerEndHandler)
         document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
+        this.onHeroIntroDissipateScroll = () => this.onHeroIntroDissipateScrollHandler()
+        window.addEventListener('scroll', this.onHeroIntroDissipateScroll, { passive: true })
         this.onMobileHeroOrientation = () => {
             window.setTimeout(() => this.lockHeroViewportHeight(), 250)
         }
@@ -1176,10 +1191,13 @@ export default {
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
+        if (this.heroIntroDissipateRaf != null) cancelAnimationFrame(this.heroIntroDissipateRaf)
         this.stopHeroCursorGlassFollow()
         clearTimeout(this.heroIntroTapLingerTimer)
+        clearTimeout(this.heroIntroReconsolidateTimer)
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
+        this.clearHeroIntroDissipate()
         window.removeEventListener('pointermove', this.onHeroPointerMove)
         document.removeEventListener('pointerenter', this.onHeroPointerEnter)
         window.removeEventListener('pointerdown', this.onHeroPointerDown)
@@ -1190,6 +1208,7 @@ export default {
         window.removeEventListener('blur', this.onHeroPointerEndHandler)
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
+        window.removeEventListener('scroll', this.onHeroIntroDissipateScroll)
         this.$el?.querySelector('.hero-decor')?.removeEventListener('animationend', this.onHeroDecorFlyEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -1277,7 +1296,10 @@ export default {
                 this.revealAllProjects()
             }
             this.$nextTick(() => {
-                requestAnimationFrame(() => this.updateHeroLocationVisibility())
+                requestAnimationFrame(() => {
+                    this.updateHeroLocationVisibility()
+                    this.updateHeroIntroDissipateFromScroll({ instant: true })
+                })
             })
             if (hash !== '#about' || this.aboutRevealed) return
 
@@ -1574,6 +1596,7 @@ export default {
             this.syncHeroDecorHeight()
             this.syncProjectCaptionLineOffset()
             this.publishDecorLineAlign()
+            this.$nextTick(() => this.updateHeroIntroDissipateFromScroll({ instant: true }))
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
@@ -1585,11 +1608,15 @@ export default {
                 this.heroDecorHidden = true
                 this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
+                if (!nextLetter) this.clearHeroIntroDissipate()
                 this.syncProjectCaptionLineOffset()
                 this.$nextTick(() => {
                     this.lockHeroViewportHeight()
                     // Deco line gone → enable scroll fade for off-screen cards
                     requestAnimationFrame(() => this.setupProjectScrollFade())
+                    if (nextLetter) {
+                        this.updateHeroIntroDissipateFromScroll({ instant: true, forcePrepare: true })
+                    }
                 })
                 return
             }
@@ -1597,6 +1624,7 @@ export default {
             // Deco line back → cards should just be there (no scroll fade)
             this.revealAllProjects()
             this.lockHeroViewportHeight()
+            this.clearHeroIntroDissipate()
 
             if (letterChanged) this.heroIntroLetterMode = nextLetter
 
@@ -1794,6 +1822,7 @@ export default {
             return (
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
+                !this.heroIntroDissipated &&
                 !prefersReducedMotion() &&
                 typeof window !== 'undefined'
             )
@@ -2823,7 +2852,235 @@ export default {
                     this.syncHeroIntroCharColumns()
                 }
                 this.updateHeroLocationVisibility()
+                this.updateHeroIntroDissipateFromScroll({ forcePrepare: true })
             })
+        },
+        canHeroIntroDissipate() {
+            return (
+                this.heroIntroLetterMode &&
+                this.pageEntranceDone &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined' &&
+                (this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            )
+        },
+        onHeroIntroDissipateScrollHandler() {
+            if (!this.canHeroIntroDissipate()) return
+            if (this.heroIntroDissipateRaf != null) return
+            this.heroIntroDissipateRaf = requestAnimationFrame(() => {
+                this.heroIntroDissipateRaf = null
+                this.updateHeroIntroDissipateFromScroll()
+            })
+        },
+        /**
+         * Radial fly-out targets: rays from the midpoint of the text box’s bottom
+         * edge through each glyph (upper half-circle), extended past the viewport.
+         */
+        prepareHeroIntroDissipateTargets() {
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro) {
+                this.heroIntroDissipatePrepared = false
+                return false
+            }
+
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            if (!chars.length) {
+                this.heroIntroDissipatePrepared = false
+                return false
+            }
+
+            // Measure resting layout even if letters are mid-flight / dissipated.
+            intro.classList.add('hero-intro--dissipate-measure')
+            void intro.offsetWidth
+
+            const introRect = intro.getBoundingClientRect()
+            if (introRect.width < 1 || introRect.height < 1) {
+                intro.classList.remove('hero-intro--dissipate-measure')
+                this.heroIntroDissipatePrepared = false
+                return false
+            }
+
+            const cx = introRect.left + introRect.width / 2
+            const cy = introRect.bottom
+            const halfW = introRect.width / 2
+            const maxRadial = Math.hypot(halfW, introRect.height) || 1
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+            const margin = 48
+            let maxDelay = 0
+
+            const introStyles = getComputedStyle(intro)
+            const duration = parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
+            const stagger = parseCssTimeSec(introStyles, '--hero-intro-dissipate-stagger', 0.42)
+
+            for (const el of chars) {
+                const rect = el.getBoundingClientRect()
+                const px = rect.left + rect.width / 2
+                const py = rect.top + rect.height / 2
+                let dx = px - cx
+                let dy = py - cy
+                // Keep motion in the upper semicircle (diameter = text bottom).
+                if (dy > -0.5) dy = -0.5
+
+                const len = Math.hypot(dx, dy) || 1
+                const nx = dx / len
+                const ny = dy / len
+
+                let travel = Infinity
+                if (ny < -1e-6) travel = Math.min(travel, (-margin - py) / ny)
+                if (nx > 1e-6) travel = Math.min(travel, (vw + margin - px) / nx)
+                if (nx < -1e-6) travel = Math.min(travel, (-margin - px) / nx)
+                if (!Number.isFinite(travel) || travel < 0) {
+                    travel = Math.max(vh, vw) * 0.85
+                }
+                travel *= 1.12
+
+                const existingLeave = el.style.getPropertyValue('--hero-intro-dissipate-leave-delay').trim()
+                let leaveDelay = existingLeave ? parseFloat(existingLeave) : NaN
+                if (!Number.isFinite(leaveDelay)) {
+                    const radialT = Math.min(1, len / maxRadial)
+                    // Near-center leaves first; edges lag with light jitter for async feel.
+                    leaveDelay = radialT * stagger * 0.55 + Math.random() * stagger * 0.45
+                }
+                maxDelay = Math.max(maxDelay, leaveDelay)
+
+                el.style.setProperty('--hero-intro-dissipate-x', `${(nx * travel).toFixed(1)}px`)
+                el.style.setProperty('--hero-intro-dissipate-y', `${(ny * travel).toFixed(1)}px`)
+                el.style.setProperty('--hero-intro-dissipate-leave-delay', `${leaveDelay.toFixed(3)}s`)
+                el.style.setProperty('--hero-intro-dissipate-duration', `${duration}s`)
+            }
+
+            intro.classList.remove('hero-intro--dissipate-measure')
+
+            this.heroIntroDissipateMaxDelay = maxDelay
+            this.heroIntroDissipatePrepared = true
+            if (this.heroIntroDissipated) {
+                this.applyHeroIntroDissipateDelays(true)
+            } else if (this.heroIntroReconsolidating) {
+                this.applyHeroIntroDissipateDelays(false)
+            } else {
+                for (const el of chars) {
+                    el.style.setProperty('--hero-intro-dissipate-delay', '0s')
+                }
+            }
+            return true
+        },
+        applyHeroIntroDissipateDelays(dissipating) {
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro) return
+            const maxDelay = this.heroIntroDissipateMaxDelay
+            for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                const leave =
+                    parseFloat(el.style.getPropertyValue('--hero-intro-dissipate-leave-delay')) || 0
+                const delay = dissipating ? leave : Math.max(0, maxDelay - leave)
+                el.style.setProperty('--hero-intro-dissipate-delay', `${delay.toFixed(3)}s`)
+            }
+        },
+        setHeroIntroDissipated(active, { instant = false } = {}) {
+            if (this.heroIntroDissipated === active && !instant) return
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (active) {
+                this.clearHeroIntroPointerShift()
+                this.setHeroIntroStrokeActive(false)
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                this.heroIntroReconsolidateTimer = null
+                this.heroIntroReconsolidating = false
+            }
+
+            if (intro && instant) {
+                intro.classList.add('hero-intro--dissipate-instant')
+            }
+
+            this.applyHeroIntroDissipateDelays(active)
+            this.heroIntroDissipated = active
+
+            if (!active && !instant) {
+                this.heroIntroReconsolidating = true
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                const introStyles = intro ? getComputedStyle(intro) : null
+                const duration = introStyles
+                    ? parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
+                    : 0.9
+                const waitMs = Math.ceil((this.heroIntroDissipateMaxDelay + duration) * 1000) + 40
+                this.heroIntroReconsolidateTimer = setTimeout(() => {
+                    this.heroIntroReconsolidateTimer = null
+                    this.heroIntroReconsolidating = false
+                    this.applyHeroIntroDissipateDelays(false)
+                    // Zero delays so touch-push stays snappy after reconsolidate.
+                    const settled = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+                    if (!settled) return
+                    for (const el of settled.querySelectorAll('.hero-intro-char')) {
+                        el.style.setProperty('--hero-intro-dissipate-delay', '0s')
+                    }
+                }, waitMs)
+            } else if (!active && instant) {
+                this.heroIntroReconsolidating = false
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                this.heroIntroReconsolidateTimer = null
+            }
+
+            if (intro && instant) {
+                void intro.offsetWidth
+                requestAnimationFrame(() => {
+                    intro.classList.remove('hero-intro--dissipate-instant')
+                })
+            }
+        },
+        updateHeroIntroDissipateFromScroll({ instant = false, forcePrepare = false } = {}) {
+            if (!this.canHeroIntroDissipate()) {
+                if (this.heroIntroDissipated || this.heroIntroDissipatePrepared) {
+                    this.clearHeroIntroDissipate()
+                }
+                return
+            }
+
+            if (forcePrepare || !this.heroIntroDissipatePrepared) {
+                if (!this.prepareHeroIntroDissipateTargets()) return
+            }
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro) return
+
+            const rect = intro.getBoundingClientRect()
+            const leaveSlop = 8
+            const returnSlack = 8
+
+            // Same floor for both directions: dissipate once the text bottom lifts off
+            // its parked position; reconsolidate when it comes back to that line.
+            if (window.scrollY <= 0 && !this.heroIntroDissipated) {
+                this.heroIntroRestBottom = rect.bottom
+            }
+            const restBottom = this.heroIntroRestBottom ?? rect.bottom + window.scrollY
+            const leaveLine = restBottom - leaveSlop
+            let shouldDissipate
+            if (this.heroIntroDissipated) {
+                // Same position as leave, plus a little slack so it doesn’t flicker.
+                shouldDissipate = rect.bottom < leaveLine + returnSlack
+            } else {
+                shouldDissipate = rect.bottom < leaveLine
+            }
+
+            this.setHeroIntroDissipated(shouldDissipate, { instant })
+        },
+        clearHeroIntroDissipate() {
+            clearTimeout(this.heroIntroReconsolidateTimer)
+            this.heroIntroReconsolidateTimer = null
+            this.heroIntroDissipated = false
+            this.heroIntroReconsolidating = false
+            this.heroIntroDissipatePrepared = false
+            this.heroIntroDissipateMaxDelay = 0
+            this.heroIntroRestBottom = null
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return
+            intro.classList.remove('hero-intro--dissipate-instant')
+            for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                el.style.removeProperty('--hero-intro-dissipate-x')
+                el.style.removeProperty('--hero-intro-dissipate-y')
+                el.style.removeProperty('--hero-intro-dissipate-delay')
+                el.style.removeProperty('--hero-intro-dissipate-leave-delay')
+                el.style.removeProperty('--hero-intro-dissipate-duration')
+            }
         },
         /**
          * Left-biased stagger with per-letter random jitter. Delays are scaled
@@ -3384,6 +3641,8 @@ export default {
         --hero-intro-hover-min-force: 0;
         --hero-intro-hover-radius-exit-mult: 1.08;
         --hero-intro-hover-knock-mult: 0.34;
+        --hero-intro-dissipate-duration: 0.9s;
+        --hero-intro-dissipate-stagger: 0.42s;
         touch-action: pan-y;
     }
 
@@ -3407,6 +3666,45 @@ export default {
         transition: transform
             calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
             var(--fly-ease);
+    }
+
+    /* Scroll dissipate: fan up along rays from the text-box bottom diameter (half-circle).
+       Independent of the entrance cascade (only after --settled). */
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char.hero-intro-char--pushed {
+        transform: translate3d(
+            var(--hero-intro-dissipate-x, 0),
+            var(--hero-intro-dissipate-y, 0),
+            0
+        );
+        opacity: 0;
+        pointer-events: none;
+        transition:
+            transform var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s),
+            opacity var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s);
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--reconsolidating .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--reconsolidating .hero-intro-char.hero-intro-char--pushed {
+        transition:
+            transform var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s),
+            opacity var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s);
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipate-instant .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipate-instant .hero-intro-char.hero-intro-char--pushed {
+        transition: none !important;
+    }
+
+    .hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char,
+    .hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char.hero-intro-char--pushed {
+        transform: none !important;
+        opacity: 1 !important;
+        transition: none !important;
     }
 }
 
@@ -3704,6 +4002,14 @@ export default {
         transform: none;
         animation: none;
         will-change: auto;
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char.hero-intro-char--pushed {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+        transition: none;
     }
 
     .hero-intro-afterthought-cursor {
@@ -4829,7 +5135,7 @@ export default {
     }
 
     .hero {
-        margin-bottom: 120px;
+        margin-bottom: 216px;
     }
 
     .portfolio-main {
@@ -4980,6 +5286,10 @@ export default {
 
 /* 601px–<800px: mobile hero + tablet about/text tweaks */
 @media (min-width: 601px) and (width < 800px) {
+    .hero {
+        margin-bottom: 340px;
+    }
+
     .about {
         --about-gap: 340px;
         --about-bottom-pad-base: 180px;
