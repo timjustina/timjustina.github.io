@@ -40,7 +40,7 @@
                         affinity-interrelationship diagram</strong> by synthesising <strong>user interview</strong>
                     and <strong>user observation</strong> insights with <strong>product features</strong>.
                     It encompasses details on functionality, primary user datasets, metrics, and end user needs. This
-                    helped to identify dashboard contents that are most relevant to our users
+                    helped us to identify dashboard contents that are most relevant to our users
                 </p>
 
                 <p>Although the project was set out to mainly show <strong>simple adherence-related analytics</strong>
@@ -72,29 +72,27 @@
                 <h2>Problem Framing 2/2</h2>
 
                 <h3>Define the narrative</h3>
-                <p>With the requirements set, I turned to the <strong>narrative</strong>. Without a strategic narrative,
-                    users can
-                    experience fatigue or miss key insights. It is also an opportunity to <strong>highlight and
+                <p>With the requirements set, I turned to the <strong>narrative</strong>. A strategic narrative not only
+                    helps users to <strong>stay focused on the task</strong>, but is also an opportunity to <strong>highlight and
                         reinforce
-                        features</strong> that contribute to the product's value proposition. For example, I have previously designed the primary
+                        features</strong> that contribute to the product's value proposition.</p>
+                <p>For example, I have previously designed the primary
                     user's mobile
                     dashboard to function as a <strong>progress hub</strong> at the home screen.
-                    It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation to
-                    trigger immediate impression – cumulative
+                    It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation that
+                    aims to trigger immediate reaction on performance – cumulative
                     adherence
                     appears as a <strong>heart-shaped progress graphic</strong> leveraging the <strong>cognitive tension
                         from unfinished tasks</strong>; a
                     dispense <strong>streak</strong> leverages <strong>loss aversion</strong>. Both encourage adherence
                     behaviour.
-                </p>
-
-                <p>For the caregiver dashboard, a narrative of <strong><em>synopsis</em></strong> is needed, providing
-                    <strong>feedback across the three-part
-                        system</strong> of caregiver, client and the IoT platform to drive <strong>positive
-                        actions</strong> that help improve the
-                    clients’ medication adherence. For example, having a daily adherence trend that also shows missed
-                    doses that were later compensated by an ad hoc dispense; a chart showing when missed doses most
-                    often occur.
+                    For the caregiver dashboard, a narrative of <strong><em>synopsis</em></strong> is needed – providing
+                    <strong>clear feedback across the three-part
+                        system</strong> of caregiver, client and the IoT platform to drive <strong>caregiver
+                        actions</strong> that help improve clients’
+                    medication adherence. For example, having a daily adherence trend that also shows missed
+                    doses that were later compensated by an ad hoc dispense – completing the <strong>feedback loop</strong> and highlighting the effect of <strong>caregiver intervention</strong>; a chart showing when missed doses most
+                    often occur – feedback on clients’ behaviour that is only made possible by using the IoT platform.
                 </p>
 
                 <p>Based on user research, although the caregivers have more <strong>ability</strong> to explore data
