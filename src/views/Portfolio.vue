@@ -745,6 +745,8 @@ export default {
             heroIntroReconsolidateTimer: null,
             // Intro bottom (viewport Y) while parked at scroll top — shared leave/return floor.
             heroIntroRestBottom: null,
+            // Width when --mobile-hero-height was last set; ignore height-only URL-bar resizes.
+            lockedMobileHeroWidth: null,
             heroCursorActive: isHeroCursorEnvironment(),
             heroCursorInRange: false,
             heroCursorRangeTight: false,
@@ -1074,7 +1076,7 @@ export default {
         this.onHeroIntroDissipateScroll = () => this.onHeroIntroDissipateScrollHandler()
         window.addEventListener('scroll', this.onHeroIntroDissipateScroll, { passive: true })
         this.onMobileHeroOrientation = () => {
-            window.setTimeout(() => this.lockHeroViewportHeight(), 250)
+            window.setTimeout(() => this.lockHeroViewportHeight({ force: true }), 250)
         }
         window.addEventListener('orientationchange', this.onMobileHeroOrientation)
 
@@ -1611,7 +1613,7 @@ export default {
                 if (!nextLetter) this.clearHeroIntroDissipate()
                 this.syncProjectCaptionLineOffset()
                 this.$nextTick(() => {
-                    this.lockHeroViewportHeight()
+                    this.lockHeroViewportHeight({ force: true })
                     // Deco line gone → enable scroll fade for off-screen cards
                     requestAnimationFrame(() => this.setupProjectScrollFade())
                     if (nextLetter) {
@@ -1623,7 +1625,7 @@ export default {
 
             // Deco line back → cards should just be there (no scroll fade)
             this.revealAllProjects()
-            this.lockHeroViewportHeight()
+            this.lockHeroViewportHeight({ force: true })
             this.clearHeroIntroDissipate()
 
             if (letterChanged) this.heroIntroLetterMode = nextLetter
@@ -1646,7 +1648,7 @@ export default {
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        this.lockHeroViewportHeight()
+                        this.lockHeroViewportHeight({ force: true })
                         this.syncHeroDecorHeight()
                         this.syncProjectCaptionLineOffset()
                         this.syncAboutLocationTextClip()
@@ -1788,7 +1790,7 @@ export default {
                 setTimeout(run, 200)
             }
         },
-        lockHeroViewportHeight() {
+        lockHeroViewportHeight({ force = false } = {}) {
             if (!this.pageEntranceDone) {
                 this.clearHeroViewportHeight()
                 return
@@ -1798,12 +1800,26 @@ export default {
 
             if (isMobile) {
                 this.$el?.style.removeProperty('--desktop-hero-min-height')
+                const existing = this.$el?.style.getPropertyValue('--mobile-hero-height').trim()
+                const width = window.innerWidth
+                // Keep the first lock across URL-bar show/hide (height-only resize).
+                // Relock on force, first set, or real width change (orientation / split view).
+                if (
+                    existing &&
+                    !force &&
+                    this.lockedMobileHeroWidth === width
+                ) {
+                    this.updateHeroLocationVisibility()
+                    return
+                }
                 const pageStyles = getComputedStyle(this.$el)
                 const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
                 const height = Math.max(0, Math.round(window.innerHeight - topBarHeight))
                 this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
+                this.lockedMobileHeroWidth = width
             } else if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 this.$el?.style.removeProperty('--mobile-hero-height')
+                this.lockedMobileHeroWidth = null
                 this.$el?.style.setProperty(
                     '--desktop-hero-min-height',
                     `${Math.round(window.innerHeight)}px`,
@@ -1817,6 +1833,7 @@ export default {
         clearHeroViewportHeight() {
             this.$el?.style.removeProperty('--mobile-hero-height')
             this.$el?.style.removeProperty('--desktop-hero-min-height')
+            this.lockedMobileHeroWidth = null
         },
         canHeroIntroPointerPlay() {
             return (
