@@ -4474,9 +4474,9 @@ export default {
 
 .about-location-text {
     font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-style: normal;
-    font-weight: calc(400 * var(--font-weight-scale));
+    font-weight: 400;
     line-height: 27px;
     color: var(--about-location-color);
     flex: none;
