@@ -12,7 +12,7 @@
 
 ## The Challenge
 
-Kin is a healthcare startup that needed to showcase the full digital experience of its product to secure **future investments and partnerships**, particularly in **healthcare sectors**. One thing we wanted to demonstrate in pitches is how **user data** collected from our **IoT medication adherence platform** can be transformed into **easy‑to‑digest insights for caregivers** – helping them better understand their clients' behavioural patterns and providing **better quality of care with less effort**. The task given was to design a **caregiver‑facing dashboard** for the primary user's account within the web app that would help them better understand and assist their client.
+KIN is a healthcare startup that needed to showcase the full digital experience of its product to secure **future investments and partnerships** in **healthcare sectors**. One thing we wanted to demonstrate is how **user data** collected from our **IoT medication adherence platform** can be transformed into **easy‑to‑digest insights for caregivers** – helping them better understand their clients' behavioural patterns and providing **better quality of care with less effort**. The task given was to design a **pitch-ready caregiver‑facing dashboard** for the primary user's account within the web/desktop app. The goal of the design is to help them better understand and assist their clients.
 
 ## My Role
 
@@ -35,7 +35,7 @@ The first point was anticipated. The second point makes sense in hindsight – a
 
 ### 2. Define the narrative
 
-With the framework set, I turned to the **narrative**. Without a strategic narrative, users can experience fatigue or miss key insights. It is also an opportunity to **highlight and reinforce features** that contribute to the product's value proposition. For example, the primary user's mobile app that I had previously designed functions as a **progress hub** at the home screen. It has a narrative of ***encouragement*** that uses simple data presentation to trigger immediate impression – cumulative adherence appears as a **heart-shaped progress graphic** leveraging the **cognitive tension from unfinished tasks**; a dispense **streak** leverages **loss aversion**. Both encourage adherence behaviour.
+With the framework set, I turned to the **narrative**. Without a strategic narrative, users can experience fatigue or miss key insights. It is also an opportunity to **highlight and reinforce features** that contribute to the product's value proposition. For example, I have previously designed the primary user's mobile dashboard to function as a **progress hub** at the home screen. It has a narrative of ***encouragement*** that uses simple data presentation to trigger immediate impression – cumulative adherence appears as a **heart-shaped progress graphic** leveraging the **cognitive tension from unfinished tasks**; a dispense **streak** leverages **loss aversion**. Both encourage adherence behaviour.
 
 For the caregiver dashboard, a narrative of ***synopsis*** is needed, providing **feedback across the three-part system** of caregiver, client and the IoT platform to drive **positive actions** that help improve the clients’ medication adherence. For example, having a daily adherence trend that also shows missed doses that were later compensated by an ad hoc dispense; a chart showing when missed doses most often occur.
 

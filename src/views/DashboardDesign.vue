@@ -12,15 +12,15 @@
 
             <section>
                 <h2>The Challenge</h2>
-                <p>Kin is a healthcare startup that needed to showcase the full digital experience of its product to
+                <p>KIN is a healthcare startup that needed to showcase the full digital experience of its product to
                     secure <strong>future
-                        investments and partnerships</strong>, particularly in <strong>healthcare sectors</strong>. One
-                    thing we wanted to demonstrate in pitches is how <strong>user data</strong> collected from our
+                        investments and partnerships</strong> in <strong>healthcare sectors</strong>. One
+                    thing we wanted to demonstrate is how <strong>user data</strong> collected from our
                     <strong>IoT medication adherence platform</strong> can be transformed into <strong>easy‑to‑digest
                         insights for caregivers</strong> – helping them better understand their clients' behavioural
                     patterns and providing <strong>better quality of care with less effort</strong>. The task given
-                    was to design a <strong>caregiver‑facing dashboard</strong> for the primary user's account within
-                    the web app that would help them better understand and assist their client.
+                    was to design a <strong>pitch-ready caregiver‑facing dashboard</strong> for the primary user's account within
+                    the web/desktop app. The goal of the design is to help them better understand and assist their clients.
                 </p>
             </section>
 
@@ -76,9 +76,9 @@
                     users can
                     experience fatigue or miss key insights. It is also an opportunity to <strong>highlight and
                         reinforce
-                        features</strong> that contribute to the product's value proposition. For example, the primary
+                        features</strong> that contribute to the product's value proposition. For example, I have previously designed the primary
                     user's mobile
-                    app that I had previously designed functions as a <strong>progress hub</strong> at the home screen.
+                    dashboard to function as a <strong>progress hub</strong> at the home screen.
                     It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation to
                     trigger immediate impression – cumulative
                     adherence
