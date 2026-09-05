@@ -17,7 +17,7 @@
                     </router-link>
                     <nav ref="nav" class="nav" :class="{ 'nav--hidden': !showNav }">
                         <router-link
-                            :to="{ path: '/', hash: '#work-first' }"
+                            :to="{ path: '/', hash: '#work' }"
                             class="nav-link nav-link--work"
                             @click="onWorkClick"
                         >
@@ -159,14 +159,14 @@ export default {
         },
     },
     watch: {
-        '$route'() {
+        '$route'(to, from) {
             this.syncMobileTopBarState()
-            this.syncDecorLineSyncState()
+            this.syncDecorLineSyncState(to, from)
         },
     },
     created() {
         this.syncMobileTopBarState()
-        this.syncDecorLineSyncState()
+        this.syncDecorLineSyncState(this.$route)
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
         if (SECTION_HASHES.has(this.$route.hash) && !this.isInFlowMobileHome) {
             this.topBarHidden = true
@@ -215,15 +215,20 @@ export default {
                 this.topBarRecalled = false
             }
         },
-        syncDecorLineSyncState() {
+        syncDecorLineSyncState(to = this.$route, from = null) {
             if (!this.navHeroAlign) return
 
-            if (this.$route.path !== '/') {
+            // Case studies don't align to the home decor line — show nav immediately.
+            if (to.path !== '/') {
                 this.decorLineSynced = true
                 return
             }
 
-            this.decorLineSynced = false
+            // Only re-gate the nav when arriving on home from another route.
+            // Hash-only changes (/ → /#work) must not hide Work/About.
+            if (from && from.path !== '/') {
+                this.decorLineSynced = false
+            }
         },
         onResize() {
             this.syncMobileTopBarState()
@@ -292,9 +297,14 @@ export default {
         },
         onLogoClick(event) {
             // Already on the home page — full reload so the intro plays again.
+            // Use a clean `/` so a leftover Work/About hash doesn't jump back there.
             if (this.$route.path === '/') {
                 event.preventDefault()
-                window.location.reload()
+                if (this.$route.hash) {
+                    window.location.assign(this.$router.resolve('/').href)
+                } else {
+                    window.location.reload()
+                }
             }
         },
         onWorkClick(event) {

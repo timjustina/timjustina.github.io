@@ -533,15 +533,21 @@ export default {
     0 6px 24px rgba(15, 23, 42, 0.05);
 }
 
-/* Soft white blend above the glass into the page (does not sit behind blur) */
+/* Short white wash: covers side shadows at the glass top edge (does not sit behind blur) */
 .pageOverlayTopBar :global(.project-body)::before {
   z-index: 1;
+  left: calc(
+    50vw - var(--project-body-left) - (var(--project-hero-glass-width) + 96px) / 2
+  );
+  width: calc(var(--project-hero-glass-width) + 96px);
+  height: 160px;
+  border-radius: 0;
   background: linear-gradient(
     to bottom,
     #fff 0%,
-    rgba(255, 255, 255, 0.7) 28%,
-    rgba(255, 255, 255, 0.25) 55%,
-    transparent 78%
+    #fff 42%,
+    rgba(255, 255, 255, 0.92) 72%,
+    transparent 100%
   );
 }
 
