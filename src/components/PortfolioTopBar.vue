@@ -468,7 +468,7 @@ export default {
     z-index: 100;
     width: 100%;
     height: var(--top-bar-height);
-    background: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
     transform: translate3d(0, 0, 0);
@@ -477,7 +477,9 @@ export default {
     border-bottom: none;
     box-shadow:
         0 -1px 0 rgba(255, 255, 255, 0.35),
-        0 1px 0 rgba(255, 255, 255, 0.35);
+        0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
     transition:
         transform 0.3s ease,
         background-color 0.25s ease,
@@ -496,13 +498,15 @@ export default {
 }
 
 .top-bar--glass {
-    background: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
     border-bottom: none;
     box-shadow:
         0 -1px 0 rgba(255, 255, 255, 0.35),
-        0 1px 0 rgba(255, 255, 255, 0.35);
+        0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
 }
 
 .top-bar--hidden {
@@ -664,12 +668,14 @@ export default {
 <style>
 /* Magnifier frost overlay — same spec as .top-bar, outside the scaled clone layer. */
 .hero-intro-cursor-magnifier__top-bar-frost {
-    background: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
     box-shadow:
         0 -1px 0 rgba(255, 255, 255, 0.35),
-        0 1px 0 rgba(255, 255, 255, 0.35);
+        0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
     border-bottom: none;
     transition: none;
     transform: translateZ(0);
@@ -685,11 +691,13 @@ export default {
 }
 
 .hero-intro-cursor-magnifier__top-bar-frost.top-bar--glass {
-    background: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.18);
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
     box-shadow:
         0 -1px 0 rgba(255, 255, 255, 0.35),
-        0 1px 0 rgba(255, 255, 255, 0.35);
+        0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
 }
 </style>
