@@ -338,7 +338,7 @@ export default {
   z-index: 0;
 }
 
-/* Fade hero only under the glass footprint on the image */
+/* Soft hero→page seam only — keep this thin/light or the glass just blurs white */
 .pageOverlayTopBar :global(.project-hero)::after {
   content: '';
   position: absolute;
@@ -349,18 +349,12 @@ export default {
   height: var(--project-hero-glass-panel-height);
   transform: translate3d(-50%, 0, 0);
   border-radius: 0;
-  /* Soft ramp; solid white for the last 1/4 to the hero bottom edge */
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(255, 255, 255, 0.04) 10%,
-    rgba(255, 255, 255, 0.10) 22%,
-    rgba(255, 255, 255, 0.22) 36%,
-    rgba(255, 255, 255, 0.42) 50%,
-    rgba(255, 255, 255, 0.65) 62%,
-    rgba(255, 255, 255, 0.88) 72%,
-    #fff 78%,
-    #fff 100%
+    transparent 78%,
+    rgba(255, 255, 255, 0.08) 92%,
+    rgba(255, 255, 255, 0.35) 100%
   );
   pointer-events: none;
 }
@@ -369,7 +363,7 @@ export default {
   position: relative;
   z-index: 2;
   margin-top: calc(-1 * var(--project-hero-title-overlap));
-  isolation: isolate;
+  /* No isolation — it creates a backdrop root and kills backdrop-filter on the glass */
   overflow: visible;
 }
 
@@ -409,25 +403,24 @@ export default {
   transform: translate3d(-50%, 0, 0);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(52px) saturate(2.5);
-  -webkit-backdrop-filter: blur(52px) saturate(2.5);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  /* Light fill so backdrop blur can read; no mask — mask + backdrop-filter cancels blur in Chromium */
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.1) 42%,
+    rgba(255, 255, 255, 0.04) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  backdrop-filter: blur(28px) saturate(2);
+  -webkit-backdrop-filter: blur(28px) saturate(2);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.3);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.58) 48%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.58) 48%,
-    transparent 100%
-  );
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 2px 10px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 8px rgba(255, 255, 255, 0.28),
+    inset 1px 0 6px rgba(255, 255, 255, 0.22),
+    inset -1px 0 6px rgba(255, 255, 255, 0.22);
 }
 
 /* White wash: covers side shadows under the title/meta; behind text, above glass.
@@ -470,7 +463,7 @@ export default {
 .pageOverlayTopBar :global(.project-body) {
   position: relative;
   z-index: 3;
-  isolation: isolate;
+  /* No isolation — same backdrop-root issue as the top glass */
 }
 
 .pageOverlayTopBar :global(.project-body > *) {
@@ -517,50 +510,38 @@ export default {
   pointer-events: none;
 }
 
-/* Fade box under the glass — same footprint + 40px bottom corners */
-.pageOverlayTopBar :global(.project-body)::before {
+/* Glass first (behind) so it can blur real page content — not a white wash */
+.pageOverlayTopBar :global(.project-body)::after {
   z-index: 0;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.1) 42%,
+    rgba(255, 255, 255, 0.04) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  backdrop-filter: blur(28px) saturate(2);
+  -webkit-backdrop-filter: blur(28px) saturate(2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 2px 10px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 8px rgba(255, 255, 255, 0.28),
+    inset 1px 0 6px rgba(255, 255, 255, 0.22),
+    inset -1px 0 6px rgba(255, 255, 255, 0.22),
+    0 6px 24px rgba(15, 23, 42, 0.05);
+}
+
+/* Soft white blend above the glass into the page (does not sit behind blur) */
+.pageOverlayTopBar :global(.project-body)::before {
+  z-index: 1;
   background: linear-gradient(
     to bottom,
     #fff 0%,
-    rgba(255, 255, 255, 0.85) 40%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.58) 48%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.58) 48%,
-    transparent 100%
-  );
-}
-
-.pageOverlayTopBar :global(.project-body)::after {
-  z-index: 1;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(52px) saturate(2.5);
-  -webkit-backdrop-filter: blur(52px) saturate(2.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
-    0 6px 24px rgba(15, 23, 42, 0.05);
-  -webkit-mask-image: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.58) 48%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.92) 0%,
-    rgba(0, 0, 0, 0.58) 48%,
-    transparent 100%
+    rgba(255, 255, 255, 0.7) 28%,
+    rgba(255, 255, 255, 0.25) 55%,
+    transparent 78%
   );
 }
 
