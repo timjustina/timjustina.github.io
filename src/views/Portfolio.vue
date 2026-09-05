@@ -393,7 +393,7 @@ import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import {
     cancelSmoothScroll,
-    getWorkScrollTop,
+    getFirstWorkThumbnailScrollTop,
     scrollToPortfolioHash,
     scrollToWork,
 } from '../utils/scrollToAbout.js'
@@ -432,10 +432,11 @@ const HERO_CURSOR_RANGE_EXPAND_END = 0.34
 const HERO_CURSOR_INTRO_GLASS_ON = 0.04
 const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
-/** Soft snap hero → first work card; overlaps dissipate without racing the finger. */
-const HERO_TO_WORK_SNAP_DURATION_MS = 820
-const HERO_TO_WORK_SNAP_SETTLE_MS = 120
-const HERO_TO_WORK_SNAP_AT_TARGET_PX = 16
+/** Soft snap hero → first work thumbnail; runs after the leave gesture settles. */
+const HERO_TO_WORK_SNAP_DURATION_MS = 720
+const HERO_TO_WORK_SNAP_SETTLE_MS = 180
+const HERO_TO_WORK_SNAP_AT_TARGET_PX = 24
+const HERO_TO_WORK_SNAP_MIN_DELTA_PX = 28
 
 function isHeroCursorEnvironment() {
     return (
@@ -752,10 +753,10 @@ export default {
             heroIntroDissipateRaf: null,
             heroIntroReconsolidating: false,
             heroIntroReconsolidateTimer: null,
-            // Mobile: after dissipate leave, gently settle scroll on the first work card.
+            // Mobile: after dissipate leave, gently settle on the first case-study thumbnail.
             heroToWorkSnapArmed: false,
             heroToWorkSnapActive: false,
-            heroToWorkSnapPointerDown: false,
+            heroToWorkSnapTouchCount: 0,
             heroToWorkSnapSettleTimer: null,
             heroToWorkSnapDoneTimer: null,
             // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
@@ -1081,6 +1082,7 @@ export default {
         if (this.heroIntroLetterMode && this.isHeroIntroFinePointer()) {
             this.primeHeroCursor()
         }
+        this.syncMobileHeroSnapClass()
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
         document.addEventListener('pointerenter', this.onHeroPointerEnter, { passive: true })
         window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
@@ -1092,13 +1094,13 @@ export default {
         this.onHeroIntroDissipateScroll = () => this.onHeroIntroDissipateScrollHandler()
         window.addEventListener('scroll', this.onHeroIntroDissipateScroll, { passive: true })
         this.onHeroToWorkSnapScrollEnd = () => this.onHeroToWorkSnapScrollEndHandler()
-        this.onHeroToWorkSnapPointerDown = () => this.onHeroToWorkSnapPointerDownHandler()
-        this.onHeroToWorkSnapPointerUp = () => this.onHeroToWorkSnapPointerUpHandler()
+        this.onHeroToWorkSnapTouchStart = (event) => this.onHeroToWorkSnapTouchStartHandler(event)
+        this.onHeroToWorkSnapTouchEnd = (event) => this.onHeroToWorkSnapTouchEndHandler(event)
         this.onHeroToWorkSnapWheel = () => this.onHeroToWorkSnapWheelHandler()
         window.addEventListener('scrollend', this.onHeroToWorkSnapScrollEnd, { passive: true })
-        window.addEventListener('pointerdown', this.onHeroToWorkSnapPointerDown, { passive: true })
-        window.addEventListener('pointerup', this.onHeroToWorkSnapPointerUp, { passive: true })
-        window.addEventListener('pointercancel', this.onHeroToWorkSnapPointerUp, { passive: true })
+        window.addEventListener('touchstart', this.onHeroToWorkSnapTouchStart, { passive: true })
+        window.addEventListener('touchend', this.onHeroToWorkSnapTouchEnd, { passive: true })
+        window.addEventListener('touchcancel', this.onHeroToWorkSnapTouchEnd, { passive: true })
         window.addEventListener('wheel', this.onHeroToWorkSnapWheel, { passive: true })
         this.onMobileHeroOrientation = () => {
             window.setTimeout(() => {
@@ -1215,6 +1217,7 @@ export default {
         clearTimeout(this.featuredPressClearTimer)
         document.documentElement.classList.remove('portfolio-booting')
         document.documentElement.classList.remove('portfolio-hero-cursor')
+        document.documentElement.classList.remove('portfolio-mobile-hero-snap')
         this.heroDecorObserver?.disconnect()
         this.aboutLocationClipObserver?.disconnect()
         this.stopAboutLocationTextClipPoll()
@@ -1247,9 +1250,9 @@ export default {
         window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
         window.removeEventListener('scroll', this.onHeroIntroDissipateScroll)
         window.removeEventListener('scrollend', this.onHeroToWorkSnapScrollEnd)
-        window.removeEventListener('pointerdown', this.onHeroToWorkSnapPointerDown)
-        window.removeEventListener('pointerup', this.onHeroToWorkSnapPointerUp)
-        window.removeEventListener('pointercancel', this.onHeroToWorkSnapPointerUp)
+        window.removeEventListener('touchstart', this.onHeroToWorkSnapTouchStart)
+        window.removeEventListener('touchend', this.onHeroToWorkSnapTouchEnd)
+        window.removeEventListener('touchcancel', this.onHeroToWorkSnapTouchEnd)
         window.removeEventListener('wheel', this.onHeroToWorkSnapWheel)
         this.$el?.querySelector('.hero-decor')?.removeEventListener('animationend', this.onHeroDecorFlyEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
@@ -1685,6 +1688,7 @@ export default {
                 this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
                 if (!nextLetter) this.clearHeroIntroDissipate()
+                this.syncMobileHeroSnapClass()
                 this.syncProjectCaptionLineOffset()
                 this.$nextTick(() => {
                     this.lockHeroViewportHeight({ force: true })
@@ -1705,6 +1709,7 @@ export default {
             }
 
             // Deco line back → cards should just be there (no scroll fade)
+            this.syncMobileHeroSnapClass()
             this.revealAllProjects()
             this.lockHeroViewportHeight({ force: true })
             this.clearHeroIntroDissipate()
@@ -3279,8 +3284,17 @@ export default {
         armHeroToWorkSnap() {
             if (!this.canHeroIntroDissipate()) return
             this.heroToWorkSnapArmed = true
-            // Gesture may already have settled before dissipate flipped; retry shortly.
+            // Debounce until scroll/momentum quiet; also covers browsers without scrollend.
             this.scheduleHeroToWorkSnapAttempt()
+        },
+        syncMobileHeroSnapClass() {
+            if (typeof document === 'undefined') return
+            const enabled =
+                this.heroIntroLetterMode &&
+                !prefersReducedMotion() &&
+                (this.heroIntroLetterMq?.matches ??
+                    window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            document.documentElement.classList.toggle('portfolio-mobile-hero-snap', enabled)
         },
         disarmHeroToWorkSnap({ cancelScroll = false } = {}) {
             this.heroToWorkSnapArmed = false
@@ -3303,17 +3317,19 @@ export default {
             if (!this.heroToWorkSnapArmed || this.heroToWorkSnapActive) return
             this.tryHeroToWorkSnap()
         },
-        onHeroToWorkSnapPointerDownHandler() {
-            this.heroToWorkSnapPointerDown = true
+        onHeroToWorkSnapTouchStartHandler(event) {
+            this.heroToWorkSnapTouchCount = event.touches?.length ?? 1
+            // User grabbed the page again — abandon an in-flight programmatic snap.
             if (this.heroToWorkSnapActive) {
                 this.disarmHeroToWorkSnap({ cancelScroll: true })
             }
         },
-        onHeroToWorkSnapPointerUpHandler() {
-            this.heroToWorkSnapPointerDown = false
-            if (this.heroToWorkSnapArmed && !this.heroToWorkSnapActive) {
-                this.scheduleHeroToWorkSnapAttempt()
-            }
+        onHeroToWorkSnapTouchEndHandler(event) {
+            this.heroToWorkSnapTouchCount = event.touches?.length ?? 0
+            if (!this.heroToWorkSnapArmed || this.heroToWorkSnapActive) return
+            if (this.heroToWorkSnapTouchCount > 0) return
+            // Finger up — wait out remaining momentum, then pull to the thumbnail.
+            this.scheduleHeroToWorkSnapAttempt()
         },
         onHeroToWorkSnapWheelHandler() {
             if (this.heroToWorkSnapActive) {
@@ -3329,13 +3345,13 @@ export default {
                 return
             }
 
-            // Still dragging — wait for lift / scroll settle.
-            if (this.heroToWorkSnapPointerDown) {
+            // Finger still down — mobile browsers ignore programmatic scroll until lift.
+            if (this.heroToWorkSnapTouchCount > 0) {
                 this.scheduleHeroToWorkSnapAttempt()
                 return
             }
 
-            const workTop = getWorkScrollTop()
+            const workTop = getFirstWorkThumbnailScrollTop()
             if (workTop == null) {
                 this.disarmHeroToWorkSnap()
                 return
@@ -3345,9 +3361,16 @@ export default {
                 0,
                 window.scrollY || document.documentElement.scrollTop || 0
             )
+            const delta = workTop - y
 
-            // Already at/past the work framing — nothing to pull toward.
-            if (y >= workTop - HERO_TO_WORK_SNAP_AT_TARGET_PX) {
+            // Already framed on the thumbnail — or scrolled past it toward later work.
+            if (delta <= HERO_TO_WORK_SNAP_AT_TARGET_PX) {
+                this.disarmHeroToWorkSnap()
+                return
+            }
+
+            // Tiny leftover gap isn't worth a snap animation.
+            if (delta < HERO_TO_WORK_SNAP_MIN_DELTA_PX) {
                 this.disarmHeroToWorkSnap()
                 return
             }
@@ -3358,7 +3381,10 @@ export default {
             this.heroToWorkSnapSettleTimer = null
             clearTimeout(this.heroToWorkSnapDoneTimer)
 
-            scrollToWork({ duration: HERO_TO_WORK_SNAP_DURATION_MS })
+            scrollToWork({
+                thumbnail: true,
+                duration: HERO_TO_WORK_SNAP_DURATION_MS,
+            })
 
             this.heroToWorkSnapDoneTimer = setTimeout(() => {
                 this.heroToWorkSnapDoneTimer = null
@@ -3416,6 +3442,7 @@ export default {
             this.heroIntroReconsolidating = false
             this.heroIntroDissipatePrepared = false
             this.heroIntroDissipateMaxDelay = 0
+            this.syncMobileHeroSnapClass()
             // Keep heroIntroRestLayout — premeasured parked geometry for this viewport.
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
@@ -5933,5 +5960,23 @@ export default {
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link .project-image,
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
+}
+
+/* Mobile home: snap between the top of the page and the first case-study thumbnail.
+   Only these two snap targets exist, so later projects / about stay free-scrolling. */
+@media (width < 800px) {
+    html.portfolio-mobile-hero-snap {
+        scroll-snap-type: y mandatory;
+    }
+
+    /* In-flow top bar = natural rest at scrollY 0; pairs with thumbnail below. */
+    html.portfolio-mobile-hero-snap .portfolio-page .top-bar--in-flow {
+        scroll-snap-align: start;
+    }
+
+    html.portfolio-mobile-hero-snap .portfolio-page #work-first > .project-image-link {
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+    }
 }
 </style>

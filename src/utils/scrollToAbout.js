@@ -59,6 +59,38 @@ export function getWorkScrollTop() {
     return Math.max(0, top)
 }
 
+/**
+ * Mobile snap target: first case-study thumbnail (image), not the full caption block.
+ * Top bar is in-flow on mobile home, so no fixed-header offset.
+ */
+export function getFirstWorkThumbnailScrollTop() {
+    const article = document.getElementById('work-first')
+    if (!article) return null
+
+    const thumb =
+        article.querySelector('.project-image-link') ||
+        article.querySelector('.project-image-wrap') ||
+        article.querySelector('.project-image') ||
+        article
+
+    const scrollY = window.scrollY || document.documentElement.scrollTop || 0
+    const rect = thumb.getBoundingClientRect()
+    if (rect.height < 1) return getWorkScrollTop()
+
+    const thumbTop = rect.top + scrollY
+    const thumbHeight = rect.height
+    const viewportH = window.innerHeight
+    const topPad = 24
+
+    if (thumbHeight + topPad * 2 <= viewportH) {
+        // Center the thumbnail in the viewport
+        return Math.max(0, thumbTop - (viewportH - thumbHeight) / 2)
+    }
+
+    // Tall thumbnail: pin near the top with a small inset
+    return Math.max(0, thumbTop - topPad)
+}
+
 const DEFAULT_SCROLL_DURATION = 450
 
 let activeScrollAnimation = null
@@ -117,10 +149,14 @@ export function scrollToAbout(options = {}) {
 }
 
 export function scrollToWork(options = {}) {
-    const top = getWorkScrollTop()
-    if (top === null) return false
+    const top =
+        options.thumbnail === true
+            ? getFirstWorkThumbnailScrollTop()
+            : getWorkScrollTop()
+    if (top == null) return false
 
-    smoothScrollTo(top, options)
+    const { thumbnail: _thumbnail, ...scrollOptions } = options
+    smoothScrollTo(top, scrollOptions)
     return true
 }
 
