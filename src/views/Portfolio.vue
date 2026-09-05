@@ -391,7 +391,12 @@ import menuLogo from '../assets/TjyCutoutLogo.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
-import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
+import {
+    cancelSmoothScroll,
+    getWorkScrollTop,
+    scrollToPortfolioHash,
+    scrollToWork,
+} from '../utils/scrollToAbout.js'
 import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
@@ -427,6 +432,10 @@ const HERO_CURSOR_RANGE_EXPAND_END = 0.34
 const HERO_CURSOR_INTRO_GLASS_ON = 0.04
 const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
+/** Soft snap hero → first work card; overlaps dissipate without racing the finger. */
+const HERO_TO_WORK_SNAP_DURATION_MS = 820
+const HERO_TO_WORK_SNAP_SETTLE_MS = 120
+const HERO_TO_WORK_SNAP_AT_TARGET_PX = 16
 
 function isHeroCursorEnvironment() {
     return (
@@ -743,6 +752,12 @@ export default {
             heroIntroDissipateRaf: null,
             heroIntroReconsolidating: false,
             heroIntroReconsolidateTimer: null,
+            // Mobile: after dissipate leave, gently settle scroll on the first work card.
+            heroToWorkSnapArmed: false,
+            heroToWorkSnapActive: false,
+            heroToWorkSnapPointerDown: false,
+            heroToWorkSnapSettleTimer: null,
+            heroToWorkSnapDoneTimer: null,
             // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
             // always reference this — never live layout during scroll/URL-bar resize.
             heroIntroRestLayout: null,
@@ -1076,6 +1091,15 @@ export default {
         window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
         this.onHeroIntroDissipateScroll = () => this.onHeroIntroDissipateScrollHandler()
         window.addEventListener('scroll', this.onHeroIntroDissipateScroll, { passive: true })
+        this.onHeroToWorkSnapScrollEnd = () => this.onHeroToWorkSnapScrollEndHandler()
+        this.onHeroToWorkSnapPointerDown = () => this.onHeroToWorkSnapPointerDownHandler()
+        this.onHeroToWorkSnapPointerUp = () => this.onHeroToWorkSnapPointerUpHandler()
+        this.onHeroToWorkSnapWheel = () => this.onHeroToWorkSnapWheelHandler()
+        window.addEventListener('scrollend', this.onHeroToWorkSnapScrollEnd, { passive: true })
+        window.addEventListener('pointerdown', this.onHeroToWorkSnapPointerDown, { passive: true })
+        window.addEventListener('pointerup', this.onHeroToWorkSnapPointerUp, { passive: true })
+        window.addEventListener('pointercancel', this.onHeroToWorkSnapPointerUp, { passive: true })
+        window.addEventListener('wheel', this.onHeroToWorkSnapWheel, { passive: true })
         this.onMobileHeroOrientation = () => {
             window.setTimeout(() => {
                 this.lockHeroViewportHeight({ force: true })
@@ -1207,6 +1231,7 @@ export default {
         this.stopHeroCursorGlassFollow()
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
+        this.disarmHeroToWorkSnap({ cancelScroll: true })
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
         this.clearHeroIntroDissipate()
@@ -1221,6 +1246,11 @@ export default {
         document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
         window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
         window.removeEventListener('scroll', this.onHeroIntroDissipateScroll)
+        window.removeEventListener('scrollend', this.onHeroToWorkSnapScrollEnd)
+        window.removeEventListener('pointerdown', this.onHeroToWorkSnapPointerDown)
+        window.removeEventListener('pointerup', this.onHeroToWorkSnapPointerUp)
+        window.removeEventListener('pointercancel', this.onHeroToWorkSnapPointerUp)
+        window.removeEventListener('wheel', this.onHeroToWorkSnapWheel)
         this.$el?.querySelector('.hero-decor')?.removeEventListener('animationend', this.onHeroDecorFlyEnd)
         if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
             cancelIdleCallback(this.firstProjectPrefetchIdleId)
@@ -2993,6 +3023,10 @@ export default {
                 return
             }
 
+            if (this.heroToWorkSnapArmed && !this.heroToWorkSnapActive) {
+                this.scheduleHeroToWorkSnapAttempt()
+            }
+
             if (this.heroIntroDissipateRaf != null) return
             this.heroIntroDissipateRaf = requestAnimationFrame(() => {
                 this.heroIntroDissipateRaf = null
@@ -3195,6 +3229,8 @@ export default {
                 clearTimeout(this.heroIntroReconsolidateTimer)
                 this.heroIntroReconsolidateTimer = null
                 this.heroIntroReconsolidating = false
+            } else {
+                this.disarmHeroToWorkSnap({ cancelScroll: true })
             }
 
             if (intro && instant) {
@@ -3203,6 +3239,10 @@ export default {
 
             this.applyHeroIntroDissipateDelays(active)
             this.heroIntroDissipated = active
+
+            if (active && !instant) {
+                this.armHeroToWorkSnap()
+            }
 
             if (!active && !instant) {
                 this.heroIntroReconsolidating = true
@@ -3235,6 +3275,95 @@ export default {
                     intro.classList.remove('hero-intro--dissipate-instant')
                 })
             }
+        },
+        armHeroToWorkSnap() {
+            if (!this.canHeroIntroDissipate()) return
+            this.heroToWorkSnapArmed = true
+            // Gesture may already have settled before dissipate flipped; retry shortly.
+            this.scheduleHeroToWorkSnapAttempt()
+        },
+        disarmHeroToWorkSnap({ cancelScroll = false } = {}) {
+            this.heroToWorkSnapArmed = false
+            this.heroToWorkSnapActive = false
+            clearTimeout(this.heroToWorkSnapSettleTimer)
+            this.heroToWorkSnapSettleTimer = null
+            clearTimeout(this.heroToWorkSnapDoneTimer)
+            this.heroToWorkSnapDoneTimer = null
+            if (cancelScroll) cancelSmoothScroll()
+        },
+        scheduleHeroToWorkSnapAttempt() {
+            if (!this.heroToWorkSnapArmed || this.heroToWorkSnapActive) return
+            clearTimeout(this.heroToWorkSnapSettleTimer)
+            this.heroToWorkSnapSettleTimer = setTimeout(() => {
+                this.heroToWorkSnapSettleTimer = null
+                this.tryHeroToWorkSnap()
+            }, HERO_TO_WORK_SNAP_SETTLE_MS)
+        },
+        onHeroToWorkSnapScrollEndHandler() {
+            if (!this.heroToWorkSnapArmed || this.heroToWorkSnapActive) return
+            this.tryHeroToWorkSnap()
+        },
+        onHeroToWorkSnapPointerDownHandler() {
+            this.heroToWorkSnapPointerDown = true
+            if (this.heroToWorkSnapActive) {
+                this.disarmHeroToWorkSnap({ cancelScroll: true })
+            }
+        },
+        onHeroToWorkSnapPointerUpHandler() {
+            this.heroToWorkSnapPointerDown = false
+            if (this.heroToWorkSnapArmed && !this.heroToWorkSnapActive) {
+                this.scheduleHeroToWorkSnapAttempt()
+            }
+        },
+        onHeroToWorkSnapWheelHandler() {
+            if (this.heroToWorkSnapActive) {
+                this.disarmHeroToWorkSnap({ cancelScroll: true })
+                return
+            }
+            if (this.heroToWorkSnapArmed) this.scheduleHeroToWorkSnapAttempt()
+        },
+        tryHeroToWorkSnap() {
+            if (!this.heroToWorkSnapArmed || this.heroToWorkSnapActive) return
+            if (!this.canHeroIntroDissipate() || !this.heroIntroDissipated) {
+                this.disarmHeroToWorkSnap()
+                return
+            }
+
+            // Still dragging — wait for lift / scroll settle.
+            if (this.heroToWorkSnapPointerDown) {
+                this.scheduleHeroToWorkSnapAttempt()
+                return
+            }
+
+            const workTop = getWorkScrollTop()
+            if (workTop == null) {
+                this.disarmHeroToWorkSnap()
+                return
+            }
+
+            const y = Math.max(
+                0,
+                window.scrollY || document.documentElement.scrollTop || 0
+            )
+
+            // Already at/past the work framing — nothing to pull toward.
+            if (y >= workTop - HERO_TO_WORK_SNAP_AT_TARGET_PX) {
+                this.disarmHeroToWorkSnap()
+                return
+            }
+
+            this.heroToWorkSnapArmed = false
+            this.heroToWorkSnapActive = true
+            clearTimeout(this.heroToWorkSnapSettleTimer)
+            this.heroToWorkSnapSettleTimer = null
+            clearTimeout(this.heroToWorkSnapDoneTimer)
+
+            scrollToWork({ duration: HERO_TO_WORK_SNAP_DURATION_MS })
+
+            this.heroToWorkSnapDoneTimer = setTimeout(() => {
+                this.heroToWorkSnapDoneTimer = null
+                this.heroToWorkSnapActive = false
+            }, HERO_TO_WORK_SNAP_DURATION_MS + 48)
         },
         updateHeroIntroDissipateFromScroll({ instant = false, forcePrepare = false } = {}) {
             if (!this.canHeroIntroDissipate()) {
@@ -3280,6 +3409,7 @@ export default {
             this.setHeroIntroDissipated(shouldDissipate, { instant })
         },
         clearHeroIntroDissipate() {
+            this.disarmHeroToWorkSnap({ cancelScroll: true })
             clearTimeout(this.heroIntroReconsolidateTimer)
             this.heroIntroReconsolidateTimer = null
             this.heroIntroDissipated = false
