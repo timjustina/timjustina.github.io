@@ -5351,7 +5351,7 @@ export default {
     }
 
     .hero {
-        margin-bottom: 216px;
+        margin-bottom: 108px;
     }
 
     .portfolio-main {
