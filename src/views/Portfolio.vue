@@ -743,8 +743,6 @@ export default {
             heroIntroDissipateRaf: null,
             heroIntroReconsolidating: false,
             heroIntroReconsolidateTimer: null,
-            // Intro bottom (viewport Y) while parked at scroll top — shared leave/return floor.
-            heroIntroRestBottom: null,
             // Width when --mobile-hero-height was last set; ignore height-only URL-bar resizes.
             lockedMobileHeroWidth: null,
             heroCursorActive: isHeroCursorEnvironment(),
@@ -3056,26 +3054,22 @@ export default {
                 if (!this.prepareHeroIntroDissipateTargets()) return
             }
 
-            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
-            if (!intro) return
-
-            const rect = intro.getBoundingClientRect()
+            // Intro is bottom-parked in normal document flow, so scrollY is the lift
+            // off that floor. Do not key off getBoundingClientRect — a bad resting Y
+            // (or refreshing it while scrolled) made leave/return look mid-viewport.
             const leaveSlop = 8
             const returnSlack = 8
+            const y = Math.max(
+                0,
+                window.scrollY || document.documentElement.scrollTop || 0
+            )
 
-            // Same floor for both directions: dissipate once the text bottom lifts off
-            // its parked position; reconsolidate when it comes back to that line.
-            if (window.scrollY <= 0 && !this.heroIntroDissipated) {
-                this.heroIntroRestBottom = rect.bottom
-            }
-            const restBottom = this.heroIntroRestBottom ?? rect.bottom + window.scrollY
-            const leaveLine = restBottom - leaveSlop
             let shouldDissipate
             if (this.heroIntroDissipated) {
-                // Same position as leave, plus a little slack so it doesn’t flicker.
-                shouldDissipate = rect.bottom < leaveLine + returnSlack
+                // Same floor as leave (y > leaveSlop), with slack so it doesn’t flicker.
+                shouldDissipate = y > leaveSlop - returnSlack
             } else {
-                shouldDissipate = rect.bottom < leaveLine
+                shouldDissipate = y > leaveSlop
             }
 
             this.setHeroIntroDissipated(shouldDissipate, { instant })
@@ -3087,7 +3081,6 @@ export default {
             this.heroIntroReconsolidating = false
             this.heroIntroDissipatePrepared = false
             this.heroIntroDissipateMaxDelay = 0
-            this.heroIntroRestBottom = null
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
             intro.classList.remove('hero-intro--dissipate-instant')
