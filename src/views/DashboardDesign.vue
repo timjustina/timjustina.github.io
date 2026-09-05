@@ -33,7 +33,7 @@
                 <h2>Problem Framing 1/2</h2>
 
                 <h3>Identify the scope of content</h3>
-                <p>The caregiver user group here and their corresponding business context provide an important
+                <p>The caregiver user base here and their business context provided an important
                     <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
                         consumer dashboard</strong>. Taking a holistic approach, I summarised the <strong>user research</strong> findings in a
                     <strong>hybrid
@@ -45,11 +45,11 @@
 
                 <p>Although the project was set out to mainly show <strong>simple adherence-related analytics</strong>
                     for caregivers,
-                    the <strong>analysis</strong> revealed <strong>two main expectations</strong> on the functionality
+                    the <strong>analysis</strong> revealed <strong>two main expectations</strong> on the <strong>purpose</strong>
                     of the dashboard:</p>
 
                 <ul>
-                    <li><strong>Behavioural insights of primary user</strong></li>
+                    <li><strong>Provide behavioural insights into the primary user</strong></li>
                     <li><strong>Quick access to the key operational statuses</strong> such as the remote device status
                         and medication stock.</li>
                 </ul>
@@ -57,8 +57,8 @@
                 <p> The first point was anticipated. The second point makes sense in hindsight – as the dashboard is the
                     home screen, users would expect to find <strong>operational information</strong> there also. These
                     two expectations
-                    became both the <strong>rationale and the blueprint</strong> for a layout that
-                    <strong>separates components by function.</strong>
+                    became both the <strong>rationale</strong> and the <strong>blueprint</strong> for a layout that
+                    <strong>separates components by purpose.</strong>
                 </p>
 
                 <ZoomableImage
@@ -141,25 +141,25 @@
                 <h3>Design for accessibility</h3>
                 <p>Working within the constraints of the existing design system, I updated the colour system of the
                     product by <strong>adding new accent colours</strong> to accommodate the dashboard design.
-                    Consistent with the rest of the product, I improved accessibility the design according to
+                    Consistent with the rest of the product, I improved <strong>accessibility</strong> of the design according to
                     <strong>WCAG</strong>.
                 </p>
 
-                <p>To improve distinguishability, I <strong>audited</strong> colour contrast for text and graphics
+                <p>To improve <strong>distinguishability</strong>, I audited <strong>colour contrast</strong> for text and graphics
                     was using <strong>WebAIM</strong> and adjusted to meet WCAG 2.1 AA. When
                     colour contrast was deemed insufficient, I used <strong>borders</strong> to improve accessibility
                     of graphics. <strong>Interactive dynamic features</strong> were incorporated in charts to enable
-                    <strong>isolating datasets</strong> for clarity.
+                    <strong>isolating datasets</strong> for <strong>clarity</strong>.
                 </p>
 
-                <p>I also ensured there is a <strong>consistent association between categorical variables
-                        and colours used</strong>. This not only important for visual coherence across the interface but
-                    can also improve data comprehension as the <strong>human brain processes colours much faster than
-                        words</strong>.</p>
+                <p>I also ensured there is a consistent <strong>association</strong> between <strong>categorical
+                        variables</strong> and <strong>colours used</strong>. This not only important for visual <strong>coherence</strong> across the interface but
+                    can also improve data <strong>comprehension</strong> as the human brain processes colours much
+                        <strong>faster than words</strong>.</p>
 
-                <p>To improve understandability, I included <strong>interactive data labels</strong> for the chars so
+                <p>To improve <strong>understandability</strong>, I included <strong>interactive data labels</strong> for the chars so
                     that comprehension is not solely reliant on plotting style. This is also crucial for
-                    <strong>accessibility</strong>
+                    accessibility
                     of those with <strong>colour vision deficiency</strong>.
                 </p>
 

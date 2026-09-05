@@ -22,14 +22,14 @@ Sole designer on this project. Reported directly to the head of product.
 
 ### 1. Identify the scope of content
 
-The caregiver user group here and their corresponding business context provide an important **constraint** on the type of dashboard to aim for – a **slightly data-rich consumer dashboard**. Taking a holistic approach, I summarised the **user research** findings in a **hybrid affinity-interrelationship diagram** by synthesising **user interview insights** with **product features**. It encompasses details on functionality, primary user datasets, metrics, and end user needs. This helped us to identify dashboard contents that are most relevant to our users
+The caregiver user base here and their business context provided an important **constraint** on the type of dashboard to aim for – a **slightly data-rich consumer dashboard**. Taking a holistic approach, I summarised the **user research** findings in a **hybrid affinity-interrelationship diagram** by synthesising **user interview insights** with **product features**. It encompasses details on functionality, primary user datasets, metrics, and end user needs. This helped us to identify dashboard contents that are most relevant to our users
 
-Although the project was set out to mainly show **simple adherence-related analytics** for caregivers, the **analysis** revealed **two main expectations** on the functionality of the dashboard:
+Although the project was set out to mainly show **simple adherence-related analytics** for caregivers, the **analysis** revealed **two main expectations** on the **purpose** of the dashboard:
 
-- **Behavioural insights of primary user**
+- **Provide behavioural insights into the primary user**
 - **Quick access to the key operational statuses** such as the remote device status and medication stock.
 
-The first point was anticipated. The second point makes sense in hindsight – as the dashboard is the home screen, users would expect to find **operational information** there also. These two expectations became both the **rationale and the blueprint** for a layout that **separates components by function.**
+The first point was anticipated. The second point makes sense in hindsight – as the dashboard is the home screen, users would expect to find **operational information** there also. These two expectations became both the **rationale** and the **blueprint** for a layout that **separates components by purpose.**
 
 *Hybrid affinity-interrelationship diagram based on user research findings*
 
@@ -53,13 +53,13 @@ In my design workflow, I also used these wireframes as **image prompts** in **Fi
 
 ### 2. Design for accessibility
 
-Working within the constraints of the existing design system, I updated the colour system of the product by **adding new accent colours** to accommodate the dashboard design. Consistent with the rest of the product, I improved accessibility the design according to **WCAG**.
+Working within the constraints of the existing design system, I updated the colour system of the product by **adding new accent colours** to accommodate the dashboard design. Consistent with the rest of the product, I improved **accessibility** of the design according to **WCAG**.
 
-To improve distinguishability, I **audited** colour contrast for text and graphics was using **WebAIM** and adjusted to meet WCAG 2.1 AA. When colour contrast was deemed insufficient, I used **borders** to improve accessibility of graphics. **Interactive dynamic features** were incorporated in charts to enable **isolating datasets** for clarity.
+To improve **distinguishability**, I audited **colour contrast** for text and graphics was using **WebAIM** and adjusted to meet WCAG 2.1 AA. When colour contrast was deemed insufficient, I used **borders** to improve accessibility of graphics. **Interactive dynamic features** were incorporated in charts to enable **isolating datasets** for **clarity**.
 
-I also ensured there is a **consistent association between categorical variables and colours used**. This not only important for visual coherence across the interface but can also improve data comprehension as the **human brain processes colours much faster than words**.
+I also ensured there is a consistent **association** between **categorical variables** and **colours used**. This not only important for visual **coherence** across the interface but can also improve data **comprehension** as the human brain processes colours much **faster than words**.
 
-To improve understandability, I included **interactive data labels** for the chars so that comprehension is not solely reliant on plotting style. This is also crucial for **accessibility** of those with **colour vision deficiency**.
+To improve **understandability**, I included **interactive data labels** for the chars so that comprehension is not solely reliant on plotting style. This is also crucial for accessibility of those with **colour vision deficiency**.
 
 *Colour palettes for the dashboard design with colour contrast audit for WCAG compliance*
 
