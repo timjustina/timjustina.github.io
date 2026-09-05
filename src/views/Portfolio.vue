@@ -743,6 +743,9 @@ export default {
             heroIntroDissipateRaf: null,
             heroIntroReconsolidating: false,
             heroIntroReconsolidateTimer: null,
+            // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
+            // always reference this — never live layout during scroll/URL-bar resize.
+            heroIntroRestLayout: null,
             // Width when --mobile-hero-height was last set; ignore height-only URL-bar resizes.
             lockedMobileHeroWidth: null,
             heroCursorActive: isHeroCursorEnvironment(),
@@ -1074,7 +1077,16 @@ export default {
         this.onHeroIntroDissipateScroll = () => this.onHeroIntroDissipateScrollHandler()
         window.addEventListener('scroll', this.onHeroIntroDissipateScroll, { passive: true })
         this.onMobileHeroOrientation = () => {
-            window.setTimeout(() => this.lockHeroViewportHeight({ force: true }), 250)
+            window.setTimeout(() => {
+                this.lockHeroViewportHeight({ force: true })
+                this.invalidateHeroIntroRestLayout()
+                this.$nextTick(() => {
+                    this.updateHeroIntroDissipateFromScroll({
+                        instant: true,
+                        forcePrepare: true,
+                    })
+                })
+            }, 250)
         }
         window.addEventListener('orientationchange', this.onMobileHeroOrientation)
 
@@ -1596,7 +1608,12 @@ export default {
             this.syncHeroDecorHeight()
             this.syncProjectCaptionLineOffset()
             this.publishDecorLineAlign()
-            this.$nextTick(() => this.updateHeroIntroDissipateFromScroll({ instant: true }))
+            this.$nextTick(() => {
+                // Capture resting glyph geometry after the height lock paints, then
+                // wire scroll dissipate to that frozen layout.
+                this.captureHeroIntroRestLayout()
+                this.updateHeroIntroDissipateFromScroll({ instant: true, forcePrepare: true })
+            })
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
@@ -1612,11 +1629,18 @@ export default {
                 this.syncProjectCaptionLineOffset()
                 this.$nextTick(() => {
                     this.lockHeroViewportHeight({ force: true })
+                    this.invalidateHeroIntroRestLayout()
                     // Deco line gone → enable scroll fade for off-screen cards
-                    requestAnimationFrame(() => this.setupProjectScrollFade())
-                    if (nextLetter) {
-                        this.updateHeroIntroDissipateFromScroll({ instant: true, forcePrepare: true })
-                    }
+                    requestAnimationFrame(() => {
+                        this.setupProjectScrollFade()
+                        if (nextLetter) {
+                            this.captureHeroIntroRestLayout()
+                            this.updateHeroIntroDissipateFromScroll({
+                                instant: true,
+                                forcePrepare: true,
+                            })
+                        }
+                    })
                 })
                 return
             }
@@ -1810,9 +1834,18 @@ export default {
                     this.updateHeroLocationVisibility()
                     return
                 }
-                const pageStyles = getComputedStyle(this.$el)
-                const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
-                const height = Math.max(0, Math.round(window.innerHeight - topBarHeight))
+                // Measure from CSS 100svh (small viewport) so the floor never grows when
+                // the URL bar hides — innerHeight would, and flex-end would shove the
+                // intro down. Drop any prior px lock, read the svh-sized wrap, re-pin.
+                this.$el?.style.removeProperty('--mobile-hero-height')
+                const wrap = this.$el?.querySelector('.hero-intro-wrap')
+                void wrap?.offsetHeight
+                let height = wrap ? Math.round(wrap.getBoundingClientRect().height) : 0
+                if (height < 1) {
+                    const pageStyles = getComputedStyle(this.$el)
+                    const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
+                    height = Math.max(0, Math.round(this.measureSmallViewportHeight() - topBarHeight))
+                }
                 this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
                 this.lockedMobileHeroWidth = width
             } else if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
@@ -1828,10 +1861,23 @@ export default {
 
             this.updateHeroLocationVisibility()
         },
+        measureSmallViewportHeight() {
+            const probe = document.createElement('div')
+            probe.style.cssText =
+                'position:absolute;left:0;top:0;height:100svh;width:0;pointer-events:none;visibility:hidden'
+            document.body.appendChild(probe)
+            const h = probe.offsetHeight || window.innerHeight
+            probe.remove()
+            return h
+        },
         clearHeroViewportHeight() {
             this.$el?.style.removeProperty('--mobile-hero-height')
             this.$el?.style.removeProperty('--desktop-hero-min-height')
             this.lockedMobileHeroWidth = null
+        },
+        invalidateHeroIntroRestLayout() {
+            this.heroIntroRestLayout = null
+            this.heroIntroDissipatePrepared = false
         },
         canHeroIntroPointerPlay() {
             return (
@@ -2859,11 +2905,17 @@ export default {
         onHeroDecorResize() {
             requestAnimationFrame(() => {
                 const width = window.innerWidth
-                // URL-bar show/hide is height-only; remasuring dissipate targets there
-                // flashes solid glyphs (measure class) then a mild re-anim on phones.
                 const widthChanged =
                     this.lockedMobileHeroWidth != null && this.lockedMobileHeroWidth !== width
-                this.lockHeroViewportHeight()
+
+                // Height-only resize = URL bar. Touching hero layout or remasuring
+                // glyphs here is what made the intro jump and the anim feel unstable.
+                if (!widthChanged && this.lockedMobileHeroWidth != null) {
+                    this.updateHeroLocationVisibility()
+                    return
+                }
+
+                this.lockHeroViewportHeight({ force: widthChanged })
                 this.syncDecorLineX()
                 this.syncHeroDecorHeight()
                 this.syncProjectCaptionLineOffset()
@@ -2872,8 +2924,16 @@ export default {
                     this.syncHeroIntroCharColumns()
                 }
                 this.updateHeroLocationVisibility()
+
+                if (widthChanged) {
+                    this.invalidateHeroIntroRestLayout()
+                }
+                const inFlight = this.heroIntroDissipated || this.heroIntroReconsolidating
+                if (widthChanged && !inFlight) {
+                    this.captureHeroIntroRestLayout()
+                }
                 this.updateHeroIntroDissipateFromScroll({
-                    forcePrepare: widthChanged,
+                    forcePrepare: widthChanged && !inFlight,
                 })
             })
         },
@@ -2895,44 +2955,104 @@ export default {
             })
         },
         /**
-         * Radial fly-out targets: rays from the midpoint of the text box’s bottom
-         * edge through each glyph (upper half-circle), extended past the viewport.
+         * Snapshot the intro’s resting box + each glyph’s center (intro-local).
+         * Call only while glyphs are at rest (not mid dissipate/reconsolidate).
          */
-        prepareHeroIntroDissipateTargets() {
+        captureHeroIntroRestLayout() {
+            if (!this.canHeroIntroDissipate()) {
+                this.heroIntroRestLayout = null
+                return false
+            }
+            if (this.heroIntroDissipated || this.heroIntroReconsolidating) {
+                return false
+            }
+
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
             if (!intro) {
-                this.heroIntroDissipatePrepared = false
+                this.heroIntroRestLayout = null
                 return false
             }
 
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             if (!chars.length) {
-                this.heroIntroDissipatePrepared = false
+                this.heroIntroRestLayout = null
                 return false
-            }
-
-            // Only pin glyphs to rest when flight transforms would skew the rays.
-            // At rest the measure class is unnecessary and on phones a remasure
-            // during scroll reads as a solid text flash + brief re-anim.
-            const needsMeasure = this.heroIntroDissipated || this.heroIntroReconsolidating
-            if (needsMeasure) {
-                intro.classList.add('hero-intro--dissipate-measure')
-                void intro.offsetWidth
             }
 
             const introRect = intro.getBoundingClientRect()
             if (introRect.width < 1 || introRect.height < 1) {
-                if (needsMeasure) intro.classList.remove('hero-intro--dissipate-measure')
+                this.heroIntroRestLayout = null
+                return false
+            }
+
+            const pageStyles = getComputedStyle(this.$el)
+            const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
+            const lockedH = parseFloat(
+                this.$el?.style.getPropertyValue('--mobile-hero-height') || ''
+            )
+            const vh = Number.isFinite(lockedH) && lockedH > 0
+                ? Math.round(lockedH + topBarHeight)
+                : this.measureSmallViewportHeight()
+
+            this.heroIntroRestLayout = {
+                introW: introRect.width,
+                introH: introRect.height,
+                // Document origin ≡ viewport at scroll 0 — travel math stays stable
+                // even if we ever capture while slightly scrolled.
+                introLeft: introRect.left + (window.scrollX || 0),
+                introTop: introRect.top + (window.scrollY || 0),
+                vw: window.innerWidth,
+                vh,
+                chars: chars.map((el) => {
+                    const r = el.getBoundingClientRect()
+                    return {
+                        x: r.left + r.width / 2 - introRect.left,
+                        y: r.top + r.height / 2 - introRect.top,
+                    }
+                }),
+            }
+            return true
+        },
+        /**
+         * Radial fly-out targets from the frozen rest layout only (upper half-circle
+         * on the text-box bottom diameter). Never reads live transformed rects.
+         */
+        prepareHeroIntroDissipateTargets() {
+            if (!this.heroIntroRestLayout) {
+                if (!this.captureHeroIntroRestLayout()) {
+                    this.heroIntroDissipatePrepared = false
+                    return false
+                }
+            }
+
+            const layout = this.heroIntroRestLayout
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro || !layout) {
                 this.heroIntroDissipatePrepared = false
                 return false
             }
 
-            const cx = introRect.left + introRect.width / 2
-            const cy = introRect.bottom
-            const halfW = introRect.width / 2
-            const maxRadial = Math.hypot(halfW, introRect.height) || 1
-            const vw = window.innerWidth
-            const vh = window.innerHeight
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            if (chars.length !== layout.chars.length) {
+                // DOM changed — recapture at rest only.
+                this.heroIntroRestLayout = null
+                if (this.heroIntroDissipated || this.heroIntroReconsolidating) {
+                    this.heroIntroDissipatePrepared = false
+                    return false
+                }
+                if (!this.captureHeroIntroRestLayout()) {
+                    this.heroIntroDissipatePrepared = false
+                    return false
+                }
+                return this.prepareHeroIntroDissipateTargets()
+            }
+
+            const cx = layout.introW / 2
+            const cy = layout.introH
+            const halfW = layout.introW / 2
+            const maxRadial = Math.hypot(halfW, layout.introH) || 1
+            const vw = layout.vw
+            const vh = layout.vh
             const margin = 48
             let maxDelay = 0
 
@@ -2940,12 +3060,13 @@ export default {
             const duration = parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
             const stagger = parseCssTimeSec(introStyles, '--hero-intro-dissipate-stagger', 0.42)
 
-            for (const el of chars) {
-                const rect = el.getBoundingClientRect()
-                const px = rect.left + rect.width / 2
-                const py = rect.top + rect.height / 2
-                let dx = px - cx
-                let dy = py - cy
+            for (let i = 0; i < chars.length; i++) {
+                const el = chars[i]
+                const { x: localX, y: localY } = layout.chars[i]
+                const px = layout.introLeft + localX
+                const py = layout.introTop + localY
+                let dx = localX - cx
+                let dy = localY - cy
                 // Keep motion in the upper semicircle (diameter = text bottom).
                 if (dy > -0.5) dy = -0.5
 
@@ -2976,8 +3097,6 @@ export default {
                 el.style.setProperty('--hero-intro-dissipate-leave-delay', `${leaveDelay.toFixed(3)}s`)
                 el.style.setProperty('--hero-intro-dissipate-duration', `${duration}s`)
             }
-
-            if (needsMeasure) intro.classList.remove('hero-intro--dissipate-measure')
 
             this.heroIntroDissipateMaxDelay = maxDelay
             this.heroIntroDissipatePrepared = true
@@ -3062,10 +3181,8 @@ export default {
                 return
             }
 
-            // Never remasure mid-flight: measure class snaps solid glyphs on for a
-            // frame (URL-bar resize on phones), then a mild dissipate/reconsolidate
-            // replays. Fresh targets are only needed at rest or after width change
-            // once consolidated again.
+            // Apply frozen rest-layout targets only. Never remasure from live rects
+            // mid-flight (that snapped solid glyphs + unstable rays on phones).
             const inFlight = this.heroIntroDissipated || this.heroIntroReconsolidating
             if (!this.heroIntroDissipatePrepared || (forcePrepare && !inFlight)) {
                 if (!this.prepareHeroIntroDissipateTargets()) return
@@ -3098,6 +3215,7 @@ export default {
             this.heroIntroReconsolidating = false
             this.heroIntroDissipatePrepared = false
             this.heroIntroDissipateMaxDelay = 0
+            this.heroIntroRestLayout = null
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
             intro.classList.remove('hero-intro--dissipate-instant')
@@ -5178,9 +5296,11 @@ export default {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        /* Before load: fill viewport; after load: lock pixels so URL-bar show/hide won't shift intro */
+        /* Before load: fill small viewport; after load: lock px so URL-bar show/hide
+           cannot grow the wrap (flex-end would shove the intro down). */
         min-height: var(--mobile-hero-height, calc(100svh - var(--top-bar-height)));
         height: var(--mobile-hero-height, auto);
+        max-height: var(--mobile-hero-height, none);
         max-width: 100%;
         width: 100%;
         margin: 0;
