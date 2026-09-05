@@ -1540,6 +1540,18 @@ export default {
             this.syncHeroDecorHeight()
             this.syncAboutLocationTextClip()
             this.syncHeroIntroCharColumns()
+            // Pin the mobile floor and snapshot resting glyph geometry BEFORE the
+            // from-right cascade starts. Early-scroll dissipate must use this, not a
+            // mid-cascade measure.
+            if (
+                this.heroIntroLetterMode &&
+                (this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            ) {
+                this.lockHeroViewportHeight({ force: true })
+                void this.$el?.offsetHeight
+                this.captureHeroIntroRestLayout({ preAnimation: true })
+                this.prepareHeroIntroDissipateTargets()
+            }
             this.pageRevealed = true
             this.syncDecorLineX()
             this.publishDecorLineAlign()
@@ -1619,10 +1631,11 @@ export default {
             this.syncProjectCaptionLineOffset()
             this.publishDecorLineAlign()
             this.$nextTick(() => {
-                // Wait a frame so --settled can kill cascade transforms before we
-                // snapshot rest geometry / start dissipate.
                 requestAnimationFrame(() => {
-                    this.captureHeroIntroRestLayout()
+                    // Prefer the pre-cascade snapshot; only measure now if missing.
+                    if (!this.heroIntroRestLayout) {
+                        this.captureHeroIntroRestLayout()
+                    }
                     this.updateHeroIntroDissipateFromScroll({
                         // Early scroll: animate dissipate. Normal settle: snap to match scroll.
                         instant: !prioritizeDissipate,
@@ -1829,11 +1842,6 @@ export default {
             }
         },
         lockHeroViewportHeight({ force = false } = {}) {
-            if (!this.pageEntranceDone) {
-                this.clearHeroViewportHeight()
-                return
-            }
-
             const isMobile = this.heroIntroLetterMq?.matches
 
             if (isMobile) {
@@ -2993,15 +3001,24 @@ export default {
         },
         /**
          * Snapshot the intro’s resting box + each glyph’s center (intro-local).
-         * Call only while glyphs are at rest (not mid dissipate/reconsolidate).
+         * Prefer calling with preAnimation:true before the cascade starts so dissipate
+         * always references the true parked layout — not mid-flight cascade poses.
          */
-        captureHeroIntroRestLayout() {
-            if (!this.canHeroIntroDissipate()) {
-                this.heroIntroRestLayout = null
+        captureHeroIntroRestLayout({ preAnimation = false } = {}) {
+            const isMobile =
+                this.heroIntroLetterMq?.matches ??
+                (typeof window !== 'undefined' &&
+                    window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            if (!this.heroIntroLetterMode || !isMobile || prefersReducedMotion()) {
+                if (!preAnimation) this.heroIntroRestLayout = null
                 return false
             }
-            if (this.heroIntroDissipated || this.heroIntroReconsolidating) {
-                return false
+            if (!preAnimation) {
+                if (this.heroIntroDissipated || this.heroIntroReconsolidating) {
+                    return false
+                }
+                // Already have the pre-cascade snapshot — keep it.
+                if (this.heroIntroRestLayout) return true
             }
 
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
@@ -3016,8 +3033,15 @@ export default {
                 return false
             }
 
+            // Always pin glyphs to rest for the read — cascade / dissipate transforms
+            // would otherwise skew centers. Before reveal this is invisible; after
+            // settle glyphs are already at rest so it’s a no-op visually.
+            intro.classList.add('hero-intro--dissipate-measure')
+            void intro.offsetWidth
+
             const introRect = intro.getBoundingClientRect()
             if (introRect.width < 1 || introRect.height < 1) {
+                intro.classList.remove('hero-intro--dissipate-measure')
                 this.heroIntroRestLayout = null
                 return false
             }
@@ -3048,6 +3072,8 @@ export default {
                     }
                 }),
             }
+
+            intro.classList.remove('hero-intro--dissipate-measure')
             return true
         },
         /**
@@ -3212,7 +3238,15 @@ export default {
         },
         updateHeroIntroDissipateFromScroll({ instant = false, forcePrepare = false } = {}) {
             if (!this.canHeroIntroDissipate()) {
-                if (this.heroIntroDissipated || this.heroIntroDissipatePrepared) {
+                // Don't wipe the pre-cascade snapshot while entrance is still playing.
+                const keepingPremeasure =
+                    this.pageRevealed &&
+                    !this.pageEntranceDone &&
+                    this.heroIntroRestLayout
+                if (
+                    !keepingPremeasure &&
+                    (this.heroIntroDissipated || this.heroIntroDissipatePrepared)
+                ) {
                     this.clearHeroIntroDissipate()
                 }
                 return
@@ -3252,7 +3286,7 @@ export default {
             this.heroIntroReconsolidating = false
             this.heroIntroDissipatePrepared = false
             this.heroIntroDissipateMaxDelay = 0
-            this.heroIntroRestLayout = null
+            // Keep heroIntroRestLayout — premeasured parked geometry for this viewport.
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
             intro.classList.remove('hero-intro--dissipate-instant')
