@@ -479,7 +479,7 @@ export default {
         0 -1px 0 rgba(255, 255, 255, 0.35),
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
-        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
+        inset 0 -2px 10px rgba(255, 255, 255, 0.35);
     transition:
         transform 0.3s ease,
         background-color 0.25s ease,
@@ -506,7 +506,7 @@ export default {
         0 -1px 0 rgba(255, 255, 255, 0.35),
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
-        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
+        inset 0 -2px 10px rgba(255, 255, 255, 0.35);
 }
 
 .top-bar--hidden {
@@ -675,7 +675,7 @@ export default {
         0 -1px 0 rgba(255, 255, 255, 0.35),
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
-        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
+        inset 0 -2px 10px rgba(255, 255, 255, 0.35);
     border-bottom: none;
     transition: none;
     transform: translateZ(0);
@@ -698,6 +698,6 @@ export default {
         0 -1px 0 rgba(255, 255, 255, 0.35),
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
-        inset 0 -2px 10px rgba(255, 255, 255, 0.55);
+        inset 0 -2px 10px rgba(255, 255, 255, 0.35);
 }
 </style>
