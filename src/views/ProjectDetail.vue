@@ -491,11 +491,11 @@ export default {
       var(--project-hero-glass-panel-height)
   );
   pointer-events: none;
-  /* Linear grey wash — transparent at top, full #e0e0e0 at footer edge */
+  /* Linear grey wash — transparent at top, full #e8e8e8 at footer edge */
   background: linear-gradient(
     to bottom,
-    rgba(224, 224, 224, 0) 0%,
-    #e0e0e0 100%
+    rgba(232, 232, 232, 0) 0%,
+    #e8e8e8 100%
   );
 }
 
