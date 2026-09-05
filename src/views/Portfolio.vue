@@ -1598,10 +1598,20 @@ export default {
                 this.markPageEntranceDone()
             }, settleMs)
         },
-        markPageEntranceDone() {
+        markPageEntranceDone({ prioritizeDissipate = false } = {}) {
             clearTimeout(this.pageEntranceSettleTimer)
             this.pageEntranceSettleTimer = null
-            if (this.pageEntranceDone) return
+            if (this.pageEntranceDone) {
+                // Cascade already settled; still honor an early-scroll dissipate ask.
+                if (prioritizeDissipate) {
+                    this.$nextTick(() => {
+                        requestAnimationFrame(() => {
+                            this.updateHeroIntroDissipateFromScroll({ forcePrepare: true })
+                        })
+                    })
+                }
+                return
+            }
             this.pageEntranceDone = true
             this.syncHeroCursorDocumentClass()
             this.lockHeroViewportHeight()
@@ -1609,10 +1619,16 @@ export default {
             this.syncProjectCaptionLineOffset()
             this.publishDecorLineAlign()
             this.$nextTick(() => {
-                // Capture resting glyph geometry after the height lock paints, then
-                // wire scroll dissipate to that frozen layout.
-                this.captureHeroIntroRestLayout()
-                this.updateHeroIntroDissipateFromScroll({ instant: true, forcePrepare: true })
+                // Wait a frame so --settled can kill cascade transforms before we
+                // snapshot rest geometry / start dissipate.
+                requestAnimationFrame(() => {
+                    this.captureHeroIntroRestLayout()
+                    this.updateHeroIntroDissipateFromScroll({
+                        // Early scroll: animate dissipate. Normal settle: snap to match scroll.
+                        instant: !prioritizeDissipate,
+                        forcePrepare: true,
+                    })
+                })
             })
         },
         onMobileHeroLayoutChange() {
@@ -2947,7 +2963,28 @@ export default {
             )
         },
         onHeroIntroDissipateScrollHandler() {
-            if (!this.canHeroIntroDissipate()) return
+            if (
+                !this.heroIntroLetterMode ||
+                !this.pageRevealed ||
+                prefersReducedMotion() ||
+                typeof window === 'undefined' ||
+                !(this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            ) {
+                return
+            }
+
+            // Scroll away before the from-right cascade finishes: abort cascade
+            // (--settled) and let dissipate take priority.
+            if (!this.pageEntranceDone) {
+                const y = Math.max(
+                    0,
+                    window.scrollY || document.documentElement.scrollTop || 0
+                )
+                if (y <= 8) return
+                this.markPageEntranceDone({ prioritizeDissipate: true })
+                return
+            }
+
             if (this.heroIntroDissipateRaf != null) return
             this.heroIntroDissipateRaf = requestAnimationFrame(() => {
                 this.heroIntroDissipateRaf = null
@@ -3814,7 +3851,7 @@ export default {
     }
 
     /* Scroll dissipate: fan up along rays from the text-box bottom diameter (half-circle).
-       Independent of the entrance cascade (only after --settled). */
+       Independent of the entrance cascade (settled kills cascade; early scroll settles early). */
     .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char,
     .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
