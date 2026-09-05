@@ -597,7 +597,7 @@ export default {
   }
 
   .project-tldr-copy {
-    margin-left: 0;
+    margin-left: var(--project-title-offset, 0px);
     width: 223px;
     height: 54px;
   }

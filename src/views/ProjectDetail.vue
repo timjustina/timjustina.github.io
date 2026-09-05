@@ -557,6 +557,22 @@ export default {
     font-size: 32px;
     line-height: 48px;
   }
+
+  /* TL;DR: match summary bullets, Also paragraph, and CTA column
+     (higher specificity than scoped ProjectTldrButton rules) */
+  .main :global(.project-body .project-tldr-list),
+  .main :global(.project-body .project-tldr-note) {
+    margin-left: var(--project-title-offset, 0px);
+    width: calc(100% - var(--project-title-offset, 0px));
+  }
+
+  .main :global(.project-body .project-tldr-list li) {
+    margin-left: 0;
+  }
+
+  .main :global(.project-body .project-tldr-copy) {
+    margin-left: var(--project-title-offset, 0px);
+  }
 }
 
 .main :global(.project-body section) {
@@ -659,7 +675,11 @@ export default {
 }
 
 .main :global(.project-body .project-tldr-list) {
-  margin: 0;
+  /* Leave margin-left/width to ProjectTldrButton so summary
+     text shares the Also paragraph column on desktop */
+  margin-top: 0;
+  margin-right: 0;
+  margin-bottom: 0;
   padding: 0;
   list-style: disc;
   list-style-position: outside;
