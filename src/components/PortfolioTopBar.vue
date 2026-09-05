@@ -637,6 +637,17 @@ export default {
         --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
     }
 
+    /* Mobile: always clear — no frosted glass */
+    .top-bar,
+    .top-bar--glass,
+    .top-bar--transparent {
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border-bottom: none;
+        box-shadow: none;
+    }
+
     .top-bar-inner {
         align-items: stretch;
         padding: 0 var(--top-bar-edge-pad-right) 0 var(--top-bar-edge-pad-left);
@@ -699,5 +710,16 @@ export default {
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
         inset 0 -2px 10px rgba(255, 255, 255, 0.35);
+}
+
+@media (width < 800px) {
+    .hero-intro-cursor-magnifier__top-bar-frost,
+    .hero-intro-cursor-magnifier__top-bar-frost.top-bar--glass,
+    .hero-intro-cursor-magnifier__top-bar-frost.top-bar--transparent {
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+    }
 }
 </style>
