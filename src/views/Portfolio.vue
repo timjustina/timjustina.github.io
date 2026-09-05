@@ -2858,6 +2858,11 @@ export default {
         },
         onHeroDecorResize() {
             requestAnimationFrame(() => {
+                const width = window.innerWidth
+                // URL-bar show/hide is height-only; remasuring dissipate targets there
+                // flashes solid glyphs (measure class) then a mild re-anim on phones.
+                const widthChanged =
+                    this.lockedMobileHeroWidth != null && this.lockedMobileHeroWidth !== width
                 this.lockHeroViewportHeight()
                 this.syncDecorLineX()
                 this.syncHeroDecorHeight()
@@ -2867,7 +2872,9 @@ export default {
                     this.syncHeroIntroCharColumns()
                 }
                 this.updateHeroLocationVisibility()
-                this.updateHeroIntroDissipateFromScroll({ forcePrepare: true })
+                this.updateHeroIntroDissipateFromScroll({
+                    forcePrepare: widthChanged,
+                })
             })
         },
         canHeroIntroDissipate() {
@@ -2904,13 +2911,18 @@ export default {
                 return false
             }
 
-            // Measure resting layout even if letters are mid-flight / dissipated.
-            intro.classList.add('hero-intro--dissipate-measure')
-            void intro.offsetWidth
+            // Only pin glyphs to rest when flight transforms would skew the rays.
+            // At rest the measure class is unnecessary and on phones a remasure
+            // during scroll reads as a solid text flash + brief re-anim.
+            const needsMeasure = this.heroIntroDissipated || this.heroIntroReconsolidating
+            if (needsMeasure) {
+                intro.classList.add('hero-intro--dissipate-measure')
+                void intro.offsetWidth
+            }
 
             const introRect = intro.getBoundingClientRect()
             if (introRect.width < 1 || introRect.height < 1) {
-                intro.classList.remove('hero-intro--dissipate-measure')
+                if (needsMeasure) intro.classList.remove('hero-intro--dissipate-measure')
                 this.heroIntroDissipatePrepared = false
                 return false
             }
@@ -2965,7 +2977,7 @@ export default {
                 el.style.setProperty('--hero-intro-dissipate-duration', `${duration}s`)
             }
 
-            intro.classList.remove('hero-intro--dissipate-measure')
+            if (needsMeasure) intro.classList.remove('hero-intro--dissipate-measure')
 
             this.heroIntroDissipateMaxDelay = maxDelay
             this.heroIntroDissipatePrepared = true
@@ -3050,7 +3062,12 @@ export default {
                 return
             }
 
-            if (forcePrepare || !this.heroIntroDissipatePrepared) {
+            // Never remasure mid-flight: measure class snaps solid glyphs on for a
+            // frame (URL-bar resize on phones), then a mild dissipate/reconsolidate
+            // replays. Fresh targets are only needed at rest or after width change
+            // once consolidated again.
+            const inFlight = this.heroIntroDissipated || this.heroIntroReconsolidating
+            if (!this.heroIntroDissipatePrepared || (forcePrepare && !inFlight)) {
                 if (!this.prepareHeroIntroDissipateTargets()) return
             }
 
