@@ -8,6 +8,7 @@
                 'top-bar--glass': topBarRecalled && !isInFlowMobileHome,
                 'top-bar--in-flow': isInFlowMobileHome,
                 'top-bar--nav-hero-align': navHeroAlign,
+                'top-bar--snap': topBarSnap,
             }"
         >
             <div class="top-bar-inner">
@@ -135,6 +136,7 @@ export default {
             navWorkWReady: false,
             topBarHidden: false,
             topBarRecalled: false,
+            topBarSnap: false,
             lastScrollY: 0,
             scrollTicking: false,
             overHero: true,
@@ -260,22 +262,60 @@ export default {
 
                 const y = window.scrollY
                 const delta = y - this.lastScrollY
+                this.updateHeroOverlap()
 
-                if (y <= 0) {
-                    this.topBarHidden = false
-                    this.topBarRecalled = false
+                // Home hero top: bar is already present — snap with no slide.
+                const atHomeHeroTop =
+                    this.$route.path === '/' && this.overHero && y <= 1
+                if (atHomeHeroTop || y <= 0) {
+                    this.snapShowTopBarAtTop()
                 } else if (delta > 5 && y > this.getTopBarHeight()) {
                     this.topBarHidden = true
                 } else if (delta < -5) {
-                    this.topBarHidden = false
-                    this.topBarRecalled = true
+                    // Home hero: no scroll-up recall — bar stays tucked away.
+                    if (!(this.$route.path === '/' && this.overHero)) {
+                        this.topBarHidden = false
+                        this.topBarRecalled = true
+                    }
                 }
 
-                this.updateHeroOverlap()
+                // Home hero: if a recalled bar scrolls back into the hero, tuck it away.
+                if (
+                    this.$route.path === '/' &&
+                    this.overHero &&
+                    this.topBarRecalled &&
+                    !atHomeHeroTop
+                ) {
+                    this.topBarHidden = true
+                    this.topBarRecalled = false
+                }
                 this.syncWorkLineTextClip()
                 this.startWorkLineClipPoll()
                 this.lastScrollY = y
                 this.scrollTicking = false
+            })
+        },
+        snapShowTopBarAtTop() {
+            if (!this.topBarHidden && !this.topBarRecalled) return
+
+            const el = this.$el?.querySelector('.top-bar')
+            if (el) {
+                el.style.transition = 'none'
+                // Force style flush so transform won't animate when unhiding.
+                void el.offsetHeight
+            }
+
+            this.topBarSnap = true
+            this.topBarHidden = false
+            this.topBarRecalled = false
+
+            this.$nextTick(() => {
+                const bar = this.$el?.querySelector('.top-bar')
+                if (bar) {
+                    void bar.offsetHeight
+                    bar.style.transition = ''
+                }
+                this.topBarSnap = false
             })
         },
         updateHeroOverlap() {
@@ -521,6 +561,10 @@ export default {
 
 .top-bar--hidden {
     transform: translate3d(0, -100%, 0);
+}
+
+.top-bar--snap {
+    transition: none;
 }
 
 .top-bar--in-flow {
