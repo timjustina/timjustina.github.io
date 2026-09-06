@@ -462,7 +462,7 @@ const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 120
 const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.25
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
-const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
+const HERO_TOUCH_DISK_ENTRANCE_MS = 2800
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -2266,6 +2266,7 @@ export default {
             this.heroTouchDiskEntering = false
             this.heroTouchDiskIdle = true
             this.heroTouchDiskBreathe = false
+            this.setHeroIntroDiskDragActive(false)
         },
         onHeroCursorPointerModeChange() {
             if (this.isHeroIntroFinePointer()) {
@@ -2308,6 +2309,7 @@ export default {
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
+            this.setHeroIntroDiskDragActive(true)
             this.heroTouchDiskPointerId = event.pointerId
             this.heroTouchDiskGrabOffset = {
                 x: x - event.clientX,
@@ -2343,6 +2345,7 @@ export default {
             this.heroTouchDiskDragging = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.setHeroIntroDiskDragActive(false)
         },
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
@@ -2467,6 +2470,12 @@ export default {
             this.$el
                 ?.querySelector('.hero-intro.hero-intro--chars')
                 ?.classList.toggle('hero-intro--stroke-active', active)
+        },
+        // Touch-disk only — separate from stroke / fine-pointer cursor knock easing.
+        setHeroIntroDiskDragActive(active) {
+            this.$el
+                ?.querySelector('.hero-intro.hero-intro--chars')
+                ?.classList.toggle('hero-intro--disk-drag-active', active)
         },
         enterHeroIntroSwipeMode(pointerId) {
             this.heroIntroTouchMode = 'swipe'
@@ -3665,6 +3674,7 @@ export default {
             if (active) {
                 this.clearHeroIntroPointerShift()
                 this.setHeroIntroStrokeActive(false)
+                this.setHeroIntroDiskDragActive(false)
                 clearTimeout(this.heroIntroReconsolidateTimer)
                 this.heroIntroReconsolidateTimer = null
                 this.heroIntroReconsolidating = false
@@ -4383,6 +4393,11 @@ export default {
         transition: none;
     }
 
+    /* Same for glass-disk drag only (does not touch fine-pointer cursor path) */
+    .portfolio-page--settled .hero-intro--chars.hero-intro--disk-drag-active .hero-intro-char {
+        transition: none;
+    }
+
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
         transform: translate3d(0, 0, 0);
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
@@ -4477,7 +4492,7 @@ export default {
 }
 
 .hero-intro-cursor-ball--touch-enter {
-    transition: opacity 1.8s cubic-bezier(0.33, 1, 0.4, 1);
+    transition: opacity 2.8s cubic-bezier(0.33, 1, 0.4, 1);
 }
 
 .hero-intro-cursor-ball--touch-instant,
