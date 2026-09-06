@@ -490,7 +490,6 @@ export default {
   border: 0;
   border-radius: 40px;
   isolation: isolate;
-  overflow: hidden;
   background: #000aaa;
   font-family: 'Fira Code', monospace;
   font-style: normal;
@@ -504,9 +503,9 @@ export default {
   vertical-align: middle;
   transition: background 0.2s ease;
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.035),
-    0 4px 14px rgba(15, 23, 42, 0.045),
-    0 10px 28px rgba(15, 23, 42, 0.03);
+    0 1px 3px rgba(15, 23, 42, 0.09),
+    0 4px 10px rgba(15, 23, 42, 0.09),
+    0 8px 16px rgba(15, 23, 42, 0.05);
 }
 
 /* Glass edge — match portfolio CTA */
@@ -517,24 +516,23 @@ export default {
   z-index: 1;
   border-radius: inherit;
   pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  border: 0.8px solid rgba(255, 255, 255, 0.7);
   background: linear-gradient(
     145deg,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0.22) 5%,
-    rgba(255, 255, 255, 0) 11%,
-    rgba(255, 255, 255, 0) 89%,
-    rgba(255, 255, 255, 0.18) 95%,
-    rgba(255, 255, 255, 0.4) 100%
+    rgba(255, 255, 255, 0.48) 0%,
+    rgba(255, 255, 255, 0.22) 4%,
+    rgba(255, 255, 255, 0) 9%,
+    rgba(255, 255, 255, 0) 91%,
+    rgba(255, 255, 255, 0.18) 96%,
+    rgba(255, 255, 255, 0.38) 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 1.5px 2.5px rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.4),
-    inset 1px 0 2px rgba(255, 255, 255, 0.4),
-    inset -1px 0 2px rgba(255, 255, 255, 0.4),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.9),
+    inset 0 1.5px 3px rgba(255, 255, 255, 0.65),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2.5px rgba(255, 255, 255, 0.4),
+    inset 1px 0 2.5px rgba(255, 255, 255, 0.35),
+    inset -1px 0 2.5px rgba(255, 255, 255, 0.35);
 }
 
 .project-tldr-copy:active {
