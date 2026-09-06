@@ -192,94 +192,100 @@
             </section>
 
             <section id="work" class="work">
-                <article
-                    id="work-first"
-                    class="project project--featured portfolio-fly portfolio-fly--from-right"
-                >
-                    <router-link
-                        to="/work/DashboardDesign"
-                        class="project-image-link"
-                        @pointerdown="onFeaturedProjectPress"
-                        @pointerup="onFeaturedProjectPressEnd"
-                        @pointercancel="onFeaturedProjectPressEnd"
-                        @click="onFeaturedProjectNavigate"
+                <div class="work-slot">
+                    <article
+                        id="work-first"
+                        class="project project--featured portfolio-fly portfolio-fly--from-right"
                     >
-                        <img
-                            class="project-image"
-                            :src="dashboardHero"
-                            width="2400"
-                            height="1352"
-                            decoding="async"
-                            fetchpriority="high"
-                            alt="IoT Adherence Analytics for Caregivers"
-                        />
-                    </router-link>
-                    <div class="project-caption">
                         <router-link
                             to="/work/DashboardDesign"
-                            class="project-caption-link"
+                            class="project-image-link"
                             @pointerdown="onFeaturedProjectPress"
                             @pointerup="onFeaturedProjectPressEnd"
                             @pointercancel="onFeaturedProjectPressEnd"
                             @click="onFeaturedProjectNavigate"
                         >
+                            <img
+                                class="project-image"
+                                :src="dashboardHero"
+                                width="2400"
+                                height="1352"
+                                decoding="async"
+                                fetchpriority="high"
+                                alt="IoT Adherence Analytics for Caregivers"
+                            />
+                        </router-link>
+                        <div class="project-caption">
+                            <router-link
+                                to="/work/DashboardDesign"
+                                class="project-caption-link"
+                                @pointerdown="onFeaturedProjectPress"
+                                @pointerup="onFeaturedProjectPressEnd"
+                                @pointercancel="onFeaturedProjectPressEnd"
+                                @click="onFeaturedProjectNavigate"
+                            >
+                                <div class="project-caption-header">
+                                    <h2 class="project-title">
+                                        IoT Adherence Analytics for Caregivers
+                                    </h2>
+                                </div>
+                                <p class="project-description">
+                                    0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
+                                </p>
+                                <span class="project-year">KIN<span class="project-year-sep">//</span>2026</span>
+                            </router-link>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="work-slot work-slot--offset">
+                    <article class="project project--offset project--upcoming portfolio-fly portfolio-fly--from-left">
+                        <div class="project-image-wrap">
+                            <img
+                                class="project-image"
+                                :src="multiplatformHero"
+                                alt="IoT Home Medication Solution"
+                            />
+                        </div>
+                        <div class="project-caption">
                             <div class="project-caption-header">
                                 <h2 class="project-title">
-                                    IoT Adherence Analytics for Caregivers
+                                    IoT Home Medication Solution
                                 </h2>
                             </div>
                             <p class="project-description">
-                                0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
+                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT platform for improving medication adherence
                             </p>
-                            <span class="project-year">KIN<span class="project-year-sep">//</span>2026</span>
-                        </router-link>
-                    </div>
-                </article>
-
-                <article class="project project--offset project--upcoming portfolio-fly portfolio-fly--from-left">
-                    <div class="project-image-wrap">
-                        <img
-                            class="project-image"
-                            :src="multiplatformHero"
-                            alt="IoT Home Medication Solution"
-                        />
-                    </div>
-                    <div class="project-caption">
-                        <div class="project-caption-header">
-                            <h2 class="project-title">
-                                IoT Home Medication Solution
-                            </h2>
+                            <span class="project-year">KIN<span class="project-year-sep">//</span>2024</span>
                         </div>
-                        <p class="project-description">
-                            End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT platform for improving medication adherence
-                        </p>
-                        <span class="project-year">KIN<span class="project-year-sep">//</span>2024</span>
-                    </div>
-                </article>
+                    </article>
+                </div>
 
-                <article
-                    id="work-last"
-                    class="project project--upcoming portfolio-fly portfolio-fly--from-right"
-                >
-                    <div class="project-image-wrap">
-                        <img
-                            class="project-image"
-                            :src="marketplaceHero"
-                            alt="Art Curation and Marketplace"
-                        />
-                    </div>
-                    <div class="project-caption">
-                        <div class="project-caption-header">
-                            <h2 class="project-title">
-                                Art Curation and Marketplace
-                            </h2>
+                <div class="work-slot">
+                    <article
+                        id="work-last"
+                        class="project project--upcoming portfolio-fly portfolio-fly--from-right"
+                    >
+                        <div class="project-image-wrap">
+                            <img
+                                class="project-image"
+                                :src="marketplaceHero"
+                                alt="Art Curation and Marketplace"
+                            />
                         </div>
-                        <p class="project-description">
-                            0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
-                        </p>
-                        <span class="project-year">PONS<span class="project-year-sep">//</span>2019</span>
-                    </div>
-                </article>
+                        <div class="project-caption">
+                            <div class="project-caption-header">
+                                <h2 class="project-title">
+                                    Art Curation and Marketplace
+                                </h2>
+                            </div>
+                            <p class="project-description">
+                                0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
+                            </p>
+                            <span class="project-year">PONS<span class="project-year-sep">//</span>2019</span>
+                        </div>
+                    </article>
+                </div>
             </section>
         </main>
 
@@ -2941,6 +2947,7 @@ export default {
 
                 this.lockHeroViewportHeight({ force: widthChanged })
                 this.syncDecorLineX()
+                this.syncWorkGridSlots()
                 this.syncHeroDecorHeight()
                 this.syncProjectCaptionLineOffset()
                 this.syncAboutLocationTextClip()
@@ -3495,7 +3502,35 @@ export default {
                 this.aboutLocationClipRaf = null
             }
         },
+        syncWorkGridSlots() {
+            const work = this.$el?.querySelector('.work')
+            if (!work) return
+
+            // Project boxes keep natural size; slots around them share the largest W×H.
+            let maxW = 0
+            let maxH = 0
+            for (const project of work.querySelectorAll(':scope > .work-slot > .project')) {
+                const rect = project.getBoundingClientRect()
+                maxW = Math.max(maxW, Math.ceil(rect.width))
+                maxH = Math.max(maxH, Math.ceil(rect.height))
+            }
+
+            const nextW = maxW > 0 ? `${maxW}px` : ''
+            const nextH = maxH > 0 ? `${maxH}px` : ''
+            if (
+                work.style.getPropertyValue('--work-slot-w') === nextW &&
+                work.style.getPropertyValue('--work-slot-h') === nextH
+            ) {
+                return
+            }
+
+            if (nextW) work.style.setProperty('--work-slot-w', nextW)
+            else work.style.removeProperty('--work-slot-w')
+            if (nextH) work.style.setProperty('--work-slot-h', nextH)
+            else work.style.removeProperty('--work-slot-h')
+        },
         syncHeroDecorHeight() {
+            this.syncWorkGridSlots()
             const decor = this.$el?.querySelector('.hero-decor')
             const heroIntro = this.$el?.querySelector('.hero-intro')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
@@ -3692,7 +3727,12 @@ export default {
     --page-pad: max(39px, min(100px, calc((100vw - 939px) / 2)));
     --project-w: min(939px, 100%);
     --project-w-wide: min(1060px, 100%);
-    --project-stack-gap: clamp(120px, calc(120px + (100vw - 997px) * 30 / 457), 150px);
+    /* 150px @ ≥1454px → 100px @ ≤800px, linear in between */
+    --project-stack-gap: clamp(
+        100px,
+        calc(150px + (100vw - 1454px) * 50 / 654),
+        150px
+    );
     --top-bar-height: 120px;
     --top-bar-logo-height: 52px;
     --top-bar-nav-height: 30px;
@@ -4713,12 +4753,36 @@ export default {
 }
 
 .work {
+    --work-slot-w: var(--project-w-wide);
+    --work-slot-h: auto;
     position: relative;
     z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: var(--work-slot-h);
+    align-items: stretch;
+    justify-items: stretch;
+    width: 100%;
+    row-gap: var(--project-stack-gap);
+}
+
+/* Equal outer rows — slot size = largest thumbnail+caption box */
+.work-slot {
+    position: relative;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0;
+    width: var(--work-slot-w);
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    justify-self: start;
+}
+
+.work-slot--offset {
+    justify-self: end;
+    align-items: flex-end;
 }
 
 .project {
@@ -4738,16 +4802,17 @@ export default {
 .project--offset {
     width: var(--project-w);
     max-width: 100%;
-    margin-left: auto;
+    margin-left: 0;
 }
 
+.work-slot:last-child .project,
 .project:last-child {
     width: var(--project-w-wide);
     max-width: 100%;
 }
 
 .project + .project {
-    margin-top: var(--project-stack-gap);
+    margin-top: 0;
 }
 
 .project-image-link {
@@ -5124,17 +5189,13 @@ export default {
         top: 7px;
     }
 
-    .work {
-        gap: 0;
-    }
-
     .portfolio-page {
         --project-w: 939px;
         --project-w-wide: 1060px;
     }
 
     .project + .project {
-        margin-top: 150px;
+        margin-top: 0;
     }
 
     .project-description {
@@ -5407,15 +5468,22 @@ export default {
     .portfolio-page {
         --project-w: 100%;
         --project-w-wide: 100%;
-        --project-stack-gap: 80px;
     }
 
     .work {
         gap: 0;
+        row-gap: var(--project-stack-gap);
         width: 100%;
         max-width: 100%;
         min-width: 0;
         align-items: stretch;
+    }
+
+    .work-slot,
+    .work-slot--offset {
+        width: 100%;
+        max-width: 100%;
+        justify-self: stretch;
     }
 
     /* Mobile: no fly-in; off-screen cards use scroll fade */
@@ -5430,6 +5498,7 @@ export default {
     .project,
     .project--featured,
     .project--offset,
+    .work-slot:last-child .project,
     .project:last-child {
         width: 100%;
         max-width: 100%;
@@ -5439,7 +5508,7 @@ export default {
     }
 
     .project + .project {
-        margin-top: var(--project-stack-gap);
+        margin-top: 0;
     }
 
     .project-image-link,
