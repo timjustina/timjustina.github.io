@@ -4723,6 +4723,8 @@ export default {
 }
 
 .cta-button {
+    position: relative;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4732,6 +4734,8 @@ export default {
     min-width: 0;
     height: var(--hero-cta-height);
     border-radius: 100px;
+    isolation: isolate;
+    overflow: hidden;
     background: var(--brand);
     font-family: 'Fira Code', monospace;
     font-size: 22px;
@@ -4742,6 +4746,39 @@ export default {
     text-decoration: none;
     box-sizing: border-box;
     transition: background 0.2s ease;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.035),
+        0 4px 14px rgba(15, 23, 42, 0.045),
+        0 10px 28px rgba(15, 23, 42, 0.03);
+}
+
+/* Glass edge — thin falloff, moderate opacity */
+.cta-button::after,
+.about-action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.82);
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 255, 255, 0.22) 5%,
+        rgba(255, 255, 255, 0) 11%,
+        rgba(255, 255, 255, 0) 89%,
+        rgba(255, 255, 255, 0.18) 95%,
+        rgba(255, 255, 255, 0.4) 100%
+    );
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        inset 0 1.5px 2.5px rgba(255, 255, 255, 0.7),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.4),
+        inset 1px 0 2px rgba(255, 255, 255, 0.4),
+        inset -1px 0 2px rgba(255, 255, 255, 0.4),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 .cta-button:hover {
@@ -4824,6 +4861,10 @@ export default {
     max-width: 100%;
     min-width: 0;
     text-decoration: none;
+    overflow: hidden;
+    border-radius: 20px;
+    isolation: isolate;
+    transition: border-radius 0.45s ease;
 }
 
 .project-image-wrap {
@@ -4857,21 +4898,22 @@ export default {
     transition: border-radius 0.45s ease;
 }
 
-.project-image-wrap .project-image {
+.project-image-wrap .project-image,
+.project-image-link .project-image {
     border-radius: 0;
     transition: none;
 }
 
 /* Touch: press feedback — clears on release so the radius can ease back */
-.project:not(.project--upcoming):active .project-image-link .project-image,
+.project:not(.project--upcoming):active .project-image-link,
 .project:not(.project--upcoming):active .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
 }
 
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
 @media (hover: hover) and (pointer: fine) {
-    .project:not(.project--upcoming):hover .project-image-link .project-image,
-    .project:not(.project--upcoming):focus-within .project-image-link .project-image,
+    .project:not(.project--upcoming):hover .project-image-link,
+    .project:not(.project--upcoming):focus-within .project-image-link,
     .project:not(.project--upcoming):hover .project-image-wrap,
     .project:not(.project--upcoming):focus-within .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
@@ -5151,6 +5193,8 @@ export default {
 }
 
 .about-action-btn {
+    position: relative;
+    z-index: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -5158,6 +5202,8 @@ export default {
     height: 54px;
     padding: 12px 24px;
     border-radius: 60px;
+    isolation: isolate;
+    overflow: hidden;
     background: var(--brand);
     font-family: 'Work Sans', sans-serif;
     font-size: 20px;
@@ -5168,6 +5214,10 @@ export default {
     text-decoration: none;
     box-sizing: border-box;
     transition: background 0.2s ease;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.035),
+        0 4px 14px rgba(15, 23, 42, 0.045),
+        0 10px 28px rgba(15, 23, 42, 0.03);
 }
 
 .about-action-btn:hover {
@@ -5524,8 +5574,7 @@ export default {
     .project:not(.project--upcoming):active .project-image-link,
     .project:not(.project--upcoming):active .project-image-wrap,
     .project--press-expand .project-image-link,
-    .project--press-expand .project-image-wrap,
-    .project--press-expand .project-image {
+    .project--press-expand .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
     }
 
@@ -5869,7 +5918,7 @@ export default {
     color: var(--brand) !important;
 }
 
-.hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link .project-image,
+.hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
 }
