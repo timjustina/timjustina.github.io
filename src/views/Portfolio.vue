@@ -4486,7 +4486,7 @@ export default {
 }
 
 .hero-intro-cursor-ball--touch-breathe {
-    animation: hero-touch-disk-breathe 5s infinite;
+    animation: hero-touch-disk-breathe 10s infinite;
     animation-delay: 2s;
     transform-origin: center center;
 }
@@ -4497,12 +4497,12 @@ export default {
         animation-timing-function: ease-in-out;
     }
 
-    20% {
+    10% {
         scale: 1.08;
         animation-timing-function: ease-in-out;
     }
 
-    40%,
+    20%,
     100% {
         scale: 1;
         animation-timing-function: linear;
