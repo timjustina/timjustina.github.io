@@ -807,6 +807,7 @@ export default {
             heroTouchDiskHasMoved: false,
             heroTouchDiskPointerId: null,
             heroTouchDiskGrabOffset: { x: 0, y: 0 },
+            heroTouchDiskOnStage: true,
         }
     },
     computed: {
@@ -838,7 +839,11 @@ export default {
         heroCursorVisible() {
             if (!this.heroCursorEligible) return false
             if (this.heroTouchDiskMode) {
-                return this.heroCursorActive && !this.heroCursorBootLocked
+                return (
+                    this.heroCursorActive &&
+                    !this.heroCursorBootLocked &&
+                    this.heroTouchDiskOnStage
+                )
             }
             return this.heroCursorActive || this.heroCursorBootLocked
         },
@@ -2048,17 +2053,34 @@ export default {
             const intro = this.$el?.querySelector('.hero-intro')
             if (intro) {
                 const rect = intro.getBoundingClientRect()
-                if (rect.height > 0) {
-                    // Keep the disk center above the hero intro bottom (first viewport).
-                    maxY = Math.min(maxY, rect.bottom - radius)
+                if (rect.height > 0 && rect.bottom > 0) {
+                    // Drag floor: above the hero intro bottom while it's on screen.
+                    maxY = Math.min(maxY, Math.max(minY, rect.bottom - radius))
                 }
             }
 
-            if (maxY < minY) {
-                maxY = minY
-            }
-
             return { minX, maxX, minY, maxY, radius }
+        },
+        computeHeroTouchDiskOnStage() {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return false
+
+            const rect = intro.getBoundingClientRect()
+            if (rect.height <= 0 || rect.bottom <= 0) return false
+
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const y = this.heroCursorGlassPos?.y ?? this.heroCursorPos.y
+            // Hide once the disk sits at/below the hero intro bottom.
+            if (y > rect.bottom - radius) return false
+            if (y < -radius) return false
+            return true
+        },
+        refreshHeroTouchDiskStage() {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) {
+                this.heroTouchDiskOnStage = false
+                return
+            }
+            this.heroTouchDiskOnStage = this.computeHeroTouchDiskOnStage()
         },
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -2069,19 +2091,23 @@ export default {
                 skipHover: false,
             })
             this.heroCursorGlassPos = { ...pos }
+            this.refreshHeroTouchDiskStage()
         },
         clampHeroTouchDiskIntoViewport() {
             if (!this.isHeroTouchDiskMode() || !this.heroCursorActive) return
-            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
+            // Horizontal only — never pin the disk to the top when the hero scrolls away.
+            const { minX, maxX } = this.getHeroTouchDiskBounds()
             const x = Math.min(maxX, Math.max(minX, this.heroCursorPos.x))
-            const y = Math.min(maxY, Math.max(minY, this.heroCursorPos.y))
-            if (x === this.heroCursorPos.x && y === this.heroCursorPos.y) return
-            this.updateHeroFinePointer(x, y, {
-                introEffects:
-                    (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
-                    this.canHeroIntroPointerPlay(),
-            })
-            this.heroCursorGlassPos = { x, y }
+            if (x !== this.heroCursorPos.x) {
+                const y = this.heroCursorPos.y
+                this.updateHeroFinePointer(x, y, {
+                    introEffects:
+                        (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
+                        this.canHeroIntroPointerPlay(),
+                })
+                this.heroCursorGlassPos = { x, y }
+            }
+            this.refreshHeroTouchDiskStage()
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -2100,15 +2126,18 @@ export default {
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
             this.heroCursorIntroGlassHandoff = false
+            this.heroTouchDiskOnStage = true
             this.syncHeroCursorDocumentClass()
             this.startHeroCursorGlassFollow()
             this.updateHeroFinePointer(pos.x, pos.y, { introEffects: false })
+            this.refreshHeroTouchDiskStage()
         },
         stopHeroTouchDisk() {
             this.heroTouchDiskDragging = false
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskOnStage = false
         },
         onHeroCursorPointerModeChange() {
             if (this.isHeroIntroFinePointer()) {
@@ -2137,6 +2166,7 @@ export default {
                 introEffects: this.canHeroIntroPointerPlay(),
             })
             this.heroCursorGlassPos = { x, y }
+            this.refreshHeroTouchDiskStage()
         },
         onHeroTouchDiskPointerDown(event) {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -3157,7 +3187,9 @@ export default {
                     return
                 }
 
-                this.clampHeroTouchDiskIntoViewport()
+                this.refreshHeroTouchDiskStage()
+                if (!this.heroTouchDiskOnStage) return
+
                 const { x, y } = this.heroCursorPos
                 this.updateHeroFinePointer(x, y, {
                     introEffects: this.canHeroIntroPointerPlay(),
