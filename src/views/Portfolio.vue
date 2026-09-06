@@ -11,6 +11,7 @@
         <div
             v-if="heroCursorEligible"
             class="hero-intro-cursor-magnifier"
+            :class="{ 'hero-intro-cursor-magnifier--bounce': heroBounceDiskMode }"
             :style="heroCursorMagnifierWindowStyle"
             aria-hidden="true"
         >
@@ -46,6 +47,7 @@
             class="hero-intro-cursor-ball hero-intro-cursor-dot-disk"
             :class="{
                 'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
+                'hero-intro-cursor-ball--bounce': heroBounceDiskMode,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -58,6 +60,7 @@
                 'hero-intro-cursor-glass-ball--from-disk': heroCursorIntroGlassFromDisk,
                 'hero-intro-cursor-glass-ball--in-range': heroCursorIntroGlassInRangeGlow,
                 'hero-intro-cursor-glass-ball--in-range-tight': heroCursorRangeTight,
+                'hero-intro-cursor-ball--bounce': heroBounceDiskMode,
             }"
             :style="heroCursorIntroGlassStyle"
             aria-hidden="true"
@@ -69,6 +72,7 @@
                 'hero-intro-cursor-ball--visible': heroCursorVisible,
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
                 'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
+                'hero-intro-cursor-ball--bounce': heroBounceDiskMode,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
@@ -433,6 +437,16 @@ const HERO_CURSOR_RANGE_EXPAND_END = 0.34
 const HERO_CURSOR_INTRO_GLASS_ON = 0.04
 const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
+/** Mobile bounce disk: rest above hero, 30% inset from the right edge. */
+const HERO_BOUNCE_REST_ABOVE_HERO_PX = 50
+const HERO_BOUNCE_REST_FROM_RIGHT = 0.3
+const HERO_BOUNCE_FRICTION = 2.35
+const HERO_BOUNCE_MIN_SPEED = 28
+const HERO_BOUNCE_SPEED_MIN = 980
+const HERO_BOUNCE_SPEED_MAX = 1680
+const HERO_BOUNCE_TAP_MAX_TRAVEL = 14
+const HERO_BOUNCE_TAP_MAX_MS = 420
+const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
 const HERO_INTRO_DISSIPATE_RETURN_PX = 480
@@ -440,7 +454,15 @@ const HERO_INTRO_DISSIPATE_RETURN_PX = 480
 function isHeroCursorEnvironment() {
     return (
         typeof window !== 'undefined' &&
-        window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+        window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+}
+
+function isHeroBounceDiskEnvironment() {
+    return (
+        typeof window !== 'undefined' &&
+        !window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches &&
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches
     )
 }
@@ -775,26 +797,46 @@ export default {
             heroCursorHoverLockEl: null,
             heroCursorScrollHoverSuppressUntil: 0,
             heroCursorIntroGlassHandoff: false,
+            // Mobile bounce disk (separate from fine-pointer cursor).
+            heroBounceMoving: false,
+            heroBounceHasLaunched: false,
+            heroBounceVel: { x: 0, y: 0 },
+            heroBounceLastTs: 0,
+            heroBounceTapStart: null,
         }
     },
     computed: {
         heroIntroFinePointer() {
             return (
                 typeof window !== 'undefined' &&
-                window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches
             )
         },
+        heroBounceDiskMode() {
+            return this.heroIntroLetterMode && isHeroBounceDiskEnvironment()
+        },
         heroCursorEligible() {
-            return this.heroIntroLetterMode && this.heroIntroFinePointer
+            return (
+                this.heroIntroLetterMode &&
+                (this.heroIntroFinePointer || this.heroBounceDiskMode)
+            )
         },
         heroCursorBootLocked() {
             return this.showLoadingSplash || this.logoHandoff || !this.pageEntranceDone
         },
         heroCursorHideNative() {
-            return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
+            return (
+                this.heroIntroFinePointer &&
+                this.heroCursorEligible &&
+                (this.heroCursorActive || this.heroCursorBootLocked)
+            )
         },
         heroCursorVisible() {
-            return this.heroCursorEligible && (this.heroCursorActive || this.heroCursorBootLocked)
+            if (!this.heroCursorEligible) return false
+            if (this.heroBounceDiskMode) {
+                return this.heroCursorActive && !this.heroCursorBootLocked
+            }
+            return this.heroCursorActive || this.heroCursorBootLocked
         },
         heroCursorDotDiskVisible() {
             if (!this.heroCursorVisible) return false
@@ -1036,11 +1078,16 @@ export default {
 
         this.heroIntroLetterMq = window.matchMedia(MOBILE_MEDIA_QUERY)
         this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
+        this.heroCursorFineMq = window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ)
         this.onHeroIntroLetterMqChange = () => {
             this.onMobileHeroLayoutChange()
         }
+        this.onHeroCursorFineMqChange = () => {
+            this.onHeroCursorPointerModeChange()
+        }
         this.heroIntroLetterMq.addEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroCursorFineMq.addEventListener('change', this.onHeroCursorFineMqChange)
 
         if (this.pageEntranceDone) {
             this.$nextTick(() => this.lockHeroViewportHeight())
@@ -1075,6 +1122,8 @@ export default {
         }
         if (this.heroIntroLetterMode && this.isHeroIntroFinePointer()) {
             this.primeHeroCursor()
+        } else if (this.heroIntroLetterMode && this.pageEntranceDone && isHeroBounceDiskEnvironment()) {
+            this.$nextTick(() => this.primeHeroBounceDisk())
         }
         window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
         document.addEventListener('pointerenter', this.onHeroPointerEnter, { passive: true })
@@ -1095,6 +1144,10 @@ export default {
                         instant: true,
                         forcePrepare: true,
                     })
+                    if (this.isHeroBounceDiskMode()) {
+                        if (!this.heroBounceHasLaunched) this.syncHeroBounceRestPosition()
+                        else this.clampHeroBounceIntoViewport()
+                    }
                 })
             }, 250)
         }
@@ -1103,6 +1156,9 @@ export default {
         this.heroDecorObserver = new ResizeObserver(() => {
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
+                if (this.isHeroBounceDiskMode() && !this.heroBounceHasLaunched) {
+                    this.syncHeroBounceRestPosition()
+                }
             })
         })
         const main = this.$el?.querySelector('.portfolio-main')
@@ -1211,6 +1267,7 @@ export default {
         window.removeEventListener('scroll', this.onHeroLocationScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
         this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroCursorFineMq?.removeEventListener('change', this.onHeroCursorFineMqChange)
         if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
         if (this.heroIntroDissipateRaf != null) cancelAnimationFrame(this.heroIntroDissipateRaf)
@@ -1638,6 +1695,9 @@ export default {
             this.syncProjectCaptionLineOffset()
             this.publishDecorLineAlign()
             this.$nextTick(() => {
+                if (this.heroBounceDiskMode) {
+                    this.primeHeroBounceDisk()
+                }
                 requestAnimationFrame(() => {
                     // Prefer the pre-cascade snapshot; only measure now if missing.
                     if (!this.heroIntroRestLayout) {
@@ -1648,6 +1708,9 @@ export default {
                         instant: !prioritizeDissipate,
                         forcePrepare: true,
                     })
+                    if (this.heroBounceDiskMode && !this.heroBounceHasLaunched) {
+                        this.syncHeroBounceRestPosition()
+                    }
                 })
             })
         },
@@ -1656,6 +1719,10 @@ export default {
             const nextLetter = !this.heroIntroReduceMq.matches
             const letterChanged = nextLetter !== this.heroIntroLetterMode
             const leavingMobile = this.heroDecorHidden && !isMobile
+
+            if (letterChanged && !nextLetter) {
+                this.onHeroPointerEndHandlerImpl({ preserveBounce: false })
+            }
 
             if (isMobile) {
                 this.heroDecorHidden = true
@@ -1675,6 +1742,13 @@ export default {
                                 instant: true,
                                 forcePrepare: true,
                             })
+                            if (
+                                this.pageEntranceDone &&
+                                isHeroBounceDiskEnvironment() &&
+                                !this.isHeroIntroFinePointer()
+                            ) {
+                                this.primeHeroBounceDisk()
+                            }
                         }
                     })
                 })
@@ -1922,8 +1996,200 @@ export default {
         isHeroIntroFinePointer() {
             return (
                 typeof window !== 'undefined' &&
-                window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches
             )
+        },
+        isHeroBounceDiskMode() {
+            return this.heroIntroLetterMode && isHeroBounceDiskEnvironment()
+        },
+        getHeroBounceRestPos() {
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const intro = this.$el?.querySelector('.hero-intro')
+            const x = vw * (1 - HERO_BOUNCE_REST_FROM_RIGHT)
+            let y = vh * 0.38
+            if (intro) {
+                const rect = intro.getBoundingClientRect()
+                if (rect.height > 0) {
+                    y = rect.top - HERO_BOUNCE_REST_ABOVE_HERO_PX
+                }
+            }
+            return {
+                x: Math.round(Math.min(vw - radius, Math.max(radius, x))),
+                y: Math.round(Math.min(vh - radius, Math.max(radius, y))),
+            }
+        },
+        syncHeroBounceRestPosition() {
+            if (!this.isHeroBounceDiskMode() || this.heroCursorBootLocked) return
+            if (this.heroBounceMoving || this.heroBounceHasLaunched) return
+            const pos = this.getHeroBounceRestPos()
+            this.updateHeroFinePointer(pos.x, pos.y, {
+                introEffects: false,
+                skipHover: false,
+            })
+            this.heroCursorGlassPos = { ...pos }
+        },
+        clampHeroBounceIntoViewport() {
+            if (!this.isHeroBounceDiskMode() || !this.heroCursorActive) return
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+            const x = Math.min(vw - radius, Math.max(radius, this.heroCursorPos.x))
+            const y = Math.min(vh - radius, Math.max(radius, this.heroCursorPos.y))
+            if (x === this.heroCursorPos.x && y === this.heroCursorPos.y) return
+            this.updateHeroFinePointer(x, y, {
+                introEffects: this.heroBounceHasLaunched && this.canHeroIntroPointerPlay(),
+            })
+        },
+        primeHeroBounceDisk() {
+            if (!this.isHeroBounceDiskMode() || this.heroCursorBootLocked) return
+            const pos = this.getHeroBounceRestPos()
+            this.heroBounceMoving = false
+            this.heroBounceHasLaunched = false
+            this.heroBounceVel = { x: 0, y: 0 }
+            this.heroBounceLastTs = 0
+            this.heroBounceTapStart = null
+            this.heroCursorPos = { ...pos }
+            this.heroCursorGlassPos = { ...pos }
+            this.heroCursorActive = true
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroCursorRangeMix = 0
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorIntroGlassHandoff = false
+            this.syncHeroCursorDocumentClass()
+            this.startHeroCursorGlassFollow()
+            this.updateHeroFinePointer(pos.x, pos.y, { introEffects: false })
+        },
+        stopHeroBounceDisk() {
+            this.heroBounceMoving = false
+            this.heroBounceHasLaunched = false
+            this.heroBounceVel = { x: 0, y: 0 }
+            this.heroBounceLastTs = 0
+            this.heroBounceTapStart = null
+        },
+        onHeroCursorPointerModeChange() {
+            if (this.isHeroIntroFinePointer()) {
+                this.stopHeroBounceDisk()
+                if (this.heroIntroLetterMode) {
+                    this.primeHeroCursor()
+                }
+                return
+            }
+            this.onHeroPointerEndHandlerImpl({ preserveBounce: false })
+            if (this.pageEntranceDone && this.heroIntroLetterMode) {
+                this.$nextTick(() => this.primeHeroBounceDisk())
+            }
+        },
+        launchHeroBounceDisk() {
+            if (!this.isHeroBounceDiskMode() || this.heroCursorBootLocked) return
+            if (!this.heroCursorActive) {
+                this.primeHeroBounceDisk()
+            }
+
+            const angle = Math.random() * Math.PI * 2
+            const speed =
+                HERO_BOUNCE_SPEED_MIN +
+                Math.random() * (HERO_BOUNCE_SPEED_MAX - HERO_BOUNCE_SPEED_MIN)
+            this.heroBounceVel = {
+                x: Math.cos(angle) * speed,
+                y: Math.sin(angle) * speed,
+            }
+            this.heroBounceMoving = true
+            this.heroBounceHasLaunched = true
+            this.heroBounceLastTs = performance.now()
+            this.startHeroCursorGlassFollow()
+        },
+        stepHeroBouncePhysics(now) {
+            if (!this.heroBounceMoving) return
+
+            const last = this.heroBounceLastTs || now
+            const dt = Math.min(0.05, Math.max(0, (now - last) / 1000))
+            this.heroBounceLastTs = now
+            if (dt <= 0) return
+
+            let { x, y } = this.heroCursorPos
+            let { x: vx, y: vy } = this.heroBounceVel
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+
+            x += vx * dt
+            y += vy * dt
+
+            if (x < radius) {
+                x = radius
+                vx = Math.abs(vx)
+            } else if (x > vw - radius) {
+                x = vw - radius
+                vx = -Math.abs(vx)
+            }
+
+            if (y < radius) {
+                y = radius
+                vy = Math.abs(vy)
+            } else if (y > vh - radius) {
+                y = vh - radius
+                vy = -Math.abs(vy)
+            }
+
+            const damp = Math.exp(-HERO_BOUNCE_FRICTION * dt)
+            vx *= damp
+            vy *= damp
+
+            if (Math.hypot(vx, vy) < HERO_BOUNCE_MIN_SPEED) {
+                vx = 0
+                vy = 0
+                this.heroBounceMoving = false
+                this.heroBounceLastTs = 0
+            }
+
+            this.heroBounceVel = { x: vx, y: vy }
+            this.updateHeroFinePointer(x, y, {
+                introEffects: this.canHeroIntroPointerPlay(),
+            })
+        },
+        shouldIgnoreHeroBounceTapTarget(target) {
+            if (!(target instanceof Element)) return false
+            if (target.closest('.hero-intro-cursor-ball, .hero-intro-cursor-magnifier')) {
+                return false
+            }
+            if (target.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)) return true
+            if (target.closest('a[href], button, input, textarea, select, label, summary')) {
+                return true
+            }
+            return false
+        },
+        onHeroBouncePointerDown(event) {
+            if (!this.isHeroBounceDiskMode() || this.heroCursorBootLocked) return
+            if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
+            if (this.shouldIgnoreHeroBounceTapTarget(event.target)) {
+                this.heroBounceTapStart = null
+                return
+            }
+            this.heroBounceTapStart = {
+                pointerId: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                t: performance.now(),
+            }
+        },
+        onHeroBouncePointerUp(event) {
+            const start = this.heroBounceTapStart
+            if (!start || start.pointerId !== event.pointerId) return
+            this.heroBounceTapStart = null
+
+            if (!this.isHeroBounceDiskMode() || this.heroCursorBootLocked) return
+            if (this.shouldIgnoreHeroBounceTapTarget(event.target)) return
+
+            const travel = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+            const elapsed = performance.now() - start.t
+            if (travel > HERO_BOUNCE_TAP_MAX_TRAVEL || elapsed > HERO_BOUNCE_TAP_MAX_MS) return
+
+            this.launchHeroBounceDisk()
         },
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
@@ -2321,8 +2587,16 @@ export default {
                 this.heroCursorGlassRaf = null
                 if (!this.heroCursorActive) return
 
+                if (this.isHeroBounceDiskMode()) {
+                    this.stepHeroBouncePhysics(performance.now())
+                }
+
                 const { x: tx, y: ty } = this.heroCursorPos
-                const proximityTarget = this.getHeroIntroRangeProximityMix(tx, ty)
+                const allowIntroGlass =
+                    !this.isHeroBounceDiskMode() || this.heroBounceHasLaunched
+                const proximityTarget = allowIntroGlass
+                    ? this.getHeroIntroRangeProximityMix(tx, ty)
+                    : 0
                 if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
                     this.heroCursorRangeMix = 0
                     this.heroCursorIntroGlassHandoff = false
@@ -2360,7 +2634,8 @@ export default {
                 const ny = gy + (ty - gy) * follow
 
                 // Keep the hover magnifier and its ring on one layer — no trailing ghost.
-                if (magnifierVisible) {
+                // Bounce flight also snaps so the disk reads as one solid body.
+                if (magnifierVisible || this.heroBounceMoving) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else if (this.heroCursorInRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
@@ -2754,8 +3029,9 @@ export default {
                 this.clearHeroIntroPointerShift()
             }, lingerMs)
         },
-        onHeroPointerEndHandlerImpl() {
+        onHeroPointerEndHandlerImpl({ preserveBounce = true } = {}) {
             if (this.heroCursorBootLocked) return
+            if (preserveBounce && this.isHeroBounceDiskMode()) return
 
             this.disableHeroIntroTouchGuard()
             this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
@@ -2772,6 +3048,7 @@ export default {
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
             this.heroCursorIntroGlassHandoff = false
+            this.stopHeroBounceDisk()
             this.syncHeroCursorDocumentClass()
             this.stopHeroCursorGlassFollow()
             if (this.heroIntroPointerRaf != null) {
@@ -2782,6 +3059,8 @@ export default {
             this.clearHeroIntroPointerShift()
         },
         onHeroPointerDownHandler(event) {
+            this.onHeroBouncePointerDown(event)
+
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroMobileTouch()) return
             if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
@@ -2799,11 +3078,17 @@ export default {
             this.setHeroIntroPointer(event.clientX, event.clientY, { immediate: true })
         },
         onHeroPointerUpHandler(event) {
+            if (event.type === 'pointercancel') {
+                this.heroBounceTapStart = null
+            } else {
+                this.onHeroBouncePointerUp(event)
+            }
+
             if (this.heroIntroActivePointerId !== event.pointerId) return
             if (this.isHeroIntroMobileTouch()) {
                 const wasStroke = this.heroIntroTouchMode === 'stroke'
                 this.releaseHeroIntroMobileTouch({
-                    linger: wasStroke,
+                    linger: wasStroke && event.type !== 'pointercancel',
                     pointerId: event.pointerId,
                 })
                 return
@@ -2838,34 +3123,60 @@ export default {
             }
         },
         onHeroPointerScrollHandler() {
-            if (!this.canHeroIntroPointerPlay()) return
-            if (!this.isHeroIntroFinePointer()) return
-            if (!this.heroCursorActive) return
+            if (!this.canHeroIntroPointerPlay() && !this.isHeroBounceDiskMode()) return
+            if (this.isHeroIntroFinePointer()) {
+                if (!this.heroCursorActive) return
 
-            // Scrolling moves content under a stationary cursor — not intentional hover.
+                // Scrolling moves content under a stationary cursor — not intentional hover.
+                this.heroCursorScrollHoverSuppressUntil = performance.now() + 140
+                this.heroCursorHoverLockEl = null
+                this.heroCursorOverHover = false
+                this.heroCursorHoverMix *= 0.45
+
+                if (this.heroCursorMirrorHoverTarget === 1) {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            if (this.heroCursorMirrorHoverTarget !== 1) return
+                            this.refreshHeroCursorMirror()
+                            this.updateHeroCursorMagnifierLayout()
+                        })
+                    })
+                }
+
+                if (this.heroIntroScrollRaf != null) return
+                this.heroIntroScrollRaf = requestAnimationFrame(() => {
+                    this.heroIntroScrollRaf = null
+
+                    if (!this.heroCursorActive) return
+
+                    const { x, y } = this.heroCursorPos
+                    this.updateHeroFinePointer(x, y, { skipHover: true })
+                })
+                return
+            }
+
+            if (!this.isHeroBounceDiskMode() || !this.heroCursorActive) return
+
             this.heroCursorScrollHoverSuppressUntil = performance.now() + 140
             this.heroCursorHoverLockEl = null
             this.heroCursorOverHover = false
             this.heroCursorHoverMix *= 0.45
 
-            if (this.heroCursorMirrorHoverTarget === 1) {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        if (this.heroCursorMirrorHoverTarget !== 1) return
-                        this.refreshHeroCursorMirror()
-                        this.updateHeroCursorMagnifierLayout()
-                    })
-                })
-            }
-
             if (this.heroIntroScrollRaf != null) return
             this.heroIntroScrollRaf = requestAnimationFrame(() => {
                 this.heroIntroScrollRaf = null
+                if (!this.heroCursorActive || !this.isHeroBounceDiskMode()) return
 
-                if (!this.heroCursorActive) return
+                if (!this.heroBounceHasLaunched && !this.heroBounceMoving) {
+                    this.syncHeroBounceRestPosition()
+                    return
+                }
 
                 const { x, y } = this.heroCursorPos
-                this.updateHeroFinePointer(x, y, { skipHover: true })
+                this.updateHeroFinePointer(x, y, {
+                    introEffects: this.heroBounceHasLaunched && this.canHeroIntroPointerPlay(),
+                    skipHover: true,
+                })
             })
         },
         applyHeroIntroPointerShift() {
@@ -2967,6 +3278,11 @@ export default {
                 this.updateHeroIntroDissipateFromScroll({
                     forcePrepare: widthChanged && !inFlight,
                 })
+
+                if (this.isHeroBounceDiskMode()) {
+                    if (!this.heroBounceHasLaunched) this.syncHeroBounceRestPosition()
+                    else this.clampHeroBounceIntoViewport()
+                }
             })
         },
         canHeroIntroDissipate() {
