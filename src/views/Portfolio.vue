@@ -2021,12 +2021,10 @@ export default {
             return this.heroIntroLetterMode && isHeroTouchDiskEnvironment()
         },
         getHeroTouchDiskRestPos() {
-            const vw = window.innerWidth
-            const vh = window.innerHeight
-            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const bounds = this.getHeroTouchDiskBounds()
+            const x = window.innerWidth * (1 - HERO_TOUCH_DISK_REST_FROM_RIGHT)
+            let y = window.innerHeight * 0.38
             const intro = this.$el?.querySelector('.hero-intro')
-            const x = vw * (1 - HERO_TOUCH_DISK_REST_FROM_RIGHT)
-            let y = vh * 0.38
             if (intro) {
                 const rect = intro.getBoundingClientRect()
                 if (rect.height > 0) {
@@ -2034,9 +2032,33 @@ export default {
                 }
             }
             return {
-                x: Math.round(Math.min(vw - radius, Math.max(radius, x))),
-                y: Math.round(Math.min(vh - radius, Math.max(radius, y))),
+                x: Math.round(Math.min(bounds.maxX, Math.max(bounds.minX, x))),
+                y: Math.round(Math.min(bounds.maxY, Math.max(bounds.minY, y))),
             }
+        },
+        getHeroTouchDiskBounds() {
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+            const minX = radius
+            const maxX = Math.max(minX, vw - radius)
+            const minY = radius
+            let maxY = Math.max(minY, vh - radius)
+
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (intro) {
+                const rect = intro.getBoundingClientRect()
+                if (rect.height > 0) {
+                    // Keep the disk center above the hero intro bottom (first viewport).
+                    maxY = Math.min(maxY, rect.bottom - radius)
+                }
+            }
+
+            if (maxY < minY) {
+                maxY = minY
+            }
+
+            return { minX, maxX, minY, maxY, radius }
         },
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -2050,17 +2072,16 @@ export default {
         },
         clampHeroTouchDiskIntoViewport() {
             if (!this.isHeroTouchDiskMode() || !this.heroCursorActive) return
-            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
-            const vw = window.innerWidth
-            const vh = window.innerHeight
-            const x = Math.min(vw - radius, Math.max(radius, this.heroCursorPos.x))
-            const y = Math.min(vh - radius, Math.max(radius, this.heroCursorPos.y))
+            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
+            const x = Math.min(maxX, Math.max(minX, this.heroCursorPos.x))
+            const y = Math.min(maxY, Math.max(minY, this.heroCursorPos.y))
             if (x === this.heroCursorPos.x && y === this.heroCursorPos.y) return
             this.updateHeroFinePointer(x, y, {
                 introEffects:
                     (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
                     this.canHeroIntroPointerPlay(),
             })
+            this.heroCursorGlassPos = { x, y }
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -2103,16 +2124,14 @@ export default {
             }
         },
         moveHeroTouchDiskTo(clientX, clientY) {
-            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
-            const vw = window.innerWidth
-            const vh = window.innerHeight
+            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
             const x = Math.min(
-                vw - radius,
-                Math.max(radius, clientX + this.heroTouchDiskGrabOffset.x),
+                maxX,
+                Math.max(minX, clientX + this.heroTouchDiskGrabOffset.x),
             )
             const y = Math.min(
-                vh - radius,
-                Math.max(radius, clientY + this.heroTouchDiskGrabOffset.y),
+                maxY,
+                Math.max(minY, clientY + this.heroTouchDiskGrabOffset.y),
             )
             this.updateHeroFinePointer(x, y, {
                 introEffects: this.canHeroIntroPointerPlay(),
@@ -3138,6 +3157,7 @@ export default {
                     return
                 }
 
+                this.clampHeroTouchDiskIntoViewport()
                 const { x, y } = this.heroCursorPos
                 this.updateHeroFinePointer(x, y, {
                     introEffects: this.canHeroIntroPointerPlay(),
