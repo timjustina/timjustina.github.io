@@ -1348,7 +1348,7 @@ export default {
             }
 
             // Deco line present (desktop): cards stay put — no scroll fade.
-            // Deco line hidden (mobile): off-screen cards fade in on scroll.
+            // Deco line hidden (mobile): cards fade in/out each time they enter/leave view.
             if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
                 this.revealAllProjects()
                 return
@@ -1357,9 +1357,7 @@ export default {
             this.projectFadeObserver = new IntersectionObserver(
                 (entries) => {
                     for (const entry of entries) {
-                        if (!entry.isIntersecting) continue
-                        entry.target.classList.add('project--in-view')
-                        this.projectFadeObserver?.unobserve(entry.target)
+                        entry.target.classList.toggle('project--in-view', entry.isIntersecting)
                     }
                 },
                 {
@@ -1369,14 +1367,13 @@ export default {
                 }
             )
             for (const project of projects) {
+                project.classList.add('project--scroll-fade')
                 const rect = project.getBoundingClientRect()
                 const inViewport = rect.top < window.innerHeight && rect.bottom > 0
                 if (inViewport) {
                     project.classList.add('project--in-view')
-                } else {
-                    project.classList.add('project--scroll-fade')
-                    this.projectFadeObserver.observe(project)
                 }
+                this.projectFadeObserver.observe(project)
             }
         },
         revealAllProjects() {
