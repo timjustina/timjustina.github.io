@@ -3121,6 +3121,8 @@ export default {
         },
         onHeroPointerDownHandler(event) {
             if (this.heroTouchDiskDragging) return
+            // Coarse pointers: letter push only via the touch disk — not finger-on-text.
+            if (this.isHeroTouchDiskMode()) return
 
             if (!this.canHeroIntroPointerPlay()) return
             if (!this.isHeroIntroMobileTouch()) return
@@ -3158,6 +3160,7 @@ export default {
                 return
             }
 
+            if (this.isHeroTouchDiskMode()) return
             if (!this.canHeroIntroPointerPlay()) return
 
             if (
