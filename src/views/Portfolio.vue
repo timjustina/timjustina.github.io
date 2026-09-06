@@ -5277,9 +5277,8 @@ export default {
     box-sizing: border-box;
     transition: background 0.2s ease;
     box-shadow:
-        0 1px 3px rgba(15, 23, 42, 0.09),
-        0 4px 10px rgba(15, 23, 42, 0.09),
-        0 8px 16px rgba(15, 23, 42, 0.05);
+        0 1px 2px rgba(15, 23, 42, 0.18),
+        0 2px 4px rgba(15, 23, 42, 0.1);
 }
 
 /* Glass edge — thinner rim, soft inner glow */
@@ -5291,23 +5290,23 @@ export default {
     z-index: 1;
     border-radius: inherit;
     pointer-events: none;
-    border: 0.8px solid rgba(255, 255, 255, 0.7);
+    border: 0.8px solid rgba(255, 255, 255, 0.65);
     background: linear-gradient(
         145deg,
-        rgba(255, 255, 255, 0.48) 0%,
-        rgba(255, 255, 255, 0.22) 4%,
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.18) 4%,
         rgba(255, 255, 255, 0) 9%,
         rgba(255, 255, 255, 0) 91%,
-        rgba(255, 255, 255, 0.18) 96%,
-        rgba(255, 255, 255, 0.38) 100%
+        rgba(255, 255, 255, 0.14) 96%,
+        rgba(255, 255, 255, 0.32) 100%
     );
     box-shadow:
-        inset 0 0.5px 0 rgba(255, 255, 255, 0.9),
-        inset 0 1.5px 3px rgba(255, 255, 255, 0.65),
-        inset 0 -0.5px 0 rgba(255, 255, 255, 0.4),
-        inset 0 -1px 2.5px rgba(255, 255, 255, 0.4),
-        inset 1px 0 2.5px rgba(255, 255, 255, 0.35),
-        inset -1px 0 2.5px rgba(255, 255, 255, 0.35);
+        inset 0 0.5px 0 rgba(255, 255, 255, 0.8),
+        inset 0 1.5px 2.5px rgba(255, 255, 255, 0.5),
+        inset 0 -0.5px 0 rgba(255, 255, 255, 0.32),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.32),
+        inset 1px 0 2px rgba(255, 255, 255, 0.28),
+        inset -1px 0 2px rgba(255, 255, 255, 0.28);
 }
 
 .cta-button:hover {
@@ -5743,9 +5742,8 @@ export default {
     box-sizing: border-box;
     transition: background 0.2s ease;
     box-shadow:
-        0 1px 3px rgba(15, 23, 42, 0.09),
-        0 4px 10px rgba(15, 23, 42, 0.09),
-        0 8px 16px rgba(15, 23, 42, 0.05);
+        0 1px 2px rgba(15, 23, 42, 0.18),
+        0 2px 4px rgba(15, 23, 42, 0.1);
 }
 
 .about-action-btn:hover {
