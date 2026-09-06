@@ -49,6 +49,7 @@
                 'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
                 'hero-intro-cursor-ball--touch': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
+                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -76,6 +77,7 @@
                 'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
                 'hero-intro-cursor-ball--touch': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
+                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
@@ -454,6 +456,8 @@ const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 120
 const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.25
 const HERO_TOUCH_DISK_HIT_SIZE = 56
+/** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch` opacity transition + delay. */
+const HERO_TOUCH_DISK_ENTRANCE_MS = 1020
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -812,6 +816,10 @@ export default {
             heroTouchDiskGrabOffset: { x: 0, y: 0 },
             heroTouchDiskOnStage: true,
             heroTouchDiskDissipateInstant: false,
+            heroTouchDiskEntrance: 0,
+            heroTouchDiskIdle: true,
+            heroTouchDiskBreathe: false,
+            heroTouchDiskEntranceTimer: null,
         }
     },
     computed: {
@@ -871,7 +879,8 @@ export default {
         },
         heroTouchDiskDissipateFade() {
             if (!this.heroTouchDiskMode) return 1
-            return this.heroIntroDissipated ? 0 : 1
+            const dissipate = this.heroIntroDissipated ? 0 : 1
+            return dissipate * this.heroTouchDiskEntrance
         },
         heroCursorDotDiskVisible() {
             if (!this.heroCursorVisible) return false
@@ -1337,6 +1346,7 @@ export default {
         this.stopHeroCursorGlassFollow()
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
+        clearTimeout(this.heroTouchDiskEntranceTimer)
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
         this.clearHeroIntroDissipate()
@@ -2171,13 +2181,48 @@ export default {
             this.startHeroCursorGlassFollow()
             this.updateHeroFinePointer(pos.x, pos.y, { introEffects: false })
             this.refreshHeroTouchDiskStage()
+            this.beginHeroTouchDiskEntrance()
+        },
+        beginHeroTouchDiskEntrance() {
+            clearTimeout(this.heroTouchDiskEntranceTimer)
+            this.heroTouchDiskEntranceTimer = null
+            this.heroTouchDiskEntrance = 0
+            this.heroTouchDiskIdle = true
+            this.heroTouchDiskBreathe = false
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        if (!this.isHeroTouchDiskMode() || !this.heroTouchDiskIdle) return
+                        this.heroTouchDiskEntrance = 1
+                        this.heroTouchDiskEntranceTimer = setTimeout(() => {
+                            this.heroTouchDiskEntranceTimer = null
+                            if (this.heroTouchDiskIdle && this.isHeroTouchDiskMode()) {
+                                this.heroTouchDiskBreathe = true
+                            }
+                        }, HERO_TOUCH_DISK_ENTRANCE_MS)
+                    })
+                })
+            })
+        },
+        markHeroTouchDiskInteracted() {
+            if (!this.heroTouchDiskIdle && !this.heroTouchDiskBreathe) return
+            clearTimeout(this.heroTouchDiskEntranceTimer)
+            this.heroTouchDiskEntranceTimer = null
+            this.heroTouchDiskIdle = false
+            this.heroTouchDiskBreathe = false
+            if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
         },
         stopHeroTouchDisk() {
+            clearTimeout(this.heroTouchDiskEntranceTimer)
+            this.heroTouchDiskEntranceTimer = null
             this.heroTouchDiskDragging = false
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
             this.heroTouchDiskOnStage = false
+            this.heroTouchDiskEntrance = 0
+            this.heroTouchDiskIdle = true
+            this.heroTouchDiskBreathe = false
         },
         onHeroCursorPointerModeChange() {
             if (this.isHeroIntroFinePointer()) {
@@ -2215,6 +2260,8 @@ export default {
 
             event.preventDefault()
             event.stopPropagation()
+
+            this.markHeroTouchDiskInteracted()
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
@@ -4392,6 +4439,22 @@ export default {
 .hero-intro-cursor-ball--touch-instant,
 .hero-intro-cursor-magnifier--touch-instant {
     transition: none !important;
+}
+
+.hero-intro-cursor-ball--touch-breathe {
+    animation: hero-touch-disk-breathe 2s ease-in-out infinite;
+    transform-origin: center center;
+}
+
+@keyframes hero-touch-disk-breathe {
+    0%,
+    100% {
+        scale: 1;
+    }
+
+    50% {
+        scale: 1.08;
+    }
 }
 
 .hero-intro-cursor-dot-disk {
