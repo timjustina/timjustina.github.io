@@ -433,6 +433,9 @@ const HERO_CURSOR_RANGE_EXPAND_END = 0.34
 const HERO_CURSOR_INTRO_GLASS_ON = 0.04
 const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
+/** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
+const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
+const HERO_INTRO_DISSIPATE_RETURN_PX = 480
 
 function isHeroCursorEnvironment() {
     return (
@@ -742,13 +745,14 @@ export default {
             heroIntroTouchStart: null,
             heroIntroTouchMode: null,
             heroIntroTouchGuardActive: false,
-            // Mobile (<800): text lifts off viewport bottom → fan out; same spot → reconsolidate.
+            // Mobile (<800): text lifts off viewport bottom → fan out; near-top scroll → reconsolidate.
             heroIntroDissipated: false,
             heroIntroDissipatePrepared: false,
             heroIntroDissipateMaxDelay: 0,
             heroIntroDissipateRaf: null,
             heroIntroReconsolidating: false,
             heroIntroReconsolidateTimer: null,
+            heroIntroDissipateScrollY: null,
             // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
             // always reference this — never live layout during scroll/URL-bar resize.
             heroIntroRestLayout: null,
@@ -3266,19 +3270,23 @@ export default {
             // Intro is bottom-parked in normal document flow, so scrollY is the lift
             // off that floor. Do not key off getBoundingClientRect — a bad resting Y
             // (or refreshing it while scrolled) made leave/return look mid-viewport.
-            const leaveSlop = 8
-            const returnSlack = 8
             const y = Math.max(
                 0,
                 window.scrollY || document.documentElement.scrollTop || 0
             )
+            const prevY = this.heroIntroDissipateScrollY
+            this.heroIntroDissipateScrollY = y
 
-            let shouldDissipate
-            if (this.heroIntroDissipated) {
-                // Same floor as leave (y > leaveSlop), with slack so it doesn’t flicker.
-                shouldDissipate = y > leaveSlop - returnSlack
-            } else {
-                shouldDissipate = y > leaveSlop
+            // Direction-aware hysteresis: leave early on the way down, reconsolidate
+            // once within RETURN_PX of the top on the way up (without re-fanning while
+            // paused in the leave/return band).
+            let shouldDissipate = this.heroIntroDissipated
+            if (prevY == null) {
+                shouldDissipate = y > HERO_INTRO_DISSIPATE_LEAVE_PX
+            } else if (y > prevY) {
+                if (y > HERO_INTRO_DISSIPATE_LEAVE_PX) shouldDissipate = true
+            } else if (y < prevY) {
+                if (y <= HERO_INTRO_DISSIPATE_RETURN_PX) shouldDissipate = false
             }
 
             this.setHeroIntroDissipated(shouldDissipate, { instant })
@@ -3290,6 +3298,7 @@ export default {
             this.heroIntroReconsolidating = false
             this.heroIntroDissipatePrepared = false
             this.heroIntroDissipateMaxDelay = 0
+            this.heroIntroDissipateScrollY = null
             // Keep heroIntroRestLayout — premeasured parked geometry for this viewport.
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
@@ -5404,7 +5413,7 @@ export default {
     }
 
     .hero {
-        margin-bottom: 108px;
+        margin-bottom: 100px;
     }
 
     .portfolio-main {
@@ -5565,7 +5574,7 @@ export default {
 /* 601px–<800px: mobile hero + tablet about/text tweaks */
 @media (min-width: 601px) and (width < 800px) {
     .hero {
-        margin-bottom: 340px;
+        margin-bottom: 100px;
     }
 
     .about {
