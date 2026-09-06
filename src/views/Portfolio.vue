@@ -2266,7 +2266,6 @@ export default {
             this.heroTouchDiskEntering = false
             this.heroTouchDiskIdle = true
             this.heroTouchDiskBreathe = false
-            this.setHeroIntroDiskDragActive(false)
         },
         onHeroCursorPointerModeChange() {
             if (this.isHeroIntroFinePointer()) {
@@ -2309,7 +2308,6 @@ export default {
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
-            this.setHeroIntroDiskDragActive(true)
             this.heroTouchDiskPointerId = event.pointerId
             this.heroTouchDiskGrabOffset = {
                 x: x - event.clientX,
@@ -2345,7 +2343,6 @@ export default {
             this.heroTouchDiskDragging = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
-            this.setHeroIntroDiskDragActive(false)
         },
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
@@ -2470,12 +2467,6 @@ export default {
             this.$el
                 ?.querySelector('.hero-intro.hero-intro--chars')
                 ?.classList.toggle('hero-intro--stroke-active', active)
-        },
-        // Touch-disk only — separate from stroke / fine-pointer cursor knock easing.
-        setHeroIntroDiskDragActive(active) {
-            this.$el
-                ?.querySelector('.hero-intro.hero-intro--chars')
-                ?.classList.toggle('hero-intro--disk-drag-active', active)
         },
         enterHeroIntroSwipeMode(pointerId) {
             this.heroIntroTouchMode = 'swipe'
@@ -3674,7 +3665,6 @@ export default {
             if (active) {
                 this.clearHeroIntroPointerShift()
                 this.setHeroIntroStrokeActive(false)
-                this.setHeroIntroDiskDragActive(false)
                 clearTimeout(this.heroIntroReconsolidateTimer)
                 this.heroIntroReconsolidateTimer = null
                 this.heroIntroReconsolidating = false
@@ -4390,11 +4380,6 @@ export default {
 
     /* Direct follow while stroking — CSS transitions fight per-frame updates and vibrate */
     .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char {
-        transition: none;
-    }
-
-    /* Same for glass-disk drag only (does not touch fine-pointer cursor path) */
-    .portfolio-page--settled .hero-intro--chars.hero-intro--disk-drag-active .hero-intro-char {
         transition: none;
     }
 
