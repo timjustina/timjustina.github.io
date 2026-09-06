@@ -439,9 +439,6 @@ const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
 const HERO_CURSOR_HOLLOW_END = 0.28
 const HERO_CURSOR_HOVER_LERP = 0.3
 const HERO_CURSOR_HOVER_DISK_EXPAND_IN = 0.1
-/** Mobile touch disk: snap disk↔magnifier instead of the desktop hover ease. */
-const HERO_TOUCH_DISK_HOVER_LERP_IN = 1
-const HERO_TOUCH_DISK_HOVER_LERP_OUT = 0.85
 const HERO_CURSOR_HOVER_DOT_RING_OUT = 0.22
 const HERO_CURSOR_RANGE_END_SIZE = 32
 const HERO_CURSOR_RANGE_POP = 1.5
@@ -2618,16 +2615,12 @@ export default {
                 }
 
                 this.heroCursorOverHover = hoverTarget === 1
-                const touchDisk = this.isHeroTouchDiskMode()
-                const hoverLerp = touchDisk
-                    ? hoverTarget === 1
-                        ? HERO_TOUCH_DISK_HOVER_LERP_IN
-                        : HERO_TOUCH_DISK_HOVER_LERP_OUT
-                    : hoverTarget === 1
-                      ? this.heroCursorInRange
-                          ? 0.3
-                          : HERO_CURSOR_HOVER_LERP
-                      : 0.45
+                const hoverLerp =
+                    hoverTarget === 1
+                        ? this.heroCursorInRange
+                            ? 0.3
+                            : HERO_CURSOR_HOVER_LERP
+                        : 0.45
                 this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
                 if (hoverTarget === 0 && this.heroCursorHoverMix < 0.04) {
                     this.heroCursorHoverMix = 0
@@ -2637,21 +2630,16 @@ export default {
                     this.heroCursorInRange && this.isHeroIntroPointerTight(tx, ty)
 
                 if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
-                    if (touchDisk) {
+                    this.heroCursorMirrorAwaitingRefresh = true
+                    requestAnimationFrame(() => {
+                        if (this.heroCursorMirrorHoverTarget !== 1) {
+                            this.heroCursorMirrorAwaitingRefresh = false
+                            return
+                        }
                         this.refreshHeroCursorMirror()
                         this.heroCursorMirrorAwaitingRefresh = false
-                    } else {
-                        this.heroCursorMirrorAwaitingRefresh = true
-                        requestAnimationFrame(() => {
-                            if (this.heroCursorMirrorHoverTarget !== 1) {
-                                this.heroCursorMirrorAwaitingRefresh = false
-                                return
-                            }
-                            this.refreshHeroCursorMirror()
-                            this.heroCursorMirrorAwaitingRefresh = false
-                            this.updateHeroCursorMagnifierLayout()
-                        })
-                    }
+                        this.updateHeroCursorMagnifierLayout()
+                    })
                 }
                 this.heroCursorMirrorHoverTarget = hoverTarget
                 this.updateHeroCursorMagnifierLayout()
