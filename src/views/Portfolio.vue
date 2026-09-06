@@ -3506,6 +3506,12 @@ export default {
             const work = this.$el?.querySelector('.work')
             if (!work) return
 
+            // Drop locked px sizes first so projects can grow again on widen
+            // (otherwise max-width:100% stays capped by the previous narrow slot).
+            work.style.removeProperty('--work-slot-w')
+            work.style.removeProperty('--work-slot-h')
+            void work.offsetHeight
+
             // Project boxes keep natural size; slots around them share the largest W×H.
             let maxW = 0
             let maxH = 0
@@ -3515,19 +3521,8 @@ export default {
                 maxH = Math.max(maxH, Math.ceil(rect.height))
             }
 
-            const nextW = maxW > 0 ? `${maxW}px` : ''
-            const nextH = maxH > 0 ? `${maxH}px` : ''
-            if (
-                work.style.getPropertyValue('--work-slot-w') === nextW &&
-                work.style.getPropertyValue('--work-slot-h') === nextH
-            ) {
-                return
-            }
-
-            if (nextW) work.style.setProperty('--work-slot-w', nextW)
-            else work.style.removeProperty('--work-slot-w')
-            if (nextH) work.style.setProperty('--work-slot-h', nextH)
-            else work.style.removeProperty('--work-slot-h')
+            if (maxW > 0) work.style.setProperty('--work-slot-w', `${maxW}px`)
+            if (maxH > 0) work.style.setProperty('--work-slot-h', `${maxH}px`)
         },
         syncHeroDecorHeight() {
             this.syncWorkGridSlots()
@@ -4805,8 +4800,8 @@ export default {
     margin-left: 0;
 }
 
-.work-slot:last-child .project,
-.project:last-child {
+/* Only the last row is wide — :last-child on .project matches every slot child */
+.work > .work-slot:last-child > .project {
     width: var(--project-w-wide);
     max-width: 100%;
 }
@@ -5498,8 +5493,7 @@ export default {
     .project,
     .project--featured,
     .project--offset,
-    .work-slot:last-child .project,
-    .project:last-child {
+    .work > .work-slot:last-child > .project {
         width: 100%;
         max-width: 100%;
         min-width: 0;
