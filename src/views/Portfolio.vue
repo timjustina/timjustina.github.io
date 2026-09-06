@@ -451,8 +451,8 @@ const HERO_CURSOR_INTRO_GLASS_ON = 0.04
 const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 /** Mobile touch disk: rest above hero, 30% inset from the right edge. */
-const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 80
-const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
+const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 120
+const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.25
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
