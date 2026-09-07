@@ -2866,6 +2866,13 @@ export default {
             const clone = source.cloneNode(true)
             clone.setAttribute('aria-hidden', 'true')
             clone.classList.add('hero-intro-cursor-mirror-clone')
+            // Snap to settled poses — inserting a fresh clone would otherwise
+            // restart about/hero fly-ins (visible when hovering About CTAs).
+            clone.classList.add('portfolio-page--reveal', 'portfolio-page--settled')
+            const aboutClone = clone.querySelector('#about')
+            if (aboutClone) {
+                aboutClone.classList.add('about--reveal', 'about--settled')
+            }
             clone.querySelectorAll(
                 '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit',
             ).forEach((el) => el.remove())
@@ -6541,6 +6548,21 @@ export default {
 </style>
 
 <style>
+/* Magnifier clone: never replay entrance fly-ins under the glass. */
+.hero-intro-cursor-mirror-clone .portfolio-fly,
+.hero-intro-cursor-mirror-clone .about--reveal .portfolio-fly {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    will-change: auto;
+}
+
+.hero-intro-cursor-mirror-clone .hero-intro-afterthought-char {
+    opacity: 1 !important;
+    max-width: none !important;
+    animation: none !important;
+}
+
 /* Magnifier clone: mirror interactive hover styles (clone cannot use :hover). */
 .hero-intro-cursor-mirror-clone .about-link,
 .hero-intro-cursor-mirror-clone .footer-email {
