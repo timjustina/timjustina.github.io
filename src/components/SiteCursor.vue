@@ -1373,8 +1373,11 @@ export default {
 }
 
 .hero-intro-cursor-magnifier__clone-host,
-.hero-intro-cursor-mirror-clone {
-  pointer-events: none;
+.hero-intro-cursor-mirror-clone,
+.hero-intro-cursor-mirror-clone * {
+  /* Descendants (e.g. open TL;DR panel-inner) set pointer-events:auto and would
+     otherwise punch through the magnifier and steal :hover from the live CTA. */
+  pointer-events: none !important;
 }
 
 .hero-intro-cursor-ball--visible {

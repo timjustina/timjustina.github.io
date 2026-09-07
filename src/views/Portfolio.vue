@@ -4843,8 +4843,10 @@ export default {
 }
 
 .hero-intro-cursor-magnifier__clone-host,
-.hero-intro-cursor-mirror-clone {
-    pointer-events: none;
+.hero-intro-cursor-mirror-clone,
+.hero-intro-cursor-mirror-clone * {
+    /* Descendants that set pointer-events:auto must not steal live :hover. */
+    pointer-events: none !important;
 }
 
 .hero-intro-cursor-ball--visible {
