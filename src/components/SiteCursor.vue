@@ -744,6 +744,66 @@ export default {
         })
       }
     },
+    /**
+     * Keep TL;DR open/closed classes in sync with the live page.
+     * The magnifier clone is often built while the panel is closed; without this,
+     * hovering the Copy CTA still shows the collapsed snapshot (CTA visibility:hidden
+     * and everything below shifted up into the wrong place).
+     */
+    syncMirrorTldrState() {
+      const source = this.getPageSource()
+      if (!source) return
+
+      const liveList = [...source.querySelectorAll('.project-tldr')]
+      if (!liveList.length) return
+
+      for (const root of [this.mirrorClone, this.mirrorFrostBlurClone]) {
+        if (!root) continue
+        const mirrorList = [...root.querySelectorAll('.project-tldr')]
+        liveList.forEach((live, i) => {
+          const mirror = mirrorList[i]
+          if (!mirror) return
+
+          const liveOpen = live.classList.contains('project-tldr--open')
+          const mirrorOpen = mirror.classList.contains('project-tldr--open')
+          const liveSlot = live.querySelector('.project-tldr-panel-slot')
+          const mirrorSlot = mirror.querySelector('.project-tldr-panel-slot')
+          const liveSlotOpen = !!liveSlot?.classList.contains('project-tldr-panel-slot--open')
+          const mirrorSlotOpen = !!mirrorSlot?.classList.contains('project-tldr-panel-slot--open')
+          const mismatched = liveOpen !== mirrorOpen || liveSlotOpen !== mirrorSlotOpen
+
+          if (mismatched) {
+            // Snap to the live layout instead of replaying the open/close animation
+            // from a stale collapsed/expanded snapshot under the glass.
+            mirror
+              .querySelectorAll(
+                '.project-tldr-panel-slot, .project-tldr-panel, .project-tldr-chevron',
+              )
+              .forEach((el) => {
+                el.style.transition = 'none'
+              })
+          }
+
+          mirror.classList.toggle('project-tldr--open', liveOpen)
+          if (liveSlot && mirrorSlot) {
+            mirrorSlot.classList.toggle('project-tldr-panel-slot--open', liveSlotOpen)
+          }
+
+          if (mismatched) {
+            void mirror.offsetWidth
+            requestAnimationFrame(() => {
+              mirror
+                .querySelectorAll(
+                  '.project-tldr-panel-slot, .project-tldr-panel, .project-tldr-chevron',
+                )
+                .forEach((el) => {
+                  el.style.removeProperty('transition')
+                })
+            })
+          }
+        })
+      }
+    },
     syncMirrorHoverState(x, y) {
       const clone = this.mirrorClone
       const chrome = this.mirrorTopBarClone
@@ -1052,6 +1112,7 @@ export default {
       clone.style.minHeight = `${source.offsetHeight}px`
 
       this.syncMirrorFrostBlurClone()
+      this.syncMirrorTldrState()
 
       const cloneHost = this.$refs.mirrorRoot
       if (cloneHost instanceof Element && this.magnifierLayout) {
