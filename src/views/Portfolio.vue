@@ -30,7 +30,23 @@
                     ref="heroCursorMagnifierTopBarFrost"
                     class="hero-intro-cursor-magnifier__top-bar-frost"
                     aria-hidden="true"
-                />
+                >
+                    <div
+                        ref="heroCursorMagnifierTopBarFrostBlurHost"
+                        class="hero-intro-cursor-magnifier__top-bar-frost-blur-host"
+                    >
+                        <div
+                            ref="heroCursorMagnifierTopBarFrostBlurScaled"
+                            class="hero-intro-cursor-magnifier__top-bar-frost-blur"
+                        >
+                            <div
+                                ref="heroCursorMirrorFrostBlurRoot"
+                                class="hero-intro-cursor-magnifier__clone-host"
+                            />
+                        </div>
+                    </div>
+                    <div class="hero-intro-cursor-magnifier__top-bar-frost-tint" />
+                </div>
                 <div
                     class="hero-intro-cursor-magnifier__top-bar-chrome"
                     :style="heroCursorMagnifierChromeStyle"
@@ -808,6 +824,7 @@ export default {
             heroCursorGlassRaf: null,
             heroCursorMagnifierLayout: null,
             heroCursorMirrorClone: null,
+            heroCursorMirrorFrostBlurClone: null,
             heroCursorMirrorTopBarClone: null,
             heroCursorMirrorAwaitingRefresh: false,
             heroCursorMirrorHoverTarget: 0,
@@ -2810,7 +2827,12 @@ export default {
                     this.heroCursorInRange && this.isHeroIntroPointerTight(tx, ty)
 
                 if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
-                    this.heroCursorMirrorAwaitingRefresh = true
+                    // Only blank when there is no clone yet — in-place refresh
+                    // avoids flashing sharp page / top-bar backdrop rebuild.
+                    const needsBlockingRefresh = !this.heroCursorMirrorClone
+                    if (needsBlockingRefresh) {
+                        this.heroCursorMirrorAwaitingRefresh = true
+                    }
                     requestAnimationFrame(() => {
                         if (this.heroCursorMirrorHoverTarget !== 1) {
                             this.heroCursorMirrorAwaitingRefresh = false
@@ -2850,6 +2872,7 @@ export default {
             clone.querySelector('.portfolio-top-bar')?.remove()
             root.replaceChildren(clone)
             this.heroCursorMirrorClone = clone
+            this.refreshHeroCursorMirrorFrostBlurClone(clone)
 
             const topBarRoot = this.$refs.heroCursorMirrorTopBarRoot
             const topBarSource = source.querySelector('.portfolio-top-bar')
@@ -2872,6 +2895,29 @@ export default {
                 this.syncHeroCursorMagnifierTopBarFrostEl(this.heroCursorMagnifierLayout)
             }
         },
+        refreshHeroCursorMirrorFrostBlurClone(sourceClone) {
+            const frostRoot = this.$refs.heroCursorMirrorFrostBlurRoot
+            if (!frostRoot || !(sourceClone instanceof Element)) {
+                this.heroCursorMirrorFrostBlurClone = null
+                return
+            }
+            const frostClone = sourceClone.cloneNode(true)
+            frostRoot.replaceChildren(frostClone)
+            this.heroCursorMirrorFrostBlurClone = frostClone
+            this.syncHeroCursorMirrorFrostBlurClone()
+        },
+        syncHeroCursorMirrorFrostBlurClone() {
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            const clone = this.heroCursorMirrorFrostBlurClone
+            if (!source || !clone) return
+
+            const sourceRect = source.getBoundingClientRect()
+            clone.style.position = 'absolute'
+            clone.style.left = `${sourceRect.left}px`
+            clone.style.top = `${sourceRect.top}px`
+            clone.style.width = `${source.offsetWidth}px`
+            clone.style.minHeight = `${source.offsetHeight}px`
+        },
         syncHeroCursorMagnifierTopBarFrostEl(layout) {
             const el = this.$refs.heroCursorMagnifierTopBarFrost
             const frost = layout?.topBarFrost
@@ -2882,28 +2928,70 @@ export default {
                 return
             }
 
-            if (!frost?.visible || !liveTopBar) {
-                el.style.visibility = 'hidden'
+            if (!frost?.visible || !liveTopBar || !layout) {
+                el.style.opacity = '0'
+                el.style.visibility = 'visible'
                 this.syncHeroCursorMagnifierLogoEl(layout)
                 return
             }
 
-            const cs = getComputedStyle(liveTopBar)
             const topBarClasses = [...liveTopBar.classList]
                 .filter((cls) => cls.startsWith('top-bar--'))
                 .join(' ')
+            const nextClass = `hero-intro-cursor-magnifier__top-bar-frost${
+                topBarClasses ? ` ${topBarClasses}` : ''
+            }`
+            if (el.className !== nextClass) el.className = nextClass
 
-            el.className = `hero-intro-cursor-magnifier__top-bar-frost${topBarClasses ? ` ${topBarClasses}` : ''}`
+            const transparent =
+                liveTopBar.classList.contains('top-bar--transparent') &&
+                !liveTopBar.classList.contains('top-bar--glass')
+
             el.style.visibility = 'visible'
+            el.style.opacity = '1'
             el.style.left = `${frost.left}px`
             el.style.top = `${frost.top}px`
             el.style.width = `${frost.width}px`
             el.style.height = `${frost.height}px`
-            el.style.background = cs.backgroundColor
-            el.style.boxShadow = cs.boxShadow
-            el.style.backdropFilter = cs.backdropFilter
-            el.style.webkitBackdropFilter = cs.backdropFilter
+            el.style.background = 'transparent'
+            el.style.backdropFilter = 'none'
+            el.style.webkitBackdropFilter = 'none'
+            if (transparent) {
+                el.style.boxShadow = 'none'
+            } else {
+                el.style.removeProperty('box-shadow')
+            }
 
+            const tint = el.querySelector('.hero-intro-cursor-magnifier__top-bar-frost-tint')
+            if (tint instanceof Element) {
+                tint.style.opacity = transparent ? '0' : '1'
+            }
+
+            const blurHost = this.$refs.heroCursorMagnifierTopBarFrostBlurHost
+            const blurScaled = this.$refs.heroCursorMagnifierTopBarFrostBlurScaled
+            if (blurHost instanceof Element && blurScaled instanceof Element) {
+                if (transparent) {
+                    blurHost.style.visibility = 'hidden'
+                } else {
+                    const combinedScale = layout.scale * layout.forwardScale
+                    const blurPad = 28
+                    blurHost.style.visibility = 'visible'
+                    blurHost.style.left = `${-frost.left - blurPad}px`
+                    blurHost.style.top = `${-frost.top - blurPad}px`
+                    blurHost.style.width = `${layout.size + blurPad * 2}px`
+                    blurHost.style.height = `${layout.size + blurPad * 2}px`
+                    blurHost.style.filter = 'blur(28px) saturate(2)'
+
+                    blurScaled.style.left = `${layout.half - layout.cx + blurPad}px`
+                    blurScaled.style.top = `${layout.half - layout.cy + blurPad}px`
+                    blurScaled.style.width = `${window.innerWidth}px`
+                    blurScaled.style.height = `${window.innerHeight}px`
+                    blurScaled.style.transform = `scale(${combinedScale})`
+                    blurScaled.style.transformOrigin = `${layout.cx}px ${layout.cy}px`
+                }
+            }
+
+            this.syncHeroCursorMirrorFrostBlurClone()
             this.syncHeroCursorMagnifierLogoEl(layout)
         },
         syncHeroCursorMagnifierLogoEl(layout) {
@@ -3021,6 +3109,8 @@ export default {
             clone.style.width = `${source.offsetWidth}px`
             clone.style.minHeight = `${source.offsetHeight}px`
 
+            this.syncHeroCursorMirrorFrostBlurClone()
+
             const cloneHost = this.$refs.heroCursorMirrorRoot
             if (cloneHost instanceof Element && this.heroCursorMagnifierLayout) {
                 cloneHost.style.opacity = String(this.heroCursorMagnifierLayout.opacity)
@@ -3107,9 +3197,12 @@ export default {
             this.syncHeroCursorMagnifierTopBarFrostEl(null)
             const root = this.$refs.heroCursorMirrorRoot
             if (root) root.innerHTML = ''
+            const frostBlurRoot = this.$refs.heroCursorMirrorFrostBlurRoot
+            if (frostBlurRoot) frostBlurRoot.innerHTML = ''
             const topBarRoot = this.$refs.heroCursorMirrorTopBarRoot
             if (topBarRoot) topBarRoot.innerHTML = ''
             this.heroCursorMirrorClone = null
+            this.heroCursorMirrorFrostBlurClone = null
             this.heroCursorMirrorTopBarClone = null
             this.heroCursorMagnifierLayout = null
             this.heroCursorMirrorHoverTarget = 0
@@ -4694,12 +4787,33 @@ export default {
 .hero-intro-cursor-magnifier__top-bar-frost {
     position: absolute;
     z-index: 1;
+    overflow: hidden;
     pointer-events: none;
-    visibility: hidden;
+    visibility: visible;
+    opacity: 0;
     transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transition: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-blur-host {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+    will-change: filter;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-blur {
+    position: absolute;
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .hero-intro-cursor-magnifier__top-bar-chrome {

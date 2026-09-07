@@ -325,13 +325,16 @@ export default {
   opacity: 1;
 }
 
-/* Real hover only — avoids sticky “pressed” chevron after tap on mobile */
+/* Real hover only — avoids sticky “pressed” chevron after tap on mobile.
+   `.hero-cursor-mirror-hover` mirrors the same state inside the case-study magnifier clone. */
 @media (hover: hover) and (pointer: fine) {
-  .project-tldr-trigger:hover .project-tldr-chevron--default {
+  .project-tldr-trigger:hover .project-tldr-chevron--default,
+  .project-tldr-trigger.hero-cursor-mirror-hover .project-tldr-chevron--default {
     opacity: 0;
   }
 
-  .project-tldr-trigger:hover .project-tldr-chevron--hover {
+  .project-tldr-trigger:hover .project-tldr-chevron--hover,
+  .project-tldr-trigger.hero-cursor-mirror-hover .project-tldr-chevron--hover {
     opacity: 1;
   }
 }
@@ -540,7 +543,8 @@ export default {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .project-tldr-copy:hover {
+  .project-tldr-copy:hover,
+  .project-tldr-copy.hero-cursor-mirror-hover {
     background: #1a2bff;
   }
 }

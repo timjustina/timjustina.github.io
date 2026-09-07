@@ -1,5 +1,10 @@
 <template>
-  <div :class="[$style.page, overlayTopBar && $style.pageOverlayTopBar]">
+  <div
+    ref="pageRoot"
+    class="project-detail-page"
+    :class="[$style.page, overlayTopBar && $style.pageOverlayTopBar]"
+  >
+    <SiteCursor v-if="siteCursorDesktop" :page-el="pageRootEl" />
     <PortfolioTopBar :transparent="overlayTopBar" nav-hero-align />
     <main :class="[$style.main, fullWidthImages && $style.mainFullWidthImages]">
       <slot />
@@ -11,15 +16,30 @@
 <script>
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
-import { CASE_STUDY_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
+import SiteCursor from '../components/SiteCursor.vue'
+import {
+  CASE_STUDY_DESKTOP_MEDIA_QUERY,
+  CASE_STUDY_MOBILE_MEDIA_QUERY,
+} from '../utils/breakpoints.js'
 import {
   finishImageExpand,
   hasPendingImageExpand,
 } from '../utils/imageExpandTransition.js'
 
+const SITE_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
+
+function isSiteCursorDesktop() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia(CASE_STUDY_DESKTOP_MEDIA_QUERY).matches &&
+    window.matchMedia(SITE_CURSOR_FINE_POINTER_MQ).matches &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 export default {
   name: 'ProjectDetail',
-  components: { PortfolioTopBar, PortfolioSiteFooter },
+  components: { PortfolioTopBar, PortfolioSiteFooter, SiteCursor },
   props: {
     fullWidthImages: {
       type: Boolean,
@@ -35,9 +55,17 @@ export default {
       glassWidthRaf: null,
       glassWidthObserver: null,
       glassTitleMutationObserver: null,
+      siteCursorDesktop: false,
+      pageRootEl: null,
+      siteCursorDesktopMq: null,
+      siteCursorFineMq: null,
+      siteCursorReduceMq: null,
     }
   },
   mounted() {
+    this.pageRootEl = this.$refs.pageRoot ?? null
+    this.bindSiteCursorDesktop()
+
     // Lock mobile hero height to the initial viewport so URL-bar show/hide
     // (vh changes on scroll) doesn't make the image look like it's zooming.
     this.lockMobileHeroHeight()
@@ -57,11 +85,36 @@ export default {
     })
   },
   beforeUnmount() {
+    this.unbindSiteCursorDesktop()
     window.removeEventListener('orientationchange', this.onMobileHeroOrientation)
     this.clearMobileHeroHeight()
     this.unbindHeroGlassWidth()
   },
   methods: {
+    syncSiteCursorDesktop() {
+      this.siteCursorDesktop = isSiteCursorDesktop()
+      this.$nextTick(() => {
+        this.pageRootEl = this.$refs.pageRoot ?? null
+      })
+    },
+    bindSiteCursorDesktop() {
+      this.syncSiteCursorDesktop()
+      this.siteCursorDesktopMq = window.matchMedia(CASE_STUDY_DESKTOP_MEDIA_QUERY)
+      this.siteCursorFineMq = window.matchMedia(SITE_CURSOR_FINE_POINTER_MQ)
+      this.siteCursorReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
+      this.onSiteCursorMqChange = () => this.syncSiteCursorDesktop()
+      this.siteCursorDesktopMq.addEventListener('change', this.onSiteCursorMqChange)
+      this.siteCursorFineMq.addEventListener('change', this.onSiteCursorMqChange)
+      this.siteCursorReduceMq.addEventListener('change', this.onSiteCursorMqChange)
+    },
+    unbindSiteCursorDesktop() {
+      this.siteCursorDesktopMq?.removeEventListener('change', this.onSiteCursorMqChange)
+      this.siteCursorFineMq?.removeEventListener('change', this.onSiteCursorMqChange)
+      this.siteCursorReduceMq?.removeEventListener('change', this.onSiteCursorMqChange)
+      this.siteCursorDesktopMq = null
+      this.siteCursorFineMq = null
+      this.siteCursorReduceMq = null
+    },
     onMobileHeroOrientation() {
       window.setTimeout(() => {
         this.lockMobileHeroHeight()

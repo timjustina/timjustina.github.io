@@ -530,13 +530,13 @@ export default {
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
         inset 0 -2px 10px rgba(255, 255, 255, 0.35);
+    /* Do not transition backdrop-filter — compositor rebuilds (e.g. magnifier
+       glass) briefly drop blur; animating it back reads as a sharp flash. */
     transition:
         transform 0.3s ease,
         background-color 0.25s ease,
         border-color 0.25s ease,
-        box-shadow 0.25s ease,
-        backdrop-filter 0.25s ease,
-        -webkit-backdrop-filter 0.25s ease;
+        box-shadow 0.25s ease;
 }
 
 .top-bar--transparent {
@@ -731,11 +731,13 @@ export default {
 </style>
 
 <style>
-/* Magnifier frost overlay — same spec as .top-bar, outside the scaled clone layer. */
+/* Magnifier frost overlay — outside the scaled clone layer.
+   Blur comes from a clipped filter:blur() copy of the magnifier page (not
+   backdrop-filter), so it matches the live bar without the sharp flash. */
 .hero-intro-cursor-magnifier__top-bar-frost {
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(28px) saturate(2);
-    -webkit-backdrop-filter: blur(28px) saturate(2);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     box-shadow:
         0 -1px 0 rgba(255, 255, 255, 0.35),
         0 1px 0 rgba(255, 255, 255, 0.35),
@@ -756,14 +758,18 @@ export default {
 }
 
 .hero-intro-cursor-magnifier__top-bar-frost.top-bar--glass {
-    background: rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(28px) saturate(2);
-    -webkit-backdrop-filter: blur(28px) saturate(2);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     box-shadow:
         0 -1px 0 rgba(255, 255, 255, 0.35),
         0 1px 0 rgba(255, 255, 255, 0.35),
         inset 0 -0.5px 0 rgba(255, 255, 255, 0.35),
         inset 0 -2px 10px rgba(255, 255, 255, 0.35);
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-tint {
+    background: rgba(255, 255, 255, 0.18);
 }
 
 @media (width < 800px) {
@@ -774,6 +780,10 @@ export default {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
         box-shadow: none;
+    }
+
+    .hero-intro-cursor-magnifier__top-bar-frost-tint {
+        background: transparent;
     }
 }
 </style>
