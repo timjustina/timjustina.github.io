@@ -403,7 +403,7 @@
                     <div class="about-actions portfolio-fly portfolio-fly--from-left">
                         <div class="about-actions-row">
                             <a
-                                href="https://www.linkedin.com/in/timjustinayeung"
+                                href="https://www.linkedin.com/in/timjustina"
                                 class="about-action-btn"
                                 target="_blank"
                                 rel="noopener noreferrer"
