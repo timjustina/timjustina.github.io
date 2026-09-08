@@ -2,7 +2,7 @@
     <ProjectDetail>
         <ProjectDetailHeader
             title="IoT Home Medication Solution"
-            client="KIN"
+            client="Kin"
             period="2024"
         />
 

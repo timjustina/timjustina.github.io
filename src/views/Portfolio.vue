@@ -272,7 +272,7 @@
                                 <p class="project-description">
                                     0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
                                 </p>
-                                <span class="project-year">KIN<span class="project-year-sep">//</span>2026</span>
+                                <span class="project-year">Kin<span class="project-year-sep">//</span>2026</span>
                             </router-link>
                         </div>
                     </article>
@@ -296,7 +296,7 @@
                             <p class="project-description">
                                 End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT platform for improving medication adherence
                             </p>
-                            <span class="project-year">KIN<span class="project-year-sep">//</span>2024</span>
+                            <span class="project-year">Kin<span class="project-year-sep">//</span>2024</span>
                         </div>
                     </article>
                 </div>
@@ -828,6 +828,8 @@ export default {
             heroCursorMirrorTopBarClone: null,
             heroCursorMirrorAwaitingRefresh: false,
             heroCursorMirrorHoverTarget: 0,
+            // Live element under pointerdown — clone cannot use :active.
+            heroCursorPressTarget: null,
             heroCursorHoverLockEl: null,
             heroCursorScrollHoverSuppressUntil: 0,
             heroCursorIntroGlassHandoff: false,
@@ -2659,9 +2661,28 @@ export default {
         },
         clearHeroCursorMirrorHoverState() {
             for (const root of [this.heroCursorMirrorClone, this.heroCursorMirrorTopBarClone]) {
-                root?.querySelectorAll('.hero-cursor-mirror-hover').forEach((el) => {
-                    el.classList.remove('hero-cursor-mirror-hover')
+                root?.querySelectorAll(
+                    '.hero-cursor-mirror-hover, .hero-cursor-mirror-active'
+                ).forEach((el) => {
+                    el.classList.remove('hero-cursor-mirror-hover', 'hero-cursor-mirror-active')
                 })
+            }
+        },
+        isHeroCursorPressRelated(liveNode) {
+            const press = this.heroCursorPressTarget
+            if (!press?.isConnected || !(liveNode instanceof Element)) return false
+            return liveNode === press || liveNode.contains(press) || press.contains(liveNode)
+        },
+        clearHeroCursorPressTarget() {
+            if (!this.heroCursorPressTarget) return
+            this.heroCursorPressTarget = null
+            if (this.heroCursorActive) {
+                this.syncHeroCursorMirrorHoverState(
+                    this.heroCursorGlassPos.x,
+                    this.heroCursorGlassPos.y
+                )
+            } else {
+                this.clearHeroCursorMirrorHoverState()
             }
         },
         syncHeroCursorMirrorHoverState(x, y) {
@@ -2693,7 +2714,11 @@ export default {
                 ) {
                     mirrorNode = this.findMirrorNodeFallback(liveNode, chrome, source)
                 }
-                mirrorNode?.classList.add('hero-cursor-mirror-hover')
+                if (!mirrorNode) continue
+                mirrorNode.classList.add('hero-cursor-mirror-hover')
+                if (this.isHeroCursorPressRelated(liveNode)) {
+                    mirrorNode.classList.add('hero-cursor-mirror-active')
+                }
             }
         },
         syncHeroCursorDocumentClass() {
@@ -3298,6 +3323,7 @@ export default {
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
+            this.heroCursorPressTarget = null
             this.heroCursorIntroGlassHandoff = false
             this.stopHeroTouchDisk()
             this.syncHeroCursorDocumentClass()
@@ -3310,6 +3336,24 @@ export default {
             this.clearHeroIntroPointerShift()
         },
         onHeroPointerDownHandler(event) {
+            // Magnifier clone cannot use :active — mirror press on About/CTA targets.
+            if (
+                this.isHeroIntroFinePointer() &&
+                this.heroIntroLetterMode &&
+                event.pointerType === 'mouse' &&
+                event.button === 0 &&
+                event.target instanceof Element
+            ) {
+                const target = event.target.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)
+                if (target && this.$el?.contains(target)) {
+                    this.heroCursorPressTarget = target
+                    this.syncHeroCursorMirrorHoverState(
+                        this.heroCursorGlassPos.x,
+                        this.heroCursorGlassPos.y
+                    )
+                }
+            }
+
             if (this.heroTouchDiskDragging) return
             // Coarse pointers: letter push only via the touch disk — not finger-on-text.
             if (this.isHeroTouchDiskMode()) return
@@ -3331,6 +3375,15 @@ export default {
             this.setHeroIntroPointer(event.clientX, event.clientY, { immediate: true })
         },
         onHeroPointerUpHandler(event) {
+            if (
+                this.heroCursorPressTarget &&
+                (event.type === 'pointercancel' ||
+                    event.pointerType !== 'mouse' ||
+                    event.button === 0)
+            ) {
+                this.clearHeroCursorPressTarget()
+            }
+
             if (this.heroIntroActivePointerId !== event.pointerId) return
             if (this.isHeroIntroMobileTouch()) {
                 const wasStroke = this.heroIntroTouchMode === 'stroke'
@@ -6565,7 +6618,7 @@ export default {
     animation: none !important;
 }
 
-/* Magnifier clone: mirror interactive hover styles (clone cannot use :hover). */
+/* Magnifier clone: mirror interactive hover/press (clone cannot use :hover/:active). */
 .hero-intro-cursor-mirror-clone .about-link,
 .hero-intro-cursor-mirror-clone .footer-email {
     text-decoration-thickness: calc(0.8px / var(--hero-cursor-magnifier-scale, 1));
@@ -6575,6 +6628,12 @@ export default {
 .hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover,
 .hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-hover {
     background: var(--brand-hover) !important;
+}
+
+.hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-active,
+.hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-active {
+    background: var(--brand-active) !important;
+    transition: none !important;
 }
 
 .hero-intro-cursor-mirror-clone .footer-email.hero-cursor-mirror-hover {

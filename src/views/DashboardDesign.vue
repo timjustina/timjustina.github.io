@@ -5,14 +5,14 @@
                 fetchpriority="high" />
         </div>
 
-        <ProjectDetailHeader :title="dashboardTitle" client="KIN" period="2026" fluid-lines />
+        <ProjectDetailHeader :title="dashboardTitle" client="Kin" period="2026" fluid-lines />
 
         <div class="project-body">
             <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />
 
             <section>
                 <h2>The Challenge</h2>
-                <p>KIN is a healthcare startup that needed to showcase the full digital experience of its product to
+                <p>Kin is a healthcare startup that needed to showcase the full digital experience of its product to
                     secure <strong>future
                         investments and partnerships</strong> in <strong>healthcare sectors</strong>. One
                     thing we wanted to demonstrate is how <strong>user data</strong> collected from our
