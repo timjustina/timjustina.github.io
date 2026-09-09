@@ -6572,7 +6572,7 @@ export default {
         flex: 1 1 auto;
         max-width: none;
         font-family: 'Work Sans', sans-serif;
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 400;
         line-height: 33px;
         color: #2c2c2c;
