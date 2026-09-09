@@ -2901,7 +2901,21 @@ export default {
             clone.querySelectorAll(
                 '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit',
             ).forEach((el) => el.remove())
-            clone.querySelector('.portfolio-top-bar')?.remove()
+            // Mobile home uses an in-flow top bar. Removing it without a spacer
+            // collapses that space and shifts every mirrored section up (~86px).
+            const mirrorTopBar = clone.querySelector('.portfolio-top-bar')
+            const liveInFlowTopBar = source.querySelector(
+                '.portfolio-top-bar .top-bar.top-bar--in-flow',
+            )
+            if (mirrorTopBar && liveInFlowTopBar) {
+                const spacer = document.createElement('div')
+                spacer.className = 'hero-intro-cursor-mirror-top-bar-spacer'
+                spacer.setAttribute('aria-hidden', 'true')
+                spacer.style.cssText = `height:${liveInFlowTopBar.getBoundingClientRect().height}px;width:100%;flex-shrink:0;pointer-events:none;visibility:hidden`
+                mirrorTopBar.replaceWith(spacer)
+            } else {
+                mirrorTopBar?.remove()
+            }
             root.replaceChildren(clone)
             this.heroCursorMirrorClone = clone
             this.refreshHeroCursorMirrorFrostBlurClone(clone)
