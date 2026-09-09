@@ -1142,10 +1142,10 @@ export default {
     margin-top: 0;
   }
 
-  /* First block after h2: 5px gap on mobile; h2→* margin is 32px. */
+  /* First block after h2: 10px gap on mobile; h2→* margin is 32px. */
   .main :global(.project-body section > h2 + h3)::before,
   .main :global(.project-body section > h2 + p:not(.caption))::before {
-    top: calc(5px - 32px);
+    top: calc(10px - 32px);
   }
 
   .main :global(.project-body section > p:not(.caption):has(+ p:not(.caption)))::before {
