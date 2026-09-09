@@ -478,7 +478,7 @@ const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
 const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
-const HERO_TOUCH_DISK_ENTRANCE_MS = 2800
+const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -4633,7 +4633,7 @@ export default {
 }
 
 .hero-intro-cursor-ball--touch-enter {
-    transition: opacity 2.8s cubic-bezier(0.33, 1, 0.4, 1);
+    transition: opacity 1.8s cubic-bezier(0.33, 1, 0.4, 1);
 }
 
 .hero-intro-cursor-ball--touch-instant,
