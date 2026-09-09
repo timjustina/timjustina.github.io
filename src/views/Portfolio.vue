@@ -733,6 +733,7 @@ export default {
             loadingRotationDeg: 0,
             loadingRotating: false,
             pageRevealed: false,
+            pageRevealArmed: false,
             pageEntranceDone: false,
             aboutRevealed: false,
             aboutEntranceDone: false,
@@ -1135,6 +1136,8 @@ export default {
         window.addEventListener('orientationchange', this.onMobileHeroOrientation)
 
         this.heroDecorObserver = new ResizeObserver(() => {
+            // Measuring work slots mid-cascade forces reflow across the page.
+            if (this.pageRevealed && !this.pageEntranceDone) return
             requestAnimationFrame(() => {
                 this.syncHeroDecorHeight()
             })
@@ -1156,7 +1159,8 @@ export default {
         if (workLast) {
             this.heroDecorObserver.observe(workLast)
         }
-        if (heroIntro) {
+        // Observing the intro itself re-fires as cascade letters move — skip on mobile.
+        if (heroIntro && window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
             this.heroDecorObserver.observe(heroIntro)
         }
 
@@ -1577,7 +1581,8 @@ export default {
             this.completeLoadingHandoff()
         },
         beginPageReveal() {
-            if (this.pageRevealed) return
+            if (this.pageRevealed || this.pageRevealArmed) return
+            this.pageRevealArmed = true
             document.documentElement.classList.remove('portfolio-booting')
             this.syncHeroDecorHeight()
             this.syncAboutLocationTextClip()
@@ -1585,20 +1590,37 @@ export default {
             // Pin the mobile floor and snapshot resting glyph geometry BEFORE the
             // from-right cascade starts. Early-scroll dissipate must use this, not a
             // mid-cascade measure.
-            if (
+            const mobileLetter =
                 this.heroIntroLetterMode &&
                 (this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
-            ) {
+            if (mobileLetter) {
                 this.lockHeroViewportHeight({ force: true })
                 void this.$el?.offsetHeight
                 this.captureHeroIntroRestLayout({ preAnimation: true })
-                this.prepareHeroIntroDissipateTargets()
             }
-            this.pageRevealed = true
-            this.syncDecorLineX()
-            this.publishDecorLineAlign()
-            this.schedulePageEntranceSettle()
-            scrollToPortfolioHash(this.$route.hash)
+            // Let the measure/write burst settle for two frames before starting
+            // ~150 letter animations — otherwise the cascade hitchs on first paint.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (this.pageRevealed) return
+                    this.pageRevealed = true
+                    this.syncDecorLineX()
+                    this.publishDecorLineAlign()
+                    this.schedulePageEntranceSettle()
+                    scrollToPortfolioHash(this.$route.hash)
+                    if (mobileLetter) {
+                        const schedule =
+                            typeof requestIdleCallback === 'function'
+                                ? (cb) => requestIdleCallback(cb, { timeout: 400 })
+                                : (cb) => setTimeout(cb, 180)
+                        schedule(() => {
+                            if (!this.heroIntroDissipatePrepared) {
+                                this.prepareHeroIntroDissipateTargets()
+                            }
+                        })
+                    }
+                })
+            })
         },
         schedulePageEntranceSettle() {
             if (this.pageEntranceDone || this.pageEntranceSettleScheduled) return
@@ -1954,6 +1976,7 @@ export default {
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
                 !this.heroIntroDissipated &&
+                !this.heroIntroReconsolidating &&
                 !prefersReducedMotion() &&
                 typeof window !== 'undefined'
             )
@@ -3080,22 +3103,60 @@ export default {
             const radiusExitMult = parseCssPx(introStyles, '--hero-intro-hover-radius-exit-mult', 1)
             const { x, y } = pointer
 
-            for (const el of intro.querySelectorAll('.hero-intro-char')) {
-                const rect = el.getBoundingClientRect()
-                if (rect.width <= 0 || rect.height <= 0) {
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            const layout = this.heroIntroRestLayout
+            const useRest =
+                layout &&
+                Array.isArray(layout.chars) &&
+                layout.chars.length === chars.length
+
+            // Prefer frozen rest centers (one intro rect) over 156× getBoundingClientRect/frame.
+            let samples
+            if (useRest) {
+                const introRect = intro.getBoundingClientRect()
+                samples = chars.map((el, i) => {
+                    const local = layout.chars[i]
+                    return {
+                        el,
+                        skip: false,
+                        cx: introRect.left + local.x,
+                        cy: introRect.top + local.y,
+                        wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                    }
+                })
+            } else {
+                samples = []
+                for (const el of chars) {
+                    const rect = el.getBoundingClientRect()
+                    if (rect.width <= 0 || rect.height <= 0) {
+                        samples.push({ el, skip: true })
+                        continue
+                    }
+                    const pushX = parseFloat(el.style.getPropertyValue('--hero-intro-push-x')) || 0
+                    const pushY = parseFloat(el.style.getPropertyValue('--hero-intro-push-y')) || 0
+                    samples.push({
+                        el,
+                        skip: false,
+                        cx: rect.left + rect.width / 2 - pushX,
+                        cy: rect.top + rect.height / 2 - pushY,
+                        wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                    })
+                }
+            }
+
+            for (const sample of samples) {
+                const { el } = sample
+                if (sample.skip) {
                     el.classList.remove('hero-intro-char--pushed')
                     el.style.removeProperty('--hero-intro-push-x')
                     el.style.removeProperty('--hero-intro-push-y')
                     continue
                 }
 
-                const cx = rect.left + rect.width / 2
-                const cy = rect.top + rect.height / 2
-                const dx = cx - x
-                const dy = cy - y
+                const dx = sample.cx - x
+                const dy = sample.cy - y
                 const dist = Math.hypot(dx, dy)
-                const wasPushed = el.classList.contains('hero-intro-char--pushed')
-                const effectiveRadius = wasPushed ? radius * radiusExitMult : radius
+                const effectiveRadius = sample.wasPushed ? radius * radiusExitMult : radius
 
                 if (dist < effectiveRadius) {
                     const t = dist <= 0 ? 1 : 1 - dist / radius
@@ -3394,19 +3455,39 @@ export default {
             if (this.heroIntroDissipated === active && !instant) return
 
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
-            if (active) {
-                this.clearHeroIntroPointerShift()
-                this.setHeroIntroStrokeActive(false)
-                clearTimeout(this.heroIntroReconsolidateTimer)
-                this.heroIntroReconsolidateTimer = null
-                this.heroIntroReconsolidating = false
-            }
+
+            // Delays must be set before the class flips, or the first frame runs at 0s delay.
+            this.applyHeroIntroDissipateDelays(active)
 
             if (intro && instant) {
                 intro.classList.add('hero-intro--dissipate-instant')
             }
 
-            this.applyHeroIntroDissipateDelays(active)
+            if (active) {
+                // Sync class before Vue flush. Clearing push first used to start a
+                // return-to-rest transition for a frame, then fly-out — stuttery on mobile.
+                intro?.classList.add('hero-intro--dissipated')
+                intro?.classList.remove('hero-intro--reconsolidating', 'hero-intro--stroke-active')
+                this.clearHeroIntroPointerShift()
+                this.disableHeroIntroTouchGuard()
+                this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
+                this.heroIntroActivePointerId = null
+                this.heroIntroTouchStart = null
+                this.heroIntroTouchMode = null
+                this.heroIntroPointer = null
+                if (this.heroIntroPointerRaf != null) {
+                    cancelAnimationFrame(this.heroIntroPointerRaf)
+                    this.heroIntroPointerRaf = null
+                }
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                this.heroIntroReconsolidateTimer = null
+                this.heroIntroReconsolidating = false
+            } else if (intro) {
+                intro.classList.remove('hero-intro--dissipated')
+                if (!instant) intro.classList.add('hero-intro--reconsolidating')
+                else intro.classList.remove('hero-intro--reconsolidating')
+            }
+
             this.heroIntroDissipated = active
 
             if (!active && !instant) {
@@ -3420,6 +3501,7 @@ export default {
                 this.heroIntroReconsolidateTimer = setTimeout(() => {
                     this.heroIntroReconsolidateTimer = null
                     this.heroIntroReconsolidating = false
+                    intro?.classList.remove('hero-intro--reconsolidating')
                     this.applyHeroIntroDissipateDelays(false)
                     // Zero delays so touch-push stays snappy after reconsolidate.
                     const settled = this.$el?.querySelector('.hero-intro.hero-intro--chars')
@@ -3499,7 +3581,11 @@ export default {
             // Keep heroIntroRestLayout — premeasured parked geometry for this viewport.
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return
-            intro.classList.remove('hero-intro--dissipate-instant')
+            intro.classList.remove(
+                'hero-intro--dissipated',
+                'hero-intro--reconsolidating',
+                'hero-intro--dissipate-instant',
+            )
             for (const el of intro.querySelectorAll('.hero-intro-char')) {
                 el.style.removeProperty('--hero-intro-dissipate-x')
                 el.style.removeProperty('--hero-intro-dissipate-y')
@@ -3728,18 +3814,19 @@ export default {
             if (maxH > 0) work.style.setProperty('--work-slot-h', `${maxH}px`)
         },
         syncHeroDecorHeight() {
-            this.syncWorkGridSlots()
             const decor = this.$el?.querySelector('.hero-decor')
             const heroIntro = this.$el?.querySelector('.hero-intro')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
+            const desktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+            // Work-slot lock + decor line are desktop-only; skip the forced reflow on mobile.
+            if (desktop) {
+                this.syncWorkGridSlots()
+            }
             if (!decor || !heroIntro || !workLastAnchor) {
                 return
             }
 
-            if (window.getComputedStyle(decor).display === 'none') {
-                return
-            }
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+            if (!desktop || window.getComputedStyle(decor).display === 'none') {
                 return
             }
 
@@ -4062,7 +4149,6 @@ export default {
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
         transform: translate3d(0, 0, 0);
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
-        will-change: transform;
     }
 
     /* Knock outward in slow motion, same easing as the cascade fly-in */
@@ -4100,15 +4186,9 @@ export default {
         touch-action: pan-y;
     }
 
-    /* Direct follow while stroking — CSS transitions fight per-frame updates and vibrate */
-    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char {
-        transition: none;
-    }
-
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
         transform: translate3d(0, 0, 0);
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
-        will-change: transform;
     }
 
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
@@ -4120,6 +4200,13 @@ export default {
         transition: transform
             calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
             var(--fly-ease);
+    }
+
+    /* Direct follow while stroking — CSS transitions fight per-frame updates and vibrate.
+       Must beat `.hero-intro-char--pushed` (same base specificity otherwise loses). */
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char.hero-intro-char--pushed {
+        transition: none;
     }
 
     /* Scroll dissipate: fan up along rays from the text-box bottom diameter (half-circle).
@@ -4770,7 +4857,7 @@ export default {
     --hero-intro-char-delay: 0.04s;
     opacity: 0;
     transform: translate3d(var(--fly-distance), 0, 0);
-    will-change: transform, opacity;
+    /* No permanent will-change — ~150 promoted layers stutter mobile GPUs during cascade */
 }
 
 .portfolio-page--reveal .hero-intro--chars .hero-intro-char {
