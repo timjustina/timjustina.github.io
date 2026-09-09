@@ -4643,7 +4643,6 @@ export default {
 
 .hero-intro-cursor-ball--touch-breathe {
     animation: hero-touch-disk-breathe 6s infinite;
-    animation-delay: 0.5s;
     transform-origin: center center;
 }
 
