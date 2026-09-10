@@ -2138,15 +2138,18 @@ export default {
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
                 !this.heroIntroDissipated &&
-                // Touch-disk glass may keep repelling while letters snap back.
+                // Desktop / fine-pointer: never play during reconsolidate.
+                // Touch-disk only: may keep repelling while letters snap back.
                 (!this.heroIntroReconsolidating || this.isHeroTouchDiskGlassRepelActive()) &&
                 !prefersReducedMotion() &&
                 typeof window !== 'undefined'
             )
         },
         isHeroTouchDiskGlassRepelActive() {
+            // Touch-disk path only — fine-pointer desktop must not enter here.
             return (
                 this.isHeroTouchDiskMode() &&
+                !this.isHeroIntroFinePointer() &&
                 this.heroCursorActive &&
                 (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
                 this.heroCursorIntroGlassHandoff
@@ -2535,6 +2538,10 @@ export default {
             return 'swipe'
         },
         setHeroIntroStrokeActive(active) {
+            // Finger-stroke only — never disable desktop glass letter transitions.
+            if (active && (this.isHeroIntroFinePointer() || this.isHeroTouchDiskMode())) {
+                return
+            }
             this.$el
                 ?.querySelector('.hero-intro.hero-intro--chars')
                 ?.classList.toggle('hero-intro--stroke-active', active)
@@ -2835,16 +2842,17 @@ export default {
                 if (!this.heroCursorActive) return
 
                 const { x: tx, y: ty } = this.heroCursorPos
+                const touchDisk = this.isHeroTouchDiskMode()
                 const allowIntroGlass =
-                    !this.isHeroTouchDiskMode() ||
+                    !touchDisk ||
                     this.heroTouchDiskHasMoved ||
                     this.heroTouchDiskDragging
                 const freezeIntroGlass =
-                    this.isHeroTouchDiskMode() &&
+                    touchDisk &&
                     this.heroCursorIntroGlassHandoff &&
                     this.heroTouchDiskOnStage &&
                     (this.heroIntroDissipated || this.heroIntroReconsolidating)
-                // Don't drop the in-text glass while letters fan out / snap back.
+                // Touch-disk only: keep in-text glass while letters fan out / snap back.
                 if (!freezeIntroGlass) {
                     const proximityTarget = allowIntroGlass
                         ? this.getHeroIntroRangeProximityMix(tx, ty)
@@ -2888,8 +2896,8 @@ export default {
                 const ny = gy + (ty - gy) * follow
 
                 // Keep the hover magnifier and its ring on one layer — no trailing ghost.
-                // Drag snaps so the disk reads as one solid body under the finger.
-                if (magnifierVisible || this.heroTouchDiskDragging) {
+                // Touch-disk drag snaps so the disk reads as one solid body under the finger.
+                if (magnifierVisible || (touchDisk && this.heroTouchDiskDragging)) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else if (this.heroCursorInRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
@@ -2911,8 +2919,7 @@ export default {
                 }
                 this.heroCursorRangeTight =
                     (this.heroCursorInRange ||
-                        (this.isHeroTouchDiskMode() &&
-                            this.heroCursorIntroGlassHandoff)) &&
+                        (touchDisk && this.heroCursorIntroGlassHandoff)) &&
                     this.isHeroIntroPointerTight(tx, ty)
 
                 if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
@@ -3580,7 +3587,11 @@ export default {
 
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             const layout = this.heroIntroRestLayout
+            // Frozen rest centers are a mobile dissipate optimization only.
+            // Desktop fine-pointer must keep live centers so letters fall smoothly
+            // around the glass as CSS transitions run.
             const useRest =
+                !this.isHeroIntroFinePointer() &&
                 layout &&
                 Array.isArray(layout.chars) &&
                 layout.chars.length === chars.length
@@ -4641,6 +4652,7 @@ export default {
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
         transform: translate3d(0, 0, 0);
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
+        will-change: transform;
     }
 
     /* Knock outward in slow motion, same easing as the cascade fly-in */
@@ -4662,7 +4674,7 @@ export default {
         --hero-intro-swipe-min-travel: 20px;
         --hero-intro-swipe-vertical-min: 36px;
         --hero-intro-swipe-ratio: 1.7;
-        /* Match desktop glass-cursor field — not the old finger-stroke falloff. */
+        /* Touch-disk glass field (finger stroke is replaced by the disk on mobile). */
         --hero-cursor-zone-pad-default: 80px;
         --hero-cursor-zone-pad-tight: 4px;
         --hero-cursor-nav-proximity: 80px;
@@ -4671,6 +4683,8 @@ export default {
         --hero-intro-hover-lift: 32px;
         --hero-intro-hover-force-exp: 2.65;
         --hero-intro-hover-lift-exp: 2.2;
+        --hero-intro-hover-min-force: 0;
+        --hero-intro-hover-radius-exit-mult: 1;
         --hero-intro-hover-knock-mult: 0.55;
         --hero-intro-dissipate-duration: 0.9s;
         --hero-intro-dissipate-stagger: 0.42s;
@@ -4693,8 +4707,7 @@ export default {
             var(--fly-ease);
     }
 
-    /* Direct follow while stroking — CSS transitions fight per-frame updates and vibrate.
-       Must beat `.hero-intro-char--pushed` (same base specificity otherwise loses). */
+    /* Legacy stroke class (unused while touch disk owns mobile) — keep inert. */
     .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char,
     .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char.hero-intro-char--pushed {
         transition: none;
