@@ -2136,10 +2136,29 @@ export default {
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
                 !this.heroIntroDissipated &&
-                !this.heroIntroReconsolidating &&
+                // Touch-disk glass may keep repelling while letters snap back.
+                (!this.heroIntroReconsolidating || this.isHeroTouchDiskGlassRepelActive()) &&
                 !prefersReducedMotion() &&
                 typeof window !== 'undefined'
             )
+        },
+        isHeroTouchDiskGlassRepelActive() {
+            return (
+                this.isHeroTouchDiskMode() &&
+                this.heroCursorActive &&
+                (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
+                this.heroCursorIntroGlassHandoff
+            )
+        },
+        /** Re-apply letter push around a stationary in-text touch disk. */
+        syncHeroTouchDiskIntroRepel() {
+            if (!this.isHeroTouchDiskGlassRepelActive()) return
+            if (this.heroIntroDissipated) return
+            const { x, y } = this.heroCursorPos
+            this.updateHeroFinePointer(x, y, {
+                introEffects: true,
+                skipHover: true,
+            })
         },
         isHeroIntroFinePointer() {
             return (
@@ -3960,6 +3979,8 @@ export default {
                     ? parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
                     : 0.9
                 const waitMs = Math.ceil((this.heroIntroDissipateMaxDelay + duration) * 1000) + 40
+                // Settle letters around the glass if it stayed among the text.
+                this.syncHeroTouchDiskIntroRepel()
                 this.heroIntroReconsolidateTimer = setTimeout(() => {
                     this.heroIntroReconsolidateTimer = null
                     this.heroIntroReconsolidating = false
@@ -3967,15 +3988,18 @@ export default {
                     this.applyHeroIntroDissipateDelays(false)
                     // Zero delays so touch-push stays snappy after reconsolidate.
                     const settled = this.$el?.querySelector('.hero-intro.hero-intro--chars')
-                    if (!settled) return
-                    for (const el of settled.querySelectorAll('.hero-intro-char')) {
-                        el.style.setProperty('--hero-intro-dissipate-delay', '0s')
+                    if (settled) {
+                        for (const el of settled.querySelectorAll('.hero-intro-char')) {
+                            el.style.setProperty('--hero-intro-dissipate-delay', '0s')
+                        }
                     }
+                    this.syncHeroTouchDiskIntroRepel()
                 }, waitMs)
             } else if (!active && instant) {
                 this.heroIntroReconsolidating = false
                 clearTimeout(this.heroIntroReconsolidateTimer)
                 this.heroIntroReconsolidateTimer = null
+                this.syncHeroTouchDiskIntroRepel()
             }
 
             if (instant) {
@@ -4044,19 +4068,21 @@ export default {
             this.heroTouchDiskDissipateInstant = false
             // Keep heroIntroRestLayout — premeasured parked geometry for this viewport.
             const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return
-            intro.classList.remove(
-                'hero-intro--dissipated',
-                'hero-intro--reconsolidating',
-                'hero-intro--dissipate-instant',
-            )
-            for (const el of intro.querySelectorAll('.hero-intro-char')) {
-                el.style.removeProperty('--hero-intro-dissipate-x')
-                el.style.removeProperty('--hero-intro-dissipate-y')
-                el.style.removeProperty('--hero-intro-dissipate-delay')
-                el.style.removeProperty('--hero-intro-dissipate-leave-delay')
-                el.style.removeProperty('--hero-intro-dissipate-duration')
+            if (intro) {
+                intro.classList.remove(
+                    'hero-intro--dissipated',
+                    'hero-intro--reconsolidating',
+                    'hero-intro--dissipate-instant',
+                )
+                for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                    el.style.removeProperty('--hero-intro-dissipate-x')
+                    el.style.removeProperty('--hero-intro-dissipate-y')
+                    el.style.removeProperty('--hero-intro-dissipate-delay')
+                    el.style.removeProperty('--hero-intro-dissipate-leave-delay')
+                    el.style.removeProperty('--hero-intro-dissipate-duration')
+                }
             }
+            this.syncHeroTouchDiskIntroRepel()
         },
         /**
          * Left-biased stagger with per-letter random jitter. Delays are scaled
