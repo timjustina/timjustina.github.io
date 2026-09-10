@@ -634,7 +634,7 @@ export default {
         if (!(el instanceof Element)) continue
         if (
           el.closest(
-            '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier',
+            '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit',
           )
         ) {
           continue
@@ -654,7 +654,7 @@ export default {
       return (
         el instanceof Element &&
         el.matches(
-          '.portfolio-top-bar, .hero-intro-cursor-ball, .hero-intro-cursor-magnifier',
+          '.portfolio-top-bar, .hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit',
         )
       )
     },
@@ -848,7 +848,7 @@ export default {
       clone.classList.add('hero-intro-cursor-mirror-clone')
       clone
         .querySelectorAll(
-          '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier',
+          '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit',
         )
         .forEach((el) => el.remove())
       clone.querySelector('.portfolio-top-bar')?.remove()
