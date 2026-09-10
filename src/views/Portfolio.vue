@@ -4660,17 +4660,16 @@ export default {
         --hero-intro-swipe-min-travel: 20px;
         --hero-intro-swipe-vertical-min: 36px;
         --hero-intro-swipe-ratio: 1.7;
+        /* Match desktop glass-cursor field — not the old finger-stroke falloff. */
         --hero-cursor-zone-pad-default: 80px;
         --hero-cursor-zone-pad-tight: 4px;
         --hero-cursor-nav-proximity: 80px;
         --hero-intro-hover-radius: 160px;
-        --hero-intro-hover-shift: 102px;
-        --hero-intro-hover-lift: 38px;
-        --hero-intro-hover-force-exp: 1.45;
-        --hero-intro-hover-lift-exp: 1.25;
-        --hero-intro-hover-min-force: 0;
-        --hero-intro-hover-radius-exit-mult: 1.08;
-        --hero-intro-hover-knock-mult: 0.34;
+        --hero-intro-hover-shift: 84px;
+        --hero-intro-hover-lift: 32px;
+        --hero-intro-hover-force-exp: 2.65;
+        --hero-intro-hover-lift-exp: 2.2;
+        --hero-intro-hover-knock-mult: 0.55;
         --hero-intro-dissipate-duration: 0.9s;
         --hero-intro-dissipate-stagger: 0.42s;
         touch-action: pan-y;
