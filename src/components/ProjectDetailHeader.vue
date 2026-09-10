@@ -224,7 +224,7 @@ export default {
     font-family: 'Work Sans', sans-serif;
     font-weight: calc(300 * var(--font-weight-scale));
     font-style: normal;
-    font-size: 32px;
+    font-size: 31px;
     line-height: 48px;
     letter-spacing: 0;
     text-align: center;
@@ -294,7 +294,7 @@ export default {
     }
 
     .project-header-meta {
-        font-size: 16px;
+        font-size: 18px;
         line-height: calc(24px * var(--project-type-scale));
         color: #757575;
     }

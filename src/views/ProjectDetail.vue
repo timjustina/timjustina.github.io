@@ -613,7 +613,7 @@ export default {
   .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
     width: 100%;
     max-width: 100%;
-    font-size: 32px;
+    font-size: 31px;
     line-height: 48px;
   }
 
@@ -794,7 +794,7 @@ export default {
   font-family: 'Work Sans', sans-serif;
   font-weight: 300;
   font-style: normal;
-  font-size: 32px;
+  font-size: 31px;
   line-height: 45px;
   letter-spacing: -0.02em;
   color: #2c2c2c;
@@ -997,7 +997,7 @@ export default {
 .main :global(.caption) {
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
-  font-size: 14px;
+  font-size: 16px;
   letter-spacing: -0.02em;
   color: #757575;
   margin-top: 42px;
@@ -1196,8 +1196,8 @@ export default {
   .main :global(.project-body h3) {
     font-family: 'Work Sans', sans-serif;
     font-weight: 300;
-    font-size: 26px;
-    line-height: calc(27px * 26 / 22);
+    font-size: 28px;
+    line-height: calc(27px * 28 / 22);
     letter-spacing: -0.02em;
     color: #2c2c2c;
   }
@@ -1207,11 +1207,9 @@ export default {
     line-height: calc(24px * var(--project-type-scale));
   }
 
-  /* Same caption:body ratio as desktop (14/22) */
   .main :global(.project-body .caption),
   .main :global(.caption) {
-    font-size: calc(18px * 14 / 22 * var(--project-type-scale));
-    line-height: calc(24px * 14 / 22 * var(--project-type-scale));
+    font-size: 14px;
   }
 
   .main :global(.project-body strong) {
