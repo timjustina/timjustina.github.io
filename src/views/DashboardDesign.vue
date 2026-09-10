@@ -448,7 +448,7 @@ import {
     vid7,
 } from '../data/dashboardDesignMedia.js'
 
-const DASHBOARD_TITLE = 'IoT Adherence Analytics for Caregivers'
+const DASHBOARD_TITLE = 'IoT Adherence Analytics'
 
 const tldrSummaryItems = [
     {

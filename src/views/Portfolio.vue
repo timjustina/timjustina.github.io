@@ -252,7 +252,7 @@
                                 height="1352"
                                 decoding="async"
                                 fetchpriority="high"
-                                alt="IoT Adherence Analytics for Caregivers"
+                                alt="IoT Adherence Analytics"
                             />
                         </router-link>
                         <div class="project-caption">
@@ -266,11 +266,11 @@
                             >
                                 <div class="project-caption-header">
                                     <h2 class="project-title">
-                                        IoT Adherence Analytics for Caregivers
+                                        IoT Adherence Analytics
                                     </h2>
                                 </div>
                                 <p class="project-description">
-                                    0‑to‑1 design of a caregiver‑facing dashboard for a primary user's account, helping caregivers better understand their client's needs
+                                    0‑to‑1 design of a caregiver‑facing dashboard for an IoT healthtech platform, helping caregivers better understand their client's needs
                                 </p>
                                 <span class="project-year">Kin<span class="project-year-sep">//</span>2026</span>
                             </router-link>
@@ -294,7 +294,7 @@
                                 </h2>
                             </div>
                             <p class="project-description">
-                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT platform for improving medication adherence
+                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT healthtech platform for improving medication adherence
                             </p>
                             <span class="project-year">Kin<span class="project-year-sep">//</span>2024</span>
                         </div>

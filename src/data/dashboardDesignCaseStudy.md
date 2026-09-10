@@ -1,4 +1,4 @@
-# IoT Adherence Analytics for Caregivers
+# IoT Adherence Analytics
 
 **Client:** Kin  
 **Period:** 2026
