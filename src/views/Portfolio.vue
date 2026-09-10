@@ -905,6 +905,9 @@ export default {
         },
         heroTouchDiskDissipateFade() {
             if (!this.heroTouchDiskMode) return 1
+            // In-text glass morph should stay put through dissipate / reconsolidate;
+            // only the idle (non-handoff) disk fades with the hero letters.
+            if (this.heroCursorIntroGlassHandoff) return 1
             return this.heroIntroDissipated ? 0 : 1
         },
         /** Idle appear only — never applied to magnifier / active morph opacity. */
@@ -2810,21 +2813,29 @@ export default {
                     !this.isHeroTouchDiskMode() ||
                     this.heroTouchDiskHasMoved ||
                     this.heroTouchDiskDragging
-                const proximityTarget = allowIntroGlass
-                    ? this.getHeroIntroRangeProximityMix(tx, ty)
-                    : 0
-                if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
-                    this.heroCursorRangeMix = 0
-                    this.heroCursorIntroGlassHandoff = false
-                } else {
-                    const rangeLerp = proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.2
-                    this.heroCursorRangeMix +=
-                        (proximityTarget - this.heroCursorRangeMix) * rangeLerp
-                    if (
-                        !this.heroCursorIntroGlassHandoff &&
-                        proximityTarget >= HERO_CURSOR_INTRO_GLASS_ON
-                    ) {
-                        this.heroCursorIntroGlassHandoff = true
+                const freezeIntroGlass =
+                    this.isHeroTouchDiskMode() &&
+                    this.heroCursorIntroGlassHandoff &&
+                    (this.heroIntroDissipated || this.heroIntroReconsolidating)
+                // Don't drop the in-text glass while letters fan out / snap back.
+                if (!freezeIntroGlass) {
+                    const proximityTarget = allowIntroGlass
+                        ? this.getHeroIntroRangeProximityMix(tx, ty)
+                        : 0
+                    if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
+                        this.heroCursorRangeMix = 0
+                        this.heroCursorIntroGlassHandoff = false
+                    } else {
+                        const rangeLerp =
+                            proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.2
+                        this.heroCursorRangeMix +=
+                            (proximityTarget - this.heroCursorRangeMix) * rangeLerp
+                        if (
+                            !this.heroCursorIntroGlassHandoff &&
+                            proximityTarget >= HERO_CURSOR_INTRO_GLASS_ON
+                        ) {
+                            this.heroCursorIntroGlassHandoff = true
+                        }
                     }
                 }
 
