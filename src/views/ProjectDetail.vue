@@ -1196,8 +1196,8 @@ export default {
   .main :global(.project-body h3) {
     font-family: 'Work Sans', sans-serif;
     font-weight: 300;
-    font-size: 24px;
-    line-height: calc(27px * 24 / 22);
+    font-size: 26px;
+    line-height: calc(27px * 26 / 22);
     letter-spacing: -0.02em;
     color: #2c2c2c;
   }
