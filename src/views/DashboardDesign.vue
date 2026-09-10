@@ -342,7 +342,7 @@
 
                 <figure class="full-image full-image--captioned">
                     <div class="full-image-media">
-                        <video class="project-video" :src="vid7" autoplay loop muted playsinline />
+                        <ProjectVideo :src="vid7" />
                     </div>
                     <figcaption class="caption">Caregiver-facing dashboard demo</figcaption>
                 </figure>
@@ -435,6 +435,7 @@ import ProjectDetailHeader from '../components/ProjectDetailHeader.vue'
 import ProjectTldrButton from '../components/ProjectTldrButton.vue'
 import ZoomableImage from '../components/ZoomableImage.vue'
 import VideoPair from '../components/VideoPair.vue'
+import ProjectVideo from '../components/ProjectVideo.vue'
 import tldrMarkdown from '../data/dashboardDesignCaseStudy.md?raw'
 import {
     dashboardHero,
@@ -471,7 +472,14 @@ const tldrSummaryItems = [
 
 export default {
     name: 'DashboardDesign',
-    components: { ProjectDetail, ProjectDetailHeader, ProjectTldrButton, ZoomableImage, VideoPair },
+    components: {
+        ProjectDetail,
+        ProjectDetailHeader,
+        ProjectTldrButton,
+        ZoomableImage,
+        VideoPair,
+        ProjectVideo,
+    },
     data() {
         return {
             dashboardHero,

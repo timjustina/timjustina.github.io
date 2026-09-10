@@ -31,6 +31,8 @@
 </template>
 
 <script>
+import { observeVideosRestartOnEnter } from '../utils/restartVideoOnEnter'
+
 const STACK_QUERY = '(max-width: 997px)'
 
 export default {
@@ -62,11 +64,17 @@ export default {
     this.resizeObserver = new ResizeObserver(() => this.scheduleLayout())
     this.resizeObserver.observe(this.$refs.row)
 
+    this.stopObserve = observeVideosRestartOnEnter([
+      this.$refs.leftVideo,
+      this.$refs.rightVideo,
+    ])
+
     this.scheduleLayout()
   },
   beforeUnmount() {
     this.mediaQuery?.removeEventListener('change', this.onMediaChange)
     this.resizeObserver?.disconnect()
+    this.stopObserve?.()
   },
   methods: {
     scheduleLayout() {
