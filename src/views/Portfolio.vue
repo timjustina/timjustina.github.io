@@ -880,7 +880,9 @@ export default {
                 return (
                     this.heroCursorActive &&
                     !this.heroCursorBootLocked &&
-                    this.heroTouchDiskOnStage
+                    // Keep the in-text glass alive even if stage clipping flickers
+                    // during dissipate scroll (disk still overlapping the hero).
+                    (this.heroTouchDiskOnStage || this.heroCursorIntroGlassHandoff)
                 )
             }
             return this.heroCursorActive || this.heroCursorBootLocked
@@ -935,10 +937,11 @@ export default {
             return mix > 0 && mix <= HERO_CURSOR_RANGE_EXPAND_END
         },
         heroCursorIntroGlassInRangeGlow() {
-            return (
-                this.heroCursorInRange &&
-                this.heroCursorRangeMix > HERO_CURSOR_RANGE_EXPAND_END
-            )
+            if (this.heroCursorRangeMix <= HERO_CURSOR_RANGE_EXPAND_END) return false
+            // Letter-push is gated off during dissipate/reconsolidate, which clears
+            // heroCursorInRange — still show the glass look while among the text.
+            if (this.heroCursorInRange) return true
+            return this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff
         },
         heroCursorDotHoverExpand() {
             if (this.heroCursorIntroGlassHandoff) return false
@@ -1077,11 +1080,18 @@ export default {
 
             const { x, y } = this.heroCursorGlassPos
             const rangeMix = this.heroCursorRangeMix
-            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            // During dissipate, letter-push is off so inRange clears — treat handoff
+            // as still-in-text so size/glow don't collapse to a bare ring.
+            const hoverMix =
+                this.heroCursorInRange ||
+                (this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff)
+                    ? 0
+                    : this.heroCursorHoverMix
             const size = heroCursorIntroBallSize(hoverMix, rangeMix)
             const half = size / 2
-            const opacity = this.heroTouchDiskDissipateFade
 
+            // Never tie glass opacity to letter dissipate (pre-1ba1fa4 behavior).
+            // Idle disk fade is handled on the dot / dot-disk layers only.
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
                 '--hero-cursor-range-mix': rangeMix,
@@ -1089,12 +1099,7 @@ export default {
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
-                opacity,
-                visibility: this.heroTouchDiskMode
-                    ? 'visible'
-                    : opacity < 0.02
-                      ? 'hidden'
-                      : 'visible',
+                visibility: 'visible',
             }
         },
         heroCursorMagnifierWindowStyle() {
@@ -2816,6 +2821,7 @@ export default {
                 const freezeIntroGlass =
                     this.isHeroTouchDiskMode() &&
                     this.heroCursorIntroGlassHandoff &&
+                    this.heroTouchDiskOnStage &&
                     (this.heroIntroDissipated || this.heroIntroReconsolidating)
                 // Don't drop the in-text glass while letters fan out / snap back.
                 if (!freezeIntroGlass) {
@@ -2883,7 +2889,10 @@ export default {
                     this.heroCursorHoverLockEl = null
                 }
                 this.heroCursorRangeTight =
-                    this.heroCursorInRange && this.isHeroIntroPointerTight(tx, ty)
+                    (this.heroCursorInRange ||
+                        (this.isHeroTouchDiskMode() &&
+                            this.heroCursorIntroGlassHandoff)) &&
+                    this.isHeroIntroPointerTight(tx, ty)
 
                 if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
                     // Only blank when there is no clone yet — in-place refresh
