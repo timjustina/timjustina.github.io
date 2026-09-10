@@ -3593,7 +3593,7 @@ export default {
             if (!intro || !pointer) return
 
             const introStyles = getComputedStyle(intro)
-            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 160)
+            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 100)
             const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
             const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
             const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
@@ -4650,7 +4650,7 @@ export default {
         --hero-cursor-zone-pad-default: 80px;
         --hero-cursor-zone-pad-tight: 4px;
         --hero-cursor-nav-proximity: 80px;
-        --hero-intro-hover-radius: 160px;
+        --hero-intro-hover-radius: 100px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
         --hero-intro-hover-force-exp: 2.65;
@@ -4687,7 +4687,7 @@ export default {
         --hero-cursor-zone-pad-default: 80px;
         --hero-cursor-zone-pad-tight: 4px;
         --hero-cursor-nav-proximity: 80px;
-        --hero-intro-hover-radius: 160px;
+        --hero-intro-hover-radius: 100px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
         --hero-intro-hover-force-exp: 2.65;
