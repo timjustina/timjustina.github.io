@@ -2819,6 +2819,11 @@ export default {
 
             if (inRange) {
                 this.heroIntroPointer = { x, y }
+                // Desktop fine-pointer: letter push runs from the glass-follow loop at
+                // glassPos so glyphs part around the visible ball (not the leading tip).
+                if (this.isHeroIntroFinePointer() && !this.isHeroTouchDiskMode()) {
+                    return
+                }
                 if (this.heroIntroPointerRaf != null) return
                 this.heroIntroPointerRaf = requestAnimationFrame(() => {
                     this.heroIntroPointerRaf = null
@@ -2903,6 +2908,18 @@ export default {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else {
                     this.heroCursorGlassPos = { x: nx, y: ny }
+                }
+
+                // Desktop: repel from the visible glass each frame (direct-follow CSS).
+                if (
+                    !touchDisk &&
+                    this.heroCursorInRange &&
+                    this.heroIntroPointer &&
+                    this.canHeroIntroPointerPlay()
+                ) {
+                    const { x: gx2, y: gy2 } = this.heroCursorGlassPos
+                    this.heroIntroPointer = { x: gx2, y: gy2 }
+                    this.applyHeroIntroPointerShift()
                 }
 
                 this.heroCursorOverHover = hoverTarget === 1
@@ -3587,11 +3604,9 @@ export default {
 
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             const layout = this.heroIntroRestLayout
-            // Frozen rest centers are a mobile dissipate optimization only.
-            // Desktop fine-pointer must keep live centers so letters fall smoothly
-            // around the glass as CSS transitions run.
+            // Prefer frozen rest centers when available — live rects mid-transition
+            // feed back into the force field and vibrate.
             const useRest =
-                !this.isHeroIntroFinePointer() &&
                 layout &&
                 Array.isArray(layout.chars) &&
                 layout.chars.length === chars.length
@@ -3757,11 +3772,7 @@ export default {
          * always references the true parked layout — not mid-flight cascade poses.
          */
         captureHeroIntroRestLayout({ preAnimation = false } = {}) {
-            const isMobile =
-                this.heroIntroLetterMq?.matches ??
-                (typeof window !== 'undefined' &&
-                    window.matchMedia(MOBILE_MEDIA_QUERY).matches)
-            if (!this.heroIntroLetterMode || !isMobile || prefersReducedMotion()) {
+            if (!this.heroIntroLetterMode || prefersReducedMotion()) {
                 if (!preAnimation) this.heroIntroRestLayout = null
                 return false
             }
@@ -3785,9 +3796,8 @@ export default {
                 return false
             }
 
-            // Always pin glyphs to rest for the read — cascade / dissipate transforms
-            // would otherwise skew centers. Before reveal this is invisible; after
-            // settle glyphs are already at rest so it’s a no-op visually.
+            // Always pin glyphs to rest for the read — cascade / dissipate / push
+            // transforms would otherwise skew centers.
             intro.classList.add('hero-intro--dissipate-measure')
             void intro.offsetWidth
 
@@ -4648,23 +4658,22 @@ export default {
         --hero-intro-hover-knock-mult: 0.55;
     }
 
-    /* Float back at cascade pace (per-letter --hero-intro-char-duration from assemble) */
+    /* Float back at cascade pace when leaving the glass field */
     .portfolio-page--settled .hero-intro--chars .hero-intro-char {
         transform: translate3d(0, 0, 0);
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
         will-change: transform;
     }
 
-    /* Knock outward in slow motion, same easing as the cascade fly-in */
+    /* Direct follow while inside the field — CSS knock transitions fight per-frame
+       push updates and vibrate. Fall-back uses the rule above once --pushed drops. */
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
             var(--hero-intro-push-x, 0),
             var(--hero-intro-push-y, 0),
             0
         );
-        transition: transform
-            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
-            var(--fly-ease);
+        transition: none;
     }
 }
 
@@ -4696,15 +4705,14 @@ export default {
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
     }
 
+    /* Same as desktop: direct follow in-field, smooth fall on release. */
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
             var(--hero-intro-push-x, 0),
             var(--hero-intro-push-y, 0),
             0
         );
-        transition: transform
-            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
-            var(--fly-ease);
+        transition: none;
     }
 
     /* Legacy stroke class (unused while touch disk owns mobile) — keep inert. */
@@ -4744,13 +4752,14 @@ export default {
     .portfolio-page--settled .hero-intro--chars.hero-intro--dissipate-instant .hero-intro-char.hero-intro-char--pushed {
         transition: none !important;
     }
+}
 
-    .hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char,
-    .hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char.hero-intro-char--pushed {
-        transform: none !important;
-        opacity: 1 !important;
-        transition: none !important;
-    }
+/* Pin glyphs to rest for measuring — used on desktop and mobile. */
+.hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char,
+.hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char.hero-intro-char--pushed {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
 }
 
 .hero-intro-cursor-ball {
