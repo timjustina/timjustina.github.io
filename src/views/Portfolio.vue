@@ -2819,11 +2819,6 @@ export default {
 
             if (inRange) {
                 this.heroIntroPointer = { x, y }
-                // Desktop fine-pointer: letter push runs from the glass-follow loop at
-                // glassPos so glyphs part around the visible ball (not the leading tip).
-                if (this.isHeroIntroFinePointer() && !this.isHeroTouchDiskMode()) {
-                    return
-                }
                 if (this.heroIntroPointerRaf != null) return
                 this.heroIntroPointerRaf = requestAnimationFrame(() => {
                     this.heroIntroPointerRaf = null
@@ -2908,18 +2903,6 @@ export default {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else {
                     this.heroCursorGlassPos = { x: nx, y: ny }
-                }
-
-                // Desktop: repel from the visible glass each frame (direct-follow CSS).
-                if (
-                    !touchDisk &&
-                    this.heroCursorInRange &&
-                    this.heroIntroPointer &&
-                    this.canHeroIntroPointerPlay()
-                ) {
-                    const { x: gx2, y: gy2 } = this.heroCursorGlassPos
-                    this.heroIntroPointer = { x: gx2, y: gy2 }
-                    this.applyHeroIntroPointerShift()
                 }
 
                 this.heroCursorOverHover = hoverTarget === 1
@@ -3593,7 +3576,7 @@ export default {
             if (!intro || !pointer) return
 
             const introStyles = getComputedStyle(intro)
-            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 100)
+            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 120)
             const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
             const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
             const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
@@ -4650,7 +4633,7 @@ export default {
         --hero-cursor-zone-pad-default: 80px;
         --hero-cursor-zone-pad-tight: 4px;
         --hero-cursor-nav-proximity: 80px;
-        --hero-intro-hover-radius: 100px;
+        --hero-intro-hover-radius: 120px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
         --hero-intro-hover-force-exp: 2.65;
@@ -4665,15 +4648,16 @@ export default {
         will-change: transform;
     }
 
-    /* Direct follow while inside the field — CSS knock transitions fight per-frame
-       push updates and vibrate. Fall-back uses the rule above once --pushed drops. */
+    /* Knock outward in slow motion, same easing as the cascade fly-in */
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
             var(--hero-intro-push-x, 0),
             var(--hero-intro-push-y, 0),
             0
         );
-        transition: none;
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
+            var(--fly-ease);
     }
 }
 
@@ -4687,7 +4671,7 @@ export default {
         --hero-cursor-zone-pad-default: 80px;
         --hero-cursor-zone-pad-tight: 4px;
         --hero-cursor-nav-proximity: 80px;
-        --hero-intro-hover-radius: 100px;
+        --hero-intro-hover-radius: 120px;
         --hero-intro-hover-shift: 84px;
         --hero-intro-hover-lift: 32px;
         --hero-intro-hover-force-exp: 2.65;
@@ -4705,14 +4689,16 @@ export default {
         transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
     }
 
-    /* Same as desktop: direct follow in-field, smooth fall on release. */
+    /* Knock outward — same as desktop; rest-layout centers avoid vibrate feedback. */
     .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
         transform: translate3d(
             var(--hero-intro-push-x, 0),
             var(--hero-intro-push-y, 0),
             0
         );
-        transition: none;
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
+            var(--fly-ease);
     }
 
     /* Legacy stroke class (unused while touch disk owns mobile) — keep inert. */
