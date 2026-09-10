@@ -3587,17 +3587,20 @@ export default {
 
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             const layout = this.heroIntroRestLayout
+            const introRect = intro.getBoundingClientRect()
             // Prefer frozen rest centers when available — live rects mid-transition
-            // feed back into the force field and vibrate.
+            // feed back into the force field and vibrate. Drop the cache if the
+            // intro reflowed (resize) so we never push against stale locals.
             const useRest =
                 layout &&
                 Array.isArray(layout.chars) &&
-                layout.chars.length === chars.length
+                layout.chars.length === chars.length &&
+                Math.abs(layout.introW - introRect.width) < 1.5 &&
+                Math.abs(layout.introH - introRect.height) < 1.5
 
             // Prefer frozen rest centers (one intro rect) over 156× getBoundingClientRect/frame.
             let samples
             if (useRest) {
-                const introRect = intro.getBoundingClientRect()
                 samples = chars.map((el, i) => {
                     const local = layout.chars[i]
                     return {
@@ -3678,12 +3681,12 @@ export default {
         onHeroDecorResize() {
             requestAnimationFrame(() => {
                 const width = window.innerWidth
-                const widthChanged =
-                    this.lockedMobileHeroWidth != null && this.lockedMobileHeroWidth !== width
+                const mobileLocked = this.lockedMobileHeroWidth != null
+                const widthChanged = mobileLocked && this.lockedMobileHeroWidth !== width
 
                 // Height-only resize = URL bar. Touching hero layout or remasuring
                 // glyphs here is what made the intro jump and the anim feel unstable.
-                if (!widthChanged && this.lockedMobileHeroWidth != null) {
+                if (!widthChanged && mobileLocked) {
                     this.updateHeroLocationVisibility()
                     return
                 }
@@ -3699,16 +3702,36 @@ export default {
                 }
                 this.updateHeroLocationVisibility()
 
-                if (widthChanged) {
-                    this.invalidateHeroIntroRestLayout()
-                }
+                // Glass↔letter push is keyed off frozen glyph locals. Any real
+                // layout resize (desktop width/height, mobile width) must reset
+                // the field and remasure — otherwise letters part around a ghost.
                 const inFlight = this.heroIntroDissipated || this.heroIntroReconsolidating
-                if (widthChanged && !inFlight) {
+                this.clearHeroIntroPointerShift()
+                this.invalidateHeroIntroRestLayout()
+                if (!inFlight) {
                     this.captureHeroIntroRestLayout()
                 }
                 this.updateHeroIntroDissipateFromScroll({
-                    forcePrepare: widthChanged && !inFlight,
+                    forcePrepare: !inFlight,
                 })
+
+                // Re-seat the field from the current cursor/disk once layout is fresh.
+                if (!inFlight && this.heroCursorActive) {
+                    if (this.isHeroTouchDiskMode()) {
+                        if (!this.heroTouchDiskHasMoved) {
+                            this.syncHeroTouchDiskRestPosition()
+                        } else {
+                            this.clampHeroTouchDiskIntoViewport()
+                            this.syncHeroTouchDiskIntroRepel()
+                        }
+                    } else if (this.isHeroIntroFinePointer()) {
+                        const { x, y } = this.heroCursorPos
+                        this.updateHeroFinePointer(x, y, {
+                            introEffects: this.canHeroIntroPointerPlay(),
+                            skipHover: true,
+                        })
+                    }
+                }
             })
         },
         canHeroIntroDissipate() {
