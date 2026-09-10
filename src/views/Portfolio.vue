@@ -223,7 +223,7 @@
                             </span>
                         </template>
                         <template v-else>
-                            <span class="hero-intro-lead">I'm Tim Justina Yeung, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and research.
+                            <span class="hero-intro-lead">I'm Tim Justina Yeung, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and academic research.
                             I deeply enjoy understanding complex problems and providing creative solutions
                             <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
                         </template>
@@ -698,7 +698,7 @@ const HERO_INTRO_PARTS = [
     { text: "I'm Tim Justina Yeung, a ", em: false },
     { text: 'Product Designer', em: true, keep: true },
     {
-        text: ' with a background in Neuroscience and research. I deeply enjoy understanding complex problems and providing creative solutions ',
+        text: ' with a background in Neuroscience and academic research. I deeply enjoy understanding complex problems and providing creative solutions ',
         em: false,
     },
     { text: 'for people :)', em: true, keep: true, afterthoughtSuffix: ':)' },
