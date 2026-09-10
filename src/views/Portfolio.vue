@@ -6791,6 +6791,11 @@ export default {
     color: var(--brand) !important;
 }
 
+.hero-intro-cursor-mirror-clone .project-caption-link .project-title {
+    /* Snap — live page keeps 0.45s ease to match thumbnail morph */
+    transition: none !important;
+}
+
 .hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-caption-link .project-title {
     color: var(--brand) !important;
 }
