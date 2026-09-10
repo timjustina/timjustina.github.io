@@ -388,11 +388,11 @@
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
                         <br><br>
-                        Think bad design sticks out like a sore thumb.
-                        Effective design is an invisible champion.
+                        Think bad design sticks out like a sore thumb;
+                        effective design is an invisible champion.
                         <br><br>
                         At work, value a good team. Figure out
-                        context, metrics and specs before jumping in. High tolerance for ambiguity. Very comfortable with data.
+                        context and metrics before jumping in. Have high tolerance for ambiguity. Very comfortable with data.
                         Think critically. Interrogate LLMs.
                         <br><br>
                         Like to work out in free time - old books and films for the brain,
