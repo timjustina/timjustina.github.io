@@ -388,9 +388,12 @@
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
                         <br><br>
+                        Think good design is subjective. Bad design sticks out like a sore thumb.
+                        Effective design is an invisible champion.
+                        <br><br>
                         At work, value a good team. Figure out
-                        context, metrics and specs before jumping in. High tolerance for ambiguity. Think critically. Very comfortable with data.
-                        Interrogate LLMs.
+                        context, metrics and specs before jumping in. High tolerance for ambiguity. Very comfortable with data.
+                        Think critically. Interrogate LLMs.
                         <br><br>
                         Like to work out in free time - old books and films for the brain,
                         gym and swim for the rest. Drink wild beers on cheat days. Love a good conversation. Can't help
