@@ -388,7 +388,7 @@
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
                         <br><br>
-                        Think good design is subjective. Bad design sticks out like a sore thumb.
+                        Think bad design sticks out like a sore thumb.
                         Effective design is an invisible champion.
                         <br><br>
                         At work, value a good team. Figure out
