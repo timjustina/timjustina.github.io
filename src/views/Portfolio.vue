@@ -5722,7 +5722,8 @@ export default {
     overflow: hidden;
     border-radius: 20px;
     isolation: isolate;
-    transition: border-radius 0.45s ease;
+    box-shadow: none;
+    transition: border-radius 0.45s ease, box-shadow 0.45s ease;
 }
 
 .project-image-wrap {
@@ -5736,7 +5737,8 @@ export default {
     border-radius: 20px;
     isolation: isolate;
     background: #fff;
-    transition: border-radius 0.45s ease;
+    box-shadow: none;
+    transition: border-radius 0.45s ease, box-shadow 0.45s ease;
 }
 
 .project-image-link picture {
@@ -5766,6 +5768,7 @@ export default {
 .project:not(.project--upcoming):active .project-image-link,
 .project:not(.project--upcoming):active .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
+    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
 }
 
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
@@ -5775,6 +5778,7 @@ export default {
     .project:not(.project--upcoming):hover .project-image-wrap,
     .project:not(.project--upcoming):focus-within .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
+        box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
     }
 }
 
@@ -6424,7 +6428,7 @@ export default {
         aspect-ratio: 1 / 1;
         overflow: hidden;
         border-radius: 20px;
-        transition: border-radius 0.45s ease;
+        transition: border-radius 0.45s ease, box-shadow 0.45s ease;
     }
 
     .project:not(.project--upcoming):active .project-image-link,
@@ -6432,6 +6436,7 @@ export default {
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
+        box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -6440,6 +6445,7 @@ export default {
         .project:not(.project--upcoming):focus-within .project-image-link,
         .project:not(.project--upcoming):focus-within .project-image-wrap {
             border-radius: 700px 700px 20px 20px;
+            box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
         }
     }
 
@@ -6803,5 +6809,6 @@ export default {
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
+    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
 }
 </style>
