@@ -283,7 +283,7 @@ export default {
   font-weight: 500;
   font-size: 18px;
   line-height: 30px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -423,7 +423,7 @@ export default {
   font-weight: 500;
   font-size: 22px;
   line-height: 33px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #000aaa;
   vertical-align: middle;
 }
@@ -439,7 +439,7 @@ export default {
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #2c2c2c;
   vertical-align: middle;
 }
@@ -472,7 +472,7 @@ export default {
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #2c2c2c;
   vertical-align: middle;
 }
@@ -499,7 +499,7 @@ export default {
   font-weight: 500;
   font-size: 18px;
   line-height: 27px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #fff;
   cursor: pointer;
   box-sizing: border-box;
@@ -663,7 +663,7 @@ export default {
   font-weight: 400;
   font-size: 18px;
   line-height: 27px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #fff;
   pointer-events: none;
 }

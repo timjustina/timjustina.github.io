@@ -505,7 +505,7 @@ export default {
 .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 /* Closing glass — grey wash behind, fade under glass, glass on top */
@@ -754,7 +754,7 @@ export default {
   font-weight: 600;
   font-size: inherit;
   line-height: inherit;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .main :global(.project-body #results) {
@@ -781,7 +781,7 @@ export default {
   font-style: normal;
   font-size: 20px;
   line-height: 30px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #757575;
 }
 
@@ -998,7 +998,7 @@ export default {
   font-family: 'Fira Code', monospace;
   font-weight: calc(400 * var(--font-weight-scale));
   font-size: 16px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #757575;
   margin-top: 42px;
   text-align: left;
@@ -1190,7 +1190,7 @@ export default {
   .main :global(.project-body h2) {
     font-size: 18px;
     line-height: 30px;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 
   .main :global(.project-body h3) {

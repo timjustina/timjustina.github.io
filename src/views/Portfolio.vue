@@ -156,14 +156,7 @@
             :class="{ 'hero-location--visible': heroLocationVisible && pageRevealed }"
             aria-label="London / Barcelona"
         >
-            <span class="hero-location-icon-wrap" aria-hidden="true">
-                <svg class="hero-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
-                    <path
-                        d="M6.5 0C2.91 0 0 2.91 0 6.5C0 11.38 6.5 20 6.5 20S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0ZM6.5 8.75C5.26 8.75 4.25 7.74 4.25 6.5C4.25 5.26 5.26 4.25 6.5 4.25C7.74 4.25 8.75 5.26 8.75 6.5C8.75 7.74 7.74 8.75 6.5 8.75Z"
-                        fill="currentColor"
-                    />
-                </svg>
-            </span>
+            <span class="hero-location-icon-wrap" aria-hidden="true" v-html="locationIconSvg" />
             <span class="hero-location-text">London / Barcelona</span>
         </p>
 
@@ -363,14 +356,7 @@
                     <div class="about-intro">
                         <h2 class="about-heading portfolio-fly portfolio-fly--from-left">About Tim ( 湉 )</h2>
                         <p class="about-location portfolio-fly portfolio-fly--from-right">
-                            <span class="about-location-icon-wrap" aria-hidden="true">
-                                <svg class="about-location-icon" width="13" height="20" viewBox="0 0 13 20" fill="none" aria-hidden="true">
-                                    <path
-                                        d="M6.5 0C2.91 0 0 2.91 0 6.5C0 11.38 6.5 20 6.5 20S13 11.38 13 6.5C13 2.91 10.09 0 6.5 0ZM6.5 8.75C5.26 8.75 4.25 7.74 4.25 6.5C4.25 5.26 5.26 4.25 6.5 4.25C7.74 4.25 8.75 5.26 8.75 6.5C8.75 7.74 7.74 8.75 6.5 8.75Z"
-                                        fill="#B9B4AE"
-                                    />
-                                </svg>
-                            </span>
+                            <span class="about-location-icon-wrap" aria-hidden="true" v-html="locationIconSvg" />
                             <span class="about-location-text-wrap">
                                 <span class="about-location-text">London / Barcelona</span>
                                 <span class="about-location-text-white-stack" aria-hidden="true">
@@ -436,6 +422,7 @@ import lineAnimationExtended from '../assets/line_animation_extended.svg'
 import loadingNormal from '../assets/loading/loading_normal.svg'
 import loadingFolded from '../assets/loading/loading_folded.svg'
 import menuLogo from '../assets/TjyCutoutLogo.svg'
+import locationIconSvg from '../assets/location.svg?raw'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
@@ -765,6 +752,7 @@ export default {
             lineAnimationExtended,
             loadingFrames: [loadingNormal, loadingFolded],
             menuLogo,
+            locationIconSvg,
             cvUrl,
             showLoadingSplash: true,
             logoHandoff: false,
@@ -4576,7 +4564,7 @@ export default {
     --title: #4d4d4d;
     --about-muted: #928a81;
     --about-location-color: #928a81;
-    --about-location-icon-fill: #b9b4ae;
+    --about-location-icon-fill: var(--about-location-color);
     --about-bg: #f4f2f1;
     --page-max: 1454px;
     /* Cap pad at 100px; only drop toward 39px once content is 939px (offset slide exhausted) */
@@ -5452,7 +5440,7 @@ export default {
     font-style: normal;
     font-weight: 300;
     line-height: 39px;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: var(--muted);
     font-synthesis: none;
 }
@@ -5681,7 +5669,7 @@ export default {
     font-size: 22px;
     font-weight: 500;
     line-height: 33px;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: #fff;
     text-decoration: none;
     box-sizing: border-box;
@@ -5931,7 +5919,7 @@ export default {
     font-size: 16px;
     font-weight: 400;
     line-height: 25px;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: var(--muted);
 }
 
@@ -6031,6 +6019,7 @@ export default {
     padding: 0;
     box-sizing: border-box;
     flex: none;
+    color: var(--about-location-color);
 }
 
 .about-location-icon-wrap {
@@ -6038,25 +6027,28 @@ export default {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    width: 30px;
-    height: 30px;
+    width: 27px;
+    height: 27px;
     flex: none;
+    color: inherit;
 }
 
-.about-location-icon {
+.about-location-icon-wrap :deep(svg) {
     display: block;
-    width: 13px;
-    height: 20px;
+    width: 27px;
+    height: 27px;
     flex: none;
 }
 
-.about-location-icon :deep(path) {
-    fill: var(--about-location-icon-fill);
+.about-location-icon-wrap :deep(path) {
+    fill: currentColor;
 }
 
 .about-location-text-wrap {
     position: relative;
     flex: none;
+    display: flex;
+    align-items: center;
 }
 
 .about-location-text {
@@ -6065,7 +6057,7 @@ export default {
     font-style: normal;
     font-weight: 400;
     line-height: 27px;
-    color: var(--about-location-color);
+    color: inherit;
     flex: none;
 }
 
@@ -6102,7 +6094,7 @@ export default {
     font-size: 16px;
     font-weight: 400;
     line-height: 26px;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: var(--text);
 }
 
@@ -6268,16 +6260,17 @@ export default {
         width: 30px;
         height: 30px;
         flex: none;
+        color: inherit;
     }
 
-    .hero-location-icon {
+    .hero-location-icon-wrap :deep(svg) {
         display: block;
-        width: 13px;
-        height: 20px;
+        width: 30px;
+        height: 30px;
         flex: none;
     }
 
-    .hero-location-icon :deep(path) {
+    .hero-location-icon-wrap :deep(path) {
         fill: currentColor;
     }
 
@@ -6287,9 +6280,11 @@ export default {
         font-style: normal;
         font-weight: 500;
         line-height: 30px;
-        color: currentColor;
+        color: inherit;
         flex: none;
         white-space: nowrap;
+        display: flex;
+        align-items: center;
     }
 
     .portfolio-page {
@@ -6780,8 +6775,8 @@ export default {
         -webkit-text-fill-color: #fff;
     }
 
-    .about-location-icon :deep(path) {
-        fill: var(--about-location-icon-fill);
+    .about-location-icon-wrap :deep(path) {
+        fill: currentColor;
     }
 
     .about-bio {
@@ -6823,7 +6818,7 @@ export default {
         font-size: 16px;
         font-weight: 400;
         line-height: 25px;
-        letter-spacing: -0.02em;
+        letter-spacing: 0;
         color: #757575;
     }
 

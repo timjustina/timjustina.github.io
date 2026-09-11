@@ -236,7 +236,7 @@ export default {
     font-style: normal;
     font-weight: 600;
     line-height: 36px;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     color: var(--brand);
     font-synthesis: none;
 }
