@@ -439,7 +439,7 @@ import menuLogo from '../assets/TjyCutoutLogo.svg'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
-import { scrollToPortfolioHash } from '../utils/scrollToAbout.js'
+import { scrollToPortfolioHash, scrollToWork } from '../utils/scrollToAbout.js'
 import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
@@ -848,6 +848,7 @@ export default {
             heroTouchDiskIdle: true,
             heroTouchDiskBreathe: false,
             heroTouchDiskEntranceTimer: null,
+            heroTouchDiskWorkJumped: false,
         }
     },
     computed: {
@@ -2197,20 +2198,15 @@ export default {
             const minX = radius
             const maxX = Math.max(minX, vw - radius)
             const minY = radius
-            let maxY = Math.max(minY, vh - radius)
-
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (intro) {
-                const rect = intro.getBoundingClientRect()
-                if (rect.height > 0 && rect.bottom > 0) {
-                    // Drag floor: above the hero intro bottom while it's on screen.
-                    maxY = Math.min(maxY, Math.max(minY, rect.bottom - radius))
-                }
-            }
+            // Viewport floor — dragging to the bottom scrolls to the first case study.
+            const maxY = Math.max(minY, vh - radius)
 
             return { minX, maxX, minY, maxY, radius }
         },
         computeHeroTouchDiskOnStage() {
+            // Stay visible while dragging so the disk can reach the viewport bottom.
+            if (this.heroTouchDiskDragging) return true
+
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
 
@@ -2265,6 +2261,7 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskWorkJumped = false
             this.heroCursorPos = { ...pos }
             this.heroCursorGlassPos = { ...pos }
             this.heroCursorActive = true
@@ -2335,6 +2332,7 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskWorkJumped = false
             this.heroTouchDiskOnStage = false
             this.heroTouchDiskEntrance = 0
             this.heroTouchDiskEntering = false
@@ -2354,8 +2352,20 @@ export default {
                 this.$nextTick(() => this.primeHeroTouchDisk())
             }
         },
+        endHeroTouchDiskDrag() {
+            this.heroTouchDiskDragging = false
+            this.heroTouchDiskPointerId = null
+            this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.refreshHeroTouchDiskStage()
+        },
+        triggerHeroTouchDiskWorkJump() {
+            if (this.heroTouchDiskWorkJumped) return
+            this.heroTouchDiskWorkJumped = true
+            this.endHeroTouchDiskDrag()
+            scrollToWork()
+        },
         moveHeroTouchDiskTo(clientX, clientY) {
-            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
+            const { minX, maxX, minY, maxY, radius } = this.getHeroTouchDiskBounds()
             const x = Math.min(
                 maxX,
                 Math.max(minX, clientX + this.heroTouchDiskGrabOffset.x),
@@ -2369,6 +2379,15 @@ export default {
             })
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
+
+            // During drag: viewport-bottom contact → first case study thumbnail.
+            if (
+                this.heroTouchDiskDragging &&
+                !this.heroTouchDiskWorkJumped &&
+                y >= window.innerHeight - radius - 1
+            ) {
+                this.triggerHeroTouchDiskWorkJump()
+            }
         },
         onHeroTouchDiskPointerDown(event) {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -2382,6 +2401,7 @@ export default {
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
+            this.heroTouchDiskWorkJumped = false
             this.heroTouchDiskPointerId = event.pointerId
             this.heroTouchDiskGrabOffset = {
                 x: x - event.clientX,
@@ -2406,7 +2426,7 @@ export default {
         onHeroTouchDiskPointerUp(event) {
             if (event.pointerId !== this.heroTouchDiskPointerId) return
 
-            if (this.heroTouchDiskDragging) {
+            if (this.heroTouchDiskDragging && !this.heroTouchDiskWorkJumped) {
                 this.moveHeroTouchDiskTo(event.clientX, event.clientY)
             }
             try {
@@ -2414,9 +2434,7 @@ export default {
             } catch {
                 /* ignore */
             }
-            this.heroTouchDiskDragging = false
-            this.heroTouchDiskPointerId = null
-            this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.endHeroTouchDiskDrag()
         },
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
