@@ -2362,6 +2362,25 @@ export default {
             if (this.heroTouchDiskWorkJumped) return
             this.heroTouchDiskWorkJumped = true
             this.endHeroTouchDiskDrag()
+
+            // Snap back to rest so a later return to the hero isn't mid-drag.
+            const pos = this.getHeroTouchDiskRestPos()
+            this.heroTouchDiskHasMoved = false
+            this.heroCursorPos = { ...pos }
+            this.heroCursorGlassPos = { ...pos }
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroCursorRangeMix = 0
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorIntroGlassHandoff = false
+            this.updateHeroFinePointer(pos.x, pos.y, {
+                introEffects: false,
+                skipHover: true,
+            })
+            this.refreshHeroTouchDiskStage()
+
             scrollToWork()
         },
         moveHeroTouchDiskTo(clientX, clientY) {
