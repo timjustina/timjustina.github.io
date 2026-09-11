@@ -1,6 +1,9 @@
-import { SMALL_MOBILE_MEDIA_QUERY } from './breakpoints.js'
+import { MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from './breakpoints.js'
+import { getProjectSnapScrollTop, suppressProjectScrollSnap } from './projectScrollSnap.js'
 
 const ABOUT_EXTRA_OFFSET = 85
+/** Mobile (<800): 20px gap above the about background. */
+const ABOUT_MOBILE_TOP_GAP = 20
 
 function getHeaderOffset() {
     const topBar = document.querySelector('.top-bar')
@@ -20,28 +23,24 @@ export function getAboutScrollTop() {
     const scrollY = window.scrollY
     const aboutTop = aboutSection.getBoundingClientRect().top + scrollY
     const bioTop = aboutBio.getBoundingClientRect().top + scrollY
-    const isSmall = window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches
     const headerOffset = getHeaderOffset()
 
+    // Mobile: 20px gap above the about background (section top).
+    if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+        return Math.max(0, aboutTop - headerOffset - ABOUT_MOBILE_TOP_GAP)
+    }
+
+    const isSmall = window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches
     const colorTop = aboutTop - headerOffset
     const bioTopAligned = bioTop - headerOffset
-
     const top = isSmall ? colorTop : bioTopAligned
     return Math.max(0, top + ABOUT_EXTRA_OFFSET)
 }
 
-const WORK_TOP_GAP = 20
-
 export function getWorkScrollTop() {
-    const el = document.getElementById('work-first') || document.getElementById('work')
+    const el = document.getElementById('work-first') || document.querySelector('.work .project')
     if (!el) return null
-
-    const headerOffset = getHeaderOffset()
-    const scrollY = window.scrollY
-    const setTop = el.getBoundingClientRect().top + scrollY
-
-    // Align the first case study with a fixed gap below the header / viewport top.
-    return Math.max(0, setTop - headerOffset - WORK_TOP_GAP)
+    return getProjectSnapScrollTop(el)
 }
 
 const DEFAULT_SCROLL_DURATION = 450
@@ -54,11 +53,15 @@ function easeInOutCubic(t) {
 
 export { easeInOutCubic }
 
-export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION, ease = easeInOutCubic } = {}) {
+export function cancelSmoothScroll() {
     if (activeScrollAnimation !== null) {
         cancelAnimationFrame(activeScrollAnimation)
         activeScrollAnimation = null
     }
+}
+
+export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION, ease = easeInOutCubic, onComplete } = {}) {
+    cancelSmoothScroll()
 
     const startTop = window.scrollY
     const maxTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
@@ -67,6 +70,7 @@ export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION, 
 
     if (Math.abs(distance) < 1 || duration <= 0) {
         window.scrollTo(0, endTop)
+        onComplete?.()
         return
     }
 
@@ -83,6 +87,7 @@ export function smoothScrollTo(targetTop, { duration = DEFAULT_SCROLL_DURATION, 
             activeScrollAnimation = requestAnimationFrame(step)
         } else {
             activeScrollAnimation = null
+            onComplete?.()
         }
     }
 
@@ -93,6 +98,8 @@ export function scrollToAbout(options = {}) {
     const top = getAboutScrollTop()
     if (top === null) return false
 
+    const duration = options.duration ?? DEFAULT_SCROLL_DURATION
+    suppressProjectScrollSnap(Math.max(900, duration + 200))
     smoothScrollTo(top, options)
     return true
 }
@@ -101,6 +108,8 @@ export function scrollToWork(options = {}) {
     const top = getWorkScrollTop()
     if (top === null) return false
 
+    const duration = options.duration ?? DEFAULT_SCROLL_DURATION
+    suppressProjectScrollSnap(Math.max(900, duration + 200))
     smoothScrollTo(top, options)
     return true
 }
