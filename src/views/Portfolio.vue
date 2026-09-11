@@ -6783,8 +6783,8 @@ export default {
 
     .hero-intro {
         max-width: 100%;
-        font-size: 24px;
-        line-height: 36px;
+        font-size: 22px;
+        line-height: 33px;
     }
 
     .project-caption {
