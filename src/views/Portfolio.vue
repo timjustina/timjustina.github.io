@@ -270,7 +270,7 @@
                                     </h2>
                                 </div>
                                 <p class="project-description">
-                                    0‑to‑1 design of a caregiver‑facing dashboard for an IoT healthtech platform, helping caregivers better understand their client's needs
+                                    0‑to‑1 design of a caregiver‑facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
                                 </p>
                                 <span class="project-year">Kin<span class="project-year-sep">//</span>2026</span>
                             </router-link>
@@ -294,7 +294,7 @@
                                 </h2>
                             </div>
                             <p class="project-description">
-                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT healthtech platform for improving medication adherence
+                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence
                             </p>
                             <span class="project-year">Kin<span class="project-year-sep">//</span>2024</span>
                         </div>
