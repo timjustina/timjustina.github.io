@@ -12,13 +12,18 @@ const SNAP_AT_PX = 14
 const SNAP_DURATION_MIN = 380
 const SNAP_DURATION_MAX = 620
 /** Ignore tiny trackpad / Magic Mouse jitter while moving the pointer. */
-const WHEEL_INTENT_PX = 12
+const WHEEL_INTENT_PX = 18
+/** Cap one wheel event so a Magic Mouse blip can't commit alone. */
+const WHEEL_MAX_STEP_PX = 36
 /** Need this much accumulated delta in one gesture before leaving a stop. */
-const WHEEL_COMMIT_PX = 64
-const WHEEL_GESTURE_IDLE_MS = 180
-/** On the intro, require a clearer flick so pointer noise can't jump to work. */
-const WHEEL_COMMIT_INTRO_PX = 110
+const WHEEL_COMMIT_PX = 90
+const WHEEL_COMMIT_DOWN_PX = 130
+const WHEEL_GESTURE_IDLE_MS = 120
+/** On the intro, downward needs a real flick — pointer drift must not jump to work. */
+const WHEEL_COMMIT_INTRO_DOWN_PX = 220
+const WHEEL_COMMIT_INTRO_UP_PX = 90
 const TOUCH_SWIPE_PX = 36
+const TOUCH_SWIPE_INTRO_DOWN_PX = 120
 
 let suppressUntil = 0
 let animating = false
@@ -211,6 +216,8 @@ function onWheelHandler(event) {
     else if (event.deltaMode === 2) dy *= window.innerHeight
 
     if (Math.abs(dy) < WHEEL_INTENT_PX) return
+    // Clamp so one noisy event can't satisfy the commit threshold alone.
+    dy = Math.sign(dy) * Math.min(Math.abs(dy), WHEEL_MAX_STEP_PX)
 
     // Same-direction gestures accumulate; reversing resets.
     if (wheelAccum !== 0 && Math.sign(wheelAccum) !== Math.sign(dy)) {
@@ -220,7 +227,14 @@ function onWheelHandler(event) {
     resetWheelGestureSoon()
 
     const onIntro = scrollY <= SNAP_AT_PX
-    const need = onIntro ? WHEEL_COMMIT_INTRO_PX : WHEEL_COMMIT_PX
+    const goingDown = wheelAccum > 0
+    let need = WHEEL_COMMIT_PX
+    if (onIntro) {
+        need = goingDown ? WHEEL_COMMIT_INTRO_DOWN_PX : WHEEL_COMMIT_INTRO_UP_PX
+    } else if (goingDown) {
+        need = WHEEL_COMMIT_DOWN_PX
+    }
+
     if (Math.abs(wheelAccum) < need) {
         // Hold mid-section paging; on the intro, let tiny native scroll through
         // so pointer noise can't jump — only a real flick commits.
@@ -228,7 +242,7 @@ function onWheelHandler(event) {
         return
     }
 
-    const dir = wheelAccum > 0 ? 1 : -1
+    const dir = goingDown ? 1 : -1
     wheelAccum = 0
     trySnapInDirection(dir, event)
 }
@@ -252,10 +266,14 @@ function onTouchEndHandler(event) {
 
     const dy = touchStartY - touch.clientY
     const dx = touchStartX - touch.clientX
-    if (Math.abs(dy) < TOUCH_SWIPE_PX) return
+    const onIntro = window.scrollY <= SNAP_AT_PX
+    const goingDown = dy > 0
+    const swipeNeed =
+        onIntro && goingDown ? TOUCH_SWIPE_INTRO_DOWN_PX : TOUCH_SWIPE_PX
+    if (Math.abs(dy) < swipeNeed) return
     if (Math.abs(dy) < Math.abs(dx)) return
 
-    const dir = dy > 0 ? 1 : -1
+    const dir = goingDown ? 1 : -1
 
     // Kill residual touch momentum, then glide in one motion.
     const y = window.scrollY
