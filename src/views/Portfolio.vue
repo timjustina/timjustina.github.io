@@ -5433,10 +5433,10 @@ export default {
     z-index: 1;
     margin: 0;
     font-family: 'Fira Code', monospace;
-    font-size: 25px;
+    font-size: 26px;
     font-style: normal;
-    font-weight: 400;
-    line-height: 37.5px;
+    font-weight: 300;
+    line-height: 39px;
     letter-spacing: -0.02em;
     color: var(--muted);
     font-synthesis: none;
@@ -5490,7 +5490,7 @@ export default {
 
 .hero-intro-em {
     color: var(--brand);
-    font-weight: 600;
+    font-weight: 500;
     white-space: nowrap;
 }
 
@@ -5501,7 +5501,7 @@ export default {
 .hero-intro-afterthought {
     display: inline;
     color: var(--brand);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .hero-intro-afterthought-char {
@@ -5510,7 +5510,7 @@ export default {
 
 .hero-intro-char--afterthought {
     color: var(--brand);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .hero-intro-afterthought-cursor {
@@ -6594,8 +6594,8 @@ export default {
 /* 601px–<800px: mobile layout with desktop text sizes */
 @media (min-width: 601px) and (width < 800px) {
     .hero-intro {
-        font-size: 25px;
-        line-height: 37.5px;
+        font-size: 26px;
+        line-height: 39px;
     }
 
     .project-description {
@@ -6783,8 +6783,8 @@ export default {
 
     .hero-intro {
         max-width: 100%;
-        font-size: 22px;
-        line-height: 33px;
+        font-size: 24px;
+        line-height: 36px;
     }
 
     .project-caption {
