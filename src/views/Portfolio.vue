@@ -538,20 +538,27 @@ const HERO_TOUCH_DISK_EXPAND_MS = 380
 /** Blue center diameter while menu is open (idle dot is 8). */
 const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
-const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 5
+const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 10
 /** Gap from the outer (left) edge of the longest label to the frost rim. */
-const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 5
+const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 10
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
  * Menu orbit angles (screen: 0° right, 90° down, clockwise).
- * Work stays above About by MENU_GAP. Near top → Work at 210° south (150°);
- * mid → 210° north; near bottom → 250° north.
+ * Work stays above About by MENU_GAP.
+ * Both near top → Work 180° / About 150°; bottom mirrors that (Work 210° / About 180°);
+ * mid → pair centered on 180° (Work 195° / About 165°).
  */
 const HERO_TOUCH_DISK_MENU_GAP_DEG = 30
-const HERO_TOUCH_DISK_MENU_WORK_TOP_DEG = 150 // 210° south of left
-const HERO_TOUCH_DISK_MENU_WORK_MID_DEG = 210 // 210° north
-const HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG = 250 // 250° north
+const HERO_TOUCH_DISK_MENU_WORK_TOP_DEG = 180
+const HERO_TOUCH_DISK_MENU_WORK_MID_DEG =
+    180 + HERO_TOUCH_DISK_MENU_GAP_DEG / 2 // 195° — midpoint of pair at 180°
+const HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG =
+    180 + HERO_TOUCH_DISK_MENU_GAP_DEG // 210° — mirror of top fan
+/** Alone label (Work or About): 190° north at bottom; mirrored south at top. */
+const HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG = 190
+const HERO_TOUCH_DISK_MENU_ALONE_TOP_DEG =
+    180 - (HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG - 180) // 170°
 /** Disk-center distance from viewport top/bottom that counts as “near edge”. */
 const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
@@ -608,7 +615,7 @@ function getHeroTouchDiskMenuLabelWidth(label) {
     return heroTouchDiskMenuLabelWidths[label] || heroTouchDiskMenuLabelMaxWidthPx || 58
 }
 
-/** Frost diameter: blue → 5px → longest label → 5px past its outer edge. */
+/** Frost diameter: blue → 10px → longest label → 10px past its outer edge. */
 function getHeroTouchDiskMenuFrostSize() {
     if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
     const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
@@ -1109,11 +1116,22 @@ export default {
             if (y > vh - band) return HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG
             return HERO_TOUCH_DISK_MENU_WORK_MID_DEG
         },
+        /** Single Work/About label angle: 190° north near bottom; 170° (mirror) near top. */
+        heroTouchDiskMenuAloneDeg() {
+            const y = this.heroCursorGlassPos?.y ?? 0
+            const vh =
+                typeof window !== 'undefined'
+                    ? window.innerHeight
+                    : 800
+            const band = HERO_TOUCH_DISK_MENU_EDGE_BAND_PX
+            if (y < band) return HERO_TOUCH_DISK_MENU_ALONE_TOP_DEG
+            return HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG
+        },
         heroTouchDiskMenuItems() {
             // Depend on metrics rev so font-load remounts refresh placement.
             void this.heroTouchDiskMenuMetricsRev
             // Geometry uses the *open* blue size so labels don't crawl during expand.
-            // Each label's center sits on its ray; inner edge on (blueR + 5px) circle.
+            // Each label's center sits on its ray; inner edge on (blueR + 10px) circle.
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const innerOrbit = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const place = (items) =>
@@ -1134,12 +1152,13 @@ export default {
             const about = { id: 'about', label: 'About', action: 'about' }
             const workDeg = this.heroTouchDiskMenuWorkDeg
             const aboutDeg = workDeg - HERO_TOUCH_DISK_MENU_GAP_DEG
+            const aloneDeg = this.heroTouchDiskMenuAloneDeg
 
             if (this.heroTouchDiskZone === 'work') {
-                return place([{ base: about, deg: aboutDeg }])
+                return place([{ base: about, deg: aloneDeg }])
             }
             if (this.heroTouchDiskZone === 'about') {
-                return place([{ base: work, deg: workDeg }])
+                return place([{ base: work, deg: aloneDeg }])
             }
             return place([
                 { base: work, deg: workDeg },
