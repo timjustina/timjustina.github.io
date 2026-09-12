@@ -493,6 +493,10 @@ const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
+/** Soft glide when the disk trips the bottom edge → first work. */
+const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
+/** After bottom contact, park the disk this far above the viewport floor. */
+const HERO_TOUCH_DISK_BOTTOM_PARK_PX = 40
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -2212,7 +2216,7 @@ export default {
             const minX = radius
             const maxX = Math.max(minX, vw - radius)
             const minY = radius
-            // Viewport floor — dragging to the bottom scrolls to the first case study.
+            // Viewport floor — dragging to the bottom parks 40px up and scrolls to work.
             const maxY = Math.max(minY, vh - radius)
 
             return { minX, maxX, minY, maxY, radius }
@@ -2372,30 +2376,37 @@ export default {
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
             this.refreshHeroTouchDiskStage()
         },
-        triggerHeroTouchDiskWorkJump() {
-            if (this.heroTouchDiskWorkJumped) return
-            this.heroTouchDiskWorkJumped = true
-            this.endHeroTouchDiskDrag()
-
-            // Snap back to rest so a later return to the hero isn't mid-drag.
-            const pos = this.getHeroTouchDiskRestPos()
-            this.heroTouchDiskHasMoved = false
-            this.heroCursorPos = { ...pos }
-            this.heroCursorGlassPos = { ...pos }
+        parkHeroTouchDiskAboveBottom(x) {
+            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
+            const parkY = window.innerHeight - HERO_TOUCH_DISK_BOTTOM_PARK_PX
+            const pos = {
+                x: Math.round(Math.min(maxX, Math.max(minX, x))),
+                y: Math.round(Math.min(maxY, Math.max(minY, parkY))),
+            }
+            this.heroTouchDiskHasMoved = true
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
-            this.heroCursorRangeMix = 0
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
-            this.heroCursorIntroGlassHandoff = false
             this.updateHeroFinePointer(pos.x, pos.y, {
                 introEffects: false,
                 skipHover: true,
             })
+            this.heroCursorGlassPos = { ...pos }
             this.refreshHeroTouchDiskStage()
+            this.startHeroCursorGlassFollow()
+            return pos
+        },
+        triggerHeroTouchDiskWorkJump() {
+            if (this.heroTouchDiskWorkJumped) return
+            this.heroTouchDiskWorkJumped = true
+            // Park directly above the contact X, 40px off the viewport floor.
+            const x = this.heroCursorPos?.x ?? this.heroCursorGlassPos?.x ?? 0
+            this.endHeroTouchDiskDrag()
+            this.parkHeroTouchDiskAboveBottom(x)
 
-            scrollToWork()
+            scrollToWork({ duration: HERO_TOUCH_DISK_WORK_SNAP_MS })
         },
         moveHeroTouchDiskTo(clientX, clientY) {
             const { minX, maxX, minY, maxY, radius } = this.getHeroTouchDiskBounds()
@@ -2413,7 +2424,7 @@ export default {
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
 
-            // During drag: viewport-bottom contact → first case study thumbnail.
+            // During drag: viewport-bottom contact → park above floor + scroll to work.
             if (
                 this.heroTouchDiskDragging &&
                 !this.heroTouchDiskWorkJumped &&
@@ -2909,11 +2920,23 @@ export default {
                         ? this.getHeroIntroRangeProximityMix(tx, ty)
                         : 0
                     if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
-                        this.heroCursorRangeMix = 0
-                        this.heroCursorIntroGlassHandoff = false
+                        // Ease out of glass form — avoid a hard cut when leaving the field
+                        // or when the disk glides home after a work jump.
+                        const exitLerp = touchDisk ? 0.07 : 0.14
+                        this.heroCursorRangeMix +=
+                            (0 - this.heroCursorRangeMix) * exitLerp
+                        if (this.heroCursorRangeMix < 0.012) {
+                            this.heroCursorRangeMix = 0
+                            this.heroCursorIntroGlassHandoff = false
+                        }
                     } else {
-                        const rangeLerp =
-                            proximityTarget >= this.heroCursorRangeMix ? 0.14 : 0.2
+                        const rangeLerp = touchDisk
+                            ? proximityTarget >= this.heroCursorRangeMix
+                                ? 0.09
+                                : 0.11
+                            : proximityTarget >= this.heroCursorRangeMix
+                              ? 0.14
+                              : 0.2
                         this.heroCursorRangeMix +=
                             (proximityTarget - this.heroCursorRangeMix) * rangeLerp
                         if (
@@ -2940,17 +2963,29 @@ export default {
                 const { x: gx, y: gy } = this.heroCursorGlassPos
                 const transitionBoost =
                     this.heroCursorRangeMix * (1 - this.heroCursorRangeMix) * 4
-                const follow = this.heroCursorInRange
-                    ? 0.27 + transitionBoost * 0.46
-                    : 0.10 + this.heroCursorRangeMix * 0.18 + transitionBoost * 0.28
+                // Touch-disk home glide: slower chase so the return reads soft.
+                const returningHome =
+                    touchDisk &&
+                    !this.heroTouchDiskDragging &&
+                    !this.heroTouchDiskHasMoved &&
+                    (Math.hypot(tx - gx, ty - gy) > 1 || this.heroCursorRangeMix > 0.01)
+                const follow = returningHome
+                    ? 0.055
+                    : this.heroCursorInRange
+                      ? 0.27 + transitionBoost * 0.46
+                      : 0.10 + this.heroCursorRangeMix * 0.18 + transitionBoost * 0.28
                 const nx = gx + (tx - gx) * follow
                 const ny = gy + (ty - gy) * follow
 
                 // Keep the hover magnifier and its ring on one layer — no trailing ghost.
-                // Touch-disk drag snaps so the disk reads as one solid body under the finger.
+                // Touch-disk drag tracks 1:1 so the disk reads as one solid body under the finger.
                 if (magnifierVisible || (touchDisk && this.heroTouchDiskDragging)) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
-                } else if (this.heroCursorInRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
+                } else if (
+                    !returningHome &&
+                    this.heroCursorInRange &&
+                    Math.hypot(tx - nx, ty - ny) < 0.4
+                ) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else {
                     this.heroCursorGlassPos = { x: nx, y: ny }

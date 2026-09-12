@@ -20,7 +20,10 @@
                 </strong>
                 <a href="mailto:design@timjustina.com" class="footer-email">design@timjustina.com</a>
             </div>
-            <span class="footer-copy">© 2026 Tim Justina Yeung</span>
+            <span class="footer-copy" aria-label="© 2026 Tim Justina Yeung">
+                <span class="footer-copy-full">© 2026 Tim Justina Yeung</span>
+                <span class="footer-copy-short" aria-hidden="true">© 2026</span>
+            </span>
         </div>
     </footer>
 </template>
@@ -321,6 +324,10 @@ export default {
     flex-shrink: 0;
 }
 
+.footer-copy-short {
+    display: none;
+}
+
 .footer-email {
     text-decoration: underline;
     text-decoration-thickness: 0.8px;
@@ -344,8 +351,7 @@ export default {
 
     .footer-inner {
         --footer-item-gap: 12px;
-        flex-direction: column;
-        align-items: stretch;
+        align-items: flex-end;
     }
 
     .footer-email,
@@ -353,9 +359,12 @@ export default {
         font-size: 18px;
     }
 
-    .footer-copy {
-        align-self: flex-end;
-        margin-top: 80px;
+    .footer-copy-full {
+        display: none;
+    }
+
+    .footer-copy-short {
+        display: inline;
     }
 }
 
