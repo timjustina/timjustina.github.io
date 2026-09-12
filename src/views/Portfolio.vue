@@ -69,8 +69,7 @@
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
-                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion,
-                'hero-intro-cursor-ball--touch-pop': heroTouchDiskPopping,
+                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -99,8 +98,7 @@
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
-                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion,
-                'hero-intro-cursor-ball--touch-pop': heroTouchDiskPopping,
+                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
@@ -123,7 +121,14 @@
                 :href="item.href || '#'"
                 :target="item.external ? '_blank' : undefined"
                 :rel="item.external ? 'noopener noreferrer' : undefined"
-                :style="{ '--menu-i': index, '--menu-x': item.x, '--menu-y': item.y, '--menu-ax': item.ax, '--menu-ay': item.ay }"
+                :style="{
+                    '--menu-i': index,
+                    '--menu-x': item.x,
+                    '--menu-y': item.y,
+                    '--menu-ax': item.ax,
+                    '--menu-ay': item.ay,
+                    '--menu-rot': item.rot,
+                }"
                 @click="onHeroTouchDiskMenuItemClick(item, $event)"
             >{{ item.label }}</a>
         </nav>
@@ -528,10 +533,16 @@ const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
 const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
-/** Tap sink duration; matches `.hero-intro-cursor-ball--touch-pop`. */
-const HERO_TOUCH_DISK_POP_MS = 240
+/** Tap sink duration (in → out size only). */
+const HERO_TOUCH_DISK_POP_MS = 220
+/** Smallest scale at the bottom of the tap sink. */
+const HERO_TOUCH_DISK_SINK_MIN = 0.78
 /** Gap from frosted disk edge to the near edge of a menu label. */
 const HERO_TOUCH_DISK_MENU_GAP_PX = 16
+/** Extra diameter while the radial menu is open (less than full hover +18). */
+const HERO_TOUCH_DISK_MENU_EXTRA_PX = 10
+/** Soft frost/glow amount while menu is open (0–1 hover-expand mix). */
+const HERO_TOUCH_DISK_MENU_EXPAND_MIX = 0.4
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -907,6 +918,8 @@ export default {
             heroTouchDiskMenuOpen: false,
             heroTouchDiskPopping: false,
             heroTouchDiskPopTimer: null,
+            heroTouchDiskPopRaf: null,
+            heroTouchDiskSinkScale: 1,
             heroTouchDiskPointerStart: { x: 0, y: 0 },
             heroTouchDiskOutsideCloseBound: false,
         }
@@ -962,7 +975,9 @@ export default {
                 return { pointerEvents: 'none', visibility: 'hidden' }
             }
             const { x, y } = this.heroCursorGlassPos
-            const size = HERO_TOUCH_DISK_HIT_SIZE
+            const size = this.heroTouchDiskMenuOpen
+                ? HERO_TOUCH_DISK_HIT_SIZE + HERO_TOUCH_DISK_MENU_EXTRA_PX
+                : HERO_TOUCH_DISK_HIT_SIZE
             const half = size / 2
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
@@ -1000,7 +1015,10 @@ export default {
         },
         heroTouchDiskMenuItems() {
             // Orbit to the near edge of each label (disk radius + gap).
-            const orbit = HERO_CURSOR_GLASS_IDLE_SIZE / 2 + HERO_TOUCH_DISK_MENU_GAP_PX
+            const diskSize = this.heroTouchDiskMenuOpen
+                ? HERO_CURSOR_GLASS_IDLE_SIZE + HERO_TOUCH_DISK_MENU_EXTRA_PX
+                : HERO_CURSOR_GLASS_IDLE_SIZE
+            const orbit = diskSize / 2 + HERO_TOUCH_DISK_MENU_GAP_PX
             const place = (anglesDeg) =>
                 anglesDeg.map((deg) => {
                     const rad = (deg * Math.PI) / 180
@@ -1010,39 +1028,28 @@ export default {
                         // Right edge of the label sits on the orbit (faces the disk).
                         ax: '-100%',
                         ay: '-50%',
+                        // Rotate so that right edge is tangent to the circle
+                        // (perpendicular to the radius), text readable on the left fan.
+                        rot: `${deg - 180}deg`,
                     }
                 })
 
-            const cv = {
-                id: 'cv',
-                label: 'CV',
-                href: this.cvUrl,
-                external: true,
-            }
             const work = { id: 'work', label: 'Work', action: 'work' }
             const about = { id: 'about', label: 'About', action: 'about' }
 
             if (this.heroTouchDiskZone === 'work') {
-                // About horizontal-left; CV down-left.
-                const [a, c] = place([180, 235])
-                return [
-                    { ...about, ...a },
-                    { ...cv, ...c },
-                ]
+                const [a] = place([180])
+                return [{ ...about, ...a }]
             }
             if (this.heroTouchDiskZone === 'about') {
-                const [w, c] = place([180, 235])
-                return [
-                    { ...work, ...w },
-                    { ...cv, ...c },
-                ]
+                const [w] = place([180])
+                return [{ ...work, ...w }]
             }
-            // Hero: Work straight left (parallel), About up-left, CV down-left.
-            const [w, a, c] = place([180, 125, 235])
+            // Hero: Work straight left; About up-left.
+            const [w, a] = place([180, 235])
             return [
                 { ...work, ...w },
                 { ...about, ...a },
-                { ...cv, ...c },
             ]
         },
         heroTouchDiskMenuStyle() {
@@ -1100,9 +1107,15 @@ export default {
             let hoverExpand = 0
             let useGlassRingBorder = false
 
-            if (sectionNav) {
+            // Touch disk: keep the center dot locked to the frost disk (glass pos)
+            // so a sink never reads as lateral slip between layers.
+            if (this.heroTouchDiskMode) {
                 ;({ x, y } = this.heroCursorGlassPos)
-            } else if (!sectionNav && this.heroCursorIntroGlassHandoff) {
+            }
+
+            if (sectionNav) {
+                /* position already locked to glass */
+            } else if (this.heroCursorIntroGlassHandoff) {
                 const dotVisual = heroCursorRangeDotVisual(rangeMix)
                 scale = dotVisual.scale
                 opacity = dotVisual.opacity
@@ -1135,8 +1148,14 @@ export default {
                 ? this.heroTouchDiskEntranceFade
                 : 1
             const outOpacity = opacity * dissipateFade * entranceFade
+            // Tap sink is pure radial scale in the same transform as translate — no CSS
+            // `scale` animation that can fight positioning and read as a sideways jiggle.
+            const sink =
+                this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
+            const menuBoost =
+                this.heroTouchDiskMode && this.heroTouchDiskMenuOpen ? 1.2 : 1
             const style = {
-                transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
+                transform: `translate3d(${x}px, ${y}px, 0) scale(${scale * sink * menuBoost})`,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
@@ -1173,25 +1192,37 @@ export default {
             }
 
             const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
+            const menuOpen = this.heroTouchDiskMode && this.heroTouchDiskMenuOpen
             const hoverMix =
-                sectionNav || this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+                menuOpen || sectionNav || this.heroCursorInRange
+                    ? 0
+                    : this.heroCursorHoverMix
             const { expand } = heroCursorHoverMorph(hoverMix)
+            const frostExpand = menuOpen
+                ? HERO_TOUCH_DISK_MENU_EXPAND_MIX
+                : expand
             const { x, y } = this.heroCursorGlassPos
-            const size = sectionNav
-                ? HERO_CURSOR_GLASS_IDLE_SIZE
-                : heroCursorDotDiskSize(hoverMix)
+            const size = menuOpen
+                ? HERO_CURSOR_GLASS_IDLE_SIZE + HERO_TOUCH_DISK_MENU_EXTRA_PX
+                : sectionNav
+                  ? HERO_CURSOR_GLASS_IDLE_SIZE
+                  : heroCursorDotDiskSize(hoverMix)
             const half = size / 2
-            const baseOpacity = sectionNav ? 1 : heroCursorHoverDiskOpacity(hoverMix)
+            const baseOpacity =
+                menuOpen || sectionNav ? 1 : heroCursorHoverDiskOpacity(hoverMix)
             const entranceFade = this.heroTouchDiskIdleMotion
                 ? this.heroTouchDiskEntranceFade
                 : 1
             const opacity = baseOpacity * this.heroTouchDiskDissipateFade * entranceFade
-            const forwardScale = sectionNav ? 1 : 1 + heroCursorHoverDiskForward(hoverMix)
+            const forwardScale =
+                menuOpen || sectionNav ? 1 : 1 + heroCursorHoverDiskForward(hoverMix)
+            const sink =
+                this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
 
             return {
-                transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale})`,
-                '--hero-cursor-hover-mix': hoverMix,
-                '--hero-cursor-hover-expand': expand,
+                transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale * sink})`,
+                '--hero-cursor-hover-mix': menuOpen ? HERO_TOUCH_DISK_MENU_EXPAND_MIX : hoverMix,
+                '--hero-cursor-hover-expand': frostExpand,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
@@ -1538,6 +1569,10 @@ export default {
         clearTimeout(this.heroIntroReconsolidateTimer)
         clearTimeout(this.heroTouchDiskEntranceTimer)
         clearTimeout(this.heroTouchDiskPopTimer)
+        if (this.heroTouchDiskPopRaf != null) {
+            cancelAnimationFrame(this.heroTouchDiskPopRaf)
+            this.heroTouchDiskPopRaf = null
+        }
         this.unbindHeroTouchDiskOutsideClose()
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
@@ -2531,6 +2566,10 @@ export default {
             this.heroTouchDiskEntranceTimer = null
             clearTimeout(this.heroTouchDiskPopTimer)
             this.heroTouchDiskPopTimer = null
+            if (this.heroTouchDiskPopRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskPopRaf)
+                this.heroTouchDiskPopRaf = null
+            }
             this.closeHeroTouchDiskMenu()
             this.unbindHeroTouchDiskOutsideClose()
             this.heroTouchDiskDragging = false
@@ -2544,6 +2583,7 @@ export default {
             this.heroTouchDiskIdle = true
             this.heroTouchDiskBreathe = false
             this.heroTouchDiskPopping = false
+            this.heroTouchDiskSinkScale = 1
             this.heroTouchDiskZone = 'hero'
             this.heroTouchDiskParkZone = 'hero'
         },
@@ -2612,17 +2652,48 @@ export default {
             this.closeHeroTouchDiskMenu()
         },
         playHeroTouchDiskPop() {
-            if (prefersReducedMotion()) return
+            if (prefersReducedMotion()) {
+                this.heroTouchDiskSinkScale = 1
+                return
+            }
             clearTimeout(this.heroTouchDiskPopTimer)
-            this.heroTouchDiskPopping = false
-            // Retrigger the one-shot sink on both frost disk + center dot.
-            requestAnimationFrame(() => {
-                this.heroTouchDiskPopping = true
-                this.heroTouchDiskPopTimer = setTimeout(() => {
-                    this.heroTouchDiskPopTimer = null
-                    this.heroTouchDiskPopping = false
-                }, HERO_TOUCH_DISK_POP_MS)
-            })
+            this.heroTouchDiskPopTimer = null
+            if (this.heroTouchDiskPopRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskPopRaf)
+                this.heroTouchDiskPopRaf = null
+            }
+
+            // Lock position: stop breathe, pin glass to cursor so both layers sink in place.
+            this.markHeroTouchDiskInteracted()
+            this.heroCursorGlassPos = { ...this.heroCursorPos }
+            this.heroTouchDiskPopping = true
+            this.heroTouchDiskSinkScale = 1
+
+            const duration = HERO_TOUCH_DISK_POP_MS
+            const min = HERO_TOUCH_DISK_SINK_MIN
+            const start = performance.now()
+
+            const tick = (now) => {
+                const t = Math.min(1, (now - start) / duration)
+                // Ease in to the trough, ease out back — radial only.
+                if (t < 0.45) {
+                    const u = t / 0.45
+                    const e = u * u
+                    this.heroTouchDiskSinkScale = 1 - (1 - min) * e
+                } else {
+                    const u = (t - 0.45) / 0.55
+                    const e = 1 - (1 - u) * (1 - u)
+                    this.heroTouchDiskSinkScale = min + (1 - min) * e
+                }
+                if (t < 1) {
+                    this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
+                    return
+                }
+                this.heroTouchDiskPopRaf = null
+                this.heroTouchDiskSinkScale = 1
+                this.heroTouchDiskPopping = false
+            }
+            this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
         },
         onHeroTouchDiskMenuItemClick(item, event) {
             if (item.external) {
@@ -2757,7 +2828,6 @@ export default {
             this.endHeroTouchDiskDrag()
 
             if (wasTap) {
-                this.markHeroTouchDiskInteracted()
                 this.playHeroTouchDiskPop()
                 this.toggleHeroTouchDiskMenu()
             }
@@ -5224,11 +5294,6 @@ export default {
     transform-origin: center center;
 }
 
-.hero-intro-cursor-ball--touch-pop {
-    animation: hero-touch-disk-sink 0.24s cubic-bezier(0.33, 0.9, 0.4, 1);
-    transform-origin: center center;
-}
-
 @keyframes hero-touch-disk-breathe {
     0% {
         scale: 1;
@@ -5244,20 +5309,6 @@ export default {
     100% {
         scale: 1;
         animation-timing-function: linear;
-    }
-}
-
-@keyframes hero-touch-disk-sink {
-    0% {
-        scale: 1;
-    }
-
-    42% {
-        scale: 0.8;
-    }
-
-    100% {
-        scale: 1;
     }
 }
 
@@ -5296,9 +5347,11 @@ export default {
     white-space: nowrap;
     pointer-events: auto;
     opacity: 0;
-    /* Orbit point = near edge of label; ax/ay pull the label outward from the disk. */
+    /* Orbit point → rotate (right edge tangent to circle) → anchor right edge. */
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
-        translate(var(--menu-ax, -100%), var(--menu-ay, -50%)) scale(0.86);
+        rotate(var(--menu-rot, 0deg))
+        translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
+        scale(0.86);
     transition:
         opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
         transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
@@ -5312,14 +5365,12 @@ export default {
 .hero-touch-disk-menu .hero-touch-disk-menu__item {
     opacity: 1;
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
-        translate(var(--menu-ax, -100%), var(--menu-ay, -50%)) scale(1);
+        rotate(var(--menu-rot, 0deg))
+        translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
+        scale(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hero-intro-cursor-ball--touch-pop {
-        animation: none;
-    }
-
     .hero-touch-disk-menu__item {
         transition: none;
         transition-delay: 0s;
@@ -5332,6 +5383,10 @@ export default {
     margin: -23px 0 0 -23px;
     background: transparent;
     transform-origin: center center;
+    transition:
+        width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        margin 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
         color-mix(
             in srgb,
