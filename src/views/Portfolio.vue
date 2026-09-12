@@ -70,7 +70,8 @@
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
-                'hero-intro-cursor-dot-disk--menu-frost': heroTouchDiskExpand > 0.02,
+                'hero-intro-cursor-dot-disk--menu-frost':
+                    heroTouchDiskExpand > 0.02 || heroTouchDiskMenuOpen,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -125,6 +126,9 @@
                     'hero-touch-disk-menu__item--anchor-end': item.anchor === 'end',
                     'hero-touch-disk-menu__item--anchor-start': item.anchor === 'start',
                     'hero-touch-disk-menu__item--anchor-center': item.anchor === 'center',
+                    'hero-touch-disk-menu__item--anchor-vertical': item.anchor === 'vertical',
+                    'hero-touch-disk-menu__item--anchor-vertical-mirror':
+                        item.anchor === 'vertical-mirror',
                 }"
                 :href="item.href || '#'"
                 :target="item.external ? '_blank' : undefined"
@@ -532,8 +536,8 @@ const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 const HERO_TOUCH_DISK_EDGE_GAP_PX = 20
 /** Hero rest: inset from the right edge of the viewport (0.3 = 30%). */
 const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
-/** Logo fallback when `.logo` cannot be measured (pad + half of 56px). */
-const HERO_TOUCH_DISK_HERO_REST_Y_FALLBACK = 20 + 28
+/** Hero rest: disk center this far above the hero intro top. */
+const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
@@ -549,22 +553,17 @@ const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
 /** Gap from the outer (left) edge of the longest label to the frost rim. */
 const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
-/** Two-item fold: About below Work when the right side is too tight. */
-const HERO_TOUCH_DISK_MENU_STACK_ROW_PX = 32
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
- * Alone-label orbit angles (screen: 0° right, 90° down, clockwise).
- * Two-item hero menu: Work left + About right (horizontal); About folds to 90° (below)
- * when the right side lacks space. Alone: 190° north at bottom; mirrored south at top.
+ * Two-item hero menu: Work outward + About on the opposite side (horizontal);
+ * About folds to 90° (below) when that side lacks space. Near the left edge the
+ * layout mirrors (Work on the right). Single-item menus stay horizontal outward.
  */
-const HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG = 190
-const HERO_TOUCH_DISK_MENU_ALONE_TOP_DEG =
-    180 - (HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG - 180) // 170°
 /** Disk-center distance from viewport top/bottom that counts as “near edge”. */
 const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
-/** Extra viewport padding past the About label before folding to 90°. */
-const HERO_TOUCH_DISK_MENU_RIGHT_SAFE_PX = 12
+/** Extra viewport padding past a side label before folding / mirroring. */
+const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -1002,6 +1001,8 @@ export default {
             heroTouchDiskMenuOpen: false,
             /** Bumps when label width metrics are remeasured (font load / menu open). */
             heroTouchDiskMenuMetricsRev: 0,
+            /** Visual diameter at menu-open start — expand lerps from this (smooth from glass/magnifier). */
+            heroTouchDiskMenuFromSize: null,
             heroTouchDiskPopping: false,
             heroTouchDiskPopTimer: null,
             heroTouchDiskPopRaf: null,
@@ -1106,92 +1107,79 @@ export default {
             )
         },
         heroTouchDiskMenuFan() {
-            return 'left'
+            // Outward side for Work: left by default; right when near the left edge.
+            const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+            const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+            const workW = getHeroTouchDiskMenuLabelWidth('Work')
+            const diskX = this.heroCursorGlassPos?.x ?? 0
+            const needLeft = gap + workW + HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
+            return diskX >= needLeft ? 'left' : 'right'
         },
-        /** Hero zone shows Work + About as a horizontal pair (frost expands). */
+        /** Horizontal label layout for all touch-disk menus. */
         heroTouchDiskMenuStacked() {
-            return this.heroTouchDiskZone === 'hero'
-        },
-        /** Single Work/About label angle: 190° north near bottom; 170° (mirror) near top. */
-        heroTouchDiskMenuAloneDeg() {
-            const y = this.heroCursorGlassPos?.y ?? 0
-            const vh =
-                typeof window !== 'undefined'
-                    ? window.innerHeight
-                    : 800
-            const band = HERO_TOUCH_DISK_MENU_EDGE_BAND_PX
-            if (y < band) return HERO_TOUCH_DISK_MENU_ALONE_TOP_DEG
-            return HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG
+            return true
         },
         heroTouchDiskMenuItems() {
             // Depend on metrics rev so font-load remounts refresh placement.
             void this.heroTouchDiskMenuMetricsRev
             // Geometry uses the *open* blue size so labels don't crawl during expand.
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
-            const placeRadial = (items) =>
-                items.map(({ base, deg }) => {
-                    const rad = (deg * Math.PI) / 180
-                    const width = getHeroTouchDiskMenuLabelWidth(base.label)
-                    // Each label's center sits on its ray; inner edge on (blueR + 20px) circle.
-                    const centerR = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX + width / 2
-                    return {
-                        ...base,
-                        x: `${Math.cos(rad) * centerR}px`,
-                        y: `${Math.sin(rad) * centerR}px`,
-                        // Local +x toward blue center so the word lies on the radius.
-                        rot: `${deg - 180}deg`,
-                    }
-                })
-
-            const work = { id: 'work', label: 'Work', action: 'work' }
-            const about = { id: 'about', label: 'About', action: 'about' }
-            const aloneDeg = this.heroTouchDiskMenuAloneDeg
-
-            if (this.heroTouchDiskZone === 'work') {
-                return placeRadial([{ base: about, deg: aloneDeg }])
-            }
-            if (this.heroTouchDiskZone === 'about') {
-                return placeRadial([{ base: work, deg: aloneDeg }])
-            }
-
-            // Two items: Work left (aligned to blue), About right when space allows.
-            // Near the right edge, fold About to 90° below Work.
             const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
-            const aboutW = getHeroTouchDiskMenuLabelWidth('About')
             const diskX = this.heroCursorGlassPos?.x ?? 0
             const vw =
                 typeof window !== 'undefined' ? window.innerWidth : 400
-            const needRight =
-                gap + aboutW + HERO_TOUCH_DISK_MENU_RIGHT_SAFE_PX
-            const aboutOnRight = diskX + needRight <= vw
+            const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
 
-            const workItem = {
-                ...work,
-                x: `${-gap}px`,
-                y: '0px',
-                rot: '0deg',
-                anchor: 'end',
+            const work = { id: 'work', label: 'Work', action: 'work' }
+            const about = { id: 'about', label: 'About', action: 'about' }
+
+            const placeOutward = (base, outwardLeft) =>
+                outwardLeft
+                    ? {
+                          ...base,
+                          x: `${-gap}px`,
+                          y: '0px',
+                          rot: '0deg',
+                          anchor: 'end',
+                      }
+                    : {
+                          ...base,
+                          x: `${gap}px`,
+                          y: '0px',
+                          rot: '0deg',
+                          anchor: 'start',
+                      }
+
+            // Single item: horizontal on the outward side (away from the near edge).
+            if (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about') {
+                const base = this.heroTouchDiskZone === 'work' ? about : work
+                const labelW = getHeroTouchDiskMenuLabelWidth(base.label)
+                const outwardLeft = diskX >= gap + labelW + safe
+                return [placeOutward(base, outwardLeft)]
             }
-            if (aboutOnRight) {
-                return [
-                    workItem,
-                    {
-                        ...about,
-                        x: `${gap}px`,
-                        y: '0px',
-                        rot: '0deg',
-                        anchor: 'start',
-                    },
-                ]
+
+            // Two items: Work outward; About on the opposite side when space allows.
+            // Tight on that side → About folds to 90° below (mirrored near left edge).
+            const workW = getHeroTouchDiskMenuLabelWidth('Work')
+            const aboutW = getHeroTouchDiskMenuLabelWidth('About')
+            const workOutwardLeft = diskX >= gap + workW + safe
+            const aboutOnOpposite = workOutwardLeft
+                ? diskX + gap + aboutW + safe <= vw
+                : diskX >= gap + aboutW + safe
+
+            const workItem = placeOutward(work, workOutwardLeft)
+            if (aboutOnOpposite) {
+                return [workItem, placeOutward(about, !workOutwardLeft)]
             }
             return [
                 workItem,
                 {
                     ...about,
+                    // 90° below blue: end nearest blue; bottom faces outward side.
                     x: '0px',
-                    y: `${HERO_TOUCH_DISK_MENU_STACK_ROW_PX}px`,
-                    rot: '0deg',
-                    anchor: 'center',
+                    y: `${gap + aboutW / 2}px`,
+                    rot: '-90deg',
+                    anchor: workOutwardLeft ? 'vertical' : 'vertical-mirror',
                 },
             ]
         },
@@ -1242,7 +1230,7 @@ export default {
             const rangeMix = this.heroCursorRangeMix
             const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
             const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
-            const menuOpen = expandT > 0.02
+            const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
             const hoverMix =
                 menuOpen || this.heroCursorInRange
                     ? 0
@@ -1343,7 +1331,7 @@ export default {
             }
 
             const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
-            const menuOpen = expandT > 0.02
+            const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
             const hoverMix =
                 menuOpen || this.heroCursorInRange
                     ? 0
@@ -1353,15 +1341,23 @@ export default {
             // (hover-expand was fading the glass out).
             const frostExpand = menuOpen ? 0 : expand
             const { x, y } = this.heroCursorGlassPos
-            // Continuous size: idle → open with a slight early dip, no settle pause.
+            // Continuous size: idle (or current glass/magnifier) → open frost.
             let size
             if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
                 const open = this.heroTouchDiskMenuFrostSize
+                const from =
+                    this.heroTouchDiskMenuFromSize != null
+                        ? this.heroTouchDiskMenuFromSize
+                        : idle
                 const t = expandT
-                const dip = Math.sin(Math.min(1, t / 0.2) * Math.PI) * 5
+                // Soft dip only when opening from near-idle (not from magnifier/glass).
+                const fromIdle = Math.abs(from - idle) < 4
+                const dip = fromIdle
+                    ? Math.sin(Math.min(1, t / 0.2) * Math.PI) * 5
+                    : 0
                 const eased = 1 - (1 - t) ** 3
-                size = idle + (open - idle) * eased - dip
+                size = from + (open - from) * eased - dip
             } else {
                 size = heroCursorDotDiskSize(hoverMix)
             }
@@ -2521,14 +2517,14 @@ export default {
             let y
 
             if (this.heroTouchDiskZone === 'hero') {
-                // Early rest: 30% inset from the right edge, vertically on the logo.
+                // Early rest: 30% inset from the right, 100px above the hero text.
                 x = window.innerWidth * (1 - HERO_TOUCH_DISK_REST_FROM_RIGHT)
-                y = HERO_TOUCH_DISK_HERO_REST_Y_FALLBACK
-                const logo = document.querySelector('.portfolio-top-bar .logo')
-                if (logo) {
-                    const rect = logo.getBoundingClientRect()
+                y = window.innerHeight * 0.38
+                const intro = this.$el?.querySelector('.hero-intro')
+                if (intro) {
+                    const rect = intro.getBoundingClientRect()
                     if (rect.height > 0) {
-                        y = rect.top + rect.height / 2
+                        y = rect.top - HERO_TOUCH_DISK_REST_ABOVE_HERO_PX
                     }
                 }
             } else {
@@ -2779,26 +2775,47 @@ export default {
                 this.heroTouchDiskMenuOpen = false
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskSinkScale = 1
+                this.heroTouchDiskMenuFromSize = null
                 return
             }
             this.animateHeroTouchDiskExpand(0)
         },
+        /** Current frost / glass / magnifier diameter — used as expand origin. */
+        getHeroTouchDiskVisualSize() {
+            if (this.heroCursorIntroGlassHandoff) {
+                return heroCursorIntroBallSize(
+                    this.heroCursorHoverMix,
+                    this.heroCursorRangeMix,
+                )
+            }
+            const hoverMix =
+                this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            return heroCursorDotDiskSize(hoverMix)
+        },
         openHeroTouchDiskMenu() {
             if (!this.canOpenHeroTouchDiskMenu()) return
+            // Capture size before clearing morph so glass/magnifier → frost doesn't snap.
+            this.heroTouchDiskMenuFromSize = this.getHeroTouchDiskVisualSize()
+            this.heroCursorMagnifierLayout = null
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorMirrorHoverTarget = 0
+            this.heroCursorRangeMix = 0
+            this.heroCursorIntroGlassHandoff = false
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
             this.refreshHeroTouchDiskMenuMetrics()
             this.heroTouchDiskMenuOpen = true
             this.bindHeroTouchDiskOutsideClose()
             this.animateHeroTouchDiskExpand(1)
         },
-        /** Hero two-item menu only from blue-dot disk — not glass ball or magnifier,
-         * and not near the lower edge of the first viewport.
-         * One-item menus (work/about zones) stay openable as before, except while magnifying. */
+        /** Menu from blue-dot, glass, or magnifier — blocked only at hero lower edge. */
         canOpenHeroTouchDiskMenu() {
             if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
-            if (this.heroCursorHoverMix > 0.02 || this.heroCursorOverHover) return false
             if (this.heroTouchDiskZone !== 'hero') return true
+            // Letter dissipate / reconsolidate still use the magnifier window, not the disk hit.
             if (this.heroIntroDissipated || this.heroIntroReconsolidating) return false
-            if (this.heroCursorIntroGlassHandoff) return false
             const y = this.heroCursorGlassPos?.y ?? 0
             const vh =
                 typeof window !== 'undefined' ? window.innerHeight : 800
@@ -2883,8 +2900,10 @@ export default {
                 this.heroTouchDiskSinkScale = 1
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskMenuOpen = to > 0.5
-                if (to < 0.5) this.unbindHeroTouchDiskOutsideClose()
-                else {
+                if (to < 0.5) {
+                    this.unbindHeroTouchDiskOutsideClose()
+                    this.heroTouchDiskMenuFromSize = null
+                } else {
                     this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
                 }
                 return
@@ -2898,6 +2917,10 @@ export default {
             const from = this.heroTouchDiskExpand
             const duration = HERO_TOUCH_DISK_EXPAND_MS
             const start = performance.now()
+            // Closing: lerp frost back to idle (not to the glass/magnifier origin).
+            if (to < 0.5) {
+                this.heroTouchDiskMenuFromSize = HERO_CURSOR_GLASS_IDLE_SIZE
+            }
 
             const tick = (now) => {
                 const t = Math.min(1, (now - start) / duration)
@@ -2912,8 +2935,12 @@ export default {
                 this.heroTouchDiskExpand = to
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskMenuOpen = to > 0.5
-                if (to < 0.5) this.unbindHeroTouchDiskOutsideClose()
-                else this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                if (to < 0.5) {
+                    this.unbindHeroTouchDiskOutsideClose()
+                    this.heroTouchDiskMenuFromSize = null
+                } else {
+                    this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                }
             }
             this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
         },
@@ -3482,7 +3509,9 @@ export default {
                 const { x: tx, y: ty } = this.heroCursorPos
                 const touchDisk = this.isHeroTouchDiskMode()
                 const sectionNav = touchDisk && this.heroTouchDiskZone !== 'hero'
-                const menuOpen = touchDisk && this.heroTouchDiskExpand > 0.02
+                const menuOpen =
+                    touchDisk &&
+                    (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
                 // Off-hero: freeze intro-text glass morph, but still allow project magnifier.
                 if (sectionNav) {
                     this.heroCursorRangeMix = 0
@@ -5593,7 +5622,7 @@ export default {
     transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
 }
 
-/* Two-item hero menu: Work left + About right (or About below at 90° when tight). */
+/* Horizontal pair: Work outward + About opposite (or About at 90° when tight). */
 .hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-end,
 .hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
     .hero-touch-disk-menu__item--anchor-end {
@@ -5610,6 +5639,19 @@ export default {
 .hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
     .hero-touch-disk-menu__item--anchor-center {
     transform: translate(-50%, -50%);
+}
+
+.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-vertical,
+.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
+    .hero-touch-disk-menu__item--anchor-vertical {
+    transform: translate(-50%, -50%) rotate(var(--menu-rot, -90deg));
+}
+
+/* Left-edge mirror: end still nearest blue; bottom of the word faces left. */
+.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-vertical-mirror,
+.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
+    .hero-touch-disk-menu__item--anchor-vertical-mirror {
+    transform: translate(-50%, -50%) scaleX(-1) rotate(var(--menu-rot, -90deg));
 }
 
 @media (prefers-reduced-motion: reduce) {
