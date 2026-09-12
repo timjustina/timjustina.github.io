@@ -125,10 +125,7 @@
                     'hero-touch-disk-menu__item--external': item.external,
                     'hero-touch-disk-menu__item--anchor-end': item.anchor === 'end',
                     'hero-touch-disk-menu__item--anchor-start': item.anchor === 'start',
-                    'hero-touch-disk-menu__item--anchor-center': item.anchor === 'center',
-                    'hero-touch-disk-menu__item--anchor-vertical': item.anchor === 'vertical',
-                    'hero-touch-disk-menu__item--anchor-vertical-mirror':
-                        item.anchor === 'vertical-mirror',
+                    'hero-touch-disk-menu__item--anchor-radial': item.anchor === 'radial',
                 }"
                 :href="item.href || '#'"
                 :target="item.external ? '_blank' : undefined"
@@ -551,18 +548,20 @@ const HERO_TOUCH_DISK_EXPAND_MS = 380
 const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
-/** Gap from the outer (left) edge of the longest label to the frost rim. */
+/** Gap from the outer edge of the longest label to the frost rim. */
 const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
+/** Must match `.hero-touch-disk-menu__item` box height (lh 30 + pad 14). */
+const HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX = 44
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
- * Two-item hero menu: Work outward + About on the opposite side (horizontal);
- * About folds to 90° (below) when that side lacks space. Near the left edge the
- * layout mirrors (Work on the right). Single-item menus stay horizontal outward.
+ * Two-item hero menu: Work at 180° + About at 0° when space allows.
+ * A tight side swings that label south around the blue (clock arm) up to 90°.
+ * Single-item menus stay horizontal on the outward side.
  */
 /** Disk-center distance from viewport top/bottom that counts as “near edge”. */
 const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
-/** Extra viewport padding past a side label before folding / mirroring. */
+/** Viewport padding so labels stay fully on-screen. */
 const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
@@ -629,6 +628,64 @@ function getHeroTouchDiskMenuFrostSize() {
                 maxLabel +
                 HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX)
     )
+}
+
+/** AABB fit test for a label centered on a ray from the blue disk. */
+function heroTouchDiskMenuLabelFits(diskX, diskY, deg, width, height, gap, vw, vh, safe) {
+    const centerR = gap + width / 2
+    const rad = (deg * Math.PI) / 180
+    const cx = diskX + Math.cos(rad) * centerR
+    const cy = diskY + Math.sin(rad) * centerR
+    const c = Math.abs(Math.cos(rad))
+    const s = Math.abs(Math.sin(rad))
+    const aabbW = width * c + height * s
+    const aabbH = width * s + height * c
+    return (
+        cx - aabbW / 2 >= safe &&
+        cx + aabbW / 2 <= vw - safe &&
+        cy - aabbH / 2 >= safe &&
+        cy + aabbH / 2 <= vh - safe
+    )
+}
+
+/**
+ * Smallest southward swing (0–90°) that keeps the label on-screen.
+ * Right side: 0° → 90°. Left side: 180° → 90°.
+ */
+function findHeroTouchDiskMenuSwingDeg(side, diskX, diskY, width, height, gap, vw, vh, safe) {
+    for (let swing = 0; swing <= 90; swing += 1) {
+        const deg = side === 'right' ? swing : 180 - swing
+        if (
+            heroTouchDiskMenuLabelFits(
+                diskX,
+                diskY,
+                deg,
+                width,
+                height,
+                gap,
+                vw,
+                vh,
+                safe,
+            )
+        ) {
+            return deg
+        }
+    }
+    return 90
+}
+
+/** Place a label on a ray; left keeps end toward blue, right keeps start toward blue. */
+function placeHeroTouchDiskMenuRadial(base, side, deg, gap, width) {
+    const centerR = gap + width / 2
+    const rad = (deg * Math.PI) / 180
+    const rot = side === 'left' ? deg - 180 : deg
+    return {
+        ...base,
+        x: `${Math.cos(rad) * centerR}px`,
+        y: `${Math.sin(rad) * centerR}px`,
+        rot: `${rot}deg`,
+        anchor: 'radial',
+    }
 }
 
 function isHeroCursorEnvironment() {
@@ -1107,15 +1164,9 @@ export default {
             )
         },
         heroTouchDiskMenuFan() {
-            // Outward side for Work: left by default; right when near the left edge.
-            const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
-            const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
-            const workW = getHeroTouchDiskMenuLabelWidth('Work')
-            const diskX = this.heroCursorGlassPos?.x ?? 0
-            const needLeft = gap + workW + HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
-            return diskX >= needLeft ? 'left' : 'right'
+            return 'left'
         },
-        /** Horizontal label layout for all touch-disk menus. */
+        /** Horizontal / clock-arm label layout for all touch-disk menus. */
         heroTouchDiskMenuStacked() {
             return true
         },
@@ -1126,9 +1177,13 @@ export default {
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const diskX = this.heroCursorGlassPos?.x ?? 0
+            const diskY = this.heroCursorGlassPos?.y ?? 0
             const vw =
                 typeof window !== 'undefined' ? window.innerWidth : 400
+            const vh =
+                typeof window !== 'undefined' ? window.innerHeight : 800
             const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
+            const labelH = HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX
 
             const work = { id: 'work', label: 'Work', action: 'work' }
             const about = { id: 'about', label: 'About', action: 'about' }
@@ -1158,29 +1213,34 @@ export default {
                 return [placeOutward(base, outwardLeft)]
             }
 
-            // Two items: Work outward; About on the opposite side when space allows.
-            // Tight on that side → About folds to 90° below (mirrored near left edge).
+            // Two items: Work @ 180° / About @ 0°; swing south only as far as needed (≤90°).
             const workW = getHeroTouchDiskMenuLabelWidth('Work')
             const aboutW = getHeroTouchDiskMenuLabelWidth('About')
-            const workOutwardLeft = diskX >= gap + workW + safe
-            const aboutOnOpposite = workOutwardLeft
-                ? diskX + gap + aboutW + safe <= vw
-                : diskX >= gap + aboutW + safe
-
-            const workItem = placeOutward(work, workOutwardLeft)
-            if (aboutOnOpposite) {
-                return [workItem, placeOutward(about, !workOutwardLeft)]
-            }
+            const workDeg = findHeroTouchDiskMenuSwingDeg(
+                'left',
+                diskX,
+                diskY,
+                workW,
+                labelH,
+                gap,
+                vw,
+                vh,
+                safe,
+            )
+            const aboutDeg = findHeroTouchDiskMenuSwingDeg(
+                'right',
+                diskX,
+                diskY,
+                aboutW,
+                labelH,
+                gap,
+                vw,
+                vh,
+                safe,
+            )
             return [
-                workItem,
-                {
-                    ...about,
-                    // 90° below blue: end nearest blue; bottom faces outward side.
-                    x: '0px',
-                    y: `${gap + aboutW / 2}px`,
-                    rot: '-90deg',
-                    anchor: workOutwardLeft ? 'vertical' : 'vertical-mirror',
-                },
+                placeHeroTouchDiskMenuRadial(work, 'left', workDeg, gap, workW),
+                placeHeroTouchDiskMenuRadial(about, 'right', aboutDeg, gap, aboutW),
             ]
         },
         heroTouchDiskMenuFrostSize() {
@@ -3055,7 +3115,7 @@ export default {
                 if (dx * dx + dy * dy < slop * slop) return
                 this.heroTouchDiskHasMoved = true
                 this.markHeroTouchDiskInteracted()
-                this.closeHeroTouchDiskMenu({ instant: true })
+                // Keep an open menu open while dragging; tap the center to close.
             }
 
             event.preventDefault()
@@ -3520,9 +3580,10 @@ export default {
                     this.heroCursorRangeTight = false
                 }
                 const allowIntroGlass =
-                    !touchDisk ||
-                    (!sectionNav &&
-                        (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging))
+                    !menuOpen &&
+                    (!touchDisk ||
+                        (!sectionNav &&
+                            (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging)))
                 const freezeIntroGlass =
                     touchDisk &&
                     this.heroCursorIntroGlassHandoff &&
@@ -5622,7 +5683,7 @@ export default {
     transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
 }
 
-/* Horizontal pair: Work outward + About opposite (or About at 90° when tight). */
+/* Single-item outward: left (end toward blue) or right (start toward blue). */
 .hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-end,
 .hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
     .hero-touch-disk-menu__item--anchor-end {
@@ -5635,23 +5696,11 @@ export default {
     transform: translate(0, -50%);
 }
 
-.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-center,
+/* Two-item clock-arm rays: centered on the ray, rotated with --menu-rot. */
+.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-radial,
 .hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
-    .hero-touch-disk-menu__item--anchor-center {
-    transform: translate(-50%, -50%);
-}
-
-.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-vertical,
-.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
-    .hero-touch-disk-menu__item--anchor-vertical {
-    transform: translate(-50%, -50%) rotate(var(--menu-rot, -90deg));
-}
-
-/* Left-edge mirror: end still nearest blue; bottom of the word faces left. */
-.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-vertical-mirror,
-.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
-    .hero-touch-disk-menu__item--anchor-vertical-mirror {
-    transform: translate(-50%, -50%) scaleX(-1) rotate(var(--menu-rot, -90deg));
+    .hero-touch-disk-menu__item--anchor-radial {
+    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
 }
 
 @media (prefers-reduced-motion: reduce) {
