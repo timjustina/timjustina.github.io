@@ -537,12 +537,14 @@ const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 const HERO_TOUCH_DISK_POP_MS = 220
 /** Smallest scale at the bottom of the tap sink. */
 const HERO_TOUCH_DISK_SINK_MIN = 0.78
-/** Gap from frosted disk edge to the near edge of a menu label. */
-const HERO_TOUCH_DISK_MENU_GAP_PX = 16
-/** Extra diameter while the radial menu is open (less than full hover +18). */
-const HERO_TOUCH_DISK_MENU_EXTRA_PX = 10
+/** Gap from blue center edge to the near edge of a menu label (menu open). */
+const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 4
+/** Frost diameter while menu is open — large enough that labels sit inside. */
+const HERO_TOUCH_DISK_MENU_FROST_SIZE = 280
+/** Blue center diameter while menu is open. */
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 40
 /** Soft frost/glow amount while menu is open (0–1 hover-expand mix). */
-const HERO_TOUCH_DISK_MENU_EXPAND_MIX = 0.4
+const HERO_TOUCH_DISK_MENU_EXPAND_MIX = 0.85
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -975,8 +977,9 @@ export default {
                 return { pointerEvents: 'none', visibility: 'hidden' }
             }
             const { x, y } = this.heroCursorGlassPos
+            // Menu open: only the blue center is the close/toggle target.
             const size = this.heroTouchDiskMenuOpen
-                ? HERO_TOUCH_DISK_HIT_SIZE + HERO_TOUCH_DISK_MENU_EXTRA_PX
+                ? HERO_TOUCH_DISK_MENU_DOT_SIZE + 12
                 : HERO_TOUCH_DISK_HIT_SIZE
             const half = size / 2
             return {
@@ -984,6 +987,7 @@ export default {
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
+                zIndex: this.heroTouchDiskMenuOpen ? 10006 : 10003,
             }
         },
         heroTouchDiskDissipateFade() {
@@ -1010,26 +1014,22 @@ export default {
             )
         },
         heroTouchDiskMenuFan() {
-            // Disk parks on the right in every zone — fan labels leftward.
             return 'left'
         },
         heroTouchDiskMenuItems() {
-            // Orbit to the near edge of each label (disk radius + gap).
-            const diskSize = this.heroTouchDiskMenuOpen
-                ? HERO_CURSOR_GLASS_IDLE_SIZE + HERO_TOUCH_DISK_MENU_EXTRA_PX
-                : HERO_CURSOR_GLASS_IDLE_SIZE
-            const orbit = diskSize / 2 + HERO_TOUCH_DISK_MENU_GAP_PX
+            // Labels hug the blue center; frost ring is large enough to contain them.
+            const orbit =
+                HERO_TOUCH_DISK_MENU_DOT_SIZE / 2 + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const place = (anglesDeg) =>
                 anglesDeg.map((deg) => {
                     const rad = (deg * Math.PI) / 180
                     return {
                         x: `${Math.round(Math.cos(rad) * orbit)}px`,
                         y: `${Math.round(Math.sin(rad) * orbit)}px`,
-                        // Right edge of the label sits on the orbit (faces the disk).
+                        // Right edge on the orbit, facing the blue center.
                         ax: '-100%',
                         ay: '-50%',
-                        // Rotate so that right edge is tangent to the circle
-                        // (perpendicular to the radius), text readable on the left fan.
+                        // Rotate so the right edge is radial (⊥ to the circumference).
                         rot: `${deg - 180}deg`,
                     }
                 })
@@ -1045,8 +1045,8 @@ export default {
                 const [w] = place([180])
                 return [{ ...work, ...w }]
             }
-            // Hero: Work straight left; About up-left.
-            const [w, a] = place([180, 235])
+            // Work left / slightly up; About below it (down-left).
+            const [w, a] = place([200, 145])
             return [
                 { ...work, ...w },
                 { ...about, ...a },
@@ -1094,8 +1094,11 @@ export default {
 
             const rangeMix = this.heroCursorRangeMix
             const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
+            const menuOpen = this.heroTouchDiskMode && this.heroTouchDiskMenuOpen
             const hoverMix =
-                sectionNav || this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+                menuOpen || sectionNav || this.heroCursorInRange
+                    ? 0
+                    : this.heroCursorHoverMix
 
             let x = this.heroCursorPos.x
             let y = this.heroCursorPos.y
@@ -1113,7 +1116,9 @@ export default {
                 ;({ x, y } = this.heroCursorGlassPos)
             }
 
-            if (sectionNav) {
+            if (menuOpen) {
+                size = HERO_TOUCH_DISK_MENU_DOT_SIZE
+            } else if (sectionNav) {
                 /* position already locked to glass */
             } else if (this.heroCursorIntroGlassHandoff) {
                 const dotVisual = heroCursorRangeDotVisual(rangeMix)
@@ -1152,16 +1157,15 @@ export default {
             // `scale` animation that can fight positioning and read as a sideways jiggle.
             const sink =
                 this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
-            const menuBoost =
-                this.heroTouchDiskMode && this.heroTouchDiskMenuOpen ? 1.2 : 1
             const style = {
-                transform: `translate3d(${x}px, ${y}px, 0) scale(${scale * sink * menuBoost})`,
+                transform: `translate3d(${x}px, ${y}px, 0) scale(${scale * sink})`,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
                 background,
                 boxSizing: 'border-box',
                 opacity: outOpacity,
+                zIndex: menuOpen ? 10005 : undefined,
                 // Keep visibility while touch-disk dissipate fades (opacity carries the hide).
                 visibility:
                     this.heroTouchDiskMode
@@ -1169,6 +1173,9 @@ export default {
                         : outOpacity < 0.02 && scale < 0.02
                           ? 'hidden'
                           : 'visible',
+                transition: menuOpen || this.heroTouchDiskMode
+                    ? 'width 0.32s cubic-bezier(0.22, 1, 0.36, 1), height 0.32s cubic-bezier(0.22, 1, 0.36, 1), margin 0.32s cubic-bezier(0.22, 1, 0.36, 1)'
+                    : undefined,
             }
 
             if (useGlassRingBorder) {
@@ -1203,7 +1210,7 @@ export default {
                 : expand
             const { x, y } = this.heroCursorGlassPos
             const size = menuOpen
-                ? HERO_CURSOR_GLASS_IDLE_SIZE + HERO_TOUCH_DISK_MENU_EXTRA_PX
+                ? HERO_TOUCH_DISK_MENU_FROST_SIZE
                 : sectionNav
                   ? HERO_CURSOR_GLASS_IDLE_SIZE
                   : heroCursorDotDiskSize(hoverMix)
@@ -4996,7 +5003,7 @@ export default {
     --muted: #757575;
     --title: #4d4d4d;
     --about-muted: #928a81;
-    --about-location-color: #928a81;
+    --about-location-color: #8a8279;
     --about-location-icon-fill: var(--about-location-color);
     --about-bg: #f4f2f1;
     --page-max: 1454px;
@@ -5332,11 +5339,10 @@ export default {
     left: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-width: 44px;
+    justify-content: flex-end;
     min-height: 44px;
     margin: 0;
-    padding: 10px;
+    padding: 4px 2px;
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
     font-size: 20px;
@@ -5347,11 +5353,12 @@ export default {
     white-space: nowrap;
     pointer-events: auto;
     opacity: 0;
-    /* Orbit point → rotate (right edge tangent to circle) → anchor right edge. */
+    transform-origin: center center;
+    /* Place on orbit → angle so right edge is radial (⊥ circumference) → pin right edge. */
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
         rotate(var(--menu-rot, 0deg))
         translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
-        scale(0.86);
+        scale(0.9);
     transition:
         opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
         transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
@@ -5384,9 +5391,9 @@ export default {
     background: transparent;
     transform-origin: center center;
     transition:
-        width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        margin 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        margin 0.34s cubic-bezier(0.22, 1, 0.36, 1);
     border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
         color-mix(
             in srgb,
@@ -7249,7 +7256,7 @@ export default {
 
     .about-location-text-wrap,
     .about-role-text-wrap {
-        --about-location-white-scale: 1.07;
+        --about-location-white-scale: 1.12;
     }
 
     .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white),
