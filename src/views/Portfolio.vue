@@ -5325,7 +5325,6 @@ export default {
 .hero {
     position: relative;
     z-index: 1;
-    --hero-intro-max-width: 850px;
     --hero-cta-gap: 110px;
     --hero-cta-height: 57px;
     --hero-cta-width: 233px;
@@ -5338,12 +5337,23 @@ export default {
 }
 
 .hero-intro-wrap {
-    /* Match viewport-left→line stroke on the text box’s right edge */
-    --hero-intro-right: calc(var(--hero-squiggle-left) + var(--hero-decor-line-stroke-x));
+    /*
+     * Right inset mirrors content-left → text-left:
+     * (content → deco line) + (deco line → text) = --hero-intro-left
+     */
+    --hero-intro-right: var(--hero-intro-left);
     position: relative;
-    max-width: min(var(--hero-intro-max-width), calc(100% - var(--hero-intro-left)));
-    margin: var(--hero-logo-gap) 0 0
-        var(--hero-intro-left);
+    max-width: none;
+    /*
+     * Size to the viewport, not --page-max: left stays on the content column,
+     * right edge tracks 100vw − (page-pad + intro-right) so the box keeps
+     * growing after the main column is capped.
+     */
+    width: calc(
+        100vw - var(--portfolio-main-inset-left) - var(--page-pad) - var(--hero-intro-left) -
+            var(--page-pad) - var(--hero-intro-right)
+    );
+    margin: var(--hero-logo-gap) 0 0 var(--hero-intro-left);
 }
 
 /* Resting decor-line X for nav/header sync — not affected by fly-in transform */
@@ -5441,7 +5451,7 @@ export default {
     font-weight: 300;
     line-height: 39px;
     letter-spacing: 0;
-    color: var(--muted);
+    color: #616161;
     font-synthesis: none;
 }
 
@@ -6163,11 +6173,6 @@ export default {
 
 /* ≥1454px: Final content artboard spacing */
 @media (min-width: 1454px) {
-    .hero {
-        /* 920px keeps "complex" on the second line at 25px / full artboard width */
-        --hero-intro-max-width: 920px;
-    }
-
     .hero-decor {
         top: 7px;
     }
@@ -6278,7 +6283,7 @@ export default {
         font-family: 'Work Sans', sans-serif;
         font-size: 20px;
         font-style: normal;
-        font-weight: 500;
+        font-weight: 400;
         line-height: 30px;
         color: inherit;
         flex: none;
@@ -6312,10 +6317,7 @@ export default {
 
     .hero-intro-wrap {
         margin-top: 0;
-        margin-right: var(--hero-intro-right);
-        /* Flex child: let horizontal margins define width (mirrors line↔viewport-left) */
-        max-width: none;
-        width: auto;
+        /* Horizontal size comes from left/right insets on the base rule */
     }
 
     .about-location {
