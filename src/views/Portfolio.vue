@@ -538,23 +538,23 @@ const HERO_TOUCH_DISK_EXPAND_MS = 380
 /** Blue center diameter while menu is open (idle dot is 8). */
 const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
-const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 10
+const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
 /** Gap from the outer (left) edge of the longest label to the frost rim. */
-const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 10
+const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
  * Menu orbit angles (screen: 0° right, 90° down, clockwise).
  * Work stays above About by MENU_GAP.
- * Both near top → Work 180° / About 150°; bottom mirrors that (Work 210° / About 180°);
- * mid → pair centered on 180° (Work 195° / About 165°).
+ * Both near top → Work 180° / About 140°; bottom mirrors that (Work 220° / About 180°);
+ * mid → pair centered on 180° (Work 200° / About 160°).
  */
-const HERO_TOUCH_DISK_MENU_GAP_DEG = 30
+const HERO_TOUCH_DISK_MENU_GAP_DEG = 40
 const HERO_TOUCH_DISK_MENU_WORK_TOP_DEG = 180
 const HERO_TOUCH_DISK_MENU_WORK_MID_DEG =
-    180 + HERO_TOUCH_DISK_MENU_GAP_DEG / 2 // 195° — midpoint of pair at 180°
+    180 + HERO_TOUCH_DISK_MENU_GAP_DEG / 2 // 200° — midpoint of pair at 180°
 const HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG =
-    180 + HERO_TOUCH_DISK_MENU_GAP_DEG // 210° — mirror of top fan
+    180 + HERO_TOUCH_DISK_MENU_GAP_DEG // 220° — mirror of top fan
 /** Alone label (Work or About): 190° north at bottom; mirrored south at top. */
 const HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG = 190
 const HERO_TOUCH_DISK_MENU_ALONE_TOP_DEG =
@@ -615,7 +615,7 @@ function getHeroTouchDiskMenuLabelWidth(label) {
     return heroTouchDiskMenuLabelWidths[label] || heroTouchDiskMenuLabelMaxWidthPx || 58
 }
 
-/** Frost diameter: blue → 10px → longest label → 10px past its outer edge. */
+/** Frost diameter: blue → 20px → longest label → 20px past its outer edge. */
 function getHeroTouchDiskMenuFrostSize() {
     if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
     const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
@@ -1131,7 +1131,7 @@ export default {
             // Depend on metrics rev so font-load remounts refresh placement.
             void this.heroTouchDiskMenuMetricsRev
             // Geometry uses the *open* blue size so labels don't crawl during expand.
-            // Each label's center sits on its ray; inner edge on (blueR + 10px) circle.
+            // Each label's center sits on its ray; inner edge on (blueR + 20px) circle.
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const innerOrbit = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const place = (items) =>
@@ -7434,7 +7434,7 @@ export default {
 
     .about-location-text-wrap,
     .about-role-text-wrap {
-        --about-location-white-scale: 1.12;
+        --about-location-white-scale: 1.2;
     }
 
     .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white),
@@ -7489,6 +7489,7 @@ export default {
         left: 0;
         top: 0;
         white-space: nowrap;
+        font-weight: 400;
     }
 
     .about-location-text--glow,
