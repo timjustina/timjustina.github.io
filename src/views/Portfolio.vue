@@ -125,8 +125,8 @@
                 :rel="item.external ? 'noopener noreferrer' : undefined"
                 :style="{
                     '--menu-i': index,
-                    '--menu-x': item.x,
-                    '--menu-y': item.y,
+                    left: item.x,
+                    top: item.y,
                     '--menu-rot': item.rot,
                 }"
                 @click="onHeroTouchDiskMenuItemClick(item, $event)"
@@ -542,14 +542,13 @@ const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 5
 /** Gap from the outer (left) edge of the longest label to the frost rim. */
 const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 5
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
-const HERO_TOUCH_DISK_MENU_FONT = '500 20px "Work Sans", sans-serif'
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
  * Menu orbit angles (screen: 0° right, 90° down, clockwise).
  * Work stays above About by MENU_GAP. Near top → Work at 210° south (150°);
  * mid → 210° north; near bottom → 250° north.
  */
-const HERO_TOUCH_DISK_MENU_GAP_DEG = 40
+const HERO_TOUCH_DISK_MENU_GAP_DEG = 30
 const HERO_TOUCH_DISK_MENU_WORK_TOP_DEG = 150 // 210° south of left
 const HERO_TOUCH_DISK_MENU_WORK_MID_DEG = 210 // 210° north
 const HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG = 250 // 250° north
@@ -560,41 +559,59 @@ const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
 const HERO_INTRO_DISSIPATE_RETURN_PX = 480
 
-/** Cached max glyph width of menu labels (Work Sans 20/500). */
+/** Per-label glyph widths + max (DOM-measured to match rendered text). */
+const heroTouchDiskMenuLabelWidths = Object.create(null)
 let heroTouchDiskMenuLabelMaxWidthPx = 0
-let heroTouchDiskMenuLabelFontReady = false
 
-function measureHeroTouchDiskMenuLabelMaxWidth() {
-    if (heroTouchDiskMenuLabelMaxWidthPx > 0 && heroTouchDiskMenuLabelFontReady) {
-        return heroTouchDiskMenuLabelMaxWidthPx
+function measureHeroTouchDiskMenuLabelWidths() {
+    if (typeof document === 'undefined') {
+        heroTouchDiskMenuLabelWidths.Work = 48
+        heroTouchDiskMenuLabelWidths.About = 58
+        heroTouchDiskMenuLabelMaxWidthPx = 58
+        return heroTouchDiskMenuLabelWidths
     }
-    if (typeof document === 'undefined') return 54
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return 54
-    ctx.font = HERO_TOUCH_DISK_MENU_FONT
+
+    const probe = document.createElement('span')
+    probe.setAttribute('aria-hidden', 'true')
+    probe.style.cssText = [
+        'position:absolute',
+        'left:-9999px',
+        'top:0',
+        'visibility:hidden',
+        'pointer-events:none',
+        'white-space:nowrap',
+        'margin:0',
+        'padding:0',
+        'border:0',
+        'font-family:"Work Sans",sans-serif',
+        'font-size:20px',
+        'font-weight:500',
+        'line-height:30px',
+        'font-synthesis:none',
+    ].join(';')
+    document.body.appendChild(probe)
+
     let max = 0
     for (const label of HERO_TOUCH_DISK_MENU_MEASURE_LABELS) {
-        max = Math.max(max, ctx.measureText(label).width)
+        probe.textContent = label
+        const w = probe.getBoundingClientRect().width
+        heroTouchDiskMenuLabelWidths[label] = w
+        max = Math.max(max, w)
     }
+    probe.remove()
     heroTouchDiskMenuLabelMaxWidthPx = Math.max(max, 1)
-
-    if (!heroTouchDiskMenuLabelFontReady && document.fonts?.ready) {
-        document.fonts.ready.then(() => {
-            heroTouchDiskMenuLabelFontReady = true
-            heroTouchDiskMenuLabelMaxWidthPx = 0
-            measureHeroTouchDiskMenuLabelMaxWidth()
-        })
-    } else if (document.fonts?.check?.(HERO_TOUCH_DISK_MENU_FONT)) {
-        heroTouchDiskMenuLabelFontReady = true
-    }
-
-    return heroTouchDiskMenuLabelMaxWidthPx
+    return heroTouchDiskMenuLabelWidths
 }
 
-/** Frost diameter: blue → 5px → label → 5px past longest label’s outer edge. */
+function getHeroTouchDiskMenuLabelWidth(label) {
+    if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
+    return heroTouchDiskMenuLabelWidths[label] || heroTouchDiskMenuLabelMaxWidthPx || 58
+}
+
+/** Frost diameter: blue → 5px → longest label → 5px past its outer edge. */
 function getHeroTouchDiskMenuFrostSize() {
-    const maxLabel = measureHeroTouchDiskMenuLabelMaxWidth()
+    if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
+    const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
     return (
         HERO_TOUCH_DISK_MENU_DOT_SIZE +
         2 *
@@ -972,6 +989,8 @@ export default {
             heroTouchDiskZone: 'hero',
             heroTouchDiskParkZone: 'hero',
             heroTouchDiskMenuOpen: false,
+            /** Bumps when label width metrics are remeasured (font load / menu open). */
+            heroTouchDiskMenuMetricsRev: 0,
             heroTouchDiskPopping: false,
             heroTouchDiskPopTimer: null,
             heroTouchDiskPopRaf: null,
@@ -1091,20 +1110,22 @@ export default {
             return HERO_TOUCH_DISK_MENU_WORK_MID_DEG
         },
         heroTouchDiskMenuItems() {
-            // Invisible label orbit: blue-dot radius + GAP. Inner (right) edge of each
-            // word sits on that circumference; text extends radially outward.
-            const expand = this.heroTouchDiskExpand
-            const dot =
-                HERO_CURSOR_DOT_SIZE +
-                (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) * expand
-            const orbit = dot / 2 + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
-            const place = (anglesDeg) =>
-                anglesDeg.map((deg) => {
+            // Depend on metrics rev so font-load remounts refresh placement.
+            void this.heroTouchDiskMenuMetricsRev
+            // Geometry uses the *open* blue size so labels don't crawl during expand.
+            // Each label's center sits on its ray; inner edge on (blueR + 5px) circle.
+            const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+            const innerOrbit = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+            const place = (items) =>
+                items.map(({ base, deg }) => {
                     const rad = (deg * Math.PI) / 180
+                    const width = getHeroTouchDiskMenuLabelWidth(base.label)
+                    const centerR = innerOrbit + width / 2
                     return {
-                        x: `${Math.cos(rad) * orbit}px`,
-                        y: `${Math.sin(rad) * orbit}px`,
-                        // Rotate so local +x points at the blue center (inner edge faces in).
+                        ...base,
+                        x: `${Math.cos(rad) * centerR}px`,
+                        y: `${Math.sin(rad) * centerR}px`,
+                        // Local +x toward blue center so the word lies on the radius.
                         rot: `${deg - 180}deg`,
                     }
                 })
@@ -1115,19 +1136,19 @@ export default {
             const aboutDeg = workDeg - HERO_TOUCH_DISK_MENU_GAP_DEG
 
             if (this.heroTouchDiskZone === 'work') {
-                const [a] = place([aboutDeg])
-                return [{ ...about, ...a }]
+                return place([{ base: about, deg: aboutDeg }])
             }
             if (this.heroTouchDiskZone === 'about') {
-                const [w] = place([workDeg])
-                return [{ ...work, ...w }]
+                return place([{ base: work, deg: workDeg }])
             }
-            // Work above About, 40° apart; angles shift with viewport edge proximity.
-            const [w, a] = place([workDeg, aboutDeg])
-            return [
-                { ...work, ...w },
-                { ...about, ...a },
-            ]
+            return place([
+                { base: work, deg: workDeg },
+                { base: about, deg: aboutDeg },
+            ])
+        },
+        heroTouchDiskMenuFrostSize() {
+            void this.heroTouchDiskMenuMetricsRev
+            return getHeroTouchDiskMenuFrostSize()
         },
         heroTouchDiskMenuStyle() {
             const { x, y } = this.heroCursorGlassPos
@@ -1288,7 +1309,7 @@ export default {
             let size
             if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
-                const open = getHeroTouchDiskMenuFrostSize()
+                const open = this.heroTouchDiskMenuFrostSize
                 const t = expandT
                 const dip = Math.sin(Math.min(1, t / 0.2) * Math.PI) * 5
                 const eased = 1 - (1 - t) ** 3
@@ -2715,9 +2736,38 @@ export default {
             this.animateHeroTouchDiskExpand(0)
         },
         openHeroTouchDiskMenu() {
+            this.refreshHeroTouchDiskMenuMetrics()
             this.heroTouchDiskMenuOpen = true
             this.bindHeroTouchDiskOutsideClose()
             this.animateHeroTouchDiskExpand(1)
+        },
+        refreshHeroTouchDiskMenuMetrics() {
+            measureHeroTouchDiskMenuLabelWidths()
+            this.heroTouchDiskMenuMetricsRev += 1
+            // Remeasure once Work Sans is actually available.
+            if (typeof document !== 'undefined' && document.fonts?.ready) {
+                document.fonts.ready.then(() => {
+                    if (!this.heroTouchDiskMode) return
+                    measureHeroTouchDiskMenuLabelWidths()
+                    this.heroTouchDiskMenuMetricsRev += 1
+                })
+            }
+        },
+        /** Live label widths via offsetWidth (pre-transform — not AABB). */
+        syncHeroTouchDiskMenuMetricsFromDom() {
+            const nodes = document.querySelectorAll('.hero-touch-disk-menu__item')
+            if (!nodes.length) return
+            let max = 0
+            nodes.forEach((node) => {
+                const label = (node.textContent || '').trim()
+                const w = node.offsetWidth
+                if (label && w > 0) heroTouchDiskMenuLabelWidths[label] = w
+                max = Math.max(max, w)
+            })
+            if (max > 0) {
+                heroTouchDiskMenuLabelMaxWidthPx = max
+                this.heroTouchDiskMenuMetricsRev += 1
+            }
         },
         toggleHeroTouchDiskMenu() {
             if (this.heroTouchDiskExpand > 0.5 || this.heroTouchDiskMenuOpen) {
@@ -2770,6 +2820,9 @@ export default {
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskMenuOpen = to > 0.5
                 if (to < 0.5) this.unbindHeroTouchDiskOutsideClose()
+                else {
+                    this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                }
                 return
             }
 
@@ -2796,6 +2849,7 @@ export default {
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskMenuOpen = to > 0.5
                 if (to < 0.5) this.unbindHeroTouchDiskOutsideClose()
+                else this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
             }
             this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
         },
@@ -5434,13 +5488,11 @@ export default {
 
 .hero-touch-disk-menu__item {
     position: absolute;
-    top: 0;
-    left: 0;
+    /* left/top = label center on the ray from the blue disk (set inline). */
     display: block;
     width: max-content;
     min-height: 44px;
     margin: 0;
-    /* Tight to glyphs — no horizontal padding (was pushing About farther than Work). */
     padding: 7px 0;
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
@@ -5453,17 +5505,14 @@ export default {
     pointer-events: auto;
     opacity: 0;
     /*
-     * Pin the inner (right) edge on the invisible orbit (blue r + 5px) and rotate
-     * around that point — not the text center, or wider labels like About drift.
+     * Center the box on (left, top), then rotate around that center so the word
+     * stays on a straight radial line through the blue dot. No position transition —
+     * animating transform while dragging made the pivot look like it was sliding.
      */
-    transform-origin: right center;
-    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
-        rotate(var(--menu-rot, 0deg))
-        translate(-100%, -50%)
-        scale(0.9);
+    transform-origin: center center;
+    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
     transition:
-        opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     transition-delay: calc(var(--menu-i, 0) * 45ms);
 }
 
@@ -5473,18 +5522,12 @@ export default {
 
 .hero-touch-disk-menu .hero-touch-disk-menu__item {
     opacity: 0;
-    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
-        rotate(var(--menu-rot, 0deg))
-        translate(-100%, -50%)
-        scale(0.9);
+    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
 }
 
 .hero-touch-disk-menu--visible .hero-touch-disk-menu__item {
     opacity: 1;
-    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
-        rotate(var(--menu-rot, 0deg))
-        translate(-100%, -50%)
-        scale(1);
+    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
 }
 
 @media (prefers-reduced-motion: reduce) {
