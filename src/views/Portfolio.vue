@@ -70,6 +70,7 @@
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion,
+                'hero-intro-cursor-ball--touch-pop': heroTouchDiskPopping,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -99,12 +100,35 @@
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion,
+                'hero-intro-cursor-ball--touch-pop': heroTouchDiskPopping,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
         />
+        <nav
+            v-if="heroTouchDiskMode && heroTouchDiskMenuOpen && heroCursorVisible"
+            class="hero-touch-disk-menu"
+            :class="{
+                'hero-touch-disk-menu--left': heroTouchDiskMenuFan === 'left',
+                'hero-touch-disk-menu--right': heroTouchDiskMenuFan === 'right',
+            }"
+            :style="heroTouchDiskMenuStyle"
+            aria-label="Portfolio sections"
+        >
+            <a
+                v-for="(item, index) in heroTouchDiskMenuItems"
+                :key="item.id"
+                class="hero-touch-disk-menu__item"
+                :class="{ 'hero-touch-disk-menu__item--external': item.external }"
+                :href="item.href || '#'"
+                :target="item.external ? '_blank' : undefined"
+                :rel="item.external ? 'noopener noreferrer' : undefined"
+                :style="{ '--menu-i': index, '--menu-x': item.x, '--menu-y': item.y }"
+                @click="onHeroTouchDiskMenuItemClick(item, $event)"
+            >{{ item.label }}</a>
+        </nav>
         <span
-            v-if="heroTouchDiskMode && heroCursorVisible && !heroIntroDissipated"
+            v-if="heroTouchDiskMode && heroCursorVisible && heroTouchDiskHitActive"
             class="hero-intro-cursor-drag-hit"
             :style="heroTouchDiskHitStyle"
             aria-hidden="true"
@@ -451,7 +475,13 @@ import officeIconSvg from '../assets/1_dashboard/office.svg?raw'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
-import { scrollToPortfolioHash, scrollToWork } from '../utils/scrollToAbout.js'
+import {
+    getAboutScrollTop,
+    getWorkScrollTop,
+    scrollToAbout,
+    scrollToPortfolioHash,
+    scrollToWork,
+} from '../utils/scrollToAbout.js'
 import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
@@ -487,16 +517,21 @@ const HERO_CURSOR_RANGE_EXPAND_END = 0.34
 const HERO_CURSOR_INTRO_GLASS_ON = 0.04
 const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
-/** Mobile touch disk: rest above hero, 30% inset from the right edge. */
-const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
-const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
+/** Mobile touch disk: edge inset matches mobile logo left pad. */
+const HERO_TOUCH_DISK_EDGE_GAP_PX = 20
+/** Logo fallback when `.logo` cannot be measured (pad + half of 56px). */
+const HERO_TOUCH_DISK_HERO_REST_Y_FALLBACK = 20 + 28
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
 /** Soft glide when the disk trips the bottom edge → first work. */
 const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
-/** After bottom contact, park the disk this far above the viewport floor. */
-const HERO_TOUCH_DISK_BOTTOM_PARK_PX = 40
+/** Ignore sub-threshold pointer jitter so taps still register. */
+const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
+/** Tap pop keyframe duration; matches `.hero-intro-cursor-ball--touch-pop`. */
+const HERO_TOUCH_DISK_POP_MS = 260
+/** Radial menu orbit radius from disk center. */
+const HERO_TOUCH_DISK_MENU_RADIUS_PX = 78
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -867,6 +902,13 @@ export default {
             heroTouchDiskBreathe: false,
             heroTouchDiskEntranceTimer: null,
             heroTouchDiskWorkJumped: false,
+            heroTouchDiskZone: 'hero',
+            heroTouchDiskParkZone: 'hero',
+            heroTouchDiskMenuOpen: false,
+            heroTouchDiskPopping: false,
+            heroTouchDiskPopTimer: null,
+            heroTouchDiskPointerStart: { x: 0, y: 0 },
+            heroTouchDiskOutsideCloseBound: false,
         }
     },
     computed: {
@@ -903,17 +945,20 @@ export default {
                     !this.heroCursorBootLocked &&
                     // Keep the in-text glass alive even if stage clipping flickers
                     // during dissipate scroll (disk still overlapping the hero).
-                    (this.heroTouchDiskOnStage || this.heroCursorIntroGlassHandoff)
+                    (this.heroTouchDiskOnStage ||
+                        this.heroCursorIntroGlassHandoff ||
+                        this.heroTouchDiskZone !== 'hero')
                 )
             }
             return this.heroCursorActive || this.heroCursorBootLocked
         },
+        heroTouchDiskHitActive() {
+            if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
+            if (this.heroTouchDiskZone !== 'hero') return true
+            return !this.heroIntroDissipated
+        },
         heroTouchDiskHitStyle() {
-            if (
-                !this.heroTouchDiskMode ||
-                !this.heroCursorVisible ||
-                this.heroIntroDissipated
-            ) {
+            if (!this.heroTouchDiskHitActive) {
                 return { pointerEvents: 'none', visibility: 'hidden' }
             }
             const { x, y } = this.heroCursorGlassPos
@@ -928,6 +973,8 @@ export default {
         },
         heroTouchDiskDissipateFade() {
             if (!this.heroTouchDiskMode) return 1
+            // Section float stays fully opaque while hero letters dissipate.
+            if (this.heroTouchDiskZone !== 'hero') return 1
             // In-text glass morph should stay put through dissipate / reconsolidate;
             // only the idle (non-handoff) disk fades with the hero letters.
             if (this.heroCursorIntroGlassHandoff) return 1
@@ -943,8 +990,60 @@ export default {
                 this.heroTouchDiskMode &&
                 this.heroTouchDiskIdle &&
                 !this.heroTouchDiskDragging &&
-                !this.heroTouchDiskHasMoved
+                !this.heroTouchDiskHasMoved &&
+                !this.heroTouchDiskMenuOpen
             )
+        },
+        heroTouchDiskMenuFan() {
+            return this.heroTouchDiskZone === 'hero' ? 'left' : 'right'
+        },
+        heroTouchDiskMenuItems() {
+            const radius = HERO_TOUCH_DISK_MENU_RADIUS_PX
+            const place = (anglesDeg) =>
+                anglesDeg.map((deg) => {
+                    const rad = (deg * Math.PI) / 180
+                    return {
+                        x: `${Math.round(Math.cos(rad) * radius)}px`,
+                        y: `${Math.round(Math.sin(rad) * radius)}px`,
+                    }
+                })
+
+            const cv = {
+                id: 'cv',
+                label: 'CV',
+                href: this.cvUrl,
+                external: true,
+            }
+            const work = { id: 'work', label: 'Work', action: 'work' }
+            const about = { id: 'about', label: 'About', action: 'about' }
+
+            if (this.heroTouchDiskZone === 'work') {
+                const [a, c] = place([-50, -10])
+                return [
+                    { ...about, ...a },
+                    { ...cv, ...c },
+                ]
+            }
+            if (this.heroTouchDiskZone === 'about') {
+                const [w, c] = place([-50, -10])
+                return [
+                    { ...work, ...w },
+                    { ...cv, ...c },
+                ]
+            }
+            // Hero: fan left from the top-right disk.
+            const [w, a, c] = place([200, 180, 160])
+            return [
+                { ...work, ...w },
+                { ...about, ...a },
+                { ...cv, ...c },
+            ]
+        },
+        heroTouchDiskMenuStyle() {
+            const { x, y } = this.heroCursorGlassPos
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+            }
         },
         heroCursorDotDiskVisible() {
             if (!this.heroCursorVisible) return false
@@ -1424,6 +1523,8 @@ export default {
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
         clearTimeout(this.heroTouchDiskEntranceTimer)
+        clearTimeout(this.heroTouchDiskPopTimer)
+        this.unbindHeroTouchDiskOutsideClose()
         this.disableHeroIntroTouchGuard()
         this.clearHeroIntroPointerShift()
         this.clearHeroIntroDissipate()
@@ -1523,6 +1624,15 @@ export default {
             window.dispatchEvent(new Event('portfolio-section-jump'))
             if (hash === '#work' || hash === '#work-first') {
                 this.revealAllProjects()
+            }
+            if (this.isHeroTouchDiskMode()) {
+                if (hash === '#about') this.heroTouchDiskZone = 'about'
+                else if (hash === '#work' || hash === '#work-first') {
+                    this.heroTouchDiskZone = 'work'
+                }
+                this.closeHeroTouchDiskMenu()
+                this.heroTouchDiskHasMoved = false
+                this.$nextTick(() => this.syncHeroTouchDiskRestPosition())
             }
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
@@ -2195,15 +2305,28 @@ export default {
         },
         getHeroTouchDiskRestPos() {
             const bounds = this.getHeroTouchDiskBounds()
-            const x = window.innerWidth * (1 - HERO_TOUCH_DISK_REST_FROM_RIGHT)
-            let y = window.innerHeight * 0.38
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (intro) {
-                const rect = intro.getBoundingClientRect()
-                if (rect.height > 0) {
-                    y = rect.top - HERO_TOUCH_DISK_REST_ABOVE_HERO_PX
+            const radius = bounds.radius
+            const gap = HERO_TOUCH_DISK_EDGE_GAP_PX
+
+            let x
+            let y
+
+            if (this.heroTouchDiskZone === 'hero') {
+                x = window.innerWidth - gap - radius
+                y = HERO_TOUCH_DISK_HERO_REST_Y_FALLBACK
+                const logo = document.querySelector('.portfolio-top-bar .logo')
+                if (logo) {
+                    const rect = logo.getBoundingClientRect()
+                    if (rect.height > 0) {
+                        y = rect.top + rect.height / 2
+                    }
                 }
+            } else {
+                // Work / About: float lower-left with the same edge gap as the logo.
+                x = gap + radius
+                y = window.innerHeight - gap - radius
             }
+
             return {
                 x: Math.round(Math.min(bounds.maxX, Math.max(bounds.minX, x))),
                 y: Math.round(Math.min(bounds.maxY, Math.max(bounds.minY, y))),
@@ -2216,14 +2339,34 @@ export default {
             const minX = radius
             const maxX = Math.max(minX, vw - radius)
             const minY = radius
-            // Viewport floor — dragging to the bottom parks 40px up and scrolls to work.
             const maxY = Math.max(minY, vh - radius)
 
             return { minX, maxX, minY, maxY, radius }
         },
+        computeHeroTouchDiskZone() {
+            if (typeof window === 'undefined') return 'hero'
+            const y = window.scrollY || document.documentElement.scrollTop || 0
+            const workTop = getWorkScrollTop()
+            const aboutTop = getAboutScrollTop()
+            if (workTop == null || y < workTop - 48) return 'hero'
+            if (aboutTop != null && y >= aboutTop - 64) return 'about'
+            return 'work'
+        },
+        updateHeroTouchDiskZoneFromScroll() {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            if (this.heroTouchDiskDragging) return
+            const next = this.computeHeroTouchDiskZone()
+            if (next === this.heroTouchDiskZone) return
+            this.heroTouchDiskZone = next
+            this.closeHeroTouchDiskMenu()
+            this.heroTouchDiskHasMoved = false
+            this.syncHeroTouchDiskRestPosition()
+        },
         computeHeroTouchDiskOnStage() {
             // Stay visible while dragging so the disk can reach the viewport bottom.
             if (this.heroTouchDiskDragging) return true
+            // Section float stays on-stage off the hero.
+            if (this.heroTouchDiskZone !== 'hero') return true
 
             const intro = this.$el?.querySelector('.hero-intro')
             if (!intro) return false
@@ -2247,13 +2390,22 @@ export default {
         },
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
-            if (this.heroTouchDiskDragging || this.heroTouchDiskHasMoved) return
+            if (this.heroTouchDiskDragging) return
+            const zoneChanged = this.heroTouchDiskParkZone !== this.heroTouchDiskZone
+            // Free placement within a zone until the zone changes.
+            if (this.heroTouchDiskHasMoved && !zoneChanged) return
+
             const pos = this.getHeroTouchDiskRestPos()
+            this.heroTouchDiskParkZone = this.heroTouchDiskZone
             this.updateHeroFinePointer(pos.x, pos.y, {
                 introEffects: false,
-                skipHover: false,
+                skipHover: true,
             })
-            this.heroCursorGlassPos = { ...pos }
+            // Snap on idle rest; zone changes glide via glass-follow lerp.
+            if (!zoneChanged) {
+                this.heroCursorGlassPos = { ...pos }
+            }
+            this.startHeroCursorGlassFollow()
             this.refreshHeroTouchDiskStage()
         },
         clampHeroTouchDiskIntoViewport() {
@@ -2274,6 +2426,9 @@ export default {
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            this.heroTouchDiskZone = this.computeHeroTouchDiskZone()
+            this.heroTouchDiskParkZone = this.heroTouchDiskZone
+            this.closeHeroTouchDiskMenu()
             const pos = this.getHeroTouchDiskRestPos()
             this.heroTouchDiskDragging = false
             this.heroTouchDiskHasMoved = false
@@ -2346,6 +2501,10 @@ export default {
         stopHeroTouchDisk() {
             clearTimeout(this.heroTouchDiskEntranceTimer)
             this.heroTouchDiskEntranceTimer = null
+            clearTimeout(this.heroTouchDiskPopTimer)
+            this.heroTouchDiskPopTimer = null
+            this.closeHeroTouchDiskMenu()
+            this.unbindHeroTouchDiskOutsideClose()
             this.heroTouchDiskDragging = false
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
@@ -2356,6 +2515,9 @@ export default {
             this.heroTouchDiskEntering = false
             this.heroTouchDiskIdle = true
             this.heroTouchDiskBreathe = false
+            this.heroTouchDiskPopping = false
+            this.heroTouchDiskZone = 'hero'
+            this.heroTouchDiskParkZone = 'hero'
         },
         onHeroCursorPointerModeChange() {
             if (this.isHeroIntroFinePointer()) {
@@ -2376,37 +2538,97 @@ export default {
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
             this.refreshHeroTouchDiskStage()
         },
-        parkHeroTouchDiskAboveBottom(x) {
-            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
-            const parkY = window.innerHeight - HERO_TOUCH_DISK_BOTTOM_PARK_PX
-            const pos = {
-                x: Math.round(Math.min(maxX, Math.max(minX, x))),
-                y: Math.round(Math.min(maxY, Math.max(minY, parkY))),
+        closeHeroTouchDiskMenu() {
+            if (!this.heroTouchDiskMenuOpen) {
+                this.unbindHeroTouchDiskOutsideClose()
+                return
             }
-            this.heroTouchDiskHasMoved = true
-            this.heroCursorInRange = false
-            this.heroCursorRangeTight = false
-            this.heroCursorHoverMix = 0
-            this.heroCursorOverHover = false
-            this.heroCursorHoverLockEl = null
-            this.updateHeroFinePointer(pos.x, pos.y, {
-                introEffects: false,
-                skipHover: true,
+            this.heroTouchDiskMenuOpen = false
+            this.unbindHeroTouchDiskOutsideClose()
+        },
+        openHeroTouchDiskMenu() {
+            this.heroTouchDiskMenuOpen = true
+            this.bindHeroTouchDiskOutsideClose()
+        },
+        toggleHeroTouchDiskMenu() {
+            if (this.heroTouchDiskMenuOpen) this.closeHeroTouchDiskMenu()
+            else this.openHeroTouchDiskMenu()
+        },
+        bindHeroTouchDiskOutsideClose() {
+            if (this.heroTouchDiskOutsideCloseBound) return
+            this.heroTouchDiskOutsideCloseBound = true
+            // Next tick so the opening tap does not immediately dismiss.
+            this.$nextTick(() => {
+                if (!this.heroTouchDiskMenuOpen) return
+                document.addEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
             })
-            this.heroCursorGlassPos = { ...pos }
-            this.refreshHeroTouchDiskStage()
-            this.startHeroCursorGlassFollow()
-            return pos
+        },
+        unbindHeroTouchDiskOutsideClose() {
+            if (!this.heroTouchDiskOutsideCloseBound) return
+            this.heroTouchDiskOutsideCloseBound = false
+            document.removeEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
+        },
+        onHeroTouchDiskOutsidePointerDown(event) {
+            if (!this.heroTouchDiskMenuOpen) return
+            const t = event.target
+            if (!(t instanceof Element)) {
+                this.closeHeroTouchDiskMenu()
+                return
+            }
+            if (
+                t.closest('.hero-touch-disk-menu') ||
+                t.closest('.hero-intro-cursor-drag-hit')
+            ) {
+                return
+            }
+            this.closeHeroTouchDiskMenu()
+        },
+        playHeroTouchDiskPop() {
+            if (prefersReducedMotion()) return
+            clearTimeout(this.heroTouchDiskPopTimer)
+            this.heroTouchDiskPopping = false
+            // Retrigger the one-shot class.
+            requestAnimationFrame(() => {
+                this.heroTouchDiskPopping = true
+                this.heroTouchDiskPopTimer = setTimeout(() => {
+                    this.heroTouchDiskPopTimer = null
+                    this.heroTouchDiskPopping = false
+                }, HERO_TOUCH_DISK_POP_MS)
+            })
+        },
+        onHeroTouchDiskMenuItemClick(item, event) {
+            if (item.external) {
+                this.closeHeroTouchDiskMenu()
+                return
+            }
+            event.preventDefault()
+            this.closeHeroTouchDiskMenu()
+            if (item.action === 'work') {
+                this.heroTouchDiskZone = 'work'
+                this.heroTouchDiskHasMoved = false
+                this.syncHeroTouchDiskRestPosition()
+                scrollToWork()
+                this.$router.replace({ hash: '#work' }).catch(() => {})
+                return
+            }
+            if (item.action === 'about') {
+                this.heroTouchDiskZone = 'about'
+                this.heroTouchDiskHasMoved = false
+                this.syncHeroTouchDiskRestPosition()
+                scrollToAbout()
+                this.$router.replace({ hash: '#about' }).catch(() => {})
+            }
         },
         triggerHeroTouchDiskWorkJump() {
             if (this.heroTouchDiskWorkJumped) return
             this.heroTouchDiskWorkJumped = true
-            // Park directly above the contact X, 40px off the viewport floor.
-            const x = this.heroCursorPos?.x ?? this.heroCursorGlassPos?.x ?? 0
             this.endHeroTouchDiskDrag()
-            this.parkHeroTouchDiskAboveBottom(x)
-
+            this.closeHeroTouchDiskMenu()
+            this.heroTouchDiskZone = 'work'
+            this.heroTouchDiskHasMoved = false
+            this.syncHeroTouchDiskRestPosition()
             scrollToWork({ duration: HERO_TOUCH_DISK_WORK_SNAP_MS })
+            this.$router.replace({ hash: '#work' }).catch(() => {})
         },
         moveHeroTouchDiskTo(clientX, clientY) {
             const { minX, maxX, minY, maxY, radius } = this.getHeroTouchDiskBounds()
@@ -2419,13 +2641,15 @@ export default {
                 Math.max(minY, clientY + this.heroTouchDiskGrabOffset.y),
             )
             this.updateHeroFinePointer(x, y, {
-                introEffects: this.canHeroIntroPointerPlay(),
+                introEffects:
+                    this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
             })
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
 
-            // During drag: viewport-bottom contact → park above floor + scroll to work.
+            // During drag on hero: viewport-bottom contact → park lower-left + scroll to work.
             if (
+                this.heroTouchDiskZone === 'hero' &&
                 this.heroTouchDiskDragging &&
                 !this.heroTouchDiskWorkJumped &&
                 y >= window.innerHeight - radius - 1
@@ -2435,7 +2659,12 @@ export default {
         },
         onHeroTouchDiskPointerDown(event) {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
-            if (this.heroIntroDissipated || this.heroIntroReconsolidating) return
+            if (
+                this.heroTouchDiskZone === 'hero' &&
+                (this.heroIntroDissipated || this.heroIntroReconsolidating)
+            ) {
+                return
+            }
             if (event.pointerType === 'mouse' && event.button !== 0) return
 
             event.preventDefault()
@@ -2446,7 +2675,9 @@ export default {
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
             this.heroTouchDiskWorkJumped = false
+            this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = event.pointerId
+            this.heroTouchDiskPointerStart = { x: event.clientX, y: event.clientY }
             this.heroTouchDiskGrabOffset = {
                 x: x - event.clientX,
                 y: y - event.clientY,
@@ -2456,21 +2687,33 @@ export default {
             } catch {
                 /* ignore */
             }
-            this.moveHeroTouchDiskTo(event.clientX, event.clientY)
             this.startHeroCursorGlassFollow()
         },
         onHeroTouchDiskPointerMove(event) {
             if (!this.heroTouchDiskDragging) return
             if (event.pointerId !== this.heroTouchDiskPointerId) return
 
+            const dx = event.clientX - this.heroTouchDiskPointerStart.x
+            const dy = event.clientY - this.heroTouchDiskPointerStart.y
+            const slop = HERO_TOUCH_DISK_TAP_SLOP_PX
+            if (!this.heroTouchDiskHasMoved) {
+                if (dx * dx + dy * dy < slop * slop) return
+                this.heroTouchDiskHasMoved = true
+                this.closeHeroTouchDiskMenu()
+            }
+
             event.preventDefault()
-            this.heroTouchDiskHasMoved = true
             this.moveHeroTouchDiskTo(event.clientX, event.clientY)
         },
         onHeroTouchDiskPointerUp(event) {
             if (event.pointerId !== this.heroTouchDiskPointerId) return
 
-            if (this.heroTouchDiskDragging && !this.heroTouchDiskWorkJumped) {
+            const wasTap =
+                this.heroTouchDiskDragging &&
+                !this.heroTouchDiskHasMoved &&
+                !this.heroTouchDiskWorkJumped
+
+            if (this.heroTouchDiskDragging && this.heroTouchDiskHasMoved && !this.heroTouchDiskWorkJumped) {
                 this.moveHeroTouchDiskTo(event.clientX, event.clientY)
             }
             try {
@@ -2479,6 +2722,11 @@ export default {
                 /* ignore */
             }
             this.endHeroTouchDiskDrag()
+
+            if (wasTap) {
+                this.playHeroTouchDiskPop()
+                this.toggleHeroTouchDiskMenu()
+            }
         },
         isHeroIntroMobileTouch() {
             return this.heroIntroLetterMq?.matches ?? false
@@ -3641,6 +3889,8 @@ export default {
                 this.heroIntroScrollRaf = null
                 if (!this.heroCursorActive || !this.isHeroTouchDiskMode()) return
 
+                this.updateHeroTouchDiskZoneFromScroll()
+
                 if (!this.heroTouchDiskHasMoved) {
                     this.syncHeroTouchDiskRestPosition()
                     return
@@ -3651,7 +3901,8 @@ export default {
 
                 const { x, y } = this.heroCursorPos
                 this.updateHeroFinePointer(x, y, {
-                    introEffects: this.canHeroIntroPointerPlay(),
+                    introEffects:
+                        this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
                     skipHover: true,
                 })
             })
@@ -4927,6 +5178,11 @@ export default {
     transform-origin: center center;
 }
 
+.hero-intro-cursor-ball--touch-pop {
+    animation: hero-touch-disk-pop 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: center center;
+}
+
 @keyframes hero-touch-disk-breathe {
     0% {
         scale: 1;
@@ -4942,6 +5198,86 @@ export default {
     100% {
         scale: 1;
         animation-timing-function: linear;
+    }
+}
+
+@keyframes hero-touch-disk-pop {
+    0% {
+        scale: 1;
+    }
+
+    35% {
+        scale: 0.88;
+    }
+
+    70% {
+        scale: 1.06;
+    }
+
+    100% {
+        scale: 1;
+    }
+}
+
+.hero-touch-disk-menu {
+    --brand: #000aaa;
+    --brand-active: #000444;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10004;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+.hero-touch-disk-menu__item {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -22px 0 0 -22px;
+    padding: 10px;
+    box-sizing: border-box;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 30px;
+    color: var(--brand);
+    text-decoration: none;
+    white-space: nowrap;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.72);
+    transition:
+        opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--menu-i, 0) * 40ms);
+}
+
+.hero-touch-disk-menu__item:active {
+    color: var(--brand-active);
+}
+
+.hero-touch-disk-menu .hero-touch-disk-menu__item {
+    opacity: 1;
+    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-intro-cursor-ball--touch-pop {
+        animation: none;
+    }
+
+    .hero-touch-disk-menu__item {
+        transition: none;
+        transition-delay: 0s;
     }
 }
 
