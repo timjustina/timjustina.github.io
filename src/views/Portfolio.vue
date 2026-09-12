@@ -70,6 +70,7 @@
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
+                'hero-intro-cursor-dot-disk--menu-frost': heroTouchDiskExpand > 0.02,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -104,11 +105,12 @@
             aria-hidden="true"
         />
         <nav
-            v-if="heroTouchDiskMode && heroTouchDiskMenuOpen && heroCursorVisible"
+            v-if="heroTouchDiskMode && heroTouchDiskExpand > 0.08 && heroCursorVisible"
             class="hero-touch-disk-menu"
             :class="{
                 'hero-touch-disk-menu--left': heroTouchDiskMenuFan === 'left',
                 'hero-touch-disk-menu--right': heroTouchDiskMenuFan === 'right',
+                'hero-touch-disk-menu--visible': heroTouchDiskExpand > 0.35,
             }"
             :style="heroTouchDiskMenuStyle"
             aria-label="Portfolio sections"
@@ -533,18 +535,14 @@ const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
 const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
-/** Tap sink duration (in → out size only). */
-const HERO_TOUCH_DISK_POP_MS = 220
-/** Smallest scale at the bottom of the tap sink. */
-const HERO_TOUCH_DISK_SINK_MIN = 0.78
-/** Gap from blue center edge to the near edge of a menu label (menu open). */
-const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 4
+/** Tap open/close expand duration (continuous — no settle pause). */
+const HERO_TOUCH_DISK_EXPAND_MS = 380
 /** Frost diameter while menu is open — large enough that labels sit inside. */
 const HERO_TOUCH_DISK_MENU_FROST_SIZE = 280
-/** Blue center diameter while menu is open. */
-const HERO_TOUCH_DISK_MENU_DOT_SIZE = 40
-/** Soft frost/glow amount while menu is open (0–1 hover-expand mix). */
-const HERO_TOUCH_DISK_MENU_EXPAND_MIX = 0.85
+/** Blue center diameter while menu is open (idle dot is 8). */
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
+/** Gap from blue center edge to the near edge of a menu label (menu open). */
+const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 4
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -922,6 +920,8 @@ export default {
             heroTouchDiskPopTimer: null,
             heroTouchDiskPopRaf: null,
             heroTouchDiskSinkScale: 1,
+            /** 0 = idle size, 1 = full menu frost — drives continuous expand. */
+            heroTouchDiskExpand: 0,
             heroTouchDiskPointerStart: { x: 0, y: 0 },
             heroTouchDiskOutsideCloseBound: false,
         }
@@ -977,17 +977,22 @@ export default {
                 return { pointerEvents: 'none', visibility: 'hidden' }
             }
             const { x, y } = this.heroCursorGlassPos
+            const expand = this.heroTouchDiskExpand
+            const dot =
+                HERO_CURSOR_DOT_SIZE +
+                (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) * expand
             // Menu open: only the blue center is the close/toggle target.
-            const size = this.heroTouchDiskMenuOpen
-                ? HERO_TOUCH_DISK_MENU_DOT_SIZE + 12
-                : HERO_TOUCH_DISK_HIT_SIZE
+            const size =
+                expand > 0.02
+                    ? Math.max(HERO_TOUCH_DISK_HIT_SIZE, dot + 12)
+                    : HERO_TOUCH_DISK_HIT_SIZE
             const half = size / 2
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
-                zIndex: this.heroTouchDiskMenuOpen ? 10006 : 10003,
+                zIndex: expand > 0.02 ? 10006 : 10003,
             }
         },
         heroTouchDiskDissipateFade() {
@@ -1010,7 +1015,8 @@ export default {
                 this.heroTouchDiskIdle &&
                 !this.heroTouchDiskDragging &&
                 !this.heroTouchDiskHasMoved &&
-                !this.heroTouchDiskMenuOpen
+                !this.heroTouchDiskMenuOpen &&
+                this.heroTouchDiskExpand < 0.02
             )
         },
         heroTouchDiskMenuFan() {
@@ -1018,8 +1024,11 @@ export default {
         },
         heroTouchDiskMenuItems() {
             // Labels hug the blue center; frost ring is large enough to contain them.
-            const orbit =
-                HERO_TOUCH_DISK_MENU_DOT_SIZE / 2 + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+            const expand = this.heroTouchDiskExpand
+            const dot =
+                HERO_CURSOR_DOT_SIZE +
+                (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) * expand
+            const orbit = dot / 2 + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const place = (anglesDeg) =>
                 anglesDeg.map((deg) => {
                     const rad = (deg * Math.PI) / 180
@@ -1094,7 +1103,8 @@ export default {
 
             const rangeMix = this.heroCursorRangeMix
             const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
-            const menuOpen = this.heroTouchDiskMode && this.heroTouchDiskMenuOpen
+            const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
+            const menuOpen = expandT > 0.02
             const hoverMix =
                 menuOpen || sectionNav || this.heroCursorInRange
                     ? 0
@@ -1117,7 +1127,9 @@ export default {
             }
 
             if (menuOpen) {
-                size = HERO_TOUCH_DISK_MENU_DOT_SIZE
+                size =
+                    HERO_CURSOR_DOT_SIZE +
+                    (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) * expandT
             } else if (sectionNav) {
                 /* position already locked to glass */
             } else if (this.heroCursorIntroGlassHandoff) {
@@ -1153,8 +1165,6 @@ export default {
                 ? this.heroTouchDiskEntranceFade
                 : 1
             const outOpacity = opacity * dissipateFade * entranceFade
-            // Tap sink is pure radial scale in the same transform as translate — no CSS
-            // `scale` animation that can fight positioning and read as a sideways jiggle.
             const sink =
                 this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
             const style = {
@@ -1166,16 +1176,12 @@ export default {
                 boxSizing: 'border-box',
                 opacity: outOpacity,
                 zIndex: menuOpen ? 10005 : undefined,
-                // Keep visibility while touch-disk dissipate fades (opacity carries the hide).
                 visibility:
                     this.heroTouchDiskMode
                         ? 'visible'
                         : outOpacity < 0.02 && scale < 0.02
                           ? 'hidden'
                           : 'visible',
-                transition: menuOpen || this.heroTouchDiskMode
-                    ? 'width 0.32s cubic-bezier(0.22, 1, 0.36, 1), height 0.32s cubic-bezier(0.22, 1, 0.36, 1), margin 0.32s cubic-bezier(0.22, 1, 0.36, 1)'
-                    : undefined,
             }
 
             if (useGlassRingBorder) {
@@ -1199,21 +1205,31 @@ export default {
             }
 
             const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
-            const menuOpen = this.heroTouchDiskMode && this.heroTouchDiskMenuOpen
+            const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
+            const menuOpen = expandT > 0.02
             const hoverMix =
                 menuOpen || sectionNav || this.heroCursorInRange
                     ? 0
                     : this.heroCursorHoverMix
             const { expand } = heroCursorHoverMorph(hoverMix)
-            const frostExpand = menuOpen
-                ? HERO_TOUCH_DISK_MENU_EXPAND_MIX
-                : expand
+            // Keep expand-mix at 0 while menuing so ::before frost opacity stays full
+            // (hover-expand was fading the glass out).
+            const frostExpand = menuOpen ? 0 : expand
             const { x, y } = this.heroCursorGlassPos
-            const size = menuOpen
-                ? HERO_TOUCH_DISK_MENU_FROST_SIZE
-                : sectionNav
-                  ? HERO_CURSOR_GLASS_IDLE_SIZE
-                  : heroCursorDotDiskSize(hoverMix)
+            // Continuous size: idle → open with a slight early dip, no settle pause.
+            let size
+            if (menuOpen) {
+                const idle = HERO_CURSOR_GLASS_IDLE_SIZE
+                const open = HERO_TOUCH_DISK_MENU_FROST_SIZE
+                const t = expandT
+                const dip = Math.sin(Math.min(1, t / 0.2) * Math.PI) * 5
+                const eased = 1 - (1 - t) ** 3
+                size = idle + (open - idle) * eased - dip
+            } else if (sectionNav) {
+                size = HERO_CURSOR_GLASS_IDLE_SIZE
+            } else {
+                size = heroCursorDotDiskSize(hoverMix)
+            }
             const half = size / 2
             const baseOpacity =
                 menuOpen || sectionNav ? 1 : heroCursorHoverDiskOpacity(hoverMix)
@@ -1228,7 +1244,7 @@ export default {
 
             return {
                 transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale * sink})`,
-                '--hero-cursor-hover-mix': menuOpen ? HERO_TOUCH_DISK_MENU_EXPAND_MIX : hoverMix,
+                '--hero-cursor-hover-mix': hoverMix,
                 '--hero-cursor-hover-expand': frostExpand,
                 width: `${size}px`,
                 height: `${size}px`,
@@ -2591,6 +2607,7 @@ export default {
             this.heroTouchDiskBreathe = false
             this.heroTouchDiskPopping = false
             this.heroTouchDiskSinkScale = 1
+            this.heroTouchDiskExpand = 0
             this.heroTouchDiskZone = 'hero'
             this.heroTouchDiskParkZone = 'hero'
         },
@@ -2613,28 +2630,40 @@ export default {
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
             this.refreshHeroTouchDiskStage()
         },
-        closeHeroTouchDiskMenu() {
-            if (!this.heroTouchDiskMenuOpen) {
-                this.unbindHeroTouchDiskOutsideClose()
+        closeHeroTouchDiskMenu(options = {}) {
+            this.unbindHeroTouchDiskOutsideClose()
+            if (this.heroTouchDiskExpand <= 0.02 && !this.heroTouchDiskMenuOpen) return
+            if (options.instant || prefersReducedMotion()) {
+                if (this.heroTouchDiskPopRaf != null) {
+                    cancelAnimationFrame(this.heroTouchDiskPopRaf)
+                    this.heroTouchDiskPopRaf = null
+                }
+                this.heroTouchDiskExpand = 0
+                this.heroTouchDiskMenuOpen = false
+                this.heroTouchDiskPopping = false
+                this.heroTouchDiskSinkScale = 1
                 return
             }
-            this.heroTouchDiskMenuOpen = false
-            this.unbindHeroTouchDiskOutsideClose()
+            this.animateHeroTouchDiskExpand(0)
         },
         openHeroTouchDiskMenu() {
             this.heroTouchDiskMenuOpen = true
             this.bindHeroTouchDiskOutsideClose()
+            this.animateHeroTouchDiskExpand(1)
         },
         toggleHeroTouchDiskMenu() {
-            if (this.heroTouchDiskMenuOpen) this.closeHeroTouchDiskMenu()
-            else this.openHeroTouchDiskMenu()
+            if (this.heroTouchDiskExpand > 0.5 || this.heroTouchDiskMenuOpen) {
+                this.closeHeroTouchDiskMenu()
+            } else {
+                this.openHeroTouchDiskMenu()
+            }
         },
         bindHeroTouchDiskOutsideClose() {
             if (this.heroTouchDiskOutsideCloseBound) return
             this.heroTouchDiskOutsideCloseBound = true
             // Next tick so the opening tap does not immediately dismiss.
             this.$nextTick(() => {
-                if (!this.heroTouchDiskMenuOpen) return
+                if (this.heroTouchDiskExpand < 0.2 && !this.heroTouchDiskMenuOpen) return
                 document.addEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
             })
         },
@@ -2644,7 +2673,7 @@ export default {
             document.removeEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
         },
         onHeroTouchDiskOutsidePointerDown(event) {
-            if (!this.heroTouchDiskMenuOpen) return
+            if (this.heroTouchDiskExpand < 0.2) return
             const t = event.target
             if (!(t instanceof Element)) {
                 this.closeHeroTouchDiskMenu()
@@ -2658,49 +2687,52 @@ export default {
             }
             this.closeHeroTouchDiskMenu()
         },
-        playHeroTouchDiskPop() {
-            if (prefersReducedMotion()) {
-                this.heroTouchDiskSinkScale = 1
-                return
-            }
-            clearTimeout(this.heroTouchDiskPopTimer)
-            this.heroTouchDiskPopTimer = null
+        animateHeroTouchDiskExpand(target) {
+            const to = target <= 0 ? 0 : 1
             if (this.heroTouchDiskPopRaf != null) {
                 cancelAnimationFrame(this.heroTouchDiskPopRaf)
                 this.heroTouchDiskPopRaf = null
             }
+            clearTimeout(this.heroTouchDiskPopTimer)
+            this.heroTouchDiskPopTimer = null
 
-            // Lock position: stop breathe, pin glass to cursor so both layers sink in place.
+            if (prefersReducedMotion()) {
+                this.heroTouchDiskExpand = to
+                this.heroTouchDiskSinkScale = 1
+                this.heroTouchDiskPopping = false
+                this.heroTouchDiskMenuOpen = to > 0.5
+                if (to < 0.5) this.unbindHeroTouchDiskOutsideClose()
+                return
+            }
+
             this.markHeroTouchDiskInteracted()
             this.heroCursorGlassPos = { ...this.heroCursorPos }
             this.heroTouchDiskPopping = true
             this.heroTouchDiskSinkScale = 1
 
-            const duration = HERO_TOUCH_DISK_POP_MS
-            const min = HERO_TOUCH_DISK_SINK_MIN
+            const from = this.heroTouchDiskExpand
+            const duration = HERO_TOUCH_DISK_EXPAND_MS
             const start = performance.now()
 
             const tick = (now) => {
                 const t = Math.min(1, (now - start) / duration)
-                // Ease in to the trough, ease out back — radial only.
-                if (t < 0.45) {
-                    const u = t / 0.45
-                    const e = u * u
-                    this.heroTouchDiskSinkScale = 1 - (1 - min) * e
-                } else {
-                    const u = (t - 0.45) / 0.55
-                    const e = 1 - (1 - u) * (1 - u)
-                    this.heroTouchDiskSinkScale = min + (1 - min) * e
-                }
+                // Smooth ease — continuous, no settle pause before growth.
+                const e = 1 - (1 - t) ** 3
+                this.heroTouchDiskExpand = from + (to - from) * e
                 if (t < 1) {
                     this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
                     return
                 }
                 this.heroTouchDiskPopRaf = null
-                this.heroTouchDiskSinkScale = 1
+                this.heroTouchDiskExpand = to
                 this.heroTouchDiskPopping = false
+                this.heroTouchDiskMenuOpen = to > 0.5
+                if (to < 0.5) this.unbindHeroTouchDiskOutsideClose()
             }
             this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
+        },
+        playHeroTouchDiskPop() {
+            // Kept as a no-op alias — expand animation carries the tap feedback.
         },
         onHeroTouchDiskMenuItemClick(item, event) {
             if (item.external) {
@@ -2810,7 +2842,7 @@ export default {
                 if (dx * dx + dy * dy < slop * slop) return
                 this.heroTouchDiskHasMoved = true
                 this.markHeroTouchDiskInteracted()
-                this.closeHeroTouchDiskMenu()
+                this.closeHeroTouchDiskMenu({ instant: true })
             }
 
             event.preventDefault()
@@ -2835,7 +2867,6 @@ export default {
             this.endHeroTouchDiskDrag()
 
             if (wasTap) {
-                this.playHeroTouchDiskPop()
                 this.toggleHeroTouchDiskMenu()
             }
         },
@@ -5370,6 +5401,14 @@ export default {
 }
 
 .hero-touch-disk-menu .hero-touch-disk-menu__item {
+    opacity: 0;
+    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
+        rotate(var(--menu-rot, 0deg))
+        translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
+        scale(0.9);
+}
+
+.hero-touch-disk-menu--visible .hero-touch-disk-menu__item {
     opacity: 1;
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
         rotate(var(--menu-rot, 0deg))
@@ -5390,10 +5429,8 @@ export default {
     margin: -23px 0 0 -23px;
     background: transparent;
     transform-origin: center center;
-    transition:
-        width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        margin 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    /* Size is driven every frame by expand — avoid a second CSS transition lag. */
+    transition: none;
     border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
         color-mix(
             in srgb,
@@ -5433,6 +5470,14 @@ export default {
     backdrop-filter: blur(2.5px) saturate(1.35);
     opacity: calc(1 - var(--hero-cursor-hover-expand, 0));
     pointer-events: none;
+}
+
+/* Menu expand: keep full frost glass (don't fade ::before via hover-expand). */
+.hero-intro-cursor-dot-disk--menu-frost::before {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.34);
+    -webkit-backdrop-filter: blur(5px) saturate(1.45);
+    backdrop-filter: blur(5px) saturate(1.45);
 }
 
 .hero-intro-cursor-glass-ball {
