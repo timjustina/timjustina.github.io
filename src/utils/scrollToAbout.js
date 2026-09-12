@@ -1,9 +1,10 @@
 import { MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from './breakpoints.js'
-import { getProjectSnapScrollTop, suppressProjectScrollSnap } from './projectScrollSnap.js'
 
 const ABOUT_EXTRA_OFFSET = 85
 /** Mobile (<800): 20px gap above the about background. */
 const ABOUT_MOBILE_TOP_GAP = 20
+const WORK_TOP_GAP = 20
+const WORK_BOTTOM_GAP = 30
 
 function getHeaderOffset() {
     const topBar = document.querySelector('.top-bar')
@@ -37,10 +38,36 @@ export function getAboutScrollTop() {
     return Math.max(0, top + ABOUT_EXTRA_OFFSET)
 }
 
+/** Scroll Y that places a project per mobile/desktop nav rules. */
+export function getProjectScrollTop(project) {
+    if (!project) return null
+
+    const scrollY = window.scrollY
+    const rect = project.getBoundingClientRect()
+    if (rect.height < 1) return null
+
+    const setTop = rect.top + scrollY
+    const setHeight = rect.height
+    const viewportH = window.innerHeight
+
+    if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+        return Math.max(0, setTop - WORK_TOP_GAP)
+    }
+
+    // Desktop: center thumbnail + caption in the viewport.
+    const bottomAligned = setTop + setHeight - viewportH + WORK_BOTTOM_GAP
+    if (setHeight + WORK_BOTTOM_GAP <= viewportH) {
+        const centered = setTop - (viewportH - setHeight) / 2
+        return Math.max(0, Math.max(centered, bottomAligned))
+    }
+
+    return Math.max(0, bottomAligned)
+}
+
 export function getWorkScrollTop() {
     const el = document.getElementById('work-first') || document.querySelector('.work .project')
     if (!el) return null
-    return getProjectSnapScrollTop(el)
+    return getProjectScrollTop(el)
 }
 
 const DEFAULT_SCROLL_DURATION = 450
@@ -98,8 +125,6 @@ export function scrollToAbout(options = {}) {
     const top = getAboutScrollTop()
     if (top === null) return false
 
-    const duration = options.duration ?? DEFAULT_SCROLL_DURATION
-    suppressProjectScrollSnap(Math.max(900, duration + 200))
     smoothScrollTo(top, options)
     return true
 }
@@ -108,8 +133,6 @@ export function scrollToWork(options = {}) {
     const top = getWorkScrollTop()
     if (top === null) return false
 
-    const duration = options.duration ?? DEFAULT_SCROLL_DURATION
-    suppressProjectScrollSnap(Math.max(900, duration + 200))
     smoothScrollTo(top, options)
     return true
 }

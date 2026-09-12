@@ -452,10 +452,6 @@ import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import { scrollToPortfolioHash, scrollToWork } from '../utils/scrollToAbout.js'
-import {
-    setupProjectScrollSnap,
-    suppressProjectScrollSnap,
-} from '../utils/projectScrollSnap.js'
 import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
@@ -1379,13 +1375,6 @@ export default {
         this.setupProjectScrollFade(sectionHash)
         this.setupHeroLocationVisibility()
         this.scheduleFirstProjectPrefetch()
-        this.teardownProjectScrollSnap = setupProjectScrollSnap({
-            root: this.$el,
-            isDisabled: () =>
-                this.featuredExpandPending ||
-                prefersReducedMotion() ||
-                document.documentElement.classList.contains('image-expand-active'),
-        })
 
         if (sectionHash) {
             this.$nextTick(() => {
@@ -1419,8 +1408,6 @@ export default {
         this.aboutRevealObserver?.disconnect()
         this.projectFadeObserver?.disconnect()
         this.heroLocationObserver?.disconnect()
-        this.teardownProjectScrollSnap?.()
-        this.teardownProjectScrollSnap = null
         window.removeEventListener('resize', this.onHeroDecorResize)
         window.removeEventListener('scroll', this.onHeroLocationScroll)
         this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
@@ -1489,7 +1476,6 @@ export default {
             if (!img) return
 
             event.preventDefault()
-            suppressProjectScrollSnap()
             clearTimeout(this.featuredPressClearTimer)
             clearTimeout(this.featuredExpandTimer)
             this.featuredPressClearTimer = null
@@ -1528,7 +1514,6 @@ export default {
             })
         },
         jumpToSectionHash(hash) {
-            suppressProjectScrollSnap()
             scrollToPortfolioHash(hash, { duration: 0 })
             // Keep top bar hidden after the instant jump (no scroll delta to trigger it).
             window.dispatchEvent(new Event('portfolio-section-jump'))
