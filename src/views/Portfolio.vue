@@ -398,8 +398,8 @@
                         real world. Started as a curious child, ended up a very curious adult. Trained to
                         solve problems with no precedent.
                         <br><br>
-                        Think bad design sticks out like a sore thumb;
-                        effective design is an invisible champion.
+                        Think good designs elevate people; bad designs are costly;
+                        effective designs are invisible champions.
                         <br><br>
                         At work, value a good team. Figure out
                         context and metrics before jumping in. Have high tolerance for ambiguity. Very comfortable with data.
@@ -6157,7 +6157,7 @@ export default {
     font-family: 'Work Sans', sans-serif;
     font-size: 18px;
     font-style: normal;
-    font-weight: 400;
+    font-weight: 300;
     line-height: 27px;
     color: inherit;
     flex: none;
@@ -6739,7 +6739,8 @@ export default {
 
     .about {
         margin-top: calc(2 * var(--mobile-block-gap));
-        --about-bottom-pad: 326px;
+        /* Match last-case-study → about gap */
+        --about-bottom-pad: calc(2 * var(--mobile-block-gap));
         --about-photo-h: 288px;
         --about-stack-gap: 50px;
         --about-heading-location-gap: 32px;
