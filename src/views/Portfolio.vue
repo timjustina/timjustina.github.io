@@ -152,6 +152,15 @@
         <PortfolioTopBar transparent always-transparent nav-hero-align />
 
         <p
+            class="hero-role"
+            :class="{ 'hero-role--visible': heroLocationVisible && pageRevealed }"
+            aria-label="Designing at Kin"
+        >
+            <span class="hero-role-icon-wrap" aria-hidden="true" v-html="officeIconSvg" />
+            <span class="hero-role-text">Designing @ Kin</span>
+        </p>
+
+        <p
             class="hero-location"
             :class="{ 'hero-location--visible': heroLocationVisible && pageRevealed }"
             aria-label="London / Barcelona"
@@ -355,19 +364,34 @@
                 <div id="about-bio" class="about-text-column">
                     <div class="about-intro">
                         <h2 class="about-heading portfolio-fly portfolio-fly--from-left">About Tim ( 湉 )</h2>
-                        <p class="about-location portfolio-fly portfolio-fly--from-right">
-                            <span class="about-location-icon-wrap" aria-hidden="true" v-html="locationIconSvg" />
-                            <span class="about-location-text-wrap">
-                                <span class="about-location-text">London / Barcelona</span>
-                                <span class="about-location-text-white-stack" aria-hidden="true">
-                                    <span class="about-location-text-white-inner">
-                                        <span class="about-location-text about-location-text--glow">London / Barcelona</span>
-                                        <span class="about-location-text about-location-text--soft">London / Barcelona</span>
-                                        <span class="about-location-text about-location-text--white">London / Barcelona</span>
+                        <div class="about-meta portfolio-fly portfolio-fly--from-right">
+                            <p class="about-location" aria-label="London / Barcelona">
+                                <span class="about-location-icon-wrap" aria-hidden="true" v-html="locationIconSvg" />
+                                <span class="about-location-text-wrap">
+                                    <span class="about-location-text">London / Barcelona</span>
+                                    <span class="about-location-text-white-stack" aria-hidden="true">
+                                        <span class="about-location-text-white-inner">
+                                            <span class="about-location-text about-location-text--glow">London / Barcelona</span>
+                                            <span class="about-location-text about-location-text--soft">London / Barcelona</span>
+                                            <span class="about-location-text about-location-text--white">London / Barcelona</span>
+                                        </span>
                                     </span>
                                 </span>
-                            </span>
-                        </p>
+                            </p>
+                            <p class="about-role" aria-label="Designing at Kin">
+                                <span class="about-role-icon-wrap" aria-hidden="true" v-html="officeIconSvg" />
+                                <span class="about-role-text-wrap">
+                                    <span class="about-role-text">Designing @ Kin</span>
+                                    <span class="about-role-text-white-stack" aria-hidden="true">
+                                        <span class="about-role-text-white-inner">
+                                            <span class="about-role-text about-role-text--glow">Designing @ Kin</span>
+                                            <span class="about-role-text about-role-text--soft">Designing @ Kin</span>
+                                            <span class="about-role-text about-role-text--white">Designing @ Kin</span>
+                                        </span>
+                                    </span>
+                                </span>
+                            </p>
+                        </div>
                     </div>
                     <p class="about-bio portfolio-fly portfolio-fly--from-left">
                         Started in the east, ended up in the west. Started in academia, ended up in the
@@ -423,6 +447,7 @@ import loadingNormal from '../assets/loading/loading_normal.svg'
 import loadingFolded from '../assets/loading/loading_folded.svg'
 import menuLogo from '../assets/TjyCutoutLogo.svg'
 import locationIconSvg from '../assets/location.svg?raw'
+import officeIconSvg from '../assets/1_dashboard/office.svg?raw'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
@@ -753,6 +778,7 @@ export default {
             loadingFrames: [loadingNormal, loadingFolded],
             menuLogo,
             locationIconSvg,
+            officeIconSvg,
             cvUrl,
             showLoadingSplash: true,
             logoHandoff: false,
@@ -4275,36 +4301,45 @@ export default {
             }
         },
         syncAboutLocationTextClip() {
-            const wrap = this.$el?.querySelector('.about-location-text-wrap')
-            const text = wrap?.querySelector(
+            const meta = this.$el?.querySelector('.about-meta')
+            const locationWrap = this.$el?.querySelector('.about-location-text-wrap')
+            const locationText = locationWrap?.querySelector(
                 '.about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white)'
             )
-            const location = this.$el?.querySelector('.about-location')
+            const roleWrap = this.$el?.querySelector('.about-role-text-wrap')
+            const roleText = roleWrap?.querySelector(
+                '.about-role-text:not(.about-role-text--glow):not(.about-role-text--soft):not(.about-role-text--white)'
+            )
             const photo = this.$el?.querySelector('.about-photo-column')
-            if (!wrap || !text || !location || !photo) return
+            if (!meta || !locationWrap || !locationText || !photo) return
+
+            const clearSplit = (wrap) => {
+                wrap?.style.removeProperty('--about-location-split')
+                wrap?.style.removeProperty('--about-location-split-px')
+            }
 
             if (!window.matchMedia('(max-width: 600px)').matches) {
-                wrap.style.removeProperty('--about-location-split')
-                wrap.style.removeProperty('--about-location-split-px')
-                location.style.removeProperty('--about-location-overlap-nudge')
+                clearSplit(locationWrap)
+                clearSplit(roleWrap)
+                meta.style.removeProperty('--about-location-overlap-nudge')
                 return
             }
 
-            const textRect = text.getBoundingClientRect()
+            const locationRect = locationText.getBoundingClientRect()
             const photoRect = photo.getBoundingClientRect()
-            if (textRect.width <= 0) return
+            if (locationRect.width <= 0) return
 
             const currentNudge =
-                parseFloat(getComputedStyle(location).getPropertyValue('--about-location-overlap-nudge')) || 0
+                parseFloat(getComputedStyle(meta).getPropertyValue('--about-location-overlap-nudge')) || 0
             // Strip fly-in translates so nudge targets the resting layout, not mid-animation poses
-            const locTx = this.readElementTranslateX(location)
+            const metaTx = this.readElementTranslateX(meta)
             const photoTx = this.readElementTranslateX(photo)
 
             let nudge = 0
-            // Shift location right when needed so overlap reaches at least mid-"o" in Barcelona
-            const label = text.textContent || ''
+            // Shift meta right when needed so overlap reaches at least mid-"o" in Barcelona
+            const label = locationText.textContent || ''
             const oIndex = label.indexOf('Barcelona') + 6
-            const textNode = text.firstChild
+            const textNode = locationText.firstChild
             if (textNode && textNode.nodeType === Node.TEXT_NODE && oIndex >= 6 && oIndex < label.length) {
                 const range = document.createRange()
                 range.setStart(textNode, oIndex)
@@ -4312,7 +4347,7 @@ export default {
                 const oRect = range.getBoundingClientRect()
                 range.detach?.()
                 if (oRect.width > 0) {
-                    const midOResting = oRect.left + oRect.width / 2 - locTx - currentNudge
+                    const midOResting = oRect.left + oRect.width / 2 - metaTx - currentNudge
                     const photoLeftResting = photoRect.left - photoTx
                     if (photoLeftResting > midOResting) {
                         nudge = photoLeftResting - midOResting
@@ -4321,16 +4356,27 @@ export default {
             }
 
             if (nudge > 0) {
-                location.style.setProperty('--about-location-overlap-nudge', `${nudge}px`)
+                meta.style.setProperty('--about-location-overlap-nudge', `${nudge}px`)
             } else {
-                location.style.removeProperty('--about-location-overlap-nudge')
+                meta.style.removeProperty('--about-location-overlap-nudge')
             }
 
-            // Color split follows the live (possibly mid-flight) overlap
-            const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
-            const splitPct = (splitPx / textRect.width) * 100
-            wrap.style.setProperty('--about-location-split', `${splitPct}%`)
-            wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
+            const applySplit = (wrap, textEl) => {
+                if (!wrap || !textEl) return
+                const textRect = textEl.getBoundingClientRect()
+                if (textRect.width <= 0) {
+                    clearSplit(wrap)
+                    return
+                }
+                // Color split follows the live (possibly mid-flight) overlap
+                const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
+                const splitPct = (splitPx / textRect.width) * 100
+                wrap.style.setProperty('--about-location-split', `${splitPct}%`)
+                wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
+            }
+
+            applySplit(locationWrap, locationText)
+            applySplit(roleWrap, roleText)
         },
         pollAboutLocationTextClip() {
             this.stopAboutLocationTextClipPoll()
@@ -5152,7 +5198,7 @@ export default {
     animation: portfolio-fly-from-left 0.95s var(--fly-ease) -0.12s both;
 }
 
-.about--reveal .about-location.portfolio-fly--from-right {
+.about--reveal .about-meta.portfolio-fly--from-right {
     animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.12s both;
 }
 
@@ -5318,6 +5364,7 @@ export default {
     }
 }
 
+.hero-role,
 .hero-location {
     display: none;
 }
@@ -6017,12 +6064,10 @@ export default {
     background: #e8e4e1;
 }
 
-.about-location {
-    position: relative;
-    z-index: 1;
+.about-meta {
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 4px;
     width: auto;
     margin: 0 0 var(--about-text-gap) 20px;
@@ -6032,7 +6077,24 @@ export default {
     color: var(--about-location-color);
 }
 
-.about-location-icon-wrap {
+.about-location,
+.about-role {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    flex: none;
+    color: inherit;
+}
+
+.about-location-icon-wrap,
+.about-role-icon-wrap {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -6050,18 +6112,28 @@ export default {
     flex: none;
 }
 
-.about-location-icon-wrap :deep(path) {
+.about-role-icon-wrap :deep(svg) {
+    display: block;
+    width: 12px;
+    height: 17px;
+    flex: none;
+}
+
+.about-location-icon-wrap :deep(path),
+.about-role-icon-wrap :deep(path) {
     fill: currentColor;
 }
 
-.about-location-text-wrap {
+.about-location-text-wrap,
+.about-role-text-wrap {
     position: relative;
     flex: none;
     display: flex;
     align-items: center;
 }
 
-.about-location-text {
+.about-location-text,
+.about-role-text {
     font-family: 'Work Sans', sans-serif;
     font-size: 18px;
     font-style: normal;
@@ -6074,7 +6146,11 @@ export default {
 .about-location-text-white-stack,
 .about-location-text--glow,
 .about-location-text--soft,
-.about-location-text--white {
+.about-location-text--white,
+.about-role-text-white-stack,
+.about-role-text--glow,
+.about-role-text--soft,
+.about-role-text--white {
     display: none;
 }
 
@@ -6225,17 +6301,17 @@ export default {
         max-width: 492px;
     }
 
-    .about-location {
+    .about-meta {
         margin: 0 0 var(--about-text-gap) 20px;
     }
 }
 
 /* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
 @media (min-width: 800px) {
+    .hero-role,
     .hero-location {
         position: fixed;
         right: var(--top-bar-edge-pad-right);
-        bottom: var(--top-bar-edge-pad-right);
         z-index: 99;
         display: flex;
         flex-direction: row;
@@ -6252,11 +6328,21 @@ export default {
             visibility 0.3s ease;
     }
 
+    .hero-role {
+        top: calc(var(--top-bar-edge-pad-right) + 19px);
+    }
+
+    .hero-location {
+        bottom: var(--top-bar-edge-pad-right);
+    }
+
+    .hero-role--visible,
     .hero-location--visible {
         opacity: 0.6;
         visibility: visible;
     }
 
+    .hero-role-icon-wrap,
     .hero-location-icon-wrap {
         display: flex;
         flex-direction: row;
@@ -6268,6 +6354,13 @@ export default {
         color: inherit;
     }
 
+    .hero-role-icon-wrap :deep(svg) {
+        display: block;
+        width: 13px;
+        height: 19px;
+        flex: none;
+    }
+
     .hero-location-icon-wrap :deep(svg) {
         display: block;
         width: 30px;
@@ -6275,10 +6368,12 @@ export default {
         flex: none;
     }
 
+    .hero-role-icon-wrap :deep(path),
     .hero-location-icon-wrap :deep(path) {
         fill: currentColor;
     }
 
+    .hero-role-text,
     .hero-location-text {
         font-family: 'Work Sans', sans-serif;
         font-size: 20px;
@@ -6320,7 +6415,7 @@ export default {
         /* Horizontal size comes from left/right insets on the base rule */
     }
 
-    .about-location {
+    .about-meta {
         display: none;
     }
 
@@ -6669,7 +6764,7 @@ export default {
         padding-top: 0;
     }
 
-    /* Heading + location overlay the photo; bio stays below it */
+    /* Heading + location/role overlay the photo; bio stays below it */
     .about-intro {
         display: block;
         position: absolute;
@@ -6684,7 +6779,7 @@ export default {
         max-width: 100%;
     }
 
-    .about-location {
+    .about-meta {
         box-sizing: border-box;
         width: auto;
         max-width: 100%;
@@ -6692,13 +6787,16 @@ export default {
         padding: 0;
         top: 10px;
         left: calc(5px + var(--about-location-overlap-nudge, 0px));
+        position: relative;
     }
 
-    .about-location-text-wrap {
+    .about-location-text-wrap,
+    .about-role-text-wrap {
         --about-location-white-scale: 1.07;
     }
 
-    .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white) {
+    .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white),
+    .about-role-text:not(.about-role-text--glow):not(.about-role-text--soft):not(.about-role-text--white) {
         position: relative;
         z-index: 1;
         background-image: linear-gradient(
@@ -6714,7 +6812,8 @@ export default {
         color: transparent;
     }
 
-    .about-location-text-white-stack {
+    .about-location-text-white-stack,
+    .about-role-text-white-stack {
         --about-location-glow-pad: 12px;
         display: block;
         position: absolute;
@@ -6730,7 +6829,8 @@ export default {
         user-select: none;
     }
 
-    .about-location-text-white-inner {
+    .about-location-text-white-inner,
+    .about-role-text-white-inner {
         display: block;
         position: relative;
         margin-left: calc(-1 * var(--about-location-split-px, 0px));
@@ -6738,7 +6838,10 @@ export default {
 
     .about-location-text--glow,
     .about-location-text--soft,
-    .about-location-text--white {
+    .about-location-text--white,
+    .about-role-text--glow,
+    .about-role-text--soft,
+    .about-role-text--white {
         display: block;
         position: absolute;
         left: 0;
@@ -6746,7 +6849,8 @@ export default {
         white-space: nowrap;
     }
 
-    .about-location-text--glow {
+    .about-location-text--glow,
+    .about-role-text--glow {
         z-index: 0;
         color: transparent;
         -webkit-text-fill-color: transparent;
@@ -6759,7 +6863,8 @@ export default {
             0 0 11px rgba(205, 198, 190, 0.14);
     }
 
-    .about-location-text--soft {
+    .about-location-text--soft,
+    .about-role-text--soft {
         z-index: 1;
         color: #fffef2;
         -webkit-text-fill-color: #fffef2;
@@ -6770,14 +6875,16 @@ export default {
             0 0 0.7px rgba(255, 254, 242, 0.15);
     }
 
-    .about-location-text--white {
+    .about-location-text--white,
+    .about-role-text--white {
         z-index: 2;
         position: relative;
         color: #fff;
         -webkit-text-fill-color: #fff;
     }
 
-    .about-location-icon-wrap :deep(path) {
+    .about-location-icon-wrap :deep(path),
+    .about-role-icon-wrap :deep(path) {
         fill: currentColor;
     }
 

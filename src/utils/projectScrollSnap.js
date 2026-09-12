@@ -38,6 +38,8 @@ let onWheel = null
 let onTouchStart = null
 let onTouchEnd = null
 let onTouchCancel = null
+let mobileMql = null
+let onMobileMqlChange = null
 
 export function suppressProjectScrollSnap(ms = 900) {
     suppressUntil = performance.now() + ms
@@ -50,6 +52,11 @@ export function suppressProjectScrollSnap(ms = 900) {
 
 function isMobile() {
     return window.matchMedia(MOBILE_MEDIA_QUERY).matches
+}
+
+/** Snap paging is mobile-only; desktop uses native scroll. */
+function isSnapEnabled() {
+    return isMobile() && !isDisabled()
 }
 
 /** Scroll Y that places a project per mobile/desktop rules. */
@@ -97,12 +104,11 @@ function getSnapTargets() {
     return targets
 }
 
-function isInSnapZone(scrollY, targets) {
-    if (targets.length < 2) return false
-    const last = targets[targets.length - 1]
-    const vh = window.innerHeight
-    // Through About landing; release once past it into the footer.
-    return scrollY <= last + vh * 0.35
+function isInSnapZone(_scrollY, targets) {
+    // Keep snap armed for the whole page so scrolling back up from the footer
+    // still catches the About stop. Past About, pickNeighborTarget returns null
+    // and wheel/touch stay fully native.
+    return targets.length >= 2
 }
 
 /** Next/previous stop in the gesture direction. null = release to native scroll. */
@@ -115,14 +121,21 @@ function pickNeighborTarget(scrollY, targets, dir) {
         if (targets[j] <= scrollY + SNAP_AT_PX) i = j
     }
 
+    const last = targets[targets.length - 1]
+
     if (dir > 0) {
-        // On About (last stop) — free-scroll the rest of the section / footer.
+        // On / past About (last stop) — free-scroll the rest of the section / footer.
         if (i >= targets.length - 1) return null
         return targets[i + 1]
     }
 
     // dir < 0
     if (scrollY <= targets[0] + SNAP_AT_PX) return null
+
+    // Inside About body / footer: native glide until back at the About landing.
+    // Only snap to the previous project once parked on the About stop again.
+    if (scrollY > last + SNAP_AT_PX) return null
+
     // Between i and i+1 → return to i; exactly on i → go to i-1
     if (scrollY > targets[i] + SNAP_AT_PX) return targets[i]
     return targets[Math.max(i - 1, 0)]
@@ -158,7 +171,7 @@ function animateTo(targetTop) {
 
 function trySnapInDirection(dir, event) {
     if (!dir) return false
-    if (isDisabled()) return false
+    if (!isSnapEnabled()) return false
     if (performance.now() < suppressUntil && animating) {
         event?.preventDefault?.()
         return true
@@ -193,6 +206,7 @@ function resetWheelGestureSoon() {
 function onWheelHandler(event) {
     if (event.ctrlKey) return // allow pinch-zoom
     if (Math.abs(event.deltaY) < Math.abs(event.deltaX)) return
+    if (!isSnapEnabled()) return
 
     // While a section animation is running, swallow wheel so native scroll can't fight it.
     if (animating) {
@@ -200,7 +214,6 @@ function onWheelHandler(event) {
         return
     }
 
-    if (isDisabled()) return
     if (performance.now() < suppressUntil) return
 
     const scrollY = window.scrollY
@@ -216,6 +229,14 @@ function onWheelHandler(event) {
     else if (event.deltaMode === 2) dy *= window.innerHeight
 
     if (Math.abs(dy) < WHEEL_INTENT_PX) return
+
+    const intentDir = dy > 0 ? 1 : -1
+    // No next/prev section stop → let the browser glide (About body, footer, etc.).
+    if (pickNeighborTarget(scrollY, targets, intentDir) == null) {
+        wheelAccum = 0
+        return
+    }
+
     // Clamp so one noisy event can't satisfy the commit threshold alone.
     dy = Math.sign(dy) * Math.min(Math.abs(dy), WHEEL_MAX_STEP_PX)
 
@@ -248,6 +269,10 @@ function onWheelHandler(event) {
 }
 
 function onTouchStartHandler(event) {
+    if (!isSnapEnabled()) {
+        touchTracking = false
+        return
+    }
     if (event.touches.length !== 1) {
         touchTracking = false
         return
@@ -260,13 +285,15 @@ function onTouchStartHandler(event) {
 function onTouchEndHandler(event) {
     if (!touchTracking) return
     touchTracking = false
+    if (!isSnapEnabled()) return
 
     const touch = event.changedTouches?.[0]
     if (!touch) return
 
     const dy = touchStartY - touch.clientY
     const dx = touchStartX - touch.clientX
-    const onIntro = window.scrollY <= SNAP_AT_PX
+    const scrollY = window.scrollY
+    const onIntro = scrollY <= SNAP_AT_PX
     const goingDown = dy > 0
     const swipeNeed =
         onIntro && goingDown ? TOUCH_SWIPE_INTRO_DOWN_PX : TOUCH_SWIPE_PX
@@ -274,10 +301,14 @@ function onTouchEndHandler(event) {
     if (Math.abs(dy) < Math.abs(dx)) return
 
     const dir = goingDown ? 1 : -1
+    const targets = getSnapTargets()
+    // Free-scroll zones keep native momentum (don't cancel the fling).
+    if (!isInSnapZone(scrollY, targets) || pickNeighborTarget(scrollY, targets, dir) == null) {
+        return
+    }
 
-    // Kill residual touch momentum, then glide in one motion.
-    const y = window.scrollY
-    window.scrollTo(0, y)
+    // Kill residual touch momentum, then glide in one motion to the next section.
+    window.scrollTo(0, scrollY)
     cancelSmoothScroll()
 
     trySnapInDirection(dir, null)
@@ -325,7 +356,7 @@ function detachListeners() {
     }
 }
 
-/** Enable hero → work project snap. Returns teardown. */
+/** Enable hero → work project snap (mobile only). Returns teardown. */
 export function setupProjectScrollSnap({ root, isDisabled: disabledCheck } = {}) {
     teardownProjectScrollSnap()
 
@@ -334,10 +365,21 @@ export function setupProjectScrollSnap({ root, isDisabled: disabledCheck } = {})
 
     attachListeners()
 
+    mobileMql = window.matchMedia(MOBILE_MEDIA_QUERY)
+    onMobileMqlChange = () => {
+        if (!mobileMql.matches) suppressProjectScrollSnap(0)
+    }
+    mobileMql.addEventListener('change', onMobileMqlChange)
+
     return teardownProjectScrollSnap
 }
 
 export function teardownProjectScrollSnap() {
+    if (mobileMql && onMobileMqlChange) {
+        mobileMql.removeEventListener('change', onMobileMqlChange)
+    }
+    mobileMql = null
+    onMobileMqlChange = null
     rootEl = null
     isDisabled = () => false
     detachListeners()
