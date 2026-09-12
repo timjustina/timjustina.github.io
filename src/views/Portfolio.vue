@@ -123,7 +123,7 @@
                 :href="item.href || '#'"
                 :target="item.external ? '_blank' : undefined"
                 :rel="item.external ? 'noopener noreferrer' : undefined"
-                :style="{ '--menu-i': index, '--menu-x': item.x, '--menu-y': item.y }"
+                :style="{ '--menu-i': index, '--menu-x': item.x, '--menu-y': item.y, '--menu-ax': item.ax, '--menu-ay': item.ay }"
                 @click="onHeroTouchDiskMenuItemClick(item, $event)"
             >{{ item.label }}</a>
         </nav>
@@ -528,10 +528,10 @@ const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
 const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
-/** Tap pop keyframe duration; matches `.hero-intro-cursor-ball--touch-pop`. */
-const HERO_TOUCH_DISK_POP_MS = 260
-/** Radial menu orbit radius from disk center. */
-const HERO_TOUCH_DISK_MENU_RADIUS_PX = 78
+/** Tap sink duration; matches `.hero-intro-cursor-ball--touch-pop`. */
+const HERO_TOUCH_DISK_POP_MS = 240
+/** Gap from frosted disk edge to the near edge of a menu label. */
+const HERO_TOUCH_DISK_MENU_GAP_PX = 16
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -995,16 +995,21 @@ export default {
             )
         },
         heroTouchDiskMenuFan() {
-            return this.heroTouchDiskZone === 'hero' ? 'left' : 'right'
+            // Disk parks on the right in every zone — fan labels leftward.
+            return 'left'
         },
         heroTouchDiskMenuItems() {
-            const radius = HERO_TOUCH_DISK_MENU_RADIUS_PX
+            // Orbit to the near edge of each label (disk radius + gap).
+            const orbit = HERO_CURSOR_GLASS_IDLE_SIZE / 2 + HERO_TOUCH_DISK_MENU_GAP_PX
             const place = (anglesDeg) =>
                 anglesDeg.map((deg) => {
                     const rad = (deg * Math.PI) / 180
                     return {
-                        x: `${Math.round(Math.cos(rad) * radius)}px`,
-                        y: `${Math.round(Math.sin(rad) * radius)}px`,
+                        x: `${Math.round(Math.cos(rad) * orbit)}px`,
+                        y: `${Math.round(Math.sin(rad) * orbit)}px`,
+                        // Right edge of the label sits on the orbit (faces the disk).
+                        ax: '-100%',
+                        ay: '-50%',
                     }
                 })
 
@@ -1018,21 +1023,22 @@ export default {
             const about = { id: 'about', label: 'About', action: 'about' }
 
             if (this.heroTouchDiskZone === 'work') {
-                const [a, c] = place([-50, -10])
+                // About horizontal-left; CV down-left.
+                const [a, c] = place([180, 235])
                 return [
                     { ...about, ...a },
                     { ...cv, ...c },
                 ]
             }
             if (this.heroTouchDiskZone === 'about') {
-                const [w, c] = place([-50, -10])
+                const [w, c] = place([180, 235])
                 return [
                     { ...work, ...w },
                     { ...cv, ...c },
                 ]
             }
-            // Hero: fan left from the top-right disk.
-            const [w, a, c] = place([200, 180, 160])
+            // Hero: Work straight left (parallel), About up-left, CV down-left.
+            const [w, a, c] = place([180, 125, 235])
             return [
                 { ...work, ...w },
                 { ...about, ...a },
@@ -1080,7 +1086,9 @@ export default {
             }
 
             const rangeMix = this.heroCursorRangeMix
-            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
+            const hoverMix =
+                sectionNav || this.heroCursorInRange ? 0 : this.heroCursorHoverMix
 
             let x = this.heroCursorPos.x
             let y = this.heroCursorPos.y
@@ -1092,7 +1100,9 @@ export default {
             let hoverExpand = 0
             let useGlassRingBorder = false
 
-            if (this.heroCursorIntroGlassHandoff) {
+            if (sectionNav) {
+                ;({ x, y } = this.heroCursorGlassPos)
+            } else if (!sectionNav && this.heroCursorIntroGlassHandoff) {
                 const dotVisual = heroCursorRangeDotVisual(rangeMix)
                 scale = dotVisual.scale
                 opacity = dotVisual.opacity
@@ -1162,17 +1172,21 @@ export default {
                 }
             }
 
-            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
+            const hoverMix =
+                sectionNav || this.heroCursorInRange ? 0 : this.heroCursorHoverMix
             const { expand } = heroCursorHoverMorph(hoverMix)
             const { x, y } = this.heroCursorGlassPos
-            const size = heroCursorDotDiskSize(hoverMix)
+            const size = sectionNav
+                ? HERO_CURSOR_GLASS_IDLE_SIZE
+                : heroCursorDotDiskSize(hoverMix)
             const half = size / 2
-            const baseOpacity = heroCursorHoverDiskOpacity(hoverMix)
+            const baseOpacity = sectionNav ? 1 : heroCursorHoverDiskOpacity(hoverMix)
             const entranceFade = this.heroTouchDiskIdleMotion
                 ? this.heroTouchDiskEntranceFade
                 : 1
             const opacity = baseOpacity * this.heroTouchDiskDissipateFade * entranceFade
-            const forwardScale = 1 + heroCursorHoverDiskForward(hoverMix)
+            const forwardScale = sectionNav ? 1 : 1 + heroCursorHoverDiskForward(hoverMix)
 
             return {
                 transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale})`,
@@ -1632,6 +1646,7 @@ export default {
                 }
                 this.closeHeroTouchDiskMenu()
                 this.heroTouchDiskHasMoved = false
+                this.clearHeroTouchDiskMorph()
                 this.$nextTick(() => this.syncHeroTouchDiskRestPosition())
             }
             this.$nextTick(() => {
@@ -2322,8 +2337,8 @@ export default {
                     }
                 }
             } else {
-                // Work / About: float lower-left with the same edge gap as the logo.
-                x = gap + radius
+                // Past the first viewport: float lower-right with the same edge gap.
+                x = window.innerWidth - gap - radius
                 y = window.innerHeight - gap - radius
             }
 
@@ -2348,7 +2363,8 @@ export default {
             const y = window.scrollY || document.documentElement.scrollTop || 0
             const workTop = getWorkScrollTop()
             const aboutTop = getAboutScrollTop()
-            if (workTop == null || y < workTop - 48) return 'hero'
+            const pastFirstViewport = y > window.innerHeight * 0.55
+            if (!pastFirstViewport && (workTop == null || y < workTop - 48)) return 'hero'
             if (aboutTop != null && y >= aboutTop - 64) return 'about'
             return 'work'
         },
@@ -2360,7 +2376,20 @@ export default {
             this.heroTouchDiskZone = next
             this.closeHeroTouchDiskMenu()
             this.heroTouchDiskHasMoved = false
+            if (next !== 'hero') this.clearHeroTouchDiskMorph()
             this.syncHeroTouchDiskRestPosition()
+        },
+        /** Keep the frosted idle disk look (no hover/glass morph size shift). */
+        clearHeroTouchDiskMorph() {
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroCursorRangeMix = 0
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorIntroGlassHandoff = false
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
         },
         computeHeroTouchDiskOnStage() {
             // Stay visible while dragging so the disk can reach the viewport bottom.
@@ -2397,14 +2426,13 @@ export default {
 
             const pos = this.getHeroTouchDiskRestPos()
             this.heroTouchDiskParkZone = this.heroTouchDiskZone
+            if (this.heroTouchDiskZone !== 'hero') this.clearHeroTouchDiskMorph()
             this.updateHeroFinePointer(pos.x, pos.y, {
                 introEffects: false,
                 skipHover: true,
             })
-            // Snap on idle rest; zone changes glide via glass-follow lerp.
-            if (!zoneChanged) {
-                this.heroCursorGlassPos = { ...pos }
-            }
+            // Keep glass + dot locked together so frost size doesn't drift while parking.
+            this.heroCursorGlassPos = { ...pos }
             this.startHeroCursorGlassFollow()
             this.refreshHeroTouchDiskStage()
         },
@@ -2587,7 +2615,7 @@ export default {
             if (prefersReducedMotion()) return
             clearTimeout(this.heroTouchDiskPopTimer)
             this.heroTouchDiskPopping = false
-            // Retrigger the one-shot class.
+            // Retrigger the one-shot sink on both frost disk + center dot.
             requestAnimationFrame(() => {
                 this.heroTouchDiskPopping = true
                 this.heroTouchDiskPopTimer = setTimeout(() => {
@@ -2606,6 +2634,7 @@ export default {
             if (item.action === 'work') {
                 this.heroTouchDiskZone = 'work'
                 this.heroTouchDiskHasMoved = false
+                this.clearHeroTouchDiskMorph()
                 this.syncHeroTouchDiskRestPosition()
                 scrollToWork()
                 this.$router.replace({ hash: '#work' }).catch(() => {})
@@ -2614,6 +2643,7 @@ export default {
             if (item.action === 'about') {
                 this.heroTouchDiskZone = 'about'
                 this.heroTouchDiskHasMoved = false
+                this.clearHeroTouchDiskMorph()
                 this.syncHeroTouchDiskRestPosition()
                 scrollToAbout()
                 this.$router.replace({ hash: '#about' }).catch(() => {})
@@ -2626,6 +2656,7 @@ export default {
             this.closeHeroTouchDiskMenu()
             this.heroTouchDiskZone = 'work'
             this.heroTouchDiskHasMoved = false
+            this.clearHeroTouchDiskMorph()
             this.syncHeroTouchDiskRestPosition()
             scrollToWork({ duration: HERO_TOUCH_DISK_WORK_SNAP_MS })
             this.$router.replace({ hash: '#work' }).catch(() => {})
@@ -2647,7 +2678,7 @@ export default {
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
 
-            // During drag on hero: viewport-bottom contact → park lower-left + scroll to work.
+            // During drag on hero: viewport-bottom contact → park lower-right + scroll to work.
             if (
                 this.heroTouchDiskZone === 'hero' &&
                 this.heroTouchDiskDragging &&
@@ -2670,7 +2701,8 @@ export default {
             event.preventDefault()
             event.stopPropagation()
 
-            this.markHeroTouchDiskInteracted()
+            // Don't kill breathe / morph until the gesture is a real drag or tap —
+            // cutting breathe mid-pulse was causing a visible jiggle on tap.
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
@@ -2699,6 +2731,7 @@ export default {
             if (!this.heroTouchDiskHasMoved) {
                 if (dx * dx + dy * dy < slop * slop) return
                 this.heroTouchDiskHasMoved = true
+                this.markHeroTouchDiskInteracted()
                 this.closeHeroTouchDiskMenu()
             }
 
@@ -2724,6 +2757,7 @@ export default {
             this.endHeroTouchDiskDrag()
 
             if (wasTap) {
+                this.markHeroTouchDiskInteracted()
                 this.playHeroTouchDiskPop()
                 this.toggleHeroTouchDiskMenu()
             }
@@ -3153,17 +3187,28 @@ export default {
 
                 const { x: tx, y: ty } = this.heroCursorPos
                 const touchDisk = this.isHeroTouchDiskMode()
+                const sectionNav = touchDisk && this.heroTouchDiskZone !== 'hero'
+                // Off-hero float: freeze the frosted idle disk (no hover/glass size morph).
+                if (sectionNav) {
+                    this.heroCursorRangeMix = 0
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorInRange = false
+                    this.heroCursorRangeTight = false
+                    this.heroCursorOverHover = false
+                    this.heroCursorHoverLockEl = null
+                }
                 const allowIntroGlass =
                     !touchDisk ||
-                    this.heroTouchDiskHasMoved ||
-                    this.heroTouchDiskDragging
+                    (!sectionNav &&
+                        (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging))
                 const freezeIntroGlass =
                     touchDisk &&
                     this.heroCursorIntroGlassHandoff &&
                     this.heroTouchDiskOnStage &&
                     (this.heroIntroDissipated || this.heroIntroReconsolidating)
                 // Touch-disk only: keep in-text glass while letters fan out / snap back.
-                if (!freezeIntroGlass) {
+                if (!sectionNav && !freezeIntroGlass) {
                     const proximityTarget = allowIntroGlass
                         ? this.getHeroIntroRangeProximityMix(tx, ty)
                         : 0
@@ -3200,12 +3245,13 @@ export default {
                     typeof performance !== 'undefined' &&
                     performance.now() < this.heroCursorScrollHoverSuppressUntil
                 const hoverTarget =
-                    scrollHoverSuppressed || this.heroCursorInRange
+                    sectionNav || scrollHoverSuppressed || this.heroCursorInRange
                         ? 0
                         : this.isHeroCursorOverHoverTarget(tx, ty)
                           ? 1
                           : 0
                 const magnifierVisible =
+                    !sectionNav &&
                     !this.heroCursorInRange &&
                     (hoverTarget === 1 || this.heroCursorHoverMix > 0.02)
                 const { x: gx, y: gy } = this.heroCursorGlassPos
@@ -5179,7 +5225,7 @@ export default {
 }
 
 .hero-intro-cursor-ball--touch-pop {
-    animation: hero-touch-disk-pop 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: hero-touch-disk-sink 0.24s cubic-bezier(0.33, 0.9, 0.4, 1);
     transform-origin: center center;
 }
 
@@ -5201,17 +5247,13 @@ export default {
     }
 }
 
-@keyframes hero-touch-disk-pop {
+@keyframes hero-touch-disk-sink {
     0% {
         scale: 1;
     }
 
-    35% {
-        scale: 0.88;
-    }
-
-    70% {
-        scale: 1.06;
+    42% {
+        scale: 0.8;
     }
 
     100% {
@@ -5242,7 +5284,7 @@ export default {
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
-    margin: -22px 0 0 -22px;
+    margin: 0;
     padding: 10px;
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
@@ -5254,11 +5296,13 @@ export default {
     white-space: nowrap;
     pointer-events: auto;
     opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.72);
+    /* Orbit point = near edge of label; ax/ay pull the label outward from the disk. */
+    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
+        translate(var(--menu-ax, -100%), var(--menu-ay, -50%)) scale(0.86);
     transition:
         opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: calc(var(--menu-i, 0) * 40ms);
+        transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--menu-i, 0) * 45ms);
 }
 
 .hero-touch-disk-menu__item:active {
@@ -5267,7 +5311,8 @@ export default {
 
 .hero-touch-disk-menu .hero-touch-disk-menu__item {
     opacity: 1;
-    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0) scale(1);
+    transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
+        translate(var(--menu-ax, -100%), var(--menu-ay, -50%)) scale(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
