@@ -542,7 +542,18 @@ const HERO_TOUCH_DISK_MENU_FROST_SIZE = 280
 /** Blue center diameter while menu is open (idle dot is 8). */
 const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
-const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 4
+const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 5
+/**
+ * Menu orbit angles (screen: 0° right, 90° down, clockwise).
+ * Work stays above About by MENU_GAP. Near top → Work at 210° south (150°);
+ * mid → 210° north; near bottom → 250° north.
+ */
+const HERO_TOUCH_DISK_MENU_GAP_DEG = 40
+const HERO_TOUCH_DISK_MENU_WORK_TOP_DEG = 150 // 210° south of left
+const HERO_TOUCH_DISK_MENU_WORK_MID_DEG = 210 // 210° north
+const HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG = 250 // 250° north
+/** Disk-center distance from viewport top/bottom that counts as “near edge”. */
+const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -1022,6 +1033,18 @@ export default {
         heroTouchDiskMenuFan() {
             return 'left'
         },
+        /** Work orbit angle from disk Y: near top → south fan, mid/bottom → north fan. */
+        heroTouchDiskMenuWorkDeg() {
+            const y = this.heroCursorGlassPos?.y ?? 0
+            const vh =
+                typeof window !== 'undefined'
+                    ? window.innerHeight
+                    : 800
+            const band = HERO_TOUCH_DISK_MENU_EDGE_BAND_PX
+            if (y < band) return HERO_TOUCH_DISK_MENU_WORK_TOP_DEG
+            if (y > vh - band) return HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG
+            return HERO_TOUCH_DISK_MENU_WORK_MID_DEG
+        },
         heroTouchDiskMenuItems() {
             // Labels hug the blue center; frost ring is large enough to contain them.
             const expand = this.heroTouchDiskExpand
@@ -1045,17 +1068,19 @@ export default {
 
             const work = { id: 'work', label: 'Work', action: 'work' }
             const about = { id: 'about', label: 'About', action: 'about' }
+            const workDeg = this.heroTouchDiskMenuWorkDeg
+            const aboutDeg = workDeg - HERO_TOUCH_DISK_MENU_GAP_DEG
 
             if (this.heroTouchDiskZone === 'work') {
-                const [a] = place([180])
+                const [a] = place([aboutDeg])
                 return [{ ...about, ...a }]
             }
             if (this.heroTouchDiskZone === 'about') {
-                const [w] = place([180])
+                const [w] = place([workDeg])
                 return [{ ...work, ...w }]
             }
-            // Work left / slightly up; About below it (down-left).
-            const [w, a] = place([200, 145])
+            // Work above About, 40° apart; angles shift with viewport edge proximity.
+            const [w, a] = place([workDeg, aboutDeg])
             return [
                 { ...work, ...w },
                 { ...about, ...a },
@@ -5373,7 +5398,8 @@ export default {
     justify-content: flex-end;
     min-height: 44px;
     margin: 0;
-    padding: 4px 2px;
+    /* No padding on the orbit (right) side so glyphs sit at LABEL_GAP from the blue edge. */
+    padding: 4px 0 4px 2px;
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
     font-size: 20px;
