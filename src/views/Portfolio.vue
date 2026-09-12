@@ -127,8 +127,6 @@
                     '--menu-i': index,
                     '--menu-x': item.x,
                     '--menu-y': item.y,
-                    '--menu-ax': item.ax,
-                    '--menu-ay': item.ay,
                     '--menu-rot': item.rot,
                 }"
                 @click="onHeroTouchDiskMenuItemClick(item, $event)"
@@ -537,12 +535,15 @@ const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
 const HERO_TOUCH_DISK_EXPAND_MS = 380
-/** Frost diameter while menu is open — large enough that labels sit inside. */
-const HERO_TOUCH_DISK_MENU_FROST_SIZE = 280
 /** Blue center diameter while menu is open (idle dot is 8). */
 const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 5
+/** Gap from the outer (left) edge of the longest label to the frost rim. */
+const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 5
+/** Must match `.hero-touch-disk-menu__item` typography for width measure. */
+const HERO_TOUCH_DISK_MENU_FONT = '500 20px "Work Sans", sans-serif'
+const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
  * Menu orbit angles (screen: 0° right, 90° down, clockwise).
  * Work stays above About by MENU_GAP. Near top → Work at 210° south (150°);
@@ -558,6 +559,50 @@ const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
 const HERO_INTRO_DISSIPATE_RETURN_PX = 480
+
+/** Cached max glyph width of menu labels (Work Sans 20/500). */
+let heroTouchDiskMenuLabelMaxWidthPx = 0
+let heroTouchDiskMenuLabelFontReady = false
+
+function measureHeroTouchDiskMenuLabelMaxWidth() {
+    if (heroTouchDiskMenuLabelMaxWidthPx > 0 && heroTouchDiskMenuLabelFontReady) {
+        return heroTouchDiskMenuLabelMaxWidthPx
+    }
+    if (typeof document === 'undefined') return 54
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return 54
+    ctx.font = HERO_TOUCH_DISK_MENU_FONT
+    let max = 0
+    for (const label of HERO_TOUCH_DISK_MENU_MEASURE_LABELS) {
+        max = Math.max(max, ctx.measureText(label).width)
+    }
+    heroTouchDiskMenuLabelMaxWidthPx = Math.max(max, 1)
+
+    if (!heroTouchDiskMenuLabelFontReady && document.fonts?.ready) {
+        document.fonts.ready.then(() => {
+            heroTouchDiskMenuLabelFontReady = true
+            heroTouchDiskMenuLabelMaxWidthPx = 0
+            measureHeroTouchDiskMenuLabelMaxWidth()
+        })
+    } else if (document.fonts?.check?.(HERO_TOUCH_DISK_MENU_FONT)) {
+        heroTouchDiskMenuLabelFontReady = true
+    }
+
+    return heroTouchDiskMenuLabelMaxWidthPx
+}
+
+/** Frost diameter: blue → 5px → label → 5px past longest label’s outer edge. */
+function getHeroTouchDiskMenuFrostSize() {
+    const maxLabel = measureHeroTouchDiskMenuLabelMaxWidth()
+    return (
+        HERO_TOUCH_DISK_MENU_DOT_SIZE +
+        2 *
+            (HERO_TOUCH_DISK_MENU_LABEL_GAP_PX +
+                maxLabel +
+                HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX)
+    )
+}
 
 function isHeroCursorEnvironment() {
     return (
@@ -1046,7 +1091,8 @@ export default {
             return HERO_TOUCH_DISK_MENU_WORK_MID_DEG
         },
         heroTouchDiskMenuItems() {
-            // Labels hug the blue center; frost ring is large enough to contain them.
+            // Invisible label orbit: blue-dot radius + GAP. Inner (right) edge of each
+            // word sits on that circumference; text extends radially outward.
             const expand = this.heroTouchDiskExpand
             const dot =
                 HERO_CURSOR_DOT_SIZE +
@@ -1056,12 +1102,9 @@ export default {
                 anglesDeg.map((deg) => {
                     const rad = (deg * Math.PI) / 180
                     return {
-                        x: `${Math.round(Math.cos(rad) * orbit)}px`,
-                        y: `${Math.round(Math.sin(rad) * orbit)}px`,
-                        // Right edge on the orbit, facing the blue center.
-                        ax: '-100%',
-                        ay: '-50%',
-                        // Rotate so the right edge is radial (⊥ to the circumference).
+                        x: `${Math.cos(rad) * orbit}px`,
+                        y: `${Math.sin(rad) * orbit}px`,
+                        // Rotate so local +x points at the blue center (inner edge faces in).
                         rot: `${deg - 180}deg`,
                     }
                 })
@@ -1245,7 +1288,7 @@ export default {
             let size
             if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
-                const open = HERO_TOUCH_DISK_MENU_FROST_SIZE
+                const open = getHeroTouchDiskMenuFrostSize()
                 const t = expandT
                 const dip = Math.sin(Math.min(1, t / 0.2) * Math.PI) * 5
                 const eased = 1 - (1 - t) ** 3
@@ -5393,13 +5436,12 @@ export default {
     position: absolute;
     top: 0;
     left: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    display: block;
+    width: max-content;
     min-height: 44px;
     margin: 0;
-    /* No padding on the orbit (right) side so glyphs sit at LABEL_GAP from the blue edge. */
-    padding: 4px 0 4px 2px;
+    /* Tight to glyphs — no horizontal padding (was pushing About farther than Work). */
+    padding: 7px 0;
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
     font-size: 20px;
@@ -5410,11 +5452,14 @@ export default {
     white-space: nowrap;
     pointer-events: auto;
     opacity: 0;
-    transform-origin: center center;
-    /* Place on orbit → angle so right edge is radial (⊥ circumference) → pin right edge. */
+    /*
+     * Pin the inner (right) edge on the invisible orbit (blue r + 5px) and rotate
+     * around that point — not the text center, or wider labels like About drift.
+     */
+    transform-origin: right center;
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
         rotate(var(--menu-rot, 0deg))
-        translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
+        translate(-100%, -50%)
         scale(0.9);
     transition:
         opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
@@ -5430,7 +5475,7 @@ export default {
     opacity: 0;
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
         rotate(var(--menu-rot, 0deg))
-        translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
+        translate(-100%, -50%)
         scale(0.9);
 }
 
@@ -5438,7 +5483,7 @@ export default {
     opacity: 1;
     transform: translate3d(var(--menu-x, 0), var(--menu-y, 0), 0)
         rotate(var(--menu-rot, 0deg))
-        translate(var(--menu-ax, -100%), var(--menu-ay, -50%))
+        translate(-100%, -50%)
         scale(1);
 }
 
