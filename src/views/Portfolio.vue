@@ -556,7 +556,8 @@ const HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX = 44
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
  * Two-item hero menu: Work at 180° + About at 0° when space allows.
- * A tight side swings that label south around the blue (clock arm) up to 90°.
+ * A tight side swings that label around the blue (clock arm) up to 90° —
+ * south near the top, north near the bottom — so labels stay readable.
  * Single-item menus stay horizontal on the outward side.
  */
 /** Disk-center distance from viewport top/bottom that counts as “near edge”. */
@@ -649,12 +650,29 @@ function heroTouchDiskMenuLabelFits(diskX, diskY, deg, width, height, gap, vw, v
 }
 
 /**
- * Smallest southward swing (0–90°) that keeps the label on-screen.
- * Right side: 0° → 90°. Left side: 180° → 90°.
+ * Smallest swing (0–90°) that keeps the label on-screen.
+ * South: right 0°→90°, left 180°→90°.
+ * North: right 0°→−90°, left 180°→270°.
  */
-function findHeroTouchDiskMenuSwingDeg(side, diskX, diskY, width, height, gap, vw, vh, safe) {
+function findHeroTouchDiskMenuSwingDeg(
+    side,
+    diskX,
+    diskY,
+    width,
+    height,
+    gap,
+    vw,
+    vh,
+    safe,
+    towardSouth = true,
+) {
     for (let swing = 0; swing <= 90; swing += 1) {
-        const deg = side === 'right' ? swing : 180 - swing
+        let deg
+        if (towardSouth) {
+            deg = side === 'right' ? swing : 180 - swing
+        } else {
+            deg = side === 'right' ? -swing : 180 + swing
+        }
         if (
             heroTouchDiskMenuLabelFits(
                 diskX,
@@ -671,7 +689,7 @@ function findHeroTouchDiskMenuSwingDeg(side, diskX, diskY, width, height, gap, v
             return deg
         }
     }
-    return 90
+    return towardSouth ? 90 : side === 'right' ? -90 : 270
 }
 
 /** Place a label on a ray; left keeps end toward blue, right keeps start toward blue. */
@@ -1213,7 +1231,8 @@ export default {
                 return [placeOutward(base, outwardLeft)]
             }
 
-            // Two items: Work @ 180° / About @ 0°; swing south only as far as needed (≤90°).
+            // Two items: Work @ 180° / About @ 0°; swing toward open space (≤90°).
+            const towardSouth = diskY <= vh - HERO_TOUCH_DISK_MENU_EDGE_BAND_PX
             const workW = getHeroTouchDiskMenuLabelWidth('Work')
             const aboutW = getHeroTouchDiskMenuLabelWidth('About')
             const workDeg = findHeroTouchDiskMenuSwingDeg(
@@ -1226,6 +1245,7 @@ export default {
                 vw,
                 vh,
                 safe,
+                towardSouth,
             )
             const aboutDeg = findHeroTouchDiskMenuSwingDeg(
                 'right',
@@ -1237,6 +1257,7 @@ export default {
                 vw,
                 vh,
                 safe,
+                towardSouth,
             )
             return [
                 placeHeroTouchDiskMenuRadial(work, 'left', workDeg, gap, workW),
@@ -7586,11 +7607,6 @@ export default {
         position: relative;
     }
 
-    .about-location-text-wrap,
-    .about-role-text-wrap {
-        --about-location-white-scale: 1.2;
-    }
-
     .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white),
     .about-role-text:not(.about-role-text--glow):not(.about-role-text--soft):not(.about-role-text--white) {
         position: relative;
@@ -7619,8 +7635,6 @@ export default {
         overflow: hidden;
         padding: var(--about-location-glow-pad) var(--about-location-glow-pad) var(--about-location-glow-pad) 0;
         box-sizing: content-box;
-        transform: scale(var(--about-location-white-scale));
-        transform-origin: left center;
         pointer-events: none;
         user-select: none;
     }
