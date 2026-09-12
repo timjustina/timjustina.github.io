@@ -538,8 +538,6 @@ const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
-/** Soft glide when the disk trips the bottom edge → first work. */
-const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
@@ -1070,7 +1068,6 @@ export default {
             heroTouchDiskIdle: true,
             heroTouchDiskBreathe: false,
             heroTouchDiskEntranceTimer: null,
-            heroTouchDiskWorkJumped: false,
             heroTouchDiskZone: 'hero',
             heroTouchDiskParkZone: 'hero',
             heroTouchDiskMenuOpen: false,
@@ -2734,7 +2731,6 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
-            this.heroTouchDiskWorkJumped = false
             this.heroCursorPos = { ...pos }
             this.heroCursorGlassPos = { ...pos }
             this.heroCursorActive = true
@@ -2813,7 +2809,6 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
-            this.heroTouchDiskWorkJumped = false
             this.heroTouchDiskOnStage = false
             this.heroTouchDiskEntrance = 0
             this.heroTouchDiskEntering = false
@@ -2891,16 +2886,12 @@ export default {
             this.bindHeroTouchDiskOutsideClose()
             this.animateHeroTouchDiskExpand(1)
         },
-        /** Menu from blue-dot, glass, or magnifier — blocked only at hero lower edge. */
+        /** Menu from blue-dot, glass, or magnifier — available across the full viewport. */
         canOpenHeroTouchDiskMenu() {
             if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
             if (this.heroTouchDiskZone !== 'hero') return true
             // Letter dissipate / reconsolidate still use the magnifier window, not the disk hit.
             if (this.heroIntroDissipated || this.heroIntroReconsolidating) return false
-            const y = this.heroCursorGlassPos?.y ?? 0
-            const vh =
-                typeof window !== 'undefined' ? window.innerHeight : 800
-            if (y > vh - HERO_TOUCH_DISK_MENU_EDGE_BAND_PX) return false
             return true
         },
         refreshHeroTouchDiskMenuMetrics() {
@@ -3053,20 +3044,8 @@ export default {
                 this.$router.replace({ hash: '#about' }).catch(() => {})
             }
         },
-        triggerHeroTouchDiskWorkJump() {
-            if (this.heroTouchDiskWorkJumped) return
-            this.heroTouchDiskWorkJumped = true
-            this.endHeroTouchDiskDrag()
-            this.closeHeroTouchDiskMenu()
-            this.heroTouchDiskZone = 'work'
-            this.heroTouchDiskHasMoved = false
-            this.clearHeroTouchDiskMorph()
-            this.syncHeroTouchDiskRestPosition()
-            scrollToWork({ duration: HERO_TOUCH_DISK_WORK_SNAP_MS })
-            this.$router.replace({ hash: '#work' }).catch(() => {})
-        },
         moveHeroTouchDiskTo(clientX, clientY) {
-            const { minX, maxX, minY, maxY, radius } = this.getHeroTouchDiskBounds()
+            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
             const x = Math.min(
                 maxX,
                 Math.max(minX, clientX + this.heroTouchDiskGrabOffset.x),
@@ -3081,16 +3060,6 @@ export default {
             })
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
-
-            // During drag on hero: viewport-bottom contact → park lower-right + scroll to work.
-            if (
-                this.heroTouchDiskZone === 'hero' &&
-                this.heroTouchDiskDragging &&
-                !this.heroTouchDiskWorkJumped &&
-                y >= window.innerHeight - radius - 1
-            ) {
-                this.triggerHeroTouchDiskWorkJump()
-            }
         },
         onHeroTouchDiskPointerDown(event) {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -3110,7 +3079,6 @@ export default {
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
-            this.heroTouchDiskWorkJumped = false
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = event.pointerId
             this.heroTouchDiskPointerStart = { x: event.clientX, y: event.clientY }
@@ -3146,11 +3114,9 @@ export default {
             if (event.pointerId !== this.heroTouchDiskPointerId) return
 
             const wasTap =
-                this.heroTouchDiskDragging &&
-                !this.heroTouchDiskHasMoved &&
-                !this.heroTouchDiskWorkJumped
+                this.heroTouchDiskDragging && !this.heroTouchDiskHasMoved
 
-            if (this.heroTouchDiskDragging && this.heroTouchDiskHasMoved && !this.heroTouchDiskWorkJumped) {
+            if (this.heroTouchDiskDragging && this.heroTouchDiskHasMoved) {
                 this.moveHeroTouchDiskTo(event.clientX, event.clientY)
             }
             try {
