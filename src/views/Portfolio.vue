@@ -70,7 +70,8 @@
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
                 'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
-                'hero-intro-cursor-dot-disk--menu-frost': heroTouchDiskExpand > 0.02,
+                'hero-intro-cursor-dot-disk--menu-frost':
+                    heroTouchDiskExpand > 0.02 && !heroTouchDiskMenuStacked,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -108,6 +109,7 @@
             v-if="heroTouchDiskMode && heroTouchDiskExpand > 0.08 && heroCursorVisible"
             class="hero-touch-disk-menu"
             :class="{
+                'hero-touch-disk-menu--stack': heroTouchDiskMenuStacked,
                 'hero-touch-disk-menu--left': heroTouchDiskMenuFan === 'left',
                 'hero-touch-disk-menu--right': heroTouchDiskMenuFan === 'right',
                 'hero-touch-disk-menu--visible': heroTouchDiskExpand > 0.35,
@@ -541,21 +543,15 @@ const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
 /** Gap from the outer (left) edge of the longest label to the frost rim. */
 const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
+/** Two-item stack: vertical center distance Work → About (matches 20px/30lh type). */
+const HERO_TOUCH_DISK_MENU_STACK_ROW_PX = 32
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
- * Menu orbit angles (screen: 0° right, 90° down, clockwise).
- * Work stays above About by MENU_GAP.
- * Both near top → Work 180° / About 140°; bottom mirrors that (Work 220° / About 180°);
- * mid → pair centered on 180° (Work 200° / About 160°).
+ * Alone-label orbit angles (screen: 0° right, 90° down, clockwise).
+ * Two-item hero menu is a horizontal Work-over-About stack (no radial fan).
+ * Alone: 190° north at bottom; mirrored south at top.
  */
-const HERO_TOUCH_DISK_MENU_GAP_DEG = 40
-const HERO_TOUCH_DISK_MENU_WORK_TOP_DEG = 180
-const HERO_TOUCH_DISK_MENU_WORK_MID_DEG =
-    180 + HERO_TOUCH_DISK_MENU_GAP_DEG / 2 // 200° — midpoint of pair at 180°
-const HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG =
-    180 + HERO_TOUCH_DISK_MENU_GAP_DEG // 220° — mirror of top fan
-/** Alone label (Work or About): 190° north at bottom; mirrored south at top. */
 const HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG = 190
 const HERO_TOUCH_DISK_MENU_ALONE_TOP_DEG =
     180 - (HERO_TOUCH_DISK_MENU_ALONE_BOTTOM_DEG - 180) // 170°
@@ -1104,17 +1100,9 @@ export default {
         heroTouchDiskMenuFan() {
             return 'left'
         },
-        /** Work orbit angle from disk Y: near top → south fan, mid/bottom → north fan. */
-        heroTouchDiskMenuWorkDeg() {
-            const y = this.heroCursorGlassPos?.y ?? 0
-            const vh =
-                typeof window !== 'undefined'
-                    ? window.innerHeight
-                    : 800
-            const band = HERO_TOUCH_DISK_MENU_EDGE_BAND_PX
-            if (y < band) return HERO_TOUCH_DISK_MENU_WORK_TOP_DEG
-            if (y > vh - band) return HERO_TOUCH_DISK_MENU_WORK_BOTTOM_DEG
-            return HERO_TOUCH_DISK_MENU_WORK_MID_DEG
+        /** Hero zone shows Work + About as a horizontal stack (no frost expand). */
+        heroTouchDiskMenuStacked() {
+            return this.heroTouchDiskZone === 'hero'
         },
         /** Single Work/About label angle: 190° north near bottom; 170° (mirror) near top. */
         heroTouchDiskMenuAloneDeg() {
@@ -1131,14 +1119,13 @@ export default {
             // Depend on metrics rev so font-load remounts refresh placement.
             void this.heroTouchDiskMenuMetricsRev
             // Geometry uses the *open* blue size so labels don't crawl during expand.
-            // Each label's center sits on its ray; inner edge on (blueR + 20px) circle.
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
-            const innerOrbit = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
-            const place = (items) =>
+            const placeRadial = (items) =>
                 items.map(({ base, deg }) => {
                     const rad = (deg * Math.PI) / 180
                     const width = getHeroTouchDiskMenuLabelWidth(base.label)
-                    const centerR = innerOrbit + width / 2
+                    // Each label's center sits on its ray; inner edge on (blueR + 20px) circle.
+                    const centerR = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX + width / 2
                     return {
                         ...base,
                         x: `${Math.cos(rad) * centerR}px`,
@@ -1150,23 +1137,36 @@ export default {
 
             const work = { id: 'work', label: 'Work', action: 'work' }
             const about = { id: 'about', label: 'About', action: 'about' }
-            const workDeg = this.heroTouchDiskMenuWorkDeg
-            const aboutDeg = workDeg - HERO_TOUCH_DISK_MENU_GAP_DEG
             const aloneDeg = this.heroTouchDiskMenuAloneDeg
 
             if (this.heroTouchDiskZone === 'work') {
-                return place([{ base: about, deg: aloneDeg }])
+                return placeRadial([{ base: about, deg: aloneDeg }])
             }
             if (this.heroTouchDiskZone === 'about') {
-                return place([{ base: work, deg: aloneDeg }])
+                return placeRadial([{ base: work, deg: aloneDeg }])
             }
-            return place([
-                { base: work, deg: workDeg },
-                { base: about, deg: aboutDeg },
-            ])
+
+            // Two items: horizontal Work over About; Work vertically aligned to blue.
+            // Anchor is the right edge of each label (toward the blue), gap past blue rim.
+            const anchorX = -(blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX)
+            return [
+                {
+                    ...work,
+                    x: `${anchorX}px`,
+                    y: '0px',
+                    rot: '0deg',
+                },
+                {
+                    ...about,
+                    x: `${anchorX}px`,
+                    y: `${HERO_TOUCH_DISK_MENU_STACK_ROW_PX}px`,
+                    rot: '0deg',
+                },
+            ]
         },
         heroTouchDiskMenuFrostSize() {
             void this.heroTouchDiskMenuMetricsRev
+            if (this.heroTouchDiskMenuStacked) return HERO_CURSOR_GLASS_IDLE_SIZE
             return getHeroTouchDiskMenuFrostSize()
         },
         heroTouchDiskMenuStyle() {
@@ -1326,7 +1326,10 @@ export default {
             const { x, y } = this.heroCursorGlassPos
             // Continuous size: idle → open with a slight early dip, no settle pause.
             let size
-            if (menuOpen) {
+            if (menuOpen && this.heroTouchDiskMenuStacked) {
+                // Two-item stack: no frost disk behind the labels.
+                size = HERO_CURSOR_GLASS_IDLE_SIZE
+            } else if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
                 const open = this.heroTouchDiskMenuFrostSize
                 const t = expandT
@@ -1340,7 +1343,11 @@ export default {
             }
             const half = size / 2
             const baseOpacity =
-                menuOpen || sectionNav ? 1 : heroCursorHoverDiskOpacity(hoverMix)
+                menuOpen && this.heroTouchDiskMenuStacked
+                    ? 0
+                    : menuOpen || sectionNav
+                      ? 1
+                      : heroCursorHoverDiskOpacity(hoverMix)
             const entranceFade = this.heroTouchDiskIdleMotion
                 ? this.heroTouchDiskEntranceFade
                 : 1
@@ -2755,10 +2762,18 @@ export default {
             this.animateHeroTouchDiskExpand(0)
         },
         openHeroTouchDiskMenu() {
+            if (!this.canOpenHeroTouchDiskMenu()) return
             this.refreshHeroTouchDiskMenuMetrics()
             this.heroTouchDiskMenuOpen = true
             this.bindHeroTouchDiskOutsideClose()
             this.animateHeroTouchDiskExpand(1)
+        },
+        /** Menu only from the blue-dot + idle disk — not glass ball or magnifier. */
+        canOpenHeroTouchDiskMenu() {
+            if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
+            if (this.heroIntroDissipated || this.heroIntroReconsolidating) return false
+            if (this.heroCursorIntroGlassHandoff) return false
+            return true
         },
         refreshHeroTouchDiskMenuMetrics() {
             measureHeroTouchDiskMenuLabelWidths()
@@ -2791,7 +2806,7 @@ export default {
         toggleHeroTouchDiskMenu() {
             if (this.heroTouchDiskExpand > 0.5 || this.heroTouchDiskMenuOpen) {
                 this.closeHeroTouchDiskMenu()
-            } else {
+            } else if (this.canOpenHeroTouchDiskMenu()) {
                 this.openHeroTouchDiskMenu()
             }
         },
@@ -3486,6 +3501,7 @@ export default {
                             proximityTarget >= HERO_CURSOR_INTRO_GLASS_ON
                         ) {
                             this.heroCursorIntroGlassHandoff = true
+                            this.closeHeroTouchDiskMenu({ instant: true })
                         }
                     }
                 }
@@ -4619,6 +4635,7 @@ export default {
                 clearTimeout(this.heroIntroReconsolidateTimer)
                 this.heroIntroReconsolidateTimer = null
                 this.heroIntroReconsolidating = false
+                this.closeHeroTouchDiskMenu({ instant: true })
                 if (this.heroTouchDiskDragging) {
                     this.heroTouchDiskDragging = false
                     this.heroTouchDiskPointerId = null
@@ -5547,6 +5564,12 @@ export default {
 .hero-touch-disk-menu--visible .hero-touch-disk-menu__item {
     opacity: 1;
     transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
+}
+
+/* Two-item hero menu: horizontal list left of blue; Work row aligned to blue center. */
+.hero-touch-disk-menu--stack .hero-touch-disk-menu__item,
+.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible .hero-touch-disk-menu__item {
+    transform: translate(-100%, -50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
