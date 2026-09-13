@@ -561,9 +561,9 @@ const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
 /**
  * Lower-corner park pocket (Work/About): keep the idle disk — no project magnifier.
- * Sized so the default lower-right rest stays clearly inside.
+ * Matches menu edge band; rest (~43px inset) still sits inside.
  */
-const HERO_TOUCH_DISK_CORNER_BAND_PX = 180
+const HERO_TOUCH_DISK_CORNER_BAND_PX = 120
 /** Viewport padding so labels stay fully on-screen. */
 const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
@@ -597,7 +597,7 @@ function measureHeroTouchDiskMenuLabelWidths() {
         'border:0',
         'font-family:"Work Sans",sans-serif',
         'font-size:20px',
-        'font-weight:500',
+        'font-weight:400',
         'line-height:30px',
         'font-synthesis:none',
     ].join(';')
@@ -3100,6 +3100,31 @@ export default {
                 this.openHeroTouchDiskMenu()
             }
         },
+        /** Magnifier is open over a live control — tap should activate it, not the menu. */
+        isHeroTouchDiskMagnifierMode() {
+            if (!this.isHeroTouchDiskMode()) return false
+            if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) return false
+            if (this.isHeroTouchDiskCornerParked()) return false
+            if (this.heroCursorInRange) return false
+            if (this.heroCursorMagnifierLayout) return true
+            const { expand } = heroCursorHoverMorph(this.heroCursorHoverMix)
+            return expand > 0.02
+        },
+        /**
+         * Activate the control currently under the disk (case study, About CTA, etc.).
+         * Returns true if a target was clicked.
+         */
+        activateHeroTouchDiskMagnifierTarget() {
+            if (!this.isHeroTouchDiskMagnifierMode()) return false
+            const { x, y } = this.heroCursorGlassPos
+            const target = this.getHeroCursorHoverTargetElement(x, y)
+            if (!(target instanceof Element) || typeof target.click !== 'function') {
+                return false
+            }
+            this.markHeroTouchDiskInteracted()
+            target.click()
+            return true
+        },
         bindHeroTouchDiskOutsideClose() {
             if (this.heroTouchDiskOutsideCloseBound) return
             this.heroTouchDiskOutsideCloseBound = true
@@ -3302,6 +3327,12 @@ export default {
             this.endHeroTouchDiskDrag()
 
             if (wasTap) {
+                if (
+                    !(this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.5) &&
+                    this.activateHeroTouchDiskMagnifierTarget()
+                ) {
+                    return
+                }
                 this.toggleHeroTouchDiskMenu()
             }
         },
@@ -4691,18 +4722,23 @@ export default {
                 // Glass↔letter push is keyed off frozen glyph locals. Any real
                 // layout resize (desktop width/height, mobile width) must reset
                 // the field and remasure — otherwise letters part around a ghost.
-                const inFlight = this.heroIntroDissipated || this.heroIntroReconsolidating
+                // Mid-dissipate/reconsolidate: snap clear, remasure parked layout,
+                // then re-apply from scroll (instant) so return-to-top still works.
+                const wasInFlight =
+                    this.heroIntroDissipated || this.heroIntroReconsolidating
                 this.clearHeroIntroPointerShift()
                 this.invalidateHeroIntroRestLayout()
-                if (!inFlight) {
-                    this.captureHeroIntroRestLayout()
+                if (wasInFlight) {
+                    this.clearHeroIntroDissipate()
                 }
+                this.captureHeroIntroRestLayout()
                 this.updateHeroIntroDissipateFromScroll({
-                    forcePrepare: !inFlight,
+                    forcePrepare: true,
+                    instant: wasInFlight,
                 })
 
                 // Re-seat the field from the current cursor/disk once layout is fresh.
-                if (!inFlight && this.heroCursorActive) {
+                if (this.heroCursorActive) {
                     if (this.isHeroTouchDiskMode()) {
                         if (!this.heroTouchDiskHasMoved) {
                             this.syncHeroTouchDiskRestPosition()
@@ -5875,7 +5911,9 @@ export default {
     cursor: grabbing;
 }
 
-.hero-intro-cursor-magnifier--touch,
+/* Ball only — do not put this on the magnifier. After dissipate the
+   --touch class stays on, and an opacity transition would slow every
+   project-hover clone fade-in by ~1s. */
 .hero-intro-cursor-ball--touch-fade {
     transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
 }
@@ -5910,7 +5948,7 @@ export default {
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
     font-size: 20px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 30px;
     color: var(--brand);
     text-decoration: none;
