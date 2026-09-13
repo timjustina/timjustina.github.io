@@ -538,9 +538,11 @@ const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
-const HERO_TOUCH_DISK_EXPAND_MS = 380
+const HERO_TOUCH_DISK_EXPAND_MS = 420
+/** Soft open overshoot (ease-out back); close stays cubic. Tiny in→out bounce. */
+const HERO_TOUCH_DISK_EXPAND_OVERSHOOT = 1.18
 /** Blue center diameter while menu is open (idle dot is 8). */
-const HERO_TOUCH_DISK_MENU_DOT_SIZE = 20
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 16
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
 /** Gap from the outer edge of the longest label to the frost rim. */
@@ -618,7 +620,7 @@ function getHeroTouchDiskMenuLabelWidth(label) {
     return heroTouchDiskMenuLabelWidths[label] || heroTouchDiskMenuLabelMaxWidthPx || 58
 }
 
-/** Frost diameter: blue → 20px → longest label → 20px past its outer edge. */
+/** Frost diameter: blue → gap → longest label → gap past its outer edge. */
 function getHeroTouchDiskMenuFrostSize() {
     if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
     const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
@@ -629,6 +631,15 @@ function getHeroTouchDiskMenuFrostSize() {
                 maxLabel +
                 HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX)
     )
+}
+
+/** Open: soft overshoot past 1 then settle. Close: ease-out cubic. */
+function heroTouchDiskExpandEase(t, opening) {
+    const x = Math.max(0, Math.min(1, t))
+    if (!opening) return 1 - (1 - x) ** 3
+    const c1 = HERO_TOUCH_DISK_EXPAND_OVERSHOOT
+    const c3 = c1 + 1
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
 }
 
 /** AABB fit test for a label centered on a ray from the blue disk. */
@@ -1452,13 +1463,12 @@ export default {
                         ? this.heroTouchDiskMenuFromSize
                         : idle
                 const t = expandT
-                // Soft dip only when opening from near-idle (not from magnifier/glass).
+                // Soft dip + open overshoot from expand ease (in then out bounce).
                 const fromIdle = Math.abs(from - idle) < 4
                 const dip = fromIdle
-                    ? Math.sin(Math.min(1, t / 0.2) * Math.PI) * 5
+                    ? Math.sin(Math.min(1, Math.max(0, t) / 0.22) * Math.PI) * 7
                     : 0
-                const eased = 1 - (1 - t) ** 3
-                size = from + (open - from) * eased - dip
+                size = from + (open - from) * t - dip
             } else {
                 size = heroCursorDotDiskSize(hoverMix)
             }
@@ -3157,8 +3167,8 @@ export default {
 
             const tick = (now) => {
                 const t = Math.min(1, (now - start) / duration)
-                // Smooth ease — continuous, no settle pause before growth.
-                const e = 1 - (1 - t) ** 3
+                const opening = to > 0.5
+                const e = heroTouchDiskExpandEase(t, opening)
                 this.heroTouchDiskExpand = from + (to - from) * e
                 if (t < 1) {
                     this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
