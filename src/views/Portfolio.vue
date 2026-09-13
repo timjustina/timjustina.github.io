@@ -68,7 +68,6 @@
                 'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
-                'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
                 'hero-intro-cursor-dot-disk--menu-frost':
                     heroTouchDiskExpand > 0.02 || heroTouchDiskMenuOpen,
@@ -99,7 +98,6 @@
                 'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
-                'hero-intro-cursor-ball--touch-enter': heroTouchDiskEntering && heroTouchDiskIdleMotion,
                 'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
             }"
             :style="heroCursorBallStyle"
@@ -536,8 +534,8 @@ const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
 /** Hero rest: disk center this far above the hero intro top. */
 const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
 const HERO_TOUCH_DISK_HIT_SIZE = 56
-/** Fade-in before idle breathe; matches `.hero-intro-cursor-ball--touch-enter` duration. */
-const HERO_TOUCH_DISK_ENTRANCE_MS = 1800
+/** Arc fly-in duration before idle breathe. */
+const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
@@ -716,6 +714,12 @@ function isHeroTouchDiskInLowerCorner(diskX, diskY, vw, vh) {
     const nearLeft = diskX <= band
     const nearRight = diskX >= vw - band
     return nearBottom && (nearLeft || nearRight)
+}
+
+/** Quadratic Bézier point (t in 0…1). */
+function heroTouchDiskQuadPoint(t, p0, p1, p2) {
+    const u = 1 - t
+    return u * u * p0 + 2 * u * t * p1 + t * t * p2
 }
 
 function isHeroCursorEnvironment() {
@@ -1082,6 +1086,7 @@ export default {
             heroTouchDiskIdle: true,
             heroTouchDiskBreathe: false,
             heroTouchDiskEntranceTimer: null,
+            heroTouchDiskEntranceRaf: null,
             heroTouchDiskZone: 'hero',
             heroTouchDiskParkZone: 'hero',
             heroTouchDiskMenuOpen: false,
@@ -1819,6 +1824,10 @@ export default {
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
         clearTimeout(this.heroTouchDiskEntranceTimer)
+        if (this.heroTouchDiskEntranceRaf != null) {
+            cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
+            this.heroTouchDiskEntranceRaf = null
+        }
         clearTimeout(this.heroTouchDiskPopTimer)
         if (this.heroTouchDiskPopRaf != null) {
             cancelAnimationFrame(this.heroTouchDiskPopRaf)
@@ -2581,7 +2590,9 @@ export default {
                 this.isHeroTouchDiskMode() &&
                 !this.isHeroIntroFinePointer() &&
                 this.heroCursorActive &&
-                (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
+                (this.heroTouchDiskHasMoved ||
+                    this.heroTouchDiskDragging ||
+                    this.heroTouchDiskEntering) &&
                 this.heroCursorIntroGlassHandoff
             )
         },
@@ -2739,6 +2750,64 @@ export default {
             }
             this.refreshHeroTouchDiskStage()
         },
+        /** Right-edge start for the hero entrance arc (mid hero text). */
+        getHeroTouchDiskEntranceStartPos() {
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = window.innerWidth
+            let y = window.innerHeight * 0.5
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (intro) {
+                const rect = intro.getBoundingClientRect()
+                if (rect.height > 0) {
+                    y = rect.top + rect.height * 0.5
+                }
+            }
+            return {
+                x: Math.round(vw + radius),
+                y: Math.round(y),
+            }
+        },
+        /** Control point: leftward bow through the hero text toward rest. */
+        getHeroTouchDiskEntranceControlPos(start, end) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            const rect = intro?.getBoundingClientRect()
+            const bulge = Math.min(window.innerWidth * 0.28, 140)
+            const midX = (start.x + end.x) * 0.5
+            let y = (start.y + end.y) * 0.5
+            if (rect && rect.height > 0) {
+                // Keep the apex in the text so glass morph engages mid-flight.
+                y = rect.top + rect.height * 0.52
+            }
+            return {
+                x: Math.round(midX - bulge),
+                y: Math.round(y),
+            }
+        },
+        cancelHeroTouchDiskEntranceFlight() {
+            if (this.heroTouchDiskEntranceRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
+                this.heroTouchDiskEntranceRaf = null
+            }
+            clearTimeout(this.heroTouchDiskEntranceTimer)
+            this.heroTouchDiskEntranceTimer = null
+        },
+        finishHeroTouchDiskEntrance(endPos) {
+            this.cancelHeroTouchDiskEntranceFlight()
+            this.heroTouchDiskEntering = false
+            this.heroTouchDiskEntrance = 1
+            if (endPos) {
+                this.heroCursorPos = { ...endPos }
+                this.heroCursorGlassPos = { ...endPos }
+                this.updateHeroFinePointer(endPos.x, endPos.y, {
+                    introEffects:
+                        this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
+                    skipHover: true,
+                })
+            }
+            if (this.heroTouchDiskIdle && this.isHeroTouchDiskMode()) {
+                this.heroTouchDiskBreathe = true
+            }
+        },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
             this.heroTouchDiskZone = this.computeHeroTouchDiskZone()
@@ -2749,6 +2818,7 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            // Place at rest first; entrance flight may override from the right edge.
             this.heroCursorPos = { ...pos }
             this.heroCursorGlassPos = { ...pos }
             this.heroCursorActive = true
@@ -2767,8 +2837,7 @@ export default {
             this.beginHeroTouchDiskEntrance()
         },
         beginHeroTouchDiskEntrance() {
-            clearTimeout(this.heroTouchDiskEntranceTimer)
-            this.heroTouchDiskEntranceTimer = null
+            this.cancelHeroTouchDiskEntranceFlight()
             // Don't restart idle motion once the disk has been used.
             if (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) {
                 this.heroTouchDiskEntrance = 1
@@ -2777,44 +2846,86 @@ export default {
                 this.heroTouchDiskBreathe = false
                 return
             }
-            this.heroTouchDiskEntrance = 0
-            this.heroTouchDiskEntering = true
+
             this.heroTouchDiskIdle = true
             this.heroTouchDiskBreathe = false
-            this.$nextTick(() => {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        if (!this.isHeroTouchDiskMode() || !this.heroTouchDiskIdle) {
-                            this.heroTouchDiskEntering = false
-                            if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
-                            return
-                        }
-                        this.heroTouchDiskEntrance = 1
-                        this.heroTouchDiskEntranceTimer = setTimeout(() => {
-                            this.heroTouchDiskEntranceTimer = null
-                            this.heroTouchDiskEntering = false
-                            if (this.heroTouchDiskIdle && this.isHeroTouchDiskMode()) {
-                                this.heroTouchDiskBreathe = true
-                            }
-                        }, HERO_TOUCH_DISK_ENTRANCE_MS)
-                    })
-                })
-            })
-        },
-        markHeroTouchDiskInteracted() {
-            if (!this.heroTouchDiskIdle && !this.heroTouchDiskBreathe && !this.heroTouchDiskEntering) {
+            this.heroTouchDiskEntrance = 1
+
+            const end = this.getHeroTouchDiskRestPos()
+            // Arc fly-in is a hero-first-appear motion; other zones snap in place.
+            const canFly =
+                this.heroTouchDiskZone === 'hero' &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined'
+
+            if (!canFly) {
+                this.finishHeroTouchDiskEntrance(end)
                 return
             }
-            clearTimeout(this.heroTouchDiskEntranceTimer)
-            this.heroTouchDiskEntranceTimer = null
+
+            const start = this.getHeroTouchDiskEntranceStartPos()
+            const ctrl = this.getHeroTouchDiskEntranceControlPos(start, end)
+            this.heroTouchDiskEntering = true
+            this.heroCursorPos = { ...start }
+            this.heroCursorGlassPos = { ...start }
+            this.updateHeroFinePointer(start.x, start.y, {
+                introEffects: this.canHeroIntroPointerPlay(),
+                skipHover: true,
+            })
+
+            const duration = HERO_TOUCH_DISK_ENTRANCE_MS
+            const t0 = performance.now()
+
+            const tick = (now) => {
+                this.heroTouchDiskEntranceRaf = null
+                if (
+                    !this.isHeroTouchDiskMode() ||
+                    !this.heroTouchDiskEntering ||
+                    this.heroTouchDiskDragging ||
+                    this.heroTouchDiskHasMoved
+                ) {
+                    this.heroTouchDiskEntering = false
+                    return
+                }
+
+                const raw = Math.min(1, (now - t0) / duration)
+                // Ease-out cubic — moderate cruise, soft settle.
+                const t = 1 - (1 - raw) ** 3
+                const x = heroTouchDiskQuadPoint(t, start.x, ctrl.x, end.x)
+                const y = heroTouchDiskQuadPoint(t, start.y, ctrl.y, end.y)
+                this.heroCursorPos = { x, y }
+                this.heroCursorGlassPos = { x, y }
+                this.updateHeroFinePointer(x, y, {
+                    introEffects: this.canHeroIntroPointerPlay(),
+                    skipHover: true,
+                })
+
+                if (raw < 1) {
+                    this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
+                    return
+                }
+
+                this.finishHeroTouchDiskEntrance(end)
+            }
+
+            this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
+        },
+        markHeroTouchDiskInteracted() {
+            if (
+                !this.heroTouchDiskIdle &&
+                !this.heroTouchDiskBreathe &&
+                !this.heroTouchDiskEntering
+            ) {
+                return
+            }
+            this.cancelHeroTouchDiskEntranceFlight()
             this.heroTouchDiskIdle = false
             this.heroTouchDiskEntering = false
             this.heroTouchDiskBreathe = false
             if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
         },
         stopHeroTouchDisk() {
-            clearTimeout(this.heroTouchDiskEntranceTimer)
-            this.heroTouchDiskEntranceTimer = null
+            this.cancelHeroTouchDiskEntranceFlight()
             clearTimeout(this.heroTouchDiskPopTimer)
             this.heroTouchDiskPopTimer = null
             if (this.heroTouchDiskPopRaf != null) {
@@ -3094,6 +3205,11 @@ export default {
 
             // Don't kill breathe / morph until the gesture is a real drag or tap —
             // cutting breathe mid-pulse was causing a visible jiggle on tap.
+            // Interrupt entrance flight so the grab starts from the live position.
+            if (this.heroTouchDiskEntering) {
+                this.cancelHeroTouchDiskEntranceFlight()
+                this.heroTouchDiskEntering = false
+            }
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
@@ -3595,7 +3711,9 @@ export default {
                     !menuOpen &&
                     (!touchDisk ||
                         (!sectionNav &&
-                            (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging)))
+                            (this.heroTouchDiskHasMoved ||
+                                this.heroTouchDiskDragging ||
+                                this.heroTouchDiskEntering)))
                 const freezeIntroGlass =
                     touchDisk &&
                     this.heroCursorIntroGlassHandoff &&
@@ -3682,8 +3800,11 @@ export default {
                 const ny = gy + (ty - gy) * follow
 
                 // Keep the hover magnifier and its ring on one layer — no trailing ghost.
-                // Touch-disk drag tracks 1:1 so the disk reads as one solid body under the finger.
-                if (magnifierVisible || (touchDisk && this.heroTouchDiskDragging)) {
+                // Touch-disk drag / entrance fly tracks 1:1 so the disk reads as one solid body.
+                if (
+                    magnifierVisible ||
+                    (touchDisk && (this.heroTouchDiskDragging || this.heroTouchDiskEntering))
+                ) {
                     this.heroCursorGlassPos = { x: tx, y: ty }
                 } else if (
                     !returningHome &&
@@ -5622,10 +5743,6 @@ export default {
 .hero-intro-cursor-magnifier--touch,
 .hero-intro-cursor-ball--touch-fade {
     transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
-}
-
-.hero-intro-cursor-ball--touch-enter {
-    transition: opacity 1.8s cubic-bezier(0.33, 1, 0.4, 1);
 }
 
 .hero-intro-cursor-ball--touch-instant,
