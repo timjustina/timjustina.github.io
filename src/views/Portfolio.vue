@@ -5272,8 +5272,11 @@ export default {
                     clearSplit(wrap)
                     return
                 }
-                // Color split follows the live (possibly mid-flight) overlap
-                const splitPx = Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
+                // Color split follows the live (possibly mid-flight) overlap.
+                // Round to whole px so stack left + negative margin stay aligned.
+                const splitPx = Math.round(
+                    Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
+                )
                 const splitPct = (splitPx / textRect.width) * 100
                 wrap.style.setProperty('--about-location-split', `${splitPct}%`)
                 wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
@@ -7864,7 +7867,9 @@ export default {
         left: 0;
         top: 0;
         white-space: nowrap;
-        font-weight: 400;
+        /* Must match base .about-location-text / .about-role-text (300)
+           or glyph widths diverge and the overlap reads as doubled letters. */
+        font-weight: 300;
     }
 
     .about-location-text--glow,
