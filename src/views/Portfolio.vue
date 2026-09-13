@@ -491,7 +491,14 @@ import {
     scrollToPortfolioHash,
     scrollToWork,
 } from '../utils/scrollToAbout.js'
-import { DESKTOP_MEDIA_QUERY, MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
+import {
+    DESKTOP_MEDIA_QUERY,
+    MOBILE_ABOUT_MEDIA_QUERY,
+    MOBILE_MEDIA_QUERY,
+    SMALL_MOBILE_MEDIA_QUERY,
+    TABLET_MOBILE_MEDIA_QUERY,
+    WORK_DECOR_LINE_MEDIA_QUERY,
+} from '../utils/breakpoints.js'
 import {
     cancelImageExpand,
     prefersReducedMotion,
@@ -538,34 +545,40 @@ const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
-const HERO_TOUCH_DISK_EXPAND_MS = 420
-/** Soft open overshoot (ease-out back); close stays cubic. Tiny in→out bounce. */
-const HERO_TOUCH_DISK_EXPAND_OVERSHOOT = 1.18
+const HERO_TOUCH_DISK_EXPAND_MS = 560
+/** Soft shared open overshoot for labels / blue dot (frost has its own bounce). */
+const HERO_TOUCH_DISK_EXPAND_OVERSHOOT = 1.06
+/** Frost-only open overshoot — punchy expand then shrink-settle. */
+const HERO_TOUCH_DISK_FROST_OVERSHOOT = 1.62
+/** Frost open: initial squash depth (px) before the expand shoots out. */
+const HERO_TOUCH_DISK_FROST_DIP_PX = 18
+/** Frost open: linear progress window for the squash (0…1). */
+const HERO_TOUCH_DISK_FROST_DIP_UNTIL = 0.24
 /** Blue center diameter while menu is open (idle dot is 8). */
-const HERO_TOUCH_DISK_MENU_DOT_SIZE = 16
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 12
 /** Gap from blue center edge to the near edge of a menu label (menu open). */
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
-/** Gap from the outer edge of the longest label to the frost rim. */
-const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
 /** Must match `.hero-touch-disk-menu__item` box height (lh 30 + pad 14). */
 const HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX = 44
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
- * Two-item hero menu: Work at 180° + About at 0° when space allows.
- * A tight side swings that label around the blue (clock arm) up to 90° —
- * south near the top, north near the bottom — so labels stay readable.
- * Single-item menus stay horizontal on the outward side.
+ * Two-item hero menu: Work at 180° + About at 0° (always horizontal).
+ * Near edges the whole disk elastically bounces inward so labels + frost stay in view.
+ * Single-item menus stay horizontal on a preferred side.
  */
-/** Disk-center distance from viewport top/bottom that counts as “near edge”. */
-const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
+/** Viewport padding so labels / frost rim stay fully on-screen. */
+const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
 /**
  * Lower-corner park pocket (Work/About): keep the idle disk — no project magnifier.
- * Matches menu edge band; rest (~43px inset) still sits inside.
+ * Rest (~43px inset) still sits inside.
  */
 const HERO_TOUCH_DISK_CORNER_BAND_PX = 120
-/** Viewport padding so labels stay fully on-screen. */
-const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
+/** Elastic spring toward menu-safe position (underdamped for a soft bounce). */
+const HERO_TOUCH_DISK_EDGE_SPRING_K = 0.28
+const HERO_TOUCH_DISK_EDGE_SPRING_DAMP = 0.68
+/** While dragging open, how much past the safe edge rubber-bands (0 = hard clamp). */
+const HERO_TOUCH_DISK_EDGE_RUBBER = 0.28
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 /** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
 const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
@@ -620,8 +633,26 @@ function getHeroTouchDiskMenuLabelWidth(label) {
     return heroTouchDiskMenuLabelWidths[label] || heroTouchDiskMenuLabelMaxWidthPx || 58
 }
 
+/**
+ * Frost diameter: rim bisects the wider label (Work or About).
+ * Radius = blueR + label gap + half label width → diameter = blue + 2·gap + label.
+ * Used over blank space; over content we expand to the full cover size.
+ */
+function getHeroTouchDiskMenuFrostSizeCompact() {
+    if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
+    const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
+    return (
+        HERO_TOUCH_DISK_MENU_DOT_SIZE +
+        2 * HERO_TOUCH_DISK_MENU_LABEL_GAP_PX +
+        maxLabel
+    )
+}
+
+/** Gap from the outer edge of the longest label to the frost rim (content cover). */
+const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
+
 /** Frost diameter: blue → gap → longest label → gap past its outer edge. */
-function getHeroTouchDiskMenuFrostSize() {
+function getHeroTouchDiskMenuFrostSizeCover() {
     if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
     const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
     return (
@@ -633,6 +664,49 @@ function getHeroTouchDiskMenuFrostSize() {
     )
 }
 
+function getHeroTouchDiskMenuFrostSize(cover = false) {
+    return cover
+        ? getHeroTouchDiskMenuFrostSizeCover()
+        : getHeroTouchDiskMenuFrostSizeCompact()
+}
+
+/** Page content that needs full label frost backing (vs blank page chrome). */
+const HERO_TOUCH_DISK_CONTENT_SELECTOR = [
+    '.hero-intro',
+    '.hero-role',
+    '.hero-location',
+    '.project',
+    '.about-photo',
+    '.about-photo-column',
+    '.about-intro',
+    '.about-bio',
+    '.about-actions',
+    '.portfolio-site-footer',
+    '.portfolio-top-bar',
+    '.top-bar',
+].join(', ')
+
+const HERO_TOUCH_DISK_CONTENT_IGNORE_SELECTOR = [
+    '.hero-intro-cursor-ball',
+    '.hero-intro-cursor-magnifier',
+    '.hero-intro-cursor-drag-hit',
+    '.hero-touch-disk-menu',
+].join(', ')
+
+/** True when a viewport point sits on real page content (not empty background). */
+function isHeroTouchDiskPointOverContent(x, y) {
+    if (typeof document === 'undefined') return false
+    const stack =
+        document.elementsFromPoint?.(x, y) ??
+        [document.elementFromPoint(x, y)].filter(Boolean)
+    for (const el of stack) {
+        if (!(el instanceof Element)) continue
+        if (el.closest(HERO_TOUCH_DISK_CONTENT_IGNORE_SELECTOR)) continue
+        if (el.closest(HERO_TOUCH_DISK_CONTENT_SELECTOR)) return true
+    }
+    return false
+}
+
 /** Open: soft overshoot past 1 then settle. Close: ease-out cubic. */
 function heroTouchDiskExpandEase(t, opening) {
     const x = Math.max(0, Math.min(1, t))
@@ -642,65 +716,21 @@ function heroTouchDiskExpandEase(t, opening) {
     return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
 }
 
-/** AABB fit test for a label centered on a ray from the blue disk. */
-function heroTouchDiskMenuLabelFits(diskX, diskY, deg, width, height, gap, vw, vh, safe) {
-    const centerR = gap + width / 2
-    const rad = (deg * Math.PI) / 180
-    const cx = diskX + Math.cos(rad) * centerR
-    const cy = diskY + Math.sin(rad) * centerR
-    const c = Math.abs(Math.cos(rad))
-    const s = Math.abs(Math.sin(rad))
-    const aabbW = width * c + height * s
-    const aabbH = width * s + height * c
-    return (
-        cx - aabbW / 2 >= safe &&
-        cx + aabbW / 2 <= vw - safe &&
-        cy - aabbH / 2 >= safe &&
-        cy + aabbH / 2 <= vh - safe
-    )
+/**
+ * Frost disk only — obvious squash then rubber-band expand on open.
+ * `t` is linear 0…1 animation progress.
+ */
+function heroTouchDiskFrostExpandEase(t) {
+    const x = Math.max(0, Math.min(1, t))
+    const c1 = HERO_TOUCH_DISK_FROST_OVERSHOOT
+    const c3 = c1 + 1
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
 }
 
-/**
- * Smallest swing (0–90°) that keeps the label on-screen.
- * South: right 0°→90°, left 180°→90°.
- * North: right 0°→−90°, left 180°→270°.
- */
-function findHeroTouchDiskMenuSwingDeg(
-    side,
-    diskX,
-    diskY,
-    width,
-    height,
-    gap,
-    vw,
-    vh,
-    safe,
-    towardSouth = true,
-) {
-    for (let swing = 0; swing <= 90; swing += 1) {
-        let deg
-        if (towardSouth) {
-            deg = side === 'right' ? swing : 180 - swing
-        } else {
-            deg = side === 'right' ? -swing : 180 + swing
-        }
-        if (
-            heroTouchDiskMenuLabelFits(
-                diskX,
-                diskY,
-                deg,
-                width,
-                height,
-                gap,
-                vw,
-                vh,
-                safe,
-            )
-        ) {
-            return deg
-        }
-    }
-    return towardSouth ? 90 : side === 'right' ? -90 : 270
+function heroTouchDiskFrostOpenDipPx(t) {
+    const until = HERO_TOUCH_DISK_FROST_DIP_UNTIL
+    if (t <= 0 || t >= until) return 0
+    return Math.sin((t / until) * Math.PI) * HERO_TOUCH_DISK_FROST_DIP_PX
 }
 
 /** Place a label on a ray; left keeps end toward blue, right keeps start toward blue. */
@@ -715,6 +745,17 @@ function placeHeroTouchDiskMenuRadial(base, side, deg, gap, width) {
         rot: `${rot}deg`,
         anchor: 'radial',
     }
+}
+
+/** Soft rubber-band past a [min, max] range (iOS-style). */
+function heroTouchDiskRubber(value, min, max, factor = HERO_TOUCH_DISK_EDGE_RUBBER) {
+    if (max < min) {
+        const mid = (min + max) / 2
+        return mid
+    }
+    if (value < min) return min - (min - value) * factor
+    if (value > max) return max + (value - max) * factor
+    return value
 }
 
 /** Lower-left / lower-right park zones — keep the disk (no project magnifier). */
@@ -1025,7 +1066,8 @@ export default {
             pageEntranceDone: false,
             aboutRevealed: false,
             aboutEntranceDone: false,
-            // JS-owned so we can measure while hidden, then show after sync (avoids <800px flash)
+            // Hidden on all <800 until measured; tablet then reveals with the line clipped to work.
+            // ≤500 stays hidden (no work decor line).
             heroDecorHidden:
                 typeof window !== 'undefined' &&
                 window.matchMedia(MOBILE_MEDIA_QUERY).matches,
@@ -1059,6 +1101,9 @@ export default {
             heroIntroReconsolidating: false,
             heroIntroReconsolidateTimer: null,
             heroIntroDissipateScrollY: null,
+            // Tablet work-decor: true only after dissipate motion finishes; cleared when reconsolidate starts.
+            tabletWorkDecorReady: false,
+            tabletWorkDecorRevealTimer: null,
             // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
             // always reference this — never live layout during scroll/URL-bar resize.
             heroIntroRestLayout: null,
@@ -1103,12 +1148,22 @@ export default {
             heroTouchDiskMenuMetricsRev: 0,
             /** Visual diameter at menu-open start — expand lerps from this (smooth from glass/magnifier). */
             heroTouchDiskMenuFromSize: null,
+            /** When true, menu frost uses the full label-cover diameter. */
+            heroTouchDiskMenuOverContent: false,
+            /** Soft-lerped frost diameter while the menu is open. */
+            heroTouchDiskMenuFrostLive: 0,
             heroTouchDiskPopping: false,
             heroTouchDiskPopTimer: null,
             heroTouchDiskPopRaf: null,
             heroTouchDiskSinkScale: 1,
             /** 0 = idle size, 1 = full menu frost — drives continuous expand. */
             heroTouchDiskExpand: 0,
+            /** Linear 0…1 progress of the active expand/close animation. */
+            heroTouchDiskExpandLinear: 0,
+            /** True while an open (not close) expand animation is running. */
+            heroTouchDiskExpandOpening: false,
+            /** Elastic edge bounce velocity while the menu is open. */
+            heroTouchDiskEdgeVel: { x: 0, y: 0 },
             heroTouchDiskPointerStart: { x: 0, y: 0 },
             heroTouchDiskOutsideCloseBound: false,
         }
@@ -1209,7 +1264,7 @@ export default {
         heroTouchDiskMenuFan() {
             return 'left'
         },
-        /** Horizontal / clock-arm label layout for all touch-disk menus. */
+        /** Horizontal labels — edge collisions bounce the disk, not the words. */
         heroTouchDiskMenuStacked() {
             return true
         },
@@ -1220,13 +1275,7 @@ export default {
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const diskX = this.heroCursorGlassPos?.x ?? 0
-            const diskY = this.heroCursorGlassPos?.y ?? 0
-            const vw =
-                typeof window !== 'undefined' ? window.innerWidth : 400
-            const vh =
-                typeof window !== 'undefined' ? window.innerHeight : 800
             const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
-            const labelH = HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX
 
             const work = { id: 'work', label: 'Work', action: 'work' }
             const about = { id: 'about', label: 'About', action: 'about' }
@@ -1256,42 +1305,17 @@ export default {
                 return [placeOutward(base, outwardLeft)]
             }
 
-            // Two items: Work @ 180° / About @ 0°; swing toward open space (≤90°).
-            const towardSouth = diskY <= vh - HERO_TOUCH_DISK_MENU_EDGE_BAND_PX
+            // Two items: always Work @ 180° / About @ 0°.
             const workW = getHeroTouchDiskMenuLabelWidth('Work')
             const aboutW = getHeroTouchDiskMenuLabelWidth('About')
-            const workDeg = findHeroTouchDiskMenuSwingDeg(
-                'left',
-                diskX,
-                diskY,
-                workW,
-                labelH,
-                gap,
-                vw,
-                vh,
-                safe,
-                towardSouth,
-            )
-            const aboutDeg = findHeroTouchDiskMenuSwingDeg(
-                'right',
-                diskX,
-                diskY,
-                aboutW,
-                labelH,
-                gap,
-                vw,
-                vh,
-                safe,
-                towardSouth,
-            )
             return [
-                placeHeroTouchDiskMenuRadial(work, 'left', workDeg, gap, workW),
-                placeHeroTouchDiskMenuRadial(about, 'right', aboutDeg, gap, aboutW),
+                placeHeroTouchDiskMenuRadial(work, 'left', 180, gap, workW),
+                placeHeroTouchDiskMenuRadial(about, 'right', 0, gap, aboutW),
             ]
         },
         heroTouchDiskMenuFrostSize() {
             void this.heroTouchDiskMenuMetricsRev
-            return getHeroTouchDiskMenuFrostSize()
+            return getHeroTouchDiskMenuFrostSize(this.heroTouchDiskMenuOverContent)
         },
         heroTouchDiskMenuStyle() {
             const { x, y } = this.heroCursorGlassPos
@@ -1366,7 +1390,8 @@ export default {
             if (menuOpen) {
                 size =
                     HERO_CURSOR_DOT_SIZE +
-                    (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) * expandT
+                    (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) *
+                        Math.min(1, Math.max(0, expandT))
             } else if (this.heroCursorIntroGlassHandoff) {
                 const dotVisual = heroCursorRangeDotVisual(rangeMix)
                 scale = dotVisual.scale
@@ -1457,18 +1482,26 @@ export default {
             let size
             if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
-                const open = this.heroTouchDiskMenuFrostSize
+                const open =
+                    this.heroTouchDiskMenuFrostLive > 0
+                        ? this.heroTouchDiskMenuFrostLive
+                        : this.heroTouchDiskMenuFrostSize
                 const from =
                     this.heroTouchDiskMenuFromSize != null
                         ? this.heroTouchDiskMenuFromSize
                         : idle
-                const t = expandT
-                // Soft dip + open overshoot from expand ease (in then out bounce).
-                const fromIdle = Math.abs(from - idle) < 4
-                const dip = fromIdle
-                    ? Math.sin(Math.min(1, Math.max(0, t) / 0.22) * Math.PI) * 7
-                    : 0
-                size = from + (open - from) * t - dip
+                // Frost-only bounce on open; labels/blue use the milder shared expand.
+                let blend
+                let dip = 0
+                if (this.heroTouchDiskPopping && this.heroTouchDiskExpandOpening) {
+                    const u = this.heroTouchDiskExpandLinear
+                    blend = heroTouchDiskFrostExpandEase(u)
+                    const fromIdle = Math.abs(from - idle) < 4
+                    if (fromIdle) dip = heroTouchDiskFrostOpenDipPx(u)
+                } else {
+                    blend = Math.min(expandT, 1.15)
+                }
+                size = from + (open - from) * blend - dip
             } else {
                 size = heroCursorDotDiskSize(hoverMix)
             }
@@ -1700,8 +1733,17 @@ export default {
         this.onMobileHeroOrientation = () => {
             window.setTimeout(() => {
                 this.lockHeroViewportHeight({ force: true })
+                // Same as width resize: capture refuses mid-dissipate, so snap
+                // clear first or landscape→portrait leaves letters opacity:0.
+                const wasInFlight =
+                    this.heroIntroDissipated || this.heroIntroReconsolidating
+                this.clearHeroIntroPointerShift()
                 this.invalidateHeroIntroRestLayout()
+                if (wasInFlight) {
+                    this.clearHeroIntroDissipate()
+                }
                 this.$nextTick(() => {
+                    this.captureHeroIntroRestLayout()
                     this.updateHeroIntroDissipateFromScroll({
                         instant: true,
                         forcePrepare: true,
@@ -1839,6 +1881,7 @@ export default {
         this.stopHeroCursorGlassFollow()
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
+        clearTimeout(this.tabletWorkDecorRevealTimer)
         clearTimeout(this.heroTouchDiskEntranceTimer)
         if (this.heroTouchDiskEntranceRaf != null) {
             cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
@@ -1994,9 +2037,9 @@ export default {
                 return
             }
 
-            // Deco line present (desktop): cards stay put — no scroll fade.
-            // Deco line hidden (mobile): cards fade in/out each time they enter/leave view.
-            if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+            // Deco line present (≥501): thumbnails stay put — no scroll fade.
+            // Deco line absent (≤500): cards fade in/out as they enter/leave view.
+            if (window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
                 this.revealAllProjects()
                 return
             }
@@ -2041,7 +2084,7 @@ export default {
             const about = this.$el?.querySelector('#about')
             if (!about) return
 
-            const isMobileAbout = window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches
+            const isMobileAbout = window.matchMedia(MOBILE_ABOUT_MEDIA_QUERY).matches
 
             this.aboutRevealObserver = new IntersectionObserver(
                 (entries) => {
@@ -2208,6 +2251,13 @@ export default {
                 requestAnimationFrame(() => {
                     if (this.pageRevealed) return
                     this.pageRevealed = true
+                    // Tablet-mobile: show work run of the line; intro overlap stays clipped
+                    // until dissipate clears the text box.
+                    if (window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                        this.heroDecorHidden = false
+                        this.syncHeroDecorHeight()
+                        this.syncTabletWorkDecorVisibility()
+                    }
                     this.syncDecorLineX()
                     this.publishDecorLineAlign()
                     this.schedulePageEntranceSettle()
@@ -2308,6 +2358,7 @@ export default {
             this.lockHeroViewportHeight()
             this.syncHeroDecorHeight()
             this.syncProjectCaptionLineOffset()
+            this.syncTabletWorkDecorVisibility()
             this.publishDecorLineAlign()
             this.$nextTick(() => {
                 if (this.heroTouchDiskMode) {
@@ -2335,15 +2386,20 @@ export default {
         },
         onMobileHeroLayoutChange() {
             const isMobile = this.heroIntroLetterMq.matches
+            const hasDecorLine = window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches
+            const isTabletMobile = window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
             const nextLetter = !this.heroIntroReduceMq.matches
             const letterChanged = nextLetter !== this.heroIntroLetterMode
-            const leavingMobile = this.heroDecorHidden && !isMobile
+            // Desktop only: unhide after leaving ≤500. Tablet stays dissipate-gated.
+            const revealingDecor =
+                this.heroDecorHidden && hasDecorLine && !isTabletMobile
 
             if (letterChanged && !nextLetter) {
                 this.onHeroPointerEndHandlerImpl({ preserveTouchDisk: false })
             }
 
-            if (isMobile) {
+            // ≤500: stacked work, no decor line, scroll-fade cards.
+            if (isMobile && !hasDecorLine) {
                 this.heroDecorHidden = true
                 this.heroLocationVisible = false
                 if (letterChanged) this.heroIntroLetterMode = nextLetter
@@ -2374,38 +2430,71 @@ export default {
                 return
             }
 
-            // Deco line back → cards should just be there (no scroll fade)
+            // ≥501: desktop-style work. Desktop always shows the line; tablet only
+            // after hero-intro dissipate (hidden again after reconsolidate).
             this.revealAllProjects()
-            this.lockHeroViewportHeight({ force: true })
-            this.clearHeroIntroDissipate()
 
-            if (letterChanged) this.heroIntroLetterMode = nextLetter
-
-            // Tablet↔desktop letter/motion-only: sync without hiding the line
-            if (!leavingMobile) {
+            if (isTabletMobile) {
+                this.heroLocationVisible = false
+                if (letterChanged) this.heroIntroLetterMode = nextLetter
+                if (!nextLetter) this.clearHeroIntroDissipate()
                 this.$nextTick(() => {
+                    this.lockHeroViewportHeight({ force: true })
                     this.syncHeroDecorHeight()
                     this.syncProjectCaptionLineOffset()
+                    this.syncAboutLocationTextClip()
                     if (this.heroIntroLetterMode && !this.pageRevealed) {
                         this.syncHeroIntroCharColumns()
                     }
+                    if (nextLetter) {
+                        this.invalidateHeroIntroRestLayout()
+                        this.captureHeroIntroRestLayout()
+                        this.updateHeroIntroDissipateFromScroll({
+                            instant: true,
+                            forcePrepare: true,
+                        })
+                        if (
+                            this.pageEntranceDone &&
+                            isHeroTouchDiskEnvironment() &&
+                            !this.isHeroIntroFinePointer()
+                        ) {
+                            this.primeHeroTouchDisk()
+                        }
+                    }
+                    this.syncTabletWorkDecorVisibility()
                 })
                 return
             }
 
-            // Leaving mobile → tablet/desktop: keep line invisible until height matches layout
+            this.lockHeroViewportHeight({ force: true })
+            this.clearHeroIntroDissipate()
+            if (letterChanged) this.heroIntroLetterMode = nextLetter
+
+            const afterDecorSync = () => {
+                this.lockHeroViewportHeight({ force: true })
+                this.syncHeroDecorHeight()
+                this.syncProjectCaptionLineOffset()
+                this.syncAboutLocationTextClip()
+                if (this.heroIntroLetterMode && !this.pageRevealed) {
+                    this.syncHeroIntroCharColumns()
+                }
+            }
+
+            // Already showing the line: sync without a hide flash.
+            if (!revealingDecor) {
+                this.$nextTick(() => {
+                    afterDecorSync()
+                })
+                return
+            }
+
+            // Leaving ≤500 → desktop: keep line invisible until height matches layout.
             this.heroDecorHidden = true
 
             this.$nextTick(() => {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        this.lockHeroViewportHeight({ force: true })
-                        this.syncHeroDecorHeight()
-                        this.syncProjectCaptionLineOffset()
-                        this.syncAboutLocationTextClip()
-                        if (this.heroIntroLetterMode && !this.pageRevealed) {
-                            this.syncHeroIntroCharColumns()
-                        }
+                        afterDecorSync()
                         this.heroDecorHidden = false
                         this.updateHeroLocationVisibility()
                         this.publishDecorLineAlign()
@@ -2686,6 +2775,159 @@ export default {
             const maxY = Math.max(minY, vh - radius)
 
             return { minX, maxX, minY, maxY, radius }
+        },
+        /** Current frosted-disk radius (includes open bounce overshoot). */
+        getHeroTouchDiskMenuVisualRadius() {
+            const idle = HERO_CURSOR_GLASS_IDLE_SIZE
+            const open =
+                this.heroTouchDiskMenuFrostLive > 0
+                    ? this.heroTouchDiskMenuFrostLive
+                    : this.heroTouchDiskMenuFrostSize
+            const from =
+                this.heroTouchDiskMenuFromSize != null
+                    ? this.heroTouchDiskMenuFromSize
+                    : idle
+            const expandT = this.heroTouchDiskExpand
+            let blend
+            if (this.heroTouchDiskPopping && this.heroTouchDiskExpandOpening) {
+                blend = heroTouchDiskFrostExpandEase(this.heroTouchDiskExpandLinear)
+            } else {
+                blend = Math.min(Math.max(expandT, 0), 1.15)
+            }
+            const size = Math.max(idle, from + (open - from) * blend)
+            return size / 2
+        },
+        /**
+         * Center bounds when the menu is open: frost rim + horizontal labels stay in view.
+         * Pads grow with expand so the disk elastically nudges inward as it blooms.
+         */
+        getHeroTouchDiskMenuSafeBounds() {
+            const idleR = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 400
+            const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+            const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
+            const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+            const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+            const labelH = HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX
+            const frostR = this.getHeroTouchDiskMenuVisualRadius()
+            const expandT = Math.max(0, Math.min(1, this.heroTouchDiskExpand))
+
+            let padL = frostR
+            let padR = frostR
+            let padT = frostR
+            let padB = frostR
+
+            if (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about') {
+                // Match single-item outward flip: pad the side the label actually uses.
+                const label =
+                    this.heroTouchDiskZone === 'work' ? 'About' : 'Work'
+                const labelW = getHeroTouchDiskMenuLabelWidth(label)
+                const diskX = this.heroCursorGlassPos?.x ?? 0
+                const outwardLeft = diskX >= gap + labelW + safe
+                if (outwardLeft) {
+                    padL = Math.max(frostR, gap + labelW)
+                } else {
+                    padR = Math.max(frostR, gap + labelW)
+                }
+                padT = Math.max(frostR, labelH / 2)
+                padB = Math.max(frostR, labelH / 2)
+            } else {
+                const workW = getHeroTouchDiskMenuLabelWidth('Work')
+                const aboutW = getHeroTouchDiskMenuLabelWidth('About')
+                padL = Math.max(frostR, gap + workW)
+                padR = Math.max(frostR, gap + aboutW)
+                padT = Math.max(frostR, labelH / 2)
+                padB = Math.max(frostR, labelH / 2)
+            }
+
+            // Blend from idle radius → full menu pads as the frost expands.
+            const mix = (openPad) => idleR + (openPad - idleR) * expandT
+            let minX = safe + mix(padL)
+            let maxX = vw - safe - mix(padR)
+            let minY = safe + mix(padT)
+            let maxY = vh - safe - mix(padB)
+            if (maxX < minX) {
+                const mid = (minX + maxX) / 2
+                minX = mid
+                maxX = mid
+            }
+            if (maxY < minY) {
+                const mid = (minY + maxY) / 2
+                minY = mid
+                maxY = mid
+            }
+            return { minX, maxX, minY, maxY }
+        },
+        clampHeroTouchDiskToMenuSafe(x, y, { rubber = false } = {}) {
+            const menuOpen =
+                this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            // Single-item (Work/About zones): idle viewport bounds only — labels may
+            // sit past the edge, matching pre-bounce behavior.
+            const useMenuSafe =
+                menuOpen &&
+                this.heroTouchDiskZone !== 'work' &&
+                this.heroTouchDiskZone !== 'about'
+            const bounds = useMenuSafe
+                ? this.getHeroTouchDiskMenuSafeBounds()
+                : this.getHeroTouchDiskBounds()
+            if (rubber && useMenuSafe) {
+                return {
+                    x: heroTouchDiskRubber(x, bounds.minX, bounds.maxX),
+                    y: heroTouchDiskRubber(y, bounds.minY, bounds.maxY),
+                }
+            }
+            return {
+                x: Math.min(bounds.maxX, Math.max(bounds.minX, x)),
+                y: Math.min(bounds.maxY, Math.max(bounds.minY, y)),
+            }
+        },
+        /** Underdamped spring so the open menu elastically settles in-view. */
+        stepHeroTouchDiskEdgeSpring() {
+            if (!this.heroTouchDiskMode || !this.heroCursorActive) return false
+            if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) {
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                return false
+            }
+            // Double menu only — single-item menus keep the old free edge behavior.
+            if (
+                this.heroTouchDiskZone === 'work' ||
+                this.heroTouchDiskZone === 'about'
+            ) {
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                return false
+            }
+            if (this.heroTouchDiskDragging) return false
+
+            const bounds = this.getHeroTouchDiskMenuSafeBounds()
+            const pos = this.heroCursorGlassPos
+            const tx = Math.min(bounds.maxX, Math.max(bounds.minX, pos.x))
+            const ty = Math.min(bounds.maxY, Math.max(bounds.minY, pos.y))
+            const dx = tx - pos.x
+            const dy = ty - pos.y
+            const vel = this.heroTouchDiskEdgeVel
+            const dist = Math.hypot(dx, dy)
+            const speed = Math.hypot(vel.x, vel.y)
+            if (dist < 0.35 && speed < 0.35) {
+                if (dist > 0.01) {
+                    this.heroCursorPos = { x: tx, y: ty }
+                    this.heroCursorGlassPos = { x: tx, y: ty }
+                }
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                return false
+            }
+
+            vel.x =
+                vel.x * HERO_TOUCH_DISK_EDGE_SPRING_DAMP +
+                dx * HERO_TOUCH_DISK_EDGE_SPRING_K
+            vel.y =
+                vel.y * HERO_TOUCH_DISK_EDGE_SPRING_DAMP +
+                dy * HERO_TOUCH_DISK_EDGE_SPRING_K
+            const nx = pos.x + vel.x
+            const ny = pos.y + vel.y
+            this.heroCursorPos = { x: nx, y: ny }
+            this.heroCursorGlassPos = { x: nx, y: ny }
+            this.heroTouchDiskHasMoved = true
+            return true
         },
         computeHeroTouchDiskZone() {
             if (typeof window === 'undefined') return 'hero'
@@ -3019,10 +3261,15 @@ export default {
                     this.heroTouchDiskPopRaf = null
                 }
                 this.heroTouchDiskExpand = 0
+                this.heroTouchDiskExpandLinear = 0
+                this.heroTouchDiskExpandOpening = false
                 this.heroTouchDiskMenuOpen = false
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskSinkScale = 1
                 this.heroTouchDiskMenuFromSize = null
+                this.heroTouchDiskMenuFrostLive = 0
+                this.heroTouchDiskMenuOverContent = false
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 return
             }
             this.animateHeroTouchDiskExpand(0)
@@ -3053,9 +3300,64 @@ export default {
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
             this.refreshHeroTouchDiskMenuMetrics()
+            this.syncHeroTouchDiskMenuOverContent()
+            this.heroTouchDiskMenuFrostLive = this.heroTouchDiskMenuFrostSize
+            this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
             this.heroTouchDiskMenuOpen = true
             this.bindHeroTouchDiskOutsideClose()
             this.animateHeroTouchDiskExpand(1)
+            // Edge collision: spring the disk inward as frost + labels need room.
+            this.startHeroCursorGlassFollow()
+        },
+        /**
+         * Cover frost when the blue disk or either label sits on page content;
+         * compact frost is fine over blank space.
+         */
+        syncHeroTouchDiskMenuOverContent() {
+            if (!this.heroTouchDiskMode) {
+                this.heroTouchDiskMenuOverContent = false
+                return
+            }
+            const diskX = this.heroCursorGlassPos?.x ?? this.heroCursorPos?.x ?? 0
+            const diskY = this.heroCursorGlassPos?.y ?? this.heroCursorPos?.y ?? 0
+            if (isHeroTouchDiskPointOverContent(diskX, diskY)) {
+                this.heroTouchDiskMenuOverContent = true
+                return
+            }
+            // Labels can overhang onto content even when the blue sits on blank.
+            for (const item of this.heroTouchDiskMenuItems) {
+                const lx = diskX + (parseFloat(item.x) || 0)
+                const ly = diskY + (parseFloat(item.y) || 0)
+                if (isHeroTouchDiskPointOverContent(lx, ly)) {
+                    this.heroTouchDiskMenuOverContent = true
+                    return
+                }
+            }
+            this.heroTouchDiskMenuOverContent = false
+        },
+        /** Keep live frost diameter tracking compact↔cover while the menu is up. */
+        syncHeroTouchDiskMenuFrostLive() {
+            if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) {
+                this.heroTouchDiskMenuFrostLive = 0
+                return
+            }
+            this.syncHeroTouchDiskMenuOverContent()
+            const target = this.heroTouchDiskMenuFrostSize
+            const expandT = this.heroTouchDiskExpand
+            if (this.heroTouchDiskMenuFrostLive <= 0) {
+                this.heroTouchDiskMenuFrostLive = target
+                return
+            }
+            // During open/close expand, track the target directly — style lerps from→open.
+            if (expandT < 0.98 && this.heroTouchDiskPopping) {
+                this.heroTouchDiskMenuFrostLive = target
+                return
+            }
+            this.heroTouchDiskMenuFrostLive +=
+                (target - this.heroTouchDiskMenuFrostLive) * 0.22
+            if (Math.abs(target - this.heroTouchDiskMenuFrostLive) < 0.5) {
+                this.heroTouchDiskMenuFrostLive = target
+            }
         },
         /** Menu from blue-dot, glass, or magnifier — available across the full viewport. */
         canOpenHeroTouchDiskMenu() {
@@ -3165,13 +3467,20 @@ export default {
 
             if (prefersReducedMotion()) {
                 this.heroTouchDiskExpand = to
+                this.heroTouchDiskExpandLinear = to
+                this.heroTouchDiskExpandOpening = false
                 this.heroTouchDiskSinkScale = 1
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskMenuOpen = to > 0.5
                 if (to < 0.5) {
                     this.unbindHeroTouchDiskOutsideClose()
                     this.heroTouchDiskMenuFromSize = null
+                    this.heroTouchDiskMenuFrostLive = 0
+                    this.heroTouchDiskMenuOverContent = false
+                    this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 } else {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                    this.stepHeroTouchDiskEdgeSpring()
                     this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
                 }
                 return
@@ -3180,6 +3489,7 @@ export default {
             this.markHeroTouchDiskInteracted()
             this.heroCursorGlassPos = { ...this.heroCursorPos }
             this.heroTouchDiskPopping = true
+            this.heroTouchDiskExpandOpening = to > 0.5
             this.heroTouchDiskSinkScale = 1
 
             const from = this.heroTouchDiskExpand
@@ -3193,20 +3503,29 @@ export default {
             const tick = (now) => {
                 const t = Math.min(1, (now - start) / duration)
                 const opening = to > 0.5
+                this.heroTouchDiskExpandLinear = t
                 const e = heroTouchDiskExpandEase(t, opening)
                 this.heroTouchDiskExpand = from + (to - from) * e
+                this.syncHeroTouchDiskMenuFrostLive()
                 if (t < 1) {
                     this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
                     return
                 }
                 this.heroTouchDiskPopRaf = null
                 this.heroTouchDiskExpand = to
+                this.heroTouchDiskExpandLinear = to
+                this.heroTouchDiskExpandOpening = false
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskMenuOpen = to > 0.5
                 if (to < 0.5) {
                     this.unbindHeroTouchDiskOutsideClose()
                     this.heroTouchDiskMenuFromSize = null
+                    this.heroTouchDiskMenuFrostLive = 0
+                    this.heroTouchDiskMenuOverContent = false
+                    this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 } else {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                    this.stepHeroTouchDiskEdgeSpring()
                     this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
                 }
             }
@@ -3241,15 +3560,19 @@ export default {
             }
         },
         moveHeroTouchDiskTo(clientX, clientY) {
-            const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
-            const x = Math.min(
-                maxX,
-                Math.max(minX, clientX + this.heroTouchDiskGrabOffset.x),
-            )
-            const y = Math.min(
-                maxY,
-                Math.max(minY, clientY + this.heroTouchDiskGrabOffset.y),
-            )
+            const rawX = clientX + this.heroTouchDiskGrabOffset.x
+            const rawY = clientY + this.heroTouchDiskGrabOffset.y
+            const menuOpen =
+                this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            const { x, y } = menuOpen
+                ? this.clampHeroTouchDiskToMenuSafe(rawX, rawY, { rubber: true })
+                : (() => {
+                      const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
+                      return {
+                          x: Math.min(maxX, Math.max(minX, rawX)),
+                          y: Math.min(maxY, Math.max(minY, rawY)),
+                      }
+                  })()
             this.updateHeroFinePointer(x, y, {
                 introEffects:
                     this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
@@ -3282,6 +3605,7 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = event.pointerId
             this.heroTouchDiskPointerStart = { x: event.clientX, y: event.clientY }
+            this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
             this.heroTouchDiskGrabOffset = {
                 x: x - event.clientX,
                 y: y - event.clientY,
@@ -3325,6 +3649,11 @@ export default {
                 /* ignore */
             }
             this.endHeroTouchDiskDrag()
+            // After a rubber-band drag with the menu open, spring back in-view.
+            if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                this.startHeroCursorGlassFollow()
+            }
 
             if (wasTap) {
                 if (
@@ -3953,6 +4282,11 @@ export default {
                 this.heroCursorMirrorHoverTarget = hoverTarget
                 this.updateHeroCursorMagnifierLayout()
 
+                if (menuOpen || this.heroTouchDiskExpand > 0.02) {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                    this.stepHeroTouchDiskEdgeSpring()
+                }
+
                 this.heroCursorGlassRaf = requestAnimationFrame(tick)
             }
 
@@ -4571,6 +4905,28 @@ export default {
 
                 this.updateHeroTouchDiskZoneFromScroll()
 
+                // Outside hero: any scroll parks the disk back in the lower-right corner.
+                if (this.heroTouchDiskZone !== 'hero') {
+                    if (
+                        this.heroTouchDiskMenuOpen ||
+                        this.heroTouchDiskExpand > 0.02
+                    ) {
+                        this.closeHeroTouchDiskMenu()
+                    }
+                    this.heroTouchDiskHasMoved = false
+                    this.heroTouchDiskParkZone = this.heroTouchDiskZone
+                    this.clearHeroTouchDiskMorph()
+                    const pos = this.getHeroTouchDiskRestPos()
+                    this.updateHeroFinePointer(pos.x, pos.y, {
+                        introEffects: false,
+                        skipHover: true,
+                    })
+                    // Leave glass to chase so the return reads soft, not a hard snap.
+                    this.startHeroCursorGlassFollow()
+                    this.refreshHeroTouchDiskStage()
+                    return
+                }
+
                 if (!this.heroTouchDiskHasMoved) {
                     this.syncHeroTouchDiskRestPosition()
                     return
@@ -4585,6 +4941,9 @@ export default {
                         this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
                     skipHover: true,
                 })
+                if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                }
             })
         },
         applyHeroIntroPointerShift() {
@@ -5031,6 +5390,8 @@ export default {
                     ? parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
                     : 0.9
                 const waitMs = Math.ceil((this.heroIntroDissipateMaxDelay + duration) * 1000) + 40
+                // Hide tablet line as soon as letters start coming back.
+                this.hideTabletWorkDecorLine()
                 // Settle letters around the glass if it stayed among the text.
                 this.syncHeroTouchDiskIntroRepel()
                 this.heroIntroReconsolidateTimer = setTimeout(() => {
@@ -5051,7 +5412,11 @@ export default {
                 this.heroIntroReconsolidating = false
                 clearTimeout(this.heroIntroReconsolidateTimer)
                 this.heroIntroReconsolidateTimer = null
+                this.hideTabletWorkDecorLine()
                 this.syncHeroTouchDiskIntroRepel()
+            } else {
+                // Dissipate on: reveal tablet line only after the fly-out finishes.
+                this.scheduleTabletWorkDecorReveal({ instant })
             }
 
             if (instant) {
@@ -5135,6 +5500,119 @@ export default {
                 }
             }
             this.syncHeroTouchDiskIntroRepel()
+            this.hideTabletWorkDecorLine()
+        },
+        getHeroIntroDissipateWaitMs(intro, progress = 1) {
+            const introStyles = intro ? getComputedStyle(intro) : null
+            const duration = introStyles
+                ? parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
+                : 0.9
+            const p = Math.max(0, Math.min(1, progress))
+            return Math.ceil((this.heroIntroDissipateMaxDelay + duration) * p * 1000) + 40
+        },
+        clearTabletWorkDecorRevealTimer() {
+            clearTimeout(this.tabletWorkDecorRevealTimer)
+            this.tabletWorkDecorRevealTimer = null
+        },
+        /** Re-clip the intro overlap (reconsolidate start / clear). */
+        hideTabletWorkDecorLine() {
+            this.clearTabletWorkDecorRevealTimer()
+            this.tabletWorkDecorReady = false
+            this.syncTabletWorkDecorVisibility()
+        },
+        /**
+         * After dissipate is partly clear, unclip the intro-overlapping segment.
+         * Instant dissipate unclips immediately (letters already gone).
+         */
+        scheduleTabletWorkDecorReveal({ instant = false } = {}) {
+            this.clearTabletWorkDecorRevealTimer()
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) return
+
+            if (instant) {
+                this.tabletWorkDecorReady = true
+                this.syncTabletWorkDecorVisibility()
+                return
+            }
+
+            // Keep intro overlap clipped while early letters are still flying out.
+            this.tabletWorkDecorReady = false
+            this.syncTabletWorkDecorVisibility()
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const waitMs = this.getHeroIntroDissipateWaitMs(intro, 0.12)
+            this.tabletWorkDecorRevealTimer = setTimeout(() => {
+                this.tabletWorkDecorRevealTimer = null
+                if (!this.heroIntroDissipated || this.heroIntroReconsolidating) return
+                this.tabletWorkDecorReady = true
+                this.syncTabletWorkDecorVisibility()
+            }, waitMs)
+        },
+        /**
+         * Clip the top of `.hero-decor` so it starts below the hero intro box.
+         * `revealIntro` true → full line including the intro overlap.
+         */
+        applyTabletWorkDecorIntroClip(revealIntro) {
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor) return
+
+            if (
+                typeof window === 'undefined' ||
+                !window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
+            ) {
+                decor.style.removeProperty('--hero-decor-intro-clip')
+                return
+            }
+
+            if (revealIntro) {
+                decor.style.setProperty('--hero-decor-intro-clip', '0px')
+                return
+            }
+
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) {
+                decor.style.setProperty('--hero-decor-intro-clip', '0px')
+                return
+            }
+
+            const decorTop = decor.getBoundingClientRect().top
+            const introBottom = intro.getBoundingClientRect().bottom
+            const introClip = Math.round(introBottom - decorTop)
+            // Cover through the text box and on past the fold so the line
+            // only reads below the first viewport until dissipate unclips.
+            const viewportClip = Math.round(window.innerHeight - decorTop + 12)
+            const clip = Math.max(0, Math.max(introClip, viewportClip))
+            decor.style.setProperty('--hero-decor-intro-clip', `${clip}px`)
+        },
+        /**
+         * Tablet-mobile (501–799): the work/about run of the line stays visible.
+         * Only the segment overlapping the hero intro unclips after dissipate,
+         * and reclips when reconsolidate starts.
+         */
+        syncTabletWorkDecorVisibility() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                this.$el
+                    ?.querySelector('.hero-decor')
+                    ?.style.removeProperty('--hero-decor-intro-clip')
+                return
+            }
+
+            const canDissipate =
+                this.heroIntroLetterMode &&
+                !prefersReducedMotion() &&
+                this.pageEntranceDone
+
+            // Work run always on once the page is up; intro overlap is clip-gated.
+            this.heroDecorHidden = !(this.pageRevealed || this.pageEntranceDone)
+            const revealIntro = canDissipate ? this.tabletWorkDecorReady : this.pageEntranceDone
+
+            this.$nextTick(() => {
+                this.syncHeroDecorHeight()
+                this.applyTabletWorkDecorIntroClip(revealIntro)
+                this.syncProjectCaptionLineOffset()
+                if (!this.heroDecorHidden) this.publishDecorLineAlign()
+            })
         },
         /**
          * Left-biased stagger with per-letter random jitter. Delays are scaled
@@ -5305,7 +5783,7 @@ export default {
                 wrap?.style.removeProperty('--about-location-white-align')
             }
 
-            if (!window.matchMedia('(max-width: 600px)').matches) {
+            if (!window.matchMedia(MOBILE_ABOUT_MEDIA_QUERY).matches) {
                 clearSplit(locationWrap)
                 clearSplit(roleWrap)
                 meta.style.removeProperty('--about-location-overlap-nudge')
@@ -5454,16 +5932,16 @@ export default {
             const decor = this.$el?.querySelector('.hero-decor')
             const heroIntro = this.$el?.querySelector('.hero-intro')
             const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
-            const desktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
-            // Work-slot lock + decor line are desktop-only; skip the forced reflow on mobile.
-            if (desktop) {
+            const hasDecorLine = window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches
+            // Work-slot lock + decor line from ≥501; skip the forced reflow on small mobile.
+            if (hasDecorLine) {
                 this.syncWorkGridSlots()
             }
             if (!decor || !heroIntro || !workLastAnchor) {
                 return
             }
 
-            if (!desktop || window.getComputedStyle(decor).display === 'none') {
+            if (!hasDecorLine || window.getComputedStyle(decor).display === 'none') {
                 return
             }
 
@@ -5479,6 +5957,7 @@ export default {
                 parseFloat(decorStyles.getPropertyValue('--hero-decor-top-offset')) || 0
             const belowIntroGap =
                 parseFloat(decorStyles.getPropertyValue('--hero-decor-below-intro-gap')) || 0
+            // Desktop + tablet-mobile: line begins at the hero intro height.
             const clipTop =
                 belowIntroGap > 0 ? introRect.bottom + belowIntroGap : introRect.top + topOffset
             decor.style.top = `${Math.round(clipTop - wrapTop)}px`
@@ -5491,13 +5970,25 @@ export default {
 
             this.syncAboutLineBridge()
             this.syncProjectCaptionLineOffset()
+
+            // Keep tablet intro-overlap clip accurate after layout changes.
+            if (window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                const canDissipate =
+                    this.heroIntroLetterMode &&
+                    !prefersReducedMotion() &&
+                    this.pageEntranceDone
+                const revealIntro = canDissipate
+                    ? this.tabletWorkDecorReady
+                    : this.pageEntranceDone
+                this.applyTabletWorkDecorIntroClip(revealIntro)
+            }
         },
         onHeroDecorFlyEnd(event) {
             if (!String(event.animationName).includes('portfolio-fly-from-right')) return
             this.publishDecorLineAlign()
         },
         syncDecorLineX() {
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) return
 
             const anchor = this.$el?.querySelector('.hero-decor-anchor')
             if (!anchor || window.getComputedStyle(anchor).display === 'none') return
@@ -5511,7 +6002,7 @@ export default {
             )
         },
         publishDecorLineAlign() {
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) return
             if (this.heroDecorHidden) return
 
             const anchor = this.$el?.querySelector('.hero-decor-anchor')
@@ -5532,7 +6023,7 @@ export default {
 
             if (!bridge || !about || !decor || !workLastAnchor) return
             if (window.getComputedStyle(decor).display === 'none') return
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
                 bridge.style.height = '0px'
                 return
             }
@@ -5557,7 +6048,7 @@ export default {
             const captions = root.querySelectorAll('.work .project-caption')
             if (!captions.length) return
 
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
                 for (const caption of captions) {
                     caption.style.removeProperty('--project-caption-line-offset')
                 }
@@ -5707,10 +6198,13 @@ export default {
     transform: translate3d(calc(-1 * var(--fly-distance)), 0, 0);
 }
 
-.portfolio-page--reveal .project--featured.portfolio-fly--from-right:not(.project--scroll-fade),
-.portfolio-page--reveal
-    .project--upcoming:not(.project--offset).portfolio-fly--from-right:not(.project--scroll-fade) {
-    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.08s both;
+/* Decor line present (≥501): thumbnails are already there — no entrance fly/fade.
+   ≤500 uses .project--scroll-fade instead (opacity transition on scroll). */
+.portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade) {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
 }
 
 /* Squiggle snappier; paragraph a touch slower — not in lockstep */
@@ -5721,10 +6215,6 @@ export default {
 
 .portfolio-page--reveal .hero-intro.portfolio-fly--from-right:not(.hero-intro--chars) {
     animation: portfolio-fly-from-right 1.55s var(--fly-ease) 0.08s both;
-}
-
-.portfolio-page--reveal .project--offset.portfolio-fly--from-left:not(.project--scroll-fade) {
-    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.08s both;
 }
 
 /* Lock hero/work fly-ins after first play — resize must not restart them */
@@ -6460,7 +6950,7 @@ export default {
     display: none;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 501px) {
     .about-line-bridge {
         display: block;
     }
@@ -6522,6 +7012,7 @@ export default {
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
     --hero-decor-below-intro-gap: 0;
+    --hero-decor-intro-clip: 0px;
     position: absolute;
     top: 7px;
     right: auto;
@@ -6531,6 +7022,9 @@ export default {
     height: var(--hero-decor-height);
     overflow: hidden;
     pointer-events: none;
+    /* Tablet: clip intro overlap; work run stays visible underneath. */
+    clip-path: inset(var(--hero-decor-intro-clip) 0 0 0);
+    transition: clip-path 0.4s var(--fly-ease);
 }
 
 .hero-decor::after {
@@ -7042,7 +7536,7 @@ export default {
     margin-top: 30px;
 }
 
-@media (min-width: 800px) {
+@media (min-width: 501px) {
     .project-caption {
         padding-left: var(--project-caption-line-offset, 0px);
         transition: padding-left 0.4s ease;
@@ -7699,8 +8193,8 @@ export default {
     }
 }
 
-/* <800px: square work cards and stacked project layout */
-@media (width < 800px) {
+/* ≤500px: square work cards and stacked project layout */
+@media (max-width: 500px) {
     .portfolio-page {
         --project-w: 100%;
         --project-w-wide: 100%;
@@ -7807,12 +8301,58 @@ export default {
     }
 }
 
-/* 601px–<800px: mobile hero + tablet about/text tweaks */
-@media (min-width: 601px) and (width < 800px) {
+/* 501–600: square thumbnails only; keep tablet work layout / line / captions */
+@media (min-width: 501px) and (max-width: 600px) {
+    .project-image-link,
+    .project-image-wrap {
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+    }
+
+    .project-image {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+    }
+}
+
+/* 501px–<800px: mobile hero + desktop work layout; intro overlap clip-gated */
+@media (min-width: 501px) and (width < 800px) {
     .hero {
         margin-bottom: 100px;
     }
 
+    .hero-intro-wrap {
+        --hero-decor-left: 72px;
+        overflow: visible;
+    }
+
+    .hero-intro-wrap:has(.hero-intro--chars) {
+        --hero-decor-left: calc(var(--page-pad) + 72px);
+    }
+
+    .hero-decor {
+        display: block;
+        left: var(--hero-decor-left);
+        /* Height filled by JS; intro overlap clipped until dissipate. */
+        --hero-decor-height: 0px;
+        top: 0;
+    }
+
+    .hero-decor-anchor {
+        left: var(--hero-decor-left);
+    }
+
+    .about-line-bridge,
+    .about-line {
+        display: block;
+    }
+}
+
+/* 700px–<800px: side-by-side about on mobile chrome */
+@media (min-width: 700px) and (width < 800px) {
     .about {
         --about-gap: 340px;
         --about-bottom-pad-base: 180px;
@@ -7851,8 +8391,8 @@ export default {
     }
 }
 
-/* 601px–<800px: mobile layout with desktop text sizes */
-@media (min-width: 601px) and (width < 800px) {
+/* 501px–<800px: mobile layout with desktop text sizes */
+@media (min-width: 501px) and (width < 800px) {
     .hero-intro {
         font-size: 26px;
         line-height: 39px;
@@ -7864,8 +8404,45 @@ export default {
     }
 }
 
-/* ≤600px: smaller type and mobile about layout */
-@media (max-width: 600px) {
+/* 501–799 portrait: thumbnail captions use ≤500 (mobile) type */
+@media (min-width: 501px) and (width < 800px) and (orientation: portrait) {
+    .project-caption {
+        margin-top: 28px;
+    }
+
+    .project-title {
+        flex: 1 1 auto;
+        max-width: none;
+        font-size: 20px;
+        line-height: 33px;
+        color: #2c2c2c;
+    }
+
+    .project-description {
+        margin-top: 20px;
+        max-width: 100%;
+        font-size: 16px;
+        line-height: 25px;
+        color: #757575;
+    }
+
+    .project-year {
+        margin-top: 20px;
+        font-size: 16px;
+        line-height: 25px;
+    }
+}
+
+/* 501–799 landscape: short viewport — use ≤500 hero type */
+@media (min-width: 501px) and (width < 800px) and (orientation: landscape) {
+    .hero-intro {
+        font-size: 22px;
+        line-height: 33px;
+    }
+}
+
+/* ≤699px: stacked mobile about layout (same format as former ≤500 about) */
+@media (max-width: 699px) {
     #about {
         scroll-margin-top: 0;
     }
@@ -8051,7 +8628,10 @@ export default {
     .about-actions {
         margin-top: 96px;
     }
+}
 
+/* ≤500px: smaller type for hero + work captions */
+@media (max-width: 500px) {
     .hero-intro {
         max-width: 100%;
         font-size: 22px;

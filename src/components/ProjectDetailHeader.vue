@@ -282,8 +282,8 @@ export default {
     }
 }
 
-/* ≤600px: compact type; 601–799 keeps desktop font sizes on mobile layout */
-@media (max-width: 600px) {
+/* ≤500px: compact type; 501–799 keeps desktop font sizes on mobile layout */
+@media (max-width: 500px) {
     .project-header-title {
         font-family: 'Work Sans', sans-serif;
         font-weight: calc(300 * var(--font-weight-scale));

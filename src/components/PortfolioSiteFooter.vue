@@ -368,7 +368,7 @@ export default {
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 500px) {
     .footer-contact-title {
         font-size: 22px;
         line-height: 33px;

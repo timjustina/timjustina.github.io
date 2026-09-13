@@ -1169,8 +1169,8 @@ export default {
   }
 }
 
-/* ≤600px: compact (mobile) type on top of mobile layout */
-@media (max-width: 600px) {
+/* ≤500px: compact (mobile) type on top of mobile layout */
+@media (max-width: 500px) {
   .page {
     --project-type-scale: 1.25;
   }

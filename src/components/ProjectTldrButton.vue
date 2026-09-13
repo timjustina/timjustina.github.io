@@ -549,7 +549,7 @@ export default {
   }
 }
 
-@media (min-width: 601px) {
+@media (min-width: 501px) {
   .project-tldr-label {
     font-size: 20px;
     line-height: 30px;
@@ -668,7 +668,7 @@ export default {
   pointer-events: none;
 }
 
-@media (min-width: 601px) {
+@media (min-width: 501px) {
   .project-tldr-toast {
     font-size: 20px;
     line-height: 30px;
