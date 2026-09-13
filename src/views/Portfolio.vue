@@ -2257,16 +2257,19 @@ export default {
                     isHeroTouchDiskEnvironment() &&
                     (this.heroIntroLetterMq?.matches ??
                         window.matchMedia(MOBILE_MEDIA_QUERY).matches)
-                // Mobile + touch-disk: same cascade cadence, no extra afterthought beat.
-                const afterthoughtBeat = isMobileTouchDisk ? 0 : 0.22
-                const afterthoughtStart =
-                    Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
-                    afterthoughtBeat +
-                    0.1 +
-                    0.05
-                settleMs = Math.ceil(
-                    (afterthoughtStart + charDuration * slowestLineMult + 0.15) * 1000,
-                )
+                if (isMobileTouchDisk) {
+                    // ":)" is in the cascade — settle shortly after the cascade window ends.
+                    settleMs = Math.ceil(
+                        (maxDelay + charDuration * slowestLineMult + 0.22) * 1000,
+                    )
+                } else {
+                    const afterthoughtStart =
+                        Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
+                        0.22 +
+                        0.1 +
+                        0.05
+                    settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
+                }
             } else {
                 settleMs = 300
             }
@@ -5100,12 +5103,20 @@ export default {
             const chars = [...intro.querySelectorAll('.hero-intro-char')]
             if (!chars.length) return
 
-            const mainChars = chars.filter(
-                (el) => !el.classList.contains('hero-intro-char--afterthought')
-            )
             const afterthoughtChars = chars.filter((el) =>
                 el.classList.contains('hero-intro-char--afterthought')
             )
+            // Mobile + touch-disk: ":)" is just another cascade glyph.
+            // Everywhere else: cascade the body first, then afterthought with its beat.
+            const isMobileTouchDisk =
+                isHeroTouchDiskEnvironment() &&
+                (this.heroIntroLetterMq?.matches ??
+                    window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            const cascadeChars = isMobileTouchDisk
+                ? chars
+                : chars.filter(
+                      (el) => !el.classList.contains('hero-intro-char--afterthought'),
+                  )
 
             const pageStyles = getComputedStyle(this.$el)
             const introStyles = getComputedStyle(intro)
@@ -5141,7 +5152,7 @@ export default {
             }
 
             let colW = 0
-            for (const el of mainChars) {
+            for (const el of cascadeChars) {
                 const w = el.getBoundingClientRect().width
                 if (w > 0) {
                     colW = w
@@ -5161,8 +5172,8 @@ export default {
                 return charDuration * mult
             }
 
-            if (mainChars.length) {
-                const positions = mainChars.map(measure)
+            if (cascadeChars.length) {
+                const positions = cascadeChars.map(measure)
                 const minX = Math.min(...positions.map((p) => p.x))
                 const minY = Math.min(...positions.map((p) => p.y))
                 const lineIndices = positions.map((p) =>
@@ -5180,7 +5191,7 @@ export default {
                 const maxScore = Math.max(...scores)
                 const scoreRange = maxScore - minScore || 1
 
-                mainChars.forEach((el, idx) => {
+                cascadeChars.forEach((el, idx) => {
                     const t = (scores[idx] - minScore) / scoreRange
                     const shaped = 1 - (1 - t) ** 1.55
                     const delay = minDelay + shaped * (maxDelay - minDelay)
@@ -5190,30 +5201,16 @@ export default {
                 })
             }
 
-            // ":)" afterthought timing.
-            // Mobile + touch-disk: same fly cadence as the cascade, just no extra hold beat.
-            // All other situations keep the original delayed afterthought.
-            const isMobileTouchDisk =
-                isHeroTouchDiskEnvironment() &&
-                (this.heroIntroLetterMq?.matches ??
-                    window.matchMedia(MOBILE_MEDIA_QUERY).matches)
-            const afterthoughtBeat = isMobileTouchDisk ? 0 : 0.22
-            const afterthoughtBase =
-                Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
-                afterthoughtBeat
-            const afterthoughtDuration = charDuration * slowestLineMult
-            afterthoughtChars.forEach((el, idx) => {
-                const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
-                if (isMobileTouchDisk) {
-                    el.style.setProperty(
-                        '--hero-intro-char-duration',
-                        `${afterthoughtDuration.toFixed(3)}s`,
-                    )
-                } else {
+            // Non–touch-disk: keep ":)" as a delayed afterthought after the cascade.
+            if (!isMobileTouchDisk && afterthoughtChars.length) {
+                const afterthoughtBase =
+                    Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) + 0.22
+                afterthoughtChars.forEach((el, idx) => {
+                    const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
                     el.style.removeProperty('--hero-intro-char-duration')
-                }
-                el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
-            })
+                    el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
+                })
+            }
         },
         readElementTranslateX(el) {
             const t = getComputedStyle(el).transform
