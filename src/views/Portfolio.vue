@@ -2257,18 +2257,16 @@ export default {
                     isHeroTouchDiskEnvironment() &&
                     (this.heroIntroLetterMq?.matches ??
                         window.matchMedia(MOBILE_MEDIA_QUERY).matches)
-                // Mobile + touch-disk: ":)" rides the last cascade wave (no post-cascade hold).
-                // All other letter modes keep the original afterthought beat.
-                if (isMobileTouchDisk) {
-                    settleMs = Math.ceil((maxDelay + 0.05 + 0.55 + 0.15) * 1000)
-                } else {
-                    const afterthoughtStart =
-                        Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
-                        0.22 +
-                        0.1 +
-                        0.05
-                    settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
-                }
+                // Mobile + touch-disk: same cascade cadence, no extra afterthought beat.
+                const afterthoughtBeat = isMobileTouchDisk ? 0 : 0.22
+                const afterthoughtStart =
+                    Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
+                    afterthoughtBeat +
+                    0.1 +
+                    0.05
+                settleMs = Math.ceil(
+                    (afterthoughtStart + charDuration * slowestLineMult + 0.15) * 1000,
+                )
             } else {
                 settleMs = 300
             }
@@ -5193,27 +5191,29 @@ export default {
             }
 
             // ":)" afterthought timing.
-            // Mobile + touch-disk only: start with the last cascade wave (no post-cascade hold).
-            // Desktop / fine-pointer / reduced-motion letter modes keep the original beat.
+            // Mobile + touch-disk: same fly cadence as the cascade, just no extra hold beat.
+            // All other situations keep the original delayed afterthought.
             const isMobileTouchDisk =
                 isHeroTouchDiskEnvironment() &&
                 (this.heroIntroLetterMq?.matches ??
                     window.matchMedia(MOBILE_MEDIA_QUERY).matches)
-            if (isMobileTouchDisk) {
-                afterthoughtChars.forEach((el, idx) => {
-                    const delay = maxDelay + idx * 0.05
-                    el.style.setProperty('--hero-intro-char-duration', '0.55s')
-                    el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
-                })
-            } else {
-                const afterthoughtBase =
-                    Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) + 0.22
-                afterthoughtChars.forEach((el, idx) => {
-                    const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
+            const afterthoughtBeat = isMobileTouchDisk ? 0 : 0.22
+            const afterthoughtBase =
+                Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
+                afterthoughtBeat
+            const afterthoughtDuration = charDuration * slowestLineMult
+            afterthoughtChars.forEach((el, idx) => {
+                const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
+                if (isMobileTouchDisk) {
+                    el.style.setProperty(
+                        '--hero-intro-char-duration',
+                        `${afterthoughtDuration.toFixed(3)}s`,
+                    )
+                } else {
                     el.style.removeProperty('--hero-intro-char-duration')
-                    el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
-                })
-            }
+                }
+                el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
+            })
         },
         readElementTranslateX(el) {
             const t = getComputedStyle(el).transform
