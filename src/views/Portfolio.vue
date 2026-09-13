@@ -5224,6 +5224,24 @@ export default {
                 return 0
             }
         },
+        /** First char index whose horizontal center is at/after x (viewport coords). */
+        findCharIndexAtX(textNode, x) {
+            const label = textNode?.textContent || ''
+            if (!label.length) return 0
+            let lo = 0
+            let hi = label.length - 1
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1
+                const range = document.createRange()
+                range.setStart(textNode, mid)
+                range.setEnd(textNode, mid + 1)
+                const rect = range.getBoundingClientRect()
+                range.detach?.()
+                if (rect.left + rect.width / 2 < x) lo = mid + 1
+                else hi = mid
+            }
+            return lo
+        },
         syncAboutLocationTextClip() {
             const meta = this.$el?.querySelector('.about-meta')
             const locationWrap = this.$el?.querySelector('.about-location-text-wrap')
@@ -5240,6 +5258,7 @@ export default {
             const clearSplit = (wrap) => {
                 wrap?.style.removeProperty('--about-location-split')
                 wrap?.style.removeProperty('--about-location-split-px')
+                wrap?.style.removeProperty('--about-location-white-align')
             }
 
             if (!window.matchMedia('(max-width: 600px)').matches) {
@@ -5285,7 +5304,7 @@ export default {
                 meta.style.removeProperty('--about-location-overlap-nudge')
             }
 
-            const applySplit = (wrap, textEl) => {
+            const applySplit = (wrap, textEl, whiteSel) => {
                 if (!wrap || !textEl) return
                 const textRect = textEl.getBoundingClientRect()
                 if (textRect.width <= 0) {
@@ -5293,17 +5312,51 @@ export default {
                     return
                 }
                 // Color split follows the live (possibly mid-flight) overlap.
-                // Round to whole px so stack left + negative margin stay aligned.
                 const splitPx = Math.round(
                     Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
                 )
                 const splitPct = (splitPx / textRect.width) * 100
                 wrap.style.setProperty('--about-location-split', `${splitPct}%`)
                 wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
+
+                // 300 vs 400 glyph advances differ — shift the white string so the
+                // character at the photo edge shares the same X as the colored text.
+                let align = 0
+                const baseNode = textEl.firstChild
+                const whiteEl = wrap.querySelector(whiteSel)
+                const whiteNode = whiteEl?.firstChild
+                if (
+                    baseNode &&
+                    baseNode.nodeType === Node.TEXT_NODE &&
+                    whiteNode &&
+                    whiteNode.nodeType === Node.TEXT_NODE &&
+                    splitPx > 0 &&
+                    splitPx < textRect.width
+                ) {
+                    const idx = this.findCharIndexAtX(baseNode, textRect.left + splitPx)
+                    const labelLen = baseNode.textContent?.length || 0
+                    if (idx >= 0 && idx < labelLen && idx < (whiteNode.textContent?.length || 0)) {
+                        const r300 = document.createRange()
+                        r300.setStart(baseNode, idx)
+                        r300.setEnd(baseNode, idx + 1)
+                        const left300 = r300.getBoundingClientRect().left - textRect.left
+                        r300.detach?.()
+
+                        const r400 = document.createRange()
+                        r400.setStart(whiteNode, idx)
+                        r400.setEnd(whiteNode, idx + 1)
+                        const whiteBox = whiteEl.getBoundingClientRect()
+                        const left400 = r400.getBoundingClientRect().left - whiteBox.left
+                        r400.detach?.()
+
+                        align = Math.round(left300 - left400)
+                    }
+                }
+                wrap.style.setProperty('--about-location-white-align', `${align}px`)
             }
 
-            applySplit(locationWrap, locationText)
-            applySplit(roleWrap, roleText)
+            applySplit(locationWrap, locationText, '.about-location-text--white')
+            applySplit(roleWrap, roleText, '.about-role-text--white')
         },
         pollAboutLocationTextClip() {
             this.stopAboutLocationTextClipPoll()
@@ -7841,8 +7894,7 @@ export default {
     .about-role-text:not(.about-role-text--glow):not(.about-role-text--soft):not(.about-role-text--white) {
         position: relative;
         z-index: 1;
-        /* Match white-stack weight so the photo split shares the same glyph metrics. */
-        font-weight: 400;
+        font-weight: 300;
         background-image: linear-gradient(
             to right,
             var(--about-location-color) 0,
@@ -7861,21 +7913,24 @@ export default {
         --about-location-glow-pad: 12px;
         display: block;
         position: absolute;
-        left: var(--about-location-split-px, 100%);
+        /* Same origin as the 300 base text; weight 400 may differ in width —
+           clip-path keeps paint exclusive so layers never double up. */
+        left: 0;
         top: calc(-1 * var(--about-location-glow-pad));
         z-index: 2;
-        overflow: hidden;
         padding: var(--about-location-glow-pad) var(--about-location-glow-pad) var(--about-location-glow-pad) 0;
         box-sizing: content-box;
         pointer-events: none;
         user-select: none;
+        clip-path: inset(0 0 0 var(--about-location-split-px, 100%));
     }
 
     .about-location-text-white-inner,
     .about-role-text-white-inner {
         display: block;
         position: relative;
-        margin-left: calc(-1 * var(--about-location-split-px, 0px));
+        /* Pull/push 400-weight string so the seam character lines up with 300. */
+        margin-left: var(--about-location-white-align, 0px);
     }
 
     .about-location-text--glow,
