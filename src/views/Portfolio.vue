@@ -68,7 +68,6 @@
                 'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
-                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
                 'hero-intro-cursor-dot-disk--menu-frost':
                     heroTouchDiskExpand > 0.02 || heroTouchDiskMenuOpen,
             }"
@@ -98,7 +97,6 @@
                 'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
-                'hero-intro-cursor-ball--touch-breathe': heroTouchDiskBreathe && heroTouchDiskIdleMotion && !heroTouchDiskPopping,
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
@@ -534,7 +532,7 @@ const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
 /** Hero rest: disk center this far above the hero intro top. */
 const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
 const HERO_TOUCH_DISK_HIT_SIZE = 56
-/** Arc fly-in duration before idle breathe. */
+/** Arc fly-in duration before idle settle. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
 /** Ignore sub-threshold pointer jitter so taps still register. */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
@@ -1084,7 +1082,6 @@ export default {
             heroTouchDiskEntrance: 0,
             heroTouchDiskEntering: false,
             heroTouchDiskIdle: true,
-            heroTouchDiskBreathe: false,
             heroTouchDiskEntranceTimer: null,
             heroTouchDiskEntranceRaf: null,
             heroTouchDiskZone: 'hero',
@@ -2804,9 +2801,6 @@ export default {
                     skipHover: true,
                 })
             }
-            if (this.heroTouchDiskIdle && this.isHeroTouchDiskMode()) {
-                this.heroTouchDiskBreathe = true
-            }
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -2843,12 +2837,10 @@ export default {
                 this.heroTouchDiskEntrance = 1
                 this.heroTouchDiskEntering = false
                 this.heroTouchDiskIdle = false
-                this.heroTouchDiskBreathe = false
                 return
             }
 
             this.heroTouchDiskIdle = true
-            this.heroTouchDiskBreathe = false
             this.heroTouchDiskEntrance = 1
 
             const end = this.getHeroTouchDiskRestPos()
@@ -2866,6 +2858,9 @@ export default {
             const start = this.getHeroTouchDiskEntranceStartPos()
             const ctrl = this.getHeroTouchDiskEntranceControlPos(start, end)
             this.heroTouchDiskEntering = true
+            // Enter as glass ball immediately — don't wait for proximity lerp.
+            this.heroCursorIntroGlassHandoff = true
+            this.heroCursorRangeMix = 0.85
             this.heroCursorPos = { ...start }
             this.heroCursorGlassPos = { ...start }
             this.updateHeroFinePointer(start.x, start.y, {
@@ -2911,17 +2906,12 @@ export default {
             this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
         },
         markHeroTouchDiskInteracted() {
-            if (
-                !this.heroTouchDiskIdle &&
-                !this.heroTouchDiskBreathe &&
-                !this.heroTouchDiskEntering
-            ) {
+            if (!this.heroTouchDiskIdle && !this.heroTouchDiskEntering) {
                 return
             }
             this.cancelHeroTouchDiskEntranceFlight()
             this.heroTouchDiskIdle = false
             this.heroTouchDiskEntering = false
-            this.heroTouchDiskBreathe = false
             if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
         },
         stopHeroTouchDisk() {
@@ -2942,7 +2932,6 @@ export default {
             this.heroTouchDiskEntrance = 0
             this.heroTouchDiskEntering = false
             this.heroTouchDiskIdle = true
-            this.heroTouchDiskBreathe = false
             this.heroTouchDiskPopping = false
             this.heroTouchDiskSinkScale = 1
             this.heroTouchDiskExpand = 0
@@ -3203,8 +3192,7 @@ export default {
             event.preventDefault()
             event.stopPropagation()
 
-            // Don't kill breathe / morph until the gesture is a real drag or tap —
-            // cutting breathe mid-pulse was causing a visible jiggle on tap.
+            // Don't kill idle / morph until the gesture is a real drag or tap.
             // Interrupt entrance flight so the grab starts from the live position.
             if (this.heroTouchDiskEntering) {
                 this.cancelHeroTouchDiskEntranceFlight()
@@ -3572,11 +3560,26 @@ export default {
                     el.classList.remove('hero-cursor-mirror-hover', 'hero-cursor-mirror-active')
                 })
             }
+            // Touch disk paints live hover on the page (no real :hover).
+            const liveRoot = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            liveRoot
+                ?.querySelectorAll('.hero-cursor-mirror-hover, .hero-cursor-mirror-active')
+                .forEach((el) => {
+                    el.classList.remove('hero-cursor-mirror-hover', 'hero-cursor-mirror-active')
+                })
         },
         isHeroCursorPressRelated(liveNode) {
             const press = this.heroCursorPressTarget
             if (!press?.isConnected || !(liveNode instanceof Element)) return false
             return liveNode === press || liveNode.contains(press) || press.contains(liveNode)
+        },
+        /** Live nodes that should morph under the touch disk (not only in the clone). */
+        shouldHeroTouchDiskPaintLiveHover(liveNode) {
+            if (!(liveNode instanceof Element)) return false
+            return (
+                liveNode.matches('.project:not(.project--upcoming)') ||
+                liveNode.matches('.about-action-btn')
+            )
         },
         clearHeroCursorPressTarget() {
             if (!this.heroCursorPressTarget) return
@@ -3610,6 +3613,8 @@ export default {
                 if (ancestor) liveNodes.push(ancestor)
             }
 
+            const paintLive = this.isHeroTouchDiskMode()
+
             for (const liveNode of liveNodes) {
                 let mirrorNode = this.getMirrorNodeForLive(liveNode, clone, source)
                 if (
@@ -3619,10 +3624,15 @@ export default {
                 ) {
                     mirrorNode = this.findMirrorNodeFallback(liveNode, chrome, source)
                 }
-                if (!mirrorNode) continue
-                mirrorNode.classList.add('hero-cursor-mirror-hover')
-                if (this.isHeroCursorPressRelated(liveNode)) {
-                    mirrorNode.classList.add('hero-cursor-mirror-active')
+                if (mirrorNode) {
+                    mirrorNode.classList.add('hero-cursor-mirror-hover')
+                    if (this.isHeroCursorPressRelated(liveNode)) {
+                        mirrorNode.classList.add('hero-cursor-mirror-active')
+                    }
+                }
+                // Case study curve + About CTA blue on the page under the disk.
+                if (paintLive && this.shouldHeroTouchDiskPaintLiveHover(liveNode)) {
+                    liveNode.classList.add('hero-cursor-mirror-hover')
                 }
             }
         },
@@ -3724,7 +3734,13 @@ export default {
                     const proximityTarget = allowIntroGlass
                         ? this.getHeroIntroRangeProximityMix(tx, ty)
                         : 0
-                    if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
+                    if (touchDisk && this.heroTouchDiskEntering) {
+                        // Fly-in stays glass the whole way; deepen when crossing text.
+                        this.heroCursorIntroGlassHandoff = true
+                        const glassTarget = Math.max(0.85, proximityTarget)
+                        this.heroCursorRangeMix +=
+                            (glassTarget - this.heroCursorRangeMix) * 0.45
+                    } else if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
                         // Ease out of glass form — avoid a hard cut when leaving the field
                         // or when the disk glides home after a work jump.
                         const exitLerp = touchDisk ? 0.07 : 0.14
@@ -5750,29 +5766,6 @@ export default {
     transition: none !important;
 }
 
-.hero-intro-cursor-ball--touch-breathe {
-    animation: hero-touch-disk-breathe 6s infinite;
-    transform-origin: center center;
-}
-
-@keyframes hero-touch-disk-breathe {
-    0% {
-        scale: 1;
-        animation-timing-function: ease-in-out;
-    }
-
-    10% {
-        scale: 1.08;
-        animation-timing-function: ease-in-out;
-    }
-
-    20%,
-    100% {
-        scale: 1;
-        animation-timing-function: linear;
-    }
-}
-
 .hero-touch-disk-menu {
     --brand: #000aaa;
     --brand-active: #000444;
@@ -6839,6 +6832,13 @@ export default {
     box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
 }
 
+/* Touch disk: live page curves with the magnifier (no real :hover) */
+.project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
+.project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
+    border-radius: 700px 700px 20px 20px;
+    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+}
+
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
 @media (hover: hover) and (pointer: fine) {
     .project:not(.project--upcoming):hover .project-image-link,
@@ -6902,6 +6902,11 @@ export default {
 
 /* Touch / press: blue while held, eases back on release (same as thumbnail) */
 .project:not(.project--upcoming):active .project-caption-link .project-title {
+    color: var(--brand);
+}
+
+/* Touch disk: title follows the live hover paint */
+.project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title {
     color: var(--brand);
 }
 
@@ -7182,6 +7187,11 @@ export default {
 }
 
 .about-action-btn:hover {
+    background: var(--brand-hover);
+}
+
+/* Touch disk: About CTAs go hover-blue under the glass */
+.about-action-btn.hero-cursor-mirror-hover {
     background: var(--brand-hover);
 }
 
