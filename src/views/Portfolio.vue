@@ -5,6 +5,7 @@
             'portfolio-page--reveal': pageRevealed,
             'portfolio-page--settled': pageEntranceDone,
             'portfolio-page--hero-cursor': heroCursorHideNative,
+            'portfolio-page--touch-disk': heroTouchDiskMode,
         }"
     >
     <Teleport to="body">
@@ -2252,9 +2253,10 @@ export default {
                     cascadeStart,
                     cascadeEnd - charDuration * slowestLineMult
                 )
+                const afterthoughtBeat = isHeroTouchDiskEnvironment() ? 0 : 0.22
                 const afterthoughtStart =
                     Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
-                    0.22 +
+                    afterthoughtBeat +
                     0.1 +
                     0.05
                 settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
@@ -5181,9 +5183,12 @@ export default {
                 })
             }
 
-            // ":)" pops in after the cascade — a small beat later, like an afterthought
+            // ":)" pops in after the cascade — a small beat later, like an afterthought.
+            // Touch-disk entrance: skip that beat so ":)" isn't held while the glass flies in.
+            const afterthoughtBeat = isHeroTouchDiskEnvironment() ? 0 : 0.22
             const afterthoughtBase =
-                Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) + 0.22
+                Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
+                afterthoughtBeat
             afterthoughtChars.forEach((el, idx) => {
                 const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
                 el.style.removeProperty('--hero-intro-char-duration')
@@ -6863,6 +6868,19 @@ export default {
     box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
 }
 
+/* Touch disk: press on description/company must not morph the thumbnail */
+.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-link,
+.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-wrap {
+    border-radius: 20px;
+    box-shadow: none;
+}
+
+.portfolio-page--touch-disk .project-image-link:active,
+.portfolio-page--touch-disk .project--press-expand .project-image-link {
+    border-radius: 700px 700px 20px 20px;
+    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+}
+
 /* Touch disk: live page curves with the magnifier (no real :hover) */
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
@@ -6926,6 +6944,17 @@ export default {
     text-decoration: none;
 }
 
+/* Touch disk: only title (and the separate thumbnail link) navigate — not
+   description / company text, so reading and scrolling stay easy. */
+.portfolio-page--touch-disk .project-caption-link {
+    pointer-events: none;
+}
+
+.portfolio-page--touch-disk .project-caption-link .project-title {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
 .project-caption-link .project-title {
     /* Match thumbnail border-radius timing */
     transition: color 0.45s ease;
@@ -6933,6 +6962,16 @@ export default {
 
 /* Touch / press: blue while held, eases back on release (same as thumbnail) */
 .project:not(.project--upcoming):active .project-caption-link .project-title {
+    color: var(--brand);
+}
+
+/* Touch disk: don't blue the title when pressing description / company */
+.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-caption-link .project-title {
+    color: var(--text);
+}
+
+.portfolio-page--touch-disk .project-caption-link .project-title:active,
+.portfolio-page--touch-disk .project--press-expand .project-caption-link .project-title {
     color: var(--brand);
 }
 
