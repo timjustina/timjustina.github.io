@@ -2787,6 +2787,7 @@ export default {
             }
             clearTimeout(this.heroTouchDiskEntranceTimer)
             this.heroTouchDiskEntranceTimer = null
+            this.heroTouchDiskDissipateInstant = false
         },
         finishHeroTouchDiskEntrance(endPos) {
             this.cancelHeroTouchDiskEntranceFlight()
@@ -2807,14 +2808,10 @@ export default {
             this.heroTouchDiskZone = this.computeHeroTouchDiskZone()
             this.heroTouchDiskParkZone = this.heroTouchDiskZone
             this.closeHeroTouchDiskMenu()
-            const pos = this.getHeroTouchDiskRestPos()
             this.heroTouchDiskDragging = false
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
-            // Place at rest first; entrance flight may override from the right edge.
-            this.heroCursorPos = { ...pos }
-            this.heroCursorGlassPos = { ...pos }
             this.heroCursorActive = true
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
@@ -2824,9 +2821,12 @@ export default {
             this.heroCursorHoverLockEl = null
             this.heroCursorIntroGlassHandoff = false
             this.heroTouchDiskOnStage = true
+            // Stay invisible until beginHeroTouchDiskEntrance places the glass start pose.
+            this.heroTouchDiskEntrance = 0
+            this.heroTouchDiskEntering = false
+            this.heroTouchDiskIdle = true
             this.syncHeroCursorDocumentClass()
             this.startHeroCursorGlassFollow()
-            this.updateHeroFinePointer(pos.x, pos.y, { introEffects: false })
             this.refreshHeroTouchDiskStage()
             this.beginHeroTouchDiskEntrance()
         },
@@ -2841,8 +2841,6 @@ export default {
             }
 
             this.heroTouchDiskIdle = true
-            this.heroTouchDiskEntrance = 1
-
             const end = this.getHeroTouchDiskRestPos()
             // Arc fly-in is a hero-first-appear motion; other zones snap in place.
             const canFly =
@@ -2851,14 +2849,19 @@ export default {
                 typeof window !== 'undefined'
 
             if (!canFly) {
+                this.heroCursorPos = { ...end }
+                this.heroCursorGlassPos = { ...end }
+                this.heroCursorIntroGlassHandoff = false
+                this.heroCursorRangeMix = 0
+                this.updateHeroFinePointer(end.x, end.y, { introEffects: false })
                 this.finishHeroTouchDiskEntrance(end)
                 return
             }
 
             const start = this.getHeroTouchDiskEntranceStartPos()
             const ctrl = this.getHeroTouchDiskEntranceControlPos(start, end)
+            // Pose as glass at the off-screen start BEFORE revealing (avoids idle-disk flash).
             this.heroTouchDiskEntering = true
-            // Enter as glass ball immediately — don't wait for proximity lerp.
             this.heroCursorIntroGlassHandoff = true
             this.heroCursorRangeMix = 0.85
             this.heroCursorPos = { ...start }
@@ -2866,6 +2869,13 @@ export default {
             this.updateHeroFinePointer(start.x, start.y, {
                 introEffects: this.canHeroIntroPointerPlay(),
                 skipHover: true,
+            })
+            this.heroTouchDiskDissipateInstant = true
+            this.heroTouchDiskEntrance = 1
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    this.heroTouchDiskDissipateInstant = false
+                })
             })
 
             const duration = HERO_TOUCH_DISK_ENTRANCE_MS
