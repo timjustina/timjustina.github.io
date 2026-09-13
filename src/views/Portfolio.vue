@@ -1292,7 +1292,10 @@ export default {
             return heroCursorDotDiskShouldShow(this.heroCursorIntroGlassHandoff)
         },
         heroCursorIntroGlassVisible() {
-            return this.heroCursorVisible && this.heroCursorIntroGlassHandoff
+            if (!this.heroCursorVisible || !this.heroCursorIntroGlassHandoff) return false
+            // Touch-disk fly-in: hide until the first flight frame reveals it.
+            if (this.heroTouchDiskMode && this.heroTouchDiskEntrance < 0.02) return false
+            return true
         },
         heroCursorIntroGlassFromDisk() {
             const mix = this.heroCursorRangeMix
@@ -1507,9 +1510,13 @@ export default {
                     : this.heroCursorHoverMix
             const size = heroCursorIntroBallSize(hoverMix, rangeMix)
             const half = size / 2
+            const entranceFade = this.heroTouchDiskMode
+                ? this.heroTouchDiskEntranceFade
+                : 1
+            const opacity = entranceFade
 
-            // Never tie glass opacity to letter dissipate (pre-1ba1fa4 behavior).
-            // Idle disk fade is handled on the dot / dot-disk layers only.
+            // Touch-disk entrance gates glass too — otherwise handoff shows a rest/start flash
+            // before the fly-in opacity path runs on the idle disk layers.
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
                 '--hero-cursor-range-mix': rangeMix,
@@ -1517,7 +1524,8 @@ export default {
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
-                visibility: 'visible',
+                opacity,
+                visibility: opacity < 0.02 ? 'hidden' : 'visible',
             }
         },
         heroCursorMagnifierWindowStyle() {
@@ -2293,7 +2301,11 @@ export default {
                         instant: !prioritizeDissipate,
                         forcePrepare: true,
                     })
-                    if (this.heroTouchDiskMode && !this.heroTouchDiskHasMoved) {
+                    if (
+                        this.heroTouchDiskMode &&
+                        !this.heroTouchDiskHasMoved &&
+                        !this.heroTouchDiskEntering
+                    ) {
                         this.syncHeroTouchDiskRestPosition()
                     }
                 })
@@ -2715,6 +2727,8 @@ export default {
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
             if (this.heroTouchDiskDragging) return
+            // Don't yank the glass ball to rest while the entrance arc is playing.
+            if (this.heroTouchDiskEntering) return
             const zoneChanged = this.heroTouchDiskParkZone !== this.heroTouchDiskZone
             // Free placement within a zone until the zone changes.
             if (this.heroTouchDiskHasMoved && !zoneChanged) return
@@ -2760,7 +2774,7 @@ export default {
                 }
             }
             return {
-                x: Math.round(vw + radius),
+                x: Math.round(vw + Math.max(radius * 2, 56)),
                 y: Math.round(y),
             }
         },
@@ -2860,8 +2874,10 @@ export default {
 
             const start = this.getHeroTouchDiskEntranceStartPos()
             const ctrl = this.getHeroTouchDiskEntranceControlPos(start, end)
-            // Pose as glass at the off-screen start BEFORE revealing (avoids idle-disk flash).
+            // Pose as glass off-screen first; stay opacity-0 until the first flight frame
+            // so sync/layout cannot flash a glass ball at rest.
             this.heroTouchDiskEntering = true
+            this.heroTouchDiskEntrance = 0
             this.heroCursorIntroGlassHandoff = true
             this.heroCursorRangeMix = 0.85
             this.heroCursorPos = { ...start }
@@ -2870,15 +2886,9 @@ export default {
                 introEffects: this.canHeroIntroPointerPlay(),
                 skipHover: true,
             })
-            this.heroTouchDiskDissipateInstant = true
-            this.heroTouchDiskEntrance = 1
-            this.$nextTick(() => {
-                requestAnimationFrame(() => {
-                    this.heroTouchDiskDissipateInstant = false
-                })
-            })
 
             const duration = HERO_TOUCH_DISK_ENTRANCE_MS
+            let revealed = false
             const t0 = performance.now()
 
             const tick = (now) => {
@@ -2891,6 +2901,17 @@ export default {
                 ) {
                     this.heroTouchDiskEntering = false
                     return
+                }
+
+                if (!revealed) {
+                    revealed = true
+                    this.heroTouchDiskDissipateInstant = true
+                    this.heroTouchDiskEntrance = 1
+                    this.$nextTick(() => {
+                        requestAnimationFrame(() => {
+                            this.heroTouchDiskDissipateInstant = false
+                        })
+                    })
                 }
 
                 const raw = Math.min(1, (now - t0) / duration)
