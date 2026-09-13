@@ -5283,7 +5283,8 @@ export default {
                 if (rect.left + rect.width / 2 < x) lo = mid + 1
                 else hi = mid
             }
-            return lo
+            // Past the last glyph's center, lo can become label.length — clamp.
+            return Math.min(lo, label.length - 1)
         },
         syncAboutLocationTextClip() {
             const meta = this.$el?.querySelector('.about-meta')
@@ -5354,10 +5355,18 @@ export default {
                     clearSplit(wrap)
                     return
                 }
+                // Photo starts at/after text end → no overlap; hide white stack entirely.
+                // (Rounding rawSplit to textWidth used to still look "inside" and the
+                // last-letter snap then painted a stray white "n" on Kin.)
+                const photoEdge = photoRect.left - textRect.left
+                if (photoEdge >= textRect.width - 0.5) {
+                    clearSplit(wrap)
+                    return
+                }
+
                 // Color split follows the live (possibly mid-flight) overlap.
-                const splitPx = Math.round(
-                    Math.min(textRect.width, Math.max(0, photoRect.left - textRect.left))
-                )
+                const rawSplit = Math.min(textRect.width, Math.max(0, photoEdge))
+                let splitPx = Math.round(rawSplit)
                 const splitPct = (splitPx / textRect.width) * 100
                 wrap.style.setProperty('--about-location-split', `${splitPct}%`)
                 wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
@@ -5374,9 +5383,9 @@ export default {
                     whiteNode &&
                     whiteNode.nodeType === Node.TEXT_NODE &&
                     splitPx > 0 &&
-                    splitPx < textRect.width
+                    rawSplit < textRect.width
                 ) {
-                    const idx = this.findCharIndexAtX(baseNode, textRect.left + splitPx)
+                    const idx = this.findCharIndexAtX(baseNode, textRect.left + rawSplit)
                     const labelLen = baseNode.textContent?.length || 0
                     if (idx >= 0 && idx < labelLen && idx < (whiteNode.textContent?.length || 0)) {
                         const r300 = document.createRange()
