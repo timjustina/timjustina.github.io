@@ -560,6 +560,11 @@ const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
  */
 /** Disk-center distance from viewport top/bottom that counts as “near edge”. */
 const HERO_TOUCH_DISK_MENU_EDGE_BAND_PX = 120
+/**
+ * Lower-corner park pocket (Work/About): keep the idle disk — no project magnifier.
+ * Sized so the default lower-right rest stays clearly inside.
+ */
+const HERO_TOUCH_DISK_CORNER_BAND_PX = 180
 /** Viewport padding so labels stay fully on-screen. */
 const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
 const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
@@ -702,6 +707,15 @@ function placeHeroTouchDiskMenuRadial(base, side, deg, gap, width) {
         rot: `${rot}deg`,
         anchor: 'radial',
     }
+}
+
+/** Lower-left / lower-right park zones — keep the disk (no project magnifier). */
+function isHeroTouchDiskInLowerCorner(diskX, diskY, vw, vh) {
+    const band = HERO_TOUCH_DISK_CORNER_BAND_PX
+    const nearBottom = diskY >= vh - band
+    const nearLeft = diskX <= band
+    const nearRight = diskX >= vw - band
+    return nearBottom && (nearLeft || nearRight)
 }
 
 function isHeroCursorEnvironment() {
@@ -1291,6 +1305,7 @@ export default {
         },
         heroCursorDotHoverExpand() {
             if (this.heroCursorIntroGlassHandoff) return false
+            if (this.isHeroTouchDiskCornerParked()) return false
             const hoverMix = this.heroCursorHoverMix
             if (hoverMix <= 0) return false
             const { expand } = heroCursorHoverMorph(hoverMix)
@@ -1309,8 +1324,9 @@ export default {
             const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
             const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
             const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
+            const cornerParked = this.isHeroTouchDiskCornerParked()
             const hoverMix =
-                menuOpen || this.heroCursorInRange
+                menuOpen || this.heroCursorInRange || cornerParked
                     ? 0
                     : this.heroCursorHoverMix
 
@@ -1410,8 +1426,9 @@ export default {
 
             const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
             const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
+            const cornerParked = this.isHeroTouchDiskCornerParked()
             const hoverMix =
-                menuOpen || this.heroCursorInRange
+                menuOpen || this.heroCursorInRange || cornerParked
                     ? 0
                     : this.heroCursorHoverMix
             const { expand } = heroCursorHoverMorph(hoverMix)
@@ -1482,7 +1499,8 @@ export default {
             // as still-in-text so size/glow don't collapse to a bare ring.
             const hoverMix =
                 this.heroCursorInRange ||
-                (this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff)
+                (this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff) ||
+                this.isHeroTouchDiskCornerParked()
                     ? 0
                     : this.heroCursorHoverMix
             const size = heroCursorIntroBallSize(hoverMix, rangeMix)
@@ -2660,23 +2678,23 @@ export default {
             this.heroIntroPointer = null
             this.clearHeroIntroPointerShift()
         },
+        /** Work/About lower corners: stay as idle disk until dragged out over a case. */
+        isHeroTouchDiskCornerParked(x, y) {
+            if (!this.isHeroTouchDiskMode() || this.heroTouchDiskZone === 'hero') {
+                return false
+            }
+            if (typeof window === 'undefined') return false
+            const px = x ?? this.heroCursorGlassPos?.x ?? this.heroCursorPos?.x ?? 0
+            const py = y ?? this.heroCursorGlassPos?.y ?? this.heroCursorPos?.y ?? 0
+            return isHeroTouchDiskInLowerCorner(
+                px,
+                py,
+                window.innerWidth,
+                window.innerHeight,
+            )
+        },
         computeHeroTouchDiskOnStage() {
-            // Stay visible while dragging so the disk can reach the viewport bottom.
-            if (this.heroTouchDiskDragging) return true
-            // Section float stays on-stage off the hero.
-            if (this.heroTouchDiskZone !== 'hero') return true
-
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) return false
-
-            const rect = intro.getBoundingClientRect()
-            if (rect.height <= 0 || rect.bottom <= 0) return false
-
-            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
-            const y = this.heroCursorGlassPos?.y ?? this.heroCursorPos.y
-            // Hide once the disk sits at/below the hero intro bottom.
-            if (y > rect.bottom - radius) return false
-            if (y < -radius) return false
+            // Stay visible across the full viewport in every zone (including hero).
             return true
         },
         refreshHeroTouchDiskStage() {
@@ -3514,13 +3532,20 @@ export default {
             this.syncHeroCursorDocumentClass()
             this.heroCursorInRange = inRange
             this.heroCursorRangeTight = inRange && this.isHeroIntroPointerTight(x, y)
-            if (skipHover) {
+            const cornerDisk = this.isHeroTouchDiskCornerParked(x, y)
+            if (skipHover || cornerDisk) {
                 this.heroCursorOverHover = false
+                if (cornerDisk) {
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorHoverLockEl = null
+                    this.heroCursorMagnifierLayout = null
+                }
             } else {
                 this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
             }
             const magnifierVisible =
                 !inRange &&
+                !cornerDisk &&
                 (this.heroCursorOverHover || this.heroCursorHoverMix > 0.02)
 
             if (!wasActive || magnifierVisible) {
@@ -3614,14 +3639,30 @@ export default {
                 const scrollHoverSuppressed =
                     typeof performance !== 'undefined' &&
                     performance.now() < this.heroCursorScrollHoverSuppressUntil
+                // Prefer the visible glass position so park detection matches what you see.
+                const cornerDisk =
+                    sectionNav &&
+                    this.isHeroTouchDiskCornerParked(
+                        this.heroCursorGlassPos?.x ?? tx,
+                        this.heroCursorGlassPos?.y ?? ty,
+                    )
                 const hoverTarget =
-                    menuOpen || scrollHoverSuppressed || this.heroCursorInRange
+                    menuOpen ||
+                    scrollHoverSuppressed ||
+                    this.heroCursorInRange ||
+                    cornerDisk
                         ? 0
                         : this.isHeroCursorOverHoverTarget(tx, ty)
                           ? 1
                           : 0
+                if (cornerDisk && this.heroCursorHoverMix > 0) {
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorHoverLockEl = null
+                    this.heroCursorMagnifierLayout = null
+                }
                 const magnifierVisible =
                     !this.heroCursorInRange &&
+                    !cornerDisk &&
                     (hoverTarget === 1 || this.heroCursorHoverMix > 0.02)
                 const { x: gx, y: gy } = this.heroCursorGlassPos
                 const transitionBoost =
@@ -3988,10 +4029,13 @@ export default {
         },
         updateHeroCursorMagnifierLayout() {
             const rangeMix = this.heroCursorRangeMix
-            const hoverMix = this.heroCursorInRange ? 0 : this.heroCursorHoverMix
+            const cornerParked = this.isHeroTouchDiskCornerParked()
+            const hoverMix =
+                this.heroCursorInRange || cornerParked ? 0 : this.heroCursorHoverMix
             const { expand } = heroCursorHoverMorph(hoverMix)
             if (
                 expand <= 0.02 ||
+                cornerParked ||
                 !this.heroCursorMirrorClone ||
                 this.heroCursorMirrorAwaitingRefresh
             ) {

@@ -466,7 +466,7 @@ const tldrSummaryItems = [
     },
     {
         lead: 'Achieved user validation and investor buy-in',
-        body: 'Delivered a pitch‑ready prototype used in investor pitches, with 100% positive caregiver feedback (n=6) in interview sessions.',
+        body: 'Delivered a pitch‑ready prototype used in investor pitches; 100% positive caregiver feedback (n=6) in interview sessions.',
     },
 ]
 
