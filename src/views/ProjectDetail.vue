@@ -1210,6 +1210,8 @@ export default {
   .main :global(.project-body .caption),
   .main :global(.caption) {
     font-size: 14px;
+    /* Match prior caption:body ratio (14/22 of body lh) — don’t inherit 30px body lh */
+    line-height: calc(24px * 14 / 22 * var(--project-type-scale));
   }
 
   .main :global(.project-body strong) {

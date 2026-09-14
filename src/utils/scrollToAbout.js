@@ -1,7 +1,10 @@
 import { MOBILE_MEDIA_QUERY, SMALL_MOBILE_MEDIA_QUERY } from './breakpoints.js'
 
 const ABOUT_EXTRA_OFFSET = 85
-/** Mobile (<800): 20px gap above the about background. */
+/**
+ * Mobile (<800): about section starts this far above the beige background edge.
+ * Work ends at the same Y — menu scroll and touch-disk zones share this boundary.
+ */
 const ABOUT_MOBILE_TOP_GAP = 20
 const WORK_TOP_GAP = 20
 const WORK_BOTTOM_GAP = 30
@@ -14,8 +17,19 @@ function getHeaderOffset() {
     return topBarInner?.offsetHeight ?? 120
 }
 
-export { getHeaderOffset }
+export { getHeaderOffset, ABOUT_MOBILE_TOP_GAP }
 
+/** Document Y of the about beige background's top edge. */
+export function getAboutBackgroundTop() {
+    const aboutSection = document.getElementById('about')
+    if (!aboutSection) return null
+    return aboutSection.getBoundingClientRect().top + (window.scrollY || 0)
+}
+
+/**
+ * Scroll Y where the about section begins (and work ends on mobile):
+ * 20px above the about background on mobile; desktop uses existing bio/offset rules.
+ */
 export function getAboutScrollTop() {
     const aboutSection = document.getElementById('about')
     const aboutBio = document.getElementById('about-bio')
@@ -26,7 +40,7 @@ export function getAboutScrollTop() {
     const bioTop = aboutBio.getBoundingClientRect().top + scrollY
     const headerOffset = getHeaderOffset()
 
-    // Mobile: 20px gap above the about background (section top).
+    // Mobile: work tops / about starts 20px before the beige background.
     if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
         return Math.max(0, aboutTop - headerOffset - ABOUT_MOBILE_TOP_GAP)
     }

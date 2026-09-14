@@ -577,10 +577,13 @@ const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 /** Mobile touch disk: edge inset matches mobile logo left pad. */
 const HERO_TOUCH_DISK_EDGE_GAP_PX = 20
-/** Hero rest: inset from the right edge of the viewport (0.3 = 30%). */
-const HERO_TOUCH_DISK_REST_FROM_RIGHT = 0.3
-/** Hero rest: disk center this far above the hero intro top. */
-const HERO_TOUCH_DISK_REST_ABOVE_HERO_PX = 100
+/** Hero rest: inset from the right edge of the viewport (1/3 of screen). */
+const HERO_TOUCH_DISK_REST_FROM_RIGHT = 1 / 3
+/**
+ * Hero rest: disk center sits this fraction of the way up from the hero
+ * intro top toward the logo bottom (1/3 of that gap).
+ */
+const HERO_TOUCH_DISK_REST_GAP_FROM_HERO = 1 / 3
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Arc fly-in duration before idle settle. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
@@ -1140,6 +1143,8 @@ export default {
             featuredExpandTimer: null,
             featuredPressClearTimer: null,
             featuredPressAt: 0,
+            featuredPressArticle: null,
+            featuredPressReleaseBound: false,
             heroIntroParts: HERO_INTRO_BUILT,
             heroIntroPlain: HERO_INTRO_PLAIN,
             // Letter cascade on all breakpoints; reduced motion keeps static block text.
@@ -1946,6 +1951,9 @@ export default {
         clearTimeout(this.pageEntranceSettleTimer)
         clearTimeout(this.featuredExpandTimer)
         clearTimeout(this.featuredPressClearTimer)
+        this.unbindFeaturedPressReleaseListeners()
+        this.featuredPressArticle?.classList.remove('project--press-expand')
+        this.featuredPressArticle = null
         document.documentElement.classList.remove('portfolio-booting')
         document.documentElement.classList.remove('portfolio-hero-cursor')
         this.heroDecorObserver?.disconnect()
@@ -2129,6 +2137,68 @@ export default {
             }
             this.offsetProjectTiltRaf = requestAnimationFrame(tick)
         },
+        bindFeaturedPressReleaseListeners() {
+            if (this.featuredPressReleaseBound) return
+            this.featuredPressReleaseBound = true
+            this.onFeaturedPressWindowEnd = () => {
+                this.onFeaturedProjectPressEnd()
+            }
+            this.onFeaturedPressWorkScroll = () => {
+                // Swipe took over — drop the curve immediately (no click race).
+                this.clearFeaturedPressExpand({ immediate: true })
+            }
+            // Capture on window: release may not retarget the link after a swipe.
+            window.addEventListener('pointerup', this.onFeaturedPressWindowEnd, true)
+            window.addEventListener('pointercancel', this.onFeaturedPressWindowEnd, true)
+            document.getElementById('work')?.addEventListener(
+                'scroll',
+                this.onFeaturedPressWorkScroll,
+                { passive: true },
+            )
+        },
+        unbindFeaturedPressReleaseListeners() {
+            if (!this.featuredPressReleaseBound) return
+            this.featuredPressReleaseBound = false
+            if (this.onFeaturedPressWindowEnd) {
+                window.removeEventListener('pointerup', this.onFeaturedPressWindowEnd, true)
+                window.removeEventListener('pointercancel', this.onFeaturedPressWindowEnd, true)
+                this.onFeaturedPressWindowEnd = null
+            }
+            if (this.onFeaturedPressWorkScroll) {
+                document
+                    .getElementById('work')
+                    ?.removeEventListener('scroll', this.onFeaturedPressWorkScroll)
+                this.onFeaturedPressWorkScroll = null
+            }
+        },
+        clearFeaturedPressExpand({ immediate = false } = {}) {
+            clearTimeout(this.featuredPressClearTimer)
+            this.featuredPressClearTimer = null
+            this.unbindFeaturedPressReleaseListeners()
+            if (this.featuredExpandPending) return
+
+            const article = this.featuredPressArticle
+            const clear = () => {
+                article?.classList.remove('project--press-expand')
+                this.$el
+                    ?.querySelectorAll('.project--press-expand')
+                    .forEach((el) => el.classList.remove('project--press-expand'))
+                this.featuredPressArticle = null
+                this.featuredPressAt = 0
+            }
+
+            if (immediate) {
+                clear()
+                return
+            }
+            // pointerup fires before click — brief delay so a real tap can
+            // cancel the undo and keep the round for the expand transition.
+            this.featuredPressClearTimer = window.setTimeout(() => {
+                this.featuredPressClearTimer = null
+                if (this.featuredExpandPending) return
+                clear()
+            }, 80)
+        },
         onFeaturedProjectPress(event) {
             if (event.pointerType === 'mouse' && event.button !== 0) return
             if (prefersReducedMotion()) return
@@ -2136,23 +2206,18 @@ export default {
             const article = event.currentTarget.closest('.project')
             clearTimeout(this.featuredPressClearTimer)
             this.featuredPressClearTimer = null
-            // Keep round while pressed; release clears it unless a navigate starts
+            // Keep round while pressed; release clears it unless a navigate starts.
+            // Drive the curve via class only — :active sticks on some mobile browsers.
             article?.classList.add('project--press-expand')
+            this.featuredPressArticle = article
             this.featuredPressAt = performance.now()
+            this.bindFeaturedPressReleaseListeners()
         },
-        onFeaturedProjectPressEnd(event) {
+        onFeaturedProjectPressEnd() {
             if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
-            // pointerup fires before click — delay the undo so a real tap can
-            // cancel it and keep the round for the expand.
             if (this.featuredExpandPending) return
-            const article = event.currentTarget.closest('.project')
-            clearTimeout(this.featuredPressClearTimer)
-            this.featuredPressClearTimer = window.setTimeout(() => {
-                this.featuredPressClearTimer = null
-                if (this.featuredExpandPending) return
-                article?.classList.remove('project--press-expand')
-                this.featuredPressAt = 0
-            }, 80)
+            if (!this.featuredPressArticle && !this.featuredPressReleaseBound) return
+            this.clearFeaturedPressExpand()
         },
         onFeaturedProjectNavigate(event) {
             if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -2165,12 +2230,14 @@ export default {
             if (!img) return
 
             event.preventDefault()
+            this.unbindFeaturedPressReleaseListeners()
             clearTimeout(this.featuredPressClearTimer)
             clearTimeout(this.featuredExpandTimer)
             this.featuredPressClearTimer = null
             this.featuredExpandTimer = null
             this.featuredExpandPending = false
             this.featuredPressAt = 0
+            this.featuredPressArticle = article
 
             const shell =
                 article.querySelector('.project-image-link') ||
@@ -2179,6 +2246,7 @@ export default {
             const rect = shell.getBoundingClientRect()
             if (rect.width <= 0 || rect.height <= 0) {
                 article?.classList.remove('project--press-expand')
+                this.featuredPressArticle = null
                 this.$router.push('/work/DashboardDesign')
                 return
             }
@@ -2199,6 +2267,7 @@ export default {
             this.$router.push('/work/DashboardDesign').catch(() => {
                 img.style.opacity = ''
                 article?.classList.remove('project--press-expand')
+                this.featuredPressArticle = null
                 cancelImageExpand()
             })
         },
@@ -3038,14 +3107,21 @@ export default {
             let y
 
             if (this.heroTouchDiskZone === 'hero') {
-                // Early rest: 30% inset from the right, 100px above the hero text.
+                // Hero rest: 1/3 from the right; 1/3 of the logo→hero-text gap above the intro.
                 x = window.innerWidth * (1 - HERO_TOUCH_DISK_REST_FROM_RIGHT)
                 y = window.innerHeight * 0.38
                 const intro = this.$el?.querySelector('.hero-intro')
+                const logo = this.$el?.querySelector('.portfolio-top-bar .logo')
                 if (intro) {
-                    const rect = intro.getBoundingClientRect()
-                    if (rect.height > 0) {
-                        y = rect.top - HERO_TOUCH_DISK_REST_ABOVE_HERO_PX
+                    const introRect = intro.getBoundingClientRect()
+                    if (introRect.height > 0) {
+                        const logoBottom = logo?.getBoundingClientRect().bottom
+                        if (logoBottom != null && introRect.top > logoBottom) {
+                            const gap = introRect.top - logoBottom
+                            y = introRect.top - gap * HERO_TOUCH_DISK_REST_GAP_FROM_HERO
+                        } else {
+                            y = introRect.top
+                        }
                     }
                 }
             } else {
@@ -3227,10 +3303,11 @@ export default {
             if (typeof window === 'undefined') return 'hero'
             const y = window.scrollY || document.documentElement.scrollTop || 0
             const workTop = getWorkScrollTop()
+            // Same boundary as menu scroll: about starts 20px above the beige edge.
             const aboutTop = getAboutScrollTop()
             const pastFirstViewport = y > window.innerHeight * 0.55
             if (!pastFirstViewport && (workTop == null || y < workTop - 48)) return 'hero'
-            if (aboutTop != null && y >= aboutTop - 64) return 'about'
+            if (aboutTop != null && y >= aboutTop) return 'about'
             return 'work'
         },
         updateHeroTouchDiskZoneFromScroll() {
@@ -7942,32 +8019,16 @@ export default {
     transition: border-radius 0.18s ease-out;
 }
 
-/* Touch: press feedback — clears on release so the radius can ease back */
-.project:not(.project--upcoming):active .project-image-link,
-.project:not(.project--upcoming):active .project-image-wrap {
-    border-radius: 700px 700px 20px 20px;
-    box-shadow: var(--project-thumb-shadow);
-}
-
-/* Touch disk: press on description/company must not morph the thumbnail */
-.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-link,
-.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-wrap {
-    border-radius: 20px;
-    box-shadow: var(--project-thumb-shadow-rest);
-}
-
-/* Beat the reset above — project stays :active while a child is pressed */
-.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-link:active,
-.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-wrap:active,
-.portfolio-page--touch-disk .project:not(.project--upcoming).project--press-expand .project-image-link,
-.portfolio-page--touch-disk .project:not(.project--upcoming).project--press-expand .project-image-wrap,
-.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
-.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
+/* Touch: press feedback via JS class only — :active sticks on some mobile browsers. */
+.project:not(.project--upcoming).project--press-expand .project-image-link,
+.project:not(.project--upcoming).project--press-expand .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
     box-shadow: var(--project-thumb-shadow);
 }
 
 /* Touch disk: live page curves with the magnifier (no real :hover) */
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
@@ -8047,23 +8108,12 @@ export default {
 }
 
 /* Touch / press: blue while held, eases back on release (same as thumbnail) */
-.project:not(.project--upcoming):active .project-caption-link .project-title {
-    color: var(--brand);
-}
-
-/* Touch disk: don't blue the title when pressing description / company */
-.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-caption-link .project-title {
-    color: var(--text);
-}
-
-/* Beat the reset above — title / press-expand / disk hover must win while :active */
-.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-caption-link .project-title:active,
-.portfolio-page--touch-disk .project:not(.project--upcoming).project--press-expand .project-caption-link .project-title,
-.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title {
+.project:not(.project--upcoming).project--press-expand .project-caption-link .project-title {
     color: var(--brand);
 }
 
 /* Touch disk: title follows the live hover paint */
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title {
     color: var(--brand);
 }
@@ -8672,6 +8722,8 @@ export default {
     }
 
     .work {
+        /* Room inside the scrollport for thumb shadow (overflow clips otherwise). */
+        --work-thumb-shadow-pad-y: 20px;
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
@@ -8684,8 +8736,13 @@ export default {
         min-width: 0;
         margin-left: calc(-1 * var(--page-pad));
         margin-right: calc(-1 * var(--page-pad));
+        /* Negative Y margin cancels the shadow pad so section spacing stays put. */
+        margin-top: calc(-1 * var(--work-thumb-shadow-pad-y));
+        margin-bottom: calc(-1 * var(--work-thumb-shadow-pad-y));
         padding-left: var(--page-pad);
         padding-right: var(--page-pad);
+        padding-top: var(--work-thumb-shadow-pad-y);
+        padding-bottom: var(--work-thumb-shadow-pad-y);
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
@@ -8746,8 +8803,6 @@ export default {
         transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
     }
 
-    .project:not(.project--upcoming):active .project-image-link,
-    .project:not(.project--upcoming):active .project-image-wrap,
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap {
         border-radius: 700px 700px 20px 20px;

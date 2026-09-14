@@ -130,11 +130,11 @@
                     prototyping.
                 </p>
 
-                <div class="full-image">
-                    <img :src="img2" alt="Mockups" width="3014" height="1697" loading="lazy" decoding="async" />
-                    <p class="caption">Wireframes for the caregiver-facing dashboard's widgets juxtaposed with
-                        mockups of the primary user's mobile dashboard</p>
-                </div>
+                <ZoomableImage
+                    :src="img2"
+                    alt="Mockups"
+                    caption="Wireframes for the caregiver-facing dashboard's widgets juxtaposed with mockups of the primary user's mobile dashboard"
+                />
 
                 <h2>Design Highlights&nbsp;&nbsp;2/6</h2>
 
@@ -163,11 +163,11 @@
                     of those with <strong>colour vision deficiency</strong>.
                 </p>
 
-                <div class="full-image">
-                    <img :src="img3" alt="Colour system" width="2882" height="1623" loading="lazy" decoding="async" />
-                    <p class="caption">Colour palettes for the dashboard design with colour contrast audit for WCAG
-                        compliance</p>
-                </div>
+                <ZoomableImage
+                    :src="img3"
+                    alt="Colour system"
+                    caption="Colour palettes for the dashboard design with colour contrast audit for WCAG compliance"
+                />
 
                 <h2>Design Highlights&nbsp;&nbsp;3/6</h2>
 
@@ -208,11 +208,11 @@
                     proportions of the wedges: the <strong>human brain is biased toward reading lengths (the arc) more
                         accurately than areas or angles.</strong></p>
 
-                <div class="full-image">
-                    <img :src="img4" alt="Design iterations" width="2617" height="647" loading="lazy"
-                        decoding="async" />
-                    <p class="caption">Design iterations of Dispense Summary</p>
-                </div>
+                <ZoomableImage
+                    :src="img4"
+                    alt="Design iterations"
+                    caption="Design iterations of Dispense Summary"
+                />
 
                 <h2>Design Highlights&nbsp;&nbsp;4/6</h2>
 
