@@ -10,12 +10,8 @@
     >
     <Teleport to="body">
         <div
-            v-if="heroCursorEligible"
+            v-if="heroCursorEligible && !heroTouchDiskMode"
             class="hero-intro-cursor-magnifier"
-            :class="{
-                'hero-intro-cursor-magnifier--touch': heroTouchDiskMode && (heroIntroDissipated || heroIntroReconsolidating),
-                'hero-intro-cursor-magnifier--touch-instant': heroTouchDiskDissipateInstant,
-            }"
             :style="heroCursorMagnifierWindowStyle"
             aria-hidden="true"
         >
@@ -69,6 +65,9 @@
                 'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
                 'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
+                'hero-intro-cursor-dot-disk--section-frost':
+                    heroTouchDiskMode &&
+                    (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
                 'hero-intro-cursor-dot-disk--menu-frost':
                     heroTouchDiskExpand > 0.02 || heroTouchDiskMenuOpen,
             }"
@@ -147,6 +146,9 @@
             @pointercancel="onHeroTouchDiskPointerUp"
         />
     </Teleport>
+    <WorkCarouselPager
+        :active="heroTouchDiskMode && heroTouchDiskZone === 'work'"
+    />
     <div
             v-if="showLoadingSplash || logoHandoff"
             class="loading-splash"
@@ -240,7 +242,32 @@
                                     }"
                                 >
                                     <template v-for="(token, tokenIndex) in part.tokens" :key="tokenIndex">
-                                        <span class="hero-intro-word">
+                                        <span
+                                            v-if="token.type === 'group'"
+                                            class="hero-intro-nobreak"
+                                        >
+                                            <span
+                                                v-for="(word, wordIndex) in token.words"
+                                                :key="wordIndex"
+                                                class="hero-intro-word"
+                                            >
+                                                <span
+                                                    v-for="ch in word.chars"
+                                                    :key="ch.i"
+                                                    class="hero-intro-char"
+                                                    :class="{
+                                                        'hero-intro-char--afterthought': ch.afterthought,
+                                                    }"
+                                                >{{ ch.c }}</span><span
+                                                    v-if="word.trailing"
+                                                    class="hero-intro-word-space"
+                                                >{{ word.trailing }}</span>
+                                            </span>
+                                        </span>
+                                        <span
+                                            v-else
+                                            class="hero-intro-word"
+                                        >
                                             <span
                                                 v-for="ch in token.chars"
                                                 :key="ch.i"
@@ -259,7 +286,7 @@
                         </template>
                         <template v-else>
                             <span class="hero-intro-lead">I'm Tim Justina Yeung, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and academic research.
-                            I deeply enjoy understanding complex problems and providing creative solutions
+                            <span class="hero-intro-nobreak">I deeply</span> enjoy understanding complex problems and providing creative solutions
                             <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
                         </template>
                     </p>
@@ -305,16 +332,19 @@
                                     </h2>
                                 </div>
                                 <p class="project-description">
-                                    0‑to‑1 design of a caregiver‑facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
+                                    0‑to‑1 design of a caregiver-facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
                                 </p>
-                                <span class="project-year">Kin<span class="project-year-sep">//</span>2026</span>
+                                <span class="project-year">Kin<span class="project-year-sep">/ /</span>2026</span>
                             </router-link>
                         </div>
                     </article>
                 </div>
 
                 <div class="work-slot work-slot--offset">
-                    <article class="project project--offset project--upcoming portfolio-fly portfolio-fly--from-left">
+                    <article
+                        class="project project--offset project--upcoming portfolio-fly portfolio-fly--from-left"
+                        :style="offsetProjectTiltStyle"
+                    >
                         <div class="project-image-wrap">
                             <img
                                 class="project-image"
@@ -331,7 +361,7 @@
                             <p class="project-description">
                                 End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence
                             </p>
-                            <span class="project-year">Kin<span class="project-year-sep">//</span>2024</span>
+                            <span class="project-year">Kin<span class="project-year-sep">/ /</span>2024</span>
                         </div>
                     </article>
                 </div>
@@ -357,7 +387,7 @@
                             <p class="project-description">
                                 0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
                             </p>
-                            <span class="project-year">PONS<span class="project-year-sep">//</span>2019</span>
+                            <span class="project-year">PONS<span class="project-year-sep">/ /</span>2019</span>
                         </div>
                     </article>
                 </div>
@@ -465,7 +495,7 @@
             </div>
         </section>
 
-        <PortfolioSiteFooter />
+        <PortfolioSiteFooter :local-pointer-push="false" />
         </div>
     </div>
 </template>
@@ -484,6 +514,7 @@ import officeIconSvg from '../assets/1_dashboard/office.svg?raw'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
+import WorkCarouselPager from '../components/WorkCarouselPager.vue'
 import {
     getAboutScrollTop,
     getWorkScrollTop,
@@ -505,6 +536,17 @@ import {
     PRESS_BORDER_RADIUS,
     startImageExpand,
 } from '../utils/imageExpandTransition.js'
+import {
+    lerpTilt,
+    needsOrientationPermission,
+    orientationToShift,
+    requestOrientationPermission,
+    supportsDeviceOrientation,
+} from '../utils/deviceTilt.js'
+import {
+    applyPointerCharShift,
+    clearPointerCharShift,
+} from '../utils/pushText.js'
 
 const LOADING_FRAME_MS = 500
 const LOADING_PAUSE_MS = 250
@@ -1030,6 +1072,24 @@ function buildHeroIntroParts(parts) {
         }
     })
 
+    // Keep a lone sentence-start "I" glued to the next word so it never
+    // sits alone at the end of a wrapped line (e.g. "I" / "deeply enjoy…").
+    for (const part of built) {
+        const nextTokens = []
+        for (let t = 0; t < part.tokens.length; t++) {
+            const cur = part.tokens[t]
+            const next = part.tokens[t + 1]
+            const curText = cur.chars.map((ch) => ch.c).join('')
+            if (curText === 'I' && next) {
+                nextTokens.push({ type: 'group', words: [cur, next] })
+                t += 1
+                continue
+            }
+            nextTokens.push(cur)
+        }
+        part.tokens = nextTokens
+    }
+
     return built
 }
 
@@ -1038,7 +1098,7 @@ const HERO_INTRO_PLAIN = HERO_INTRO_PARTS.map((part) => part.text).join('')
 
 export default {
     name: 'Portfolio',
-    components: { PortfolioTopBar, PortfolioSiteFooter },
+    components: { PortfolioTopBar, PortfolioSiteFooter, WorkCarouselPager },
     data() {
         return {
             dashboardHero,
@@ -1146,7 +1206,7 @@ export default {
             heroTouchDiskMenuOpen: false,
             /** Bumps when label width metrics are remeasured (font load / menu open). */
             heroTouchDiskMenuMetricsRev: 0,
-            /** Visual diameter at menu-open start — expand lerps from this (smooth from glass/magnifier). */
+            /** Visual diameter at menu-open start — expand lerps from this (smooth from glass). */
             heroTouchDiskMenuFromSize: null,
             /** When true, menu frost uses the full label-cover diameter. */
             heroTouchDiskMenuOverContent: false,
@@ -1166,9 +1226,23 @@ export default {
             heroTouchDiskEdgeVel: { x: 0, y: 0 },
             heroTouchDiskPointerStart: { x: 0, y: 0 },
             heroTouchDiskOutsideCloseBound: false,
+            // Middle work thumb: device-tilt crop reveal (mobile).
+            offsetProjectTiltX: 0,
+            offsetProjectTiltY: 0,
+            offsetProjectTiltTargetX: 0,
+            offsetProjectTiltTargetY: 0,
+            offsetProjectTiltRaf: null,
+            offsetProjectTiltListening: false,
+            offsetProjectTiltPermission: 'unknown',
         }
     },
     computed: {
+        offsetProjectTiltStyle() {
+            return {
+                '--tilt-x': `${this.offsetProjectTiltX.toFixed(2)}px`,
+                '--tilt-y': `${this.offsetProjectTiltY.toFixed(2)}px`,
+            }
+        },
         heroIntroFinePointer() {
             return (
                 typeof window !== 'undefined' &&
@@ -1345,6 +1419,7 @@ export default {
             return this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff
         },
         heroCursorDotHoverExpand() {
+            if (this.heroTouchDiskMode) return false
             if (this.heroCursorIntroGlassHandoff) return false
             if (this.isHeroTouchDiskCornerParked()) return false
             const hoverMix = this.heroCursorHoverMix
@@ -1367,7 +1442,10 @@ export default {
             const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
             const cornerParked = this.isHeroTouchDiskCornerParked()
             const hoverMix =
-                menuOpen || this.heroCursorInRange || cornerParked
+                this.heroTouchDiskMode ||
+                menuOpen ||
+                this.heroCursorInRange ||
+                cornerParked
                     ? 0
                     : this.heroCursorHoverMix
 
@@ -1470,7 +1548,10 @@ export default {
             const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
             const cornerParked = this.isHeroTouchDiskCornerParked()
             const hoverMix =
-                menuOpen || this.heroCursorInRange || cornerParked
+                this.heroTouchDiskMode ||
+                menuOpen ||
+                this.heroCursorInRange ||
+                cornerParked
                     ? 0
                     : this.heroCursorHoverMix
             const { expand } = heroCursorHoverMorph(hoverMix)
@@ -1478,7 +1559,7 @@ export default {
             // (hover-expand was fading the glass out).
             const frostExpand = menuOpen ? 0 : expand
             const { x, y } = this.heroCursorGlassPos
-            // Continuous size: idle (or current glass/magnifier) → open frost.
+            // Continuous size: idle (or current glass) → open frost.
             let size
             if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
@@ -1547,8 +1628,8 @@ export default {
             // During dissipate, letter-push is off so inRange clears — treat handoff
             // as still-in-text so size/glow don't collapse to a bare ring.
             const hoverMix =
+                this.heroTouchDiskMode ||
                 this.heroCursorInRange ||
-                (this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff) ||
                 this.isHeroTouchDiskCornerParked()
                     ? 0
                     : this.heroCursorHoverMix
@@ -1854,8 +1935,11 @@ export default {
         if (this.pageRevealed) {
             this.schedulePageEntranceSettle()
         }
+
+        this.initOffsetProjectTilt()
     },
     beforeUnmount() {
+        this.teardownOffsetProjectTilt()
         this.clearLoadingTimer()
         this.clearLogoHandoffTimer()
         clearTimeout(this.aboutEntranceTimer)
@@ -1913,6 +1997,138 @@ export default {
         }
     },
     methods: {
+        initOffsetProjectTilt() {
+            if (!supportsDeviceOrientation()) return
+            this.onOffsetProjectTiltOrientation = (event) => {
+                if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
+                if (prefersReducedMotion()) {
+                    this.offsetProjectTiltTargetX = 0
+                    this.offsetProjectTiltTargetY = 0
+                    this.kickOffsetProjectTiltLerp()
+                    return
+                }
+                const shift = orientationToShift(event.beta, event.gamma)
+                this.offsetProjectTiltTargetX = shift.x
+                this.offsetProjectTiltTargetY = shift.y
+                this.kickOffsetProjectTiltLerp()
+            }
+            this.onOffsetProjectTiltPermissionGesture = () => {
+                this.tryStartOffsetProjectTilt()
+            }
+            this.onOffsetProjectTiltMqChange = () => {
+                if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+                    this.bindOffsetProjectTiltPermissionGesture()
+                    if (
+                        !needsOrientationPermission() ||
+                        this.offsetProjectTiltPermission === 'granted'
+                    ) {
+                        this.startOffsetProjectTilt()
+                    }
+                } else {
+                    this.stopOffsetProjectTilt()
+                }
+            }
+            this.offsetProjectTiltMq = window.matchMedia(MOBILE_MEDIA_QUERY)
+            this.offsetProjectTiltMq.addEventListener('change', this.onOffsetProjectTiltMqChange)
+            if (this.offsetProjectTiltMq.matches) {
+                this.bindOffsetProjectTiltPermissionGesture()
+                // Non-iOS: listen immediately. iOS waits for a user gesture.
+                if (!needsOrientationPermission()) {
+                    this.startOffsetProjectTilt()
+                }
+            }
+        },
+        teardownOffsetProjectTilt() {
+            this.stopOffsetProjectTilt()
+            this.unbindOffsetProjectTiltPermissionGesture()
+            this.offsetProjectTiltMq?.removeEventListener(
+                'change',
+                this.onOffsetProjectTiltMqChange,
+            )
+            this.offsetProjectTiltMq = null
+        },
+        bindOffsetProjectTiltPermissionGesture() {
+            if (this.offsetProjectTiltPermissionGestureBound) return
+            // Capture any first touch/click so iOS can grant orientation access.
+            window.addEventListener('pointerdown', this.onOffsetProjectTiltPermissionGesture, {
+                passive: true,
+            })
+            this.offsetProjectTiltPermissionGestureBound = true
+        },
+        unbindOffsetProjectTiltPermissionGesture() {
+            if (!this.offsetProjectTiltPermissionGestureBound) return
+            window.removeEventListener('pointerdown', this.onOffsetProjectTiltPermissionGesture)
+            this.offsetProjectTiltPermissionGestureBound = false
+        },
+        async tryStartOffsetProjectTilt() {
+            if (this.offsetProjectTiltListening) {
+                this.unbindOffsetProjectTiltPermissionGesture()
+                return
+            }
+            if (prefersReducedMotion()) return
+            if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
+            if (this.offsetProjectTiltPermission === 'denied') {
+                this.unbindOffsetProjectTiltPermissionGesture()
+                return
+            }
+            if (needsOrientationPermission() && this.offsetProjectTiltPermission !== 'granted') {
+                const state = await requestOrientationPermission()
+                this.offsetProjectTiltPermission = state
+                if (state !== 'granted') {
+                    this.unbindOffsetProjectTiltPermissionGesture()
+                    return
+                }
+            } else {
+                this.offsetProjectTiltPermission = 'granted'
+            }
+            this.startOffsetProjectTilt()
+            this.unbindOffsetProjectTiltPermissionGesture()
+        },
+        startOffsetProjectTilt() {
+            if (this.offsetProjectTiltListening) return
+            window.addEventListener('deviceorientation', this.onOffsetProjectTiltOrientation, {
+                passive: true,
+            })
+            this.offsetProjectTiltListening = true
+        },
+        stopOffsetProjectTilt() {
+            if (this.offsetProjectTiltListening) {
+                window.removeEventListener(
+                    'deviceorientation',
+                    this.onOffsetProjectTiltOrientation,
+                )
+                this.offsetProjectTiltListening = false
+            }
+            if (this.offsetProjectTiltRaf != null) {
+                cancelAnimationFrame(this.offsetProjectTiltRaf)
+                this.offsetProjectTiltRaf = null
+            }
+            this.offsetProjectTiltTargetX = 0
+            this.offsetProjectTiltTargetY = 0
+            this.offsetProjectTiltX = 0
+            this.offsetProjectTiltY = 0
+            this.unbindOffsetProjectTiltPermissionGesture()
+        },
+        kickOffsetProjectTiltLerp() {
+            if (this.offsetProjectTiltRaf != null) return
+            const tick = () => {
+                const next = lerpTilt(
+                    { x: this.offsetProjectTiltX, y: this.offsetProjectTiltY },
+                    {
+                        x: this.offsetProjectTiltTargetX,
+                        y: this.offsetProjectTiltTargetY,
+                    },
+                )
+                this.offsetProjectTiltX = next.x
+                this.offsetProjectTiltY = next.y
+                if (next.settled) {
+                    this.offsetProjectTiltRaf = null
+                    return
+                }
+                this.offsetProjectTiltRaf = requestAnimationFrame(tick)
+            }
+            this.offsetProjectTiltRaf = requestAnimationFrame(tick)
+        },
         onFeaturedProjectPress(event) {
             if (event.pointerType === 'mouse' && event.button !== 0) return
             if (prefersReducedMotion()) return
@@ -2000,6 +2216,14 @@ export default {
                 }
                 this.closeHeroTouchDiskMenu()
                 this.heroTouchDiskHasMoved = false
+                if (this.heroTouchDiskEntering) {
+                    this.cancelHeroTouchDiskEntranceFlight()
+                    this.heroTouchDiskEntering = false
+                    this.heroTouchDiskEntrance = 1
+                    this.heroTouchDiskIdle = false
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorRangeMix = 0
+                }
                 this.clearHeroTouchDiskMorph()
                 this.$nextTick(() => this.syncHeroTouchDiskRestPosition())
             }
@@ -2038,33 +2262,8 @@ export default {
             }
 
             // Deco line present (≥501): thumbnails stay put — no scroll fade.
-            // Deco line absent (≤500): cards fade in/out as they enter/leave view.
-            if (window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
-                this.revealAllProjects()
-                return
-            }
-
-            this.projectFadeObserver = new IntersectionObserver(
-                (entries) => {
-                    for (const entry of entries) {
-                        entry.target.classList.toggle('project--in-view', entry.isIntersecting)
-                    }
-                },
-                {
-                    root: null,
-                    threshold: 0.12,
-                    rootMargin: '0px 0px -6% 0px',
-                }
-            )
-            for (const project of projects) {
-                project.classList.add('project--scroll-fade')
-                const rect = project.getBoundingClientRect()
-                const inViewport = rect.top < window.innerHeight && rect.bottom > 0
-                if (inViewport) {
-                    project.classList.add('project--in-view')
-                }
-                this.projectFadeObserver.observe(project)
-            }
+            // ≤500 swipe strip: keep every card painted so the next one can peek.
+            this.revealAllProjects()
         },
         revealAllProjects() {
             this.projectFadeObserver?.disconnect()
@@ -2320,7 +2519,7 @@ export default {
                 if (isMobileTouchDisk) {
                     // ":)" is in the cascade — settle shortly after the cascade window ends.
                     settleMs = Math.ceil(
-                        (maxDelay + charDuration * slowestLineMult + 0.22) * 1000,
+                        (maxDelay + charDuration * slowestLineMult + 0.12) * 1000,
                     )
                 } else {
                     const afterthoughtStart =
@@ -2704,6 +2903,101 @@ export default {
                 typeof window !== 'undefined'
             )
         },
+        /** Footer title push stays available after the hero dissipates. */
+        canFooterPushPlay() {
+            return (
+                this.heroIntroLetterMode &&
+                this.pageEntranceDone &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined'
+            )
+        },
+        /**
+         * Touch-disk text field: hero zone uses intro play rules; off-hero only while
+         * free (dragged) so the disk can repel the footer title like the intro.
+         */
+        touchDiskTextEffectsEnabled() {
+            if (!this.isHeroTouchDiskMode()) return false
+            if (this.heroTouchDiskZone === 'hero') {
+                return this.canHeroIntroPointerPlay()
+            }
+            return (
+                this.canFooterPushPlay() &&
+                (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging)
+            )
+        },
+        getFooterPushRoot() {
+            return this.$el?.querySelector('.footer-contact-title--push') ?? null
+        },
+        getFooterEmailEl() {
+            return this.$el?.querySelector('a.footer-email') ?? null
+        },
+        /**
+         * Prefer email magnifier over title glass — clear the glass field early
+         * while approaching the mailto link (large pad above the email).
+         * Touch disk skips this (no magnifier).
+         */
+        isPreferFooterEmailMagnifier(x, y) {
+            // Touch disk has no magnifier — keep footer title glass available.
+            if (this.isHeroTouchDiskMode()) return false
+            const email = this.getFooterEmailEl()
+            if (!email) return false
+            const rect = email.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) return false
+            const padX = 16
+            const padTop = 32
+            const padBottom = 12
+            return (
+                x >= rect.left - padX &&
+                x <= rect.right + padX &&
+                y >= rect.top - padTop &&
+                y <= rect.bottom + padBottom
+            )
+        },
+        isNearFooterPush(x, y) {
+            if (this.isPreferFooterEmailMagnifier(x, y)) return false
+            const footer = this.getFooterPushRoot()
+            if (!footer || !this.canFooterPushPlay()) return false
+            // Same AABB as isHeroIntroPointerNear so glass morph and letter push stay aligned.
+            // Keep the bottom pad modest so glass yields to the email magnifier sooner.
+            const pad = this.getPushTargetZonePad(footer)
+            const padBottom = Math.min(pad, 14)
+            const rect = footer.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) return false
+            return (
+                x >= rect.left - pad &&
+                x <= rect.right + pad &&
+                y >= rect.top - pad &&
+                y <= rect.bottom + padBottom
+            )
+        },
+        /** Proximity mix for the footer title only (ignores off-screen hero intro). */
+        getFooterRangeProximityMix(x, y) {
+            if (this.isPreferFooterEmailMagnifier(x, y)) return 0
+            const footer = this.getFooterPushRoot()
+            if (!footer || !this.canFooterPushPlay()) return 0
+            const { outerPad, innerPad } = this.getPushTargetRangePads(footer)
+            const rect = footer.getBoundingClientRect()
+            // Don't let the glass field reach down into the email row.
+            if (y > rect.bottom + 14) return 0
+            const distance = heroCursorDistanceToRect(x, y, rect)
+            if (distance >= outerPad) return 0
+            if (distance <= innerPad) return 1
+            const linear = (outerPad - distance) / (outerPad - innerPad)
+            return heroCursorRangeSmoothstep(linear)
+        },
+        applyFooterPointerShift() {
+            const footer = this.getFooterPushRoot()
+            const pointer = this.heroIntroPointer
+            if (!footer || !pointer || !this.canFooterPushPlay()) {
+                if (footer) clearPointerCharShift(footer)
+                return
+            }
+            applyPointerCharShift(footer, pointer)
+        },
+        clearFooterPointerShift() {
+            clearPointerCharShift(this.getFooterPushRoot())
+        },
         isHeroTouchDiskGlassRepelActive() {
             // Touch-disk path only — fine-pointer desktop must not enter here.
             return (
@@ -2755,7 +3049,7 @@ export default {
                     }
                 }
             } else {
-                // Past the first viewport: float lower-right with the same edge gap.
+                // Work / About: fixed lower-right corner (mirrors the pager pill).
                 x = window.innerWidth - gap - radius
                 y = window.innerHeight - gap - radius
             }
@@ -2948,9 +3242,18 @@ export default {
             this.closeHeroTouchDiskMenu()
             this.heroTouchDiskHasMoved = false
             if (next !== 'hero') this.clearHeroTouchDiskMorph()
+            // Entrance arc is hero-only — abort into a corner snap when leaving hero.
+            if (next !== 'hero' && this.heroTouchDiskEntering) {
+                this.cancelHeroTouchDiskEntranceFlight()
+                this.heroTouchDiskEntering = false
+                this.heroTouchDiskEntrance = 1
+                this.heroTouchDiskIdle = false
+                this.heroCursorIntroGlassHandoff = false
+                this.heroCursorRangeMix = 0
+            }
             this.syncHeroTouchDiskRestPosition()
         },
-        /** Reset intro-text morph when parking off-hero (hover magnifier stays allowed). */
+        /** Reset intro-text morph when parking off-hero (touch disk never uses magnifier). */
         clearHeroTouchDiskMorph() {
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
@@ -2958,9 +3261,12 @@ export default {
             this.heroCursorHoverMix = 0
             this.heroCursorOverHover = false
             this.heroCursorHoverLockEl = null
+            this.heroCursorMagnifierLayout = null
+            this.heroCursorMirrorHoverTarget = 0
             this.heroCursorIntroGlassHandoff = false
             this.heroIntroPointer = null
             this.clearHeroIntroPointerShift()
+            this.clearFooterPointerShift()
         },
         /** Work/About lower corners: stay as idle disk until dragged out over a case. */
         isHeroTouchDiskCornerParked(x, y) {
@@ -2991,11 +3297,17 @@ export default {
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
             if (this.heroTouchDiskDragging) return
-            // Don't yank the glass ball to rest while the entrance arc is playing.
-            if (this.heroTouchDiskEntering) return
+            // Don't yank the glass ball to rest while the hero entrance arc is playing.
+            if (this.heroTouchDiskEntering && this.heroTouchDiskZone === 'hero') return
             const zoneChanged = this.heroTouchDiskParkZone !== this.heroTouchDiskZone
-            // Free placement within a zone until the zone changes.
-            if (this.heroTouchDiskHasMoved && !zoneChanged) return
+            // Free placement only in the hero zone; work/about stay locked to the corner.
+            if (
+                this.heroTouchDiskZone === 'hero' &&
+                this.heroTouchDiskHasMoved &&
+                !zoneChanged
+            ) {
+                return
+            }
 
             const pos = this.getHeroTouchDiskRestPos()
             this.heroTouchDiskParkZone = this.heroTouchDiskZone
@@ -3004,9 +3316,12 @@ export default {
                 introEffects: false,
                 skipHover: true,
             })
-            // Keep glass + dot locked together so frost size doesn't drift while parking.
+            // Work / About: hard-pin like the pager pill (no home-glide chase).
+            // Hero: glass can ease toward rest.
             this.heroCursorGlassPos = { ...pos }
-            this.startHeroCursorGlassFollow()
+            if (this.heroTouchDiskZone === 'hero') {
+                this.startHeroCursorGlassFollow()
+            }
             this.refreshHeroTouchDiskStage()
         },
         clampHeroTouchDiskIntoViewport() {
@@ -3019,7 +3334,7 @@ export default {
                 this.updateHeroFinePointer(x, y, {
                     introEffects:
                         (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
-                        this.canHeroIntroPointerPlay(),
+                        this.touchDiskTextEffectsEnabled(),
                 })
                 this.heroCursorGlassPos = { x, y }
             }
@@ -3075,8 +3390,7 @@ export default {
                 this.heroCursorPos = { ...endPos }
                 this.heroCursorGlassPos = { ...endPos }
                 this.updateHeroFinePointer(endPos.x, endPos.y, {
-                    introEffects:
-                        this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
+                    introEffects: this.touchDiskTextEffectsEnabled(),
                     skipHover: true,
                 })
             }
@@ -3164,6 +3478,21 @@ export default {
                     this.heroTouchDiskHasMoved
                 ) {
                     this.heroTouchDiskEntering = false
+                    return
+                }
+
+                // Left the hero mid-flight — snap to the corner, no entrance there.
+                if (this.heroTouchDiskZone !== 'hero') {
+                    const park = this.getHeroTouchDiskRestPos()
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorRangeMix = 0
+                    this.heroCursorPos = { ...park }
+                    this.heroCursorGlassPos = { ...park }
+                    this.updateHeroFinePointer(park.x, park.y, {
+                        introEffects: false,
+                        skipHover: true,
+                    })
+                    this.finishHeroTouchDiskEntrance(park)
                     return
                 }
 
@@ -3274,21 +3603,19 @@ export default {
             }
             this.animateHeroTouchDiskExpand(0)
         },
-        /** Current frost / glass / magnifier diameter — used as expand origin. */
+        /** Current frost / glass diameter — used as expand origin. */
         getHeroTouchDiskVisualSize() {
             if (this.heroCursorIntroGlassHandoff) {
                 return heroCursorIntroBallSize(
-                    this.heroCursorHoverMix,
+                    0,
                     this.heroCursorRangeMix,
                 )
             }
-            const hoverMix =
-                this.heroCursorInRange ? 0 : this.heroCursorHoverMix
-            return heroCursorDotDiskSize(hoverMix)
+            return heroCursorDotDiskSize(0)
         },
         openHeroTouchDiskMenu() {
             if (!this.canOpenHeroTouchDiskMenu()) return
-            // Capture size before clearing morph so glass/magnifier → frost doesn't snap.
+            // Capture size before clearing morph so glass → frost doesn't snap.
             this.heroTouchDiskMenuFromSize = this.getHeroTouchDiskVisualSize()
             this.heroCursorMagnifierLayout = null
             this.heroCursorHoverMix = 0
@@ -3402,31 +3729,6 @@ export default {
                 this.openHeroTouchDiskMenu()
             }
         },
-        /** Magnifier is open over a live control — tap should activate it, not the menu. */
-        isHeroTouchDiskMagnifierMode() {
-            if (!this.isHeroTouchDiskMode()) return false
-            if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) return false
-            if (this.isHeroTouchDiskCornerParked()) return false
-            if (this.heroCursorInRange) return false
-            if (this.heroCursorMagnifierLayout) return true
-            const { expand } = heroCursorHoverMorph(this.heroCursorHoverMix)
-            return expand > 0.02
-        },
-        /**
-         * Activate the control currently under the disk (case study, About CTA, etc.).
-         * Returns true if a target was clicked.
-         */
-        activateHeroTouchDiskMagnifierTarget() {
-            if (!this.isHeroTouchDiskMagnifierMode()) return false
-            const { x, y } = this.heroCursorGlassPos
-            const target = this.getHeroCursorHoverTargetElement(x, y)
-            if (!(target instanceof Element) || typeof target.click !== 'function') {
-                return false
-            }
-            this.markHeroTouchDiskInteracted()
-            target.click()
-            return true
-        },
         bindHeroTouchDiskOutsideClose() {
             if (this.heroTouchDiskOutsideCloseBound) return
             this.heroTouchDiskOutsideCloseBound = true
@@ -3495,7 +3797,7 @@ export default {
             const from = this.heroTouchDiskExpand
             const duration = HERO_TOUCH_DISK_EXPAND_MS
             const start = performance.now()
-            // Closing: lerp frost back to idle (not to the glass/magnifier origin).
+            // Closing: lerp frost back to idle (not to the glass origin).
             if (to < 0.5) {
                 this.heroTouchDiskMenuFromSize = HERO_CURSOR_GLASS_IDLE_SIZE
             }
@@ -3560,6 +3862,8 @@ export default {
             }
         },
         moveHeroTouchDiskTo(clientX, clientY) {
+            // Work / About: corner-fixed — only the hero zone is freely movable.
+            if (this.heroTouchDiskZone !== 'hero') return
             const rawX = clientX + this.heroTouchDiskGrabOffset.x
             const rawY = clientY + this.heroTouchDiskGrabOffset.y
             const menuOpen =
@@ -3574,8 +3878,7 @@ export default {
                       }
                   })()
             this.updateHeroFinePointer(x, y, {
-                introEffects:
-                    this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
+                introEffects: this.touchDiskTextEffectsEnabled(),
             })
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
@@ -3631,6 +3934,9 @@ export default {
                 // Keep an open menu open while dragging; tap the center to close.
             }
 
+            // Work / About stay corner-fixed — consume the drag so release isn't a tap.
+            if (this.heroTouchDiskZone !== 'hero') return
+
             event.preventDefault()
             this.moveHeroTouchDiskTo(event.clientX, event.clientY)
         },
@@ -3640,7 +3946,11 @@ export default {
             const wasTap =
                 this.heroTouchDiskDragging && !this.heroTouchDiskHasMoved
 
-            if (this.heroTouchDiskDragging && this.heroTouchDiskHasMoved) {
+            if (
+                this.heroTouchDiskDragging &&
+                this.heroTouchDiskHasMoved &&
+                this.heroTouchDiskZone === 'hero'
+            ) {
                 this.moveHeroTouchDiskTo(event.clientX, event.clientY)
             }
             try {
@@ -3649,6 +3959,10 @@ export default {
                 /* ignore */
             }
             this.endHeroTouchDiskDrag()
+            // Corner zones: clear any ignored-drag flag so park sync stays honest.
+            if (this.heroTouchDiskZone !== 'hero') {
+                this.heroTouchDiskHasMoved = false
+            }
             // After a rubber-band drag with the menu open, spring back in-view.
             if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
                 this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
@@ -3656,12 +3970,6 @@ export default {
             }
 
             if (wasTap) {
-                if (
-                    !(this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.5) &&
-                    this.activateHeroTouchDiskMagnifierTarget()
-                ) {
-                    return
-                }
                 this.toggleHeroTouchDiskMenu()
             }
         },
@@ -3701,9 +4009,13 @@ export default {
         getPushTargetRangePads(el) {
             const styles = getComputedStyle(el)
             if (el.classList.contains('footer-contact-title--push')) {
+                // Match a hero-like glass field (footer's own 4px pad is mouse-hit only).
                 return {
-                    outerPad: parseCssPx(styles, '--push-char-zone-pad', 4),
-                    innerPad: parseCssPx(styles, '--push-char-zone-pad-tight', 1),
+                    outerPad: Math.max(
+                        72,
+                        parseCssPx(styles, '--push-char-hover-radius', 160) * 0.55,
+                    ),
+                    innerPad: 20,
                 }
             }
             return {
@@ -3713,15 +4025,15 @@ export default {
         },
         getPushTargetZonePad(el) {
             if (el.classList.contains('footer-contact-title--push')) {
-                const styles = getComputedStyle(el)
-                return parseCssPx(styles, '--push-char-zone-pad', 4)
+                return this.getPushTargetRangePads(el).outerPad
             }
             return this.getHeroCursorZonePad(el, getComputedStyle(el))
         },
         getHeroIntroRangeProximityMix(x, y) {
-            let maxMix = 0
+            let maxMix = this.getFooterRangeProximityMix(x, y)
 
             for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
                 const { outerPad, innerPad } = this.getPushTargetRangePads(el)
                 const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
 
@@ -3735,7 +4047,9 @@ export default {
             return maxMix
         },
         isHeroIntroPointerTight(x, y) {
+            if (this.getFooterRangeProximityMix(x, y) >= 0.85) return true
             for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
                 const { innerPad } = this.getPushTargetRangePads(el)
                 const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
                 if (distance <= innerPad) return true
@@ -3743,7 +4057,9 @@ export default {
             return false
         },
         isHeroIntroPointerNear(x, y) {
+            if (this.isNearFooterPush(x, y)) return true
             for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
                 const zonePad = this.getPushTargetZonePad(el)
                 const rect = el.getBoundingClientRect()
                 if (
@@ -4010,7 +4326,9 @@ export default {
             const clone = this.heroCursorMirrorClone
             const chrome = this.heroCursorMirrorTopBarClone
             const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
-            if (!clone || !source) {
+            const paintLive = this.isHeroTouchDiskMode()
+            // Touch disk has no magnifier clone — still paint live curve / CTA blue.
+            if (!source || (!clone && !paintLive)) {
                 this.clearHeroCursorMirrorHoverState()
                 return
             }
@@ -4026,21 +4344,21 @@ export default {
                 if (ancestor) liveNodes.push(ancestor)
             }
 
-            const paintLive = this.isHeroTouchDiskMode()
-
             for (const liveNode of liveNodes) {
-                let mirrorNode = this.getMirrorNodeForLive(liveNode, clone, source)
-                if (
-                    !mirrorNode &&
-                    chrome &&
-                    liveNode.closest('.portfolio-top-bar, .top-bar, .nav-link')
-                ) {
-                    mirrorNode = this.findMirrorNodeFallback(liveNode, chrome, source)
-                }
-                if (mirrorNode) {
-                    mirrorNode.classList.add('hero-cursor-mirror-hover')
-                    if (this.isHeroCursorPressRelated(liveNode)) {
-                        mirrorNode.classList.add('hero-cursor-mirror-active')
+                if (clone) {
+                    let mirrorNode = this.getMirrorNodeForLive(liveNode, clone, source)
+                    if (
+                        !mirrorNode &&
+                        chrome &&
+                        liveNode.closest('.portfolio-top-bar, .top-bar, .nav-link')
+                    ) {
+                        mirrorNode = this.findMirrorNodeFallback(liveNode, chrome, source)
+                    }
+                    if (mirrorNode) {
+                        mirrorNode.classList.add('hero-cursor-mirror-hover')
+                        if (this.isHeroCursorPressRelated(liveNode)) {
+                            mirrorNode.classList.add('hero-cursor-mirror-active')
+                        }
                     }
                 }
                 // Case study curve + About CTA blue on the page under the disk.
@@ -4063,26 +4381,50 @@ export default {
             this.startHeroCursorGlassFollow()
         },
         updateHeroFinePointer(x, y, { introEffects = true, skipHover = false } = {}) {
-            const inRange = introEffects && this.isHeroIntroPointerNear(x, y)
+            // Hero letter push is gated by introEffects (off while dissipated).
+            // Footer stays interactive for the fine-pointer glass cursor too —
+            // except near the email, where the magnifier takes priority.
+            const preferEmailMag = this.isPreferFooterEmailMagnifier(x, y)
+            const nearFooter =
+                !preferEmailMag && this.canFooterPushPlay() && this.isNearFooterPush(x, y)
+            const inRange = preferEmailMag
+                ? false
+                : (introEffects && this.isHeroIntroPointerNear(x, y)) || nearFooter
             const wasActive = this.heroCursorActive
 
             this.heroCursorPos = { x, y }
             this.heroCursorActive = true
             this.syncHeroCursorDocumentClass()
             this.heroCursorInRange = inRange
-            this.heroCursorRangeTight = inRange && this.isHeroIntroPointerTight(x, y)
+            this.heroCursorRangeTight =
+                inRange &&
+                (nearFooter
+                    ? this.getFooterRangeProximityMix(x, y) >= 0.85
+                    : this.isHeroIntroPointerTight(x, y))
+
+            // Drop title glass immediately so the email magnifier can morph in.
+            if (preferEmailMag && this.heroCursorIntroGlassHandoff) {
+                this.heroCursorRangeMix = 0
+                this.heroCursorIntroGlassHandoff = false
+                this.clearFooterPointerShift()
+            }
+
+            const touchDisk = this.isHeroTouchDiskMode()
             const cornerDisk = this.isHeroTouchDiskCornerParked(x, y)
-            if (skipHover || cornerDisk) {
+            // Touch disk: never enter link/project magnifier — stay disk or text glass.
+            if (skipHover || cornerDisk || touchDisk) {
                 this.heroCursorOverHover = false
-                if (cornerDisk) {
+                if (cornerDisk || touchDisk) {
                     this.heroCursorHoverMix = 0
                     this.heroCursorHoverLockEl = null
                     this.heroCursorMagnifierLayout = null
+                    this.heroCursorMirrorHoverTarget = 0
                 }
             } else {
                 this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
             }
             const magnifierVisible =
+                !touchDisk &&
                 !inRange &&
                 !cornerDisk &&
                 (this.heroCursorOverHover || this.heroCursorHoverMix > 0.02)
@@ -4120,33 +4462,83 @@ export default {
                 const { x: tx, y: ty } = this.heroCursorPos
                 const touchDisk = this.isHeroTouchDiskMode()
                 const sectionNav = touchDisk && this.heroTouchDiskZone !== 'hero'
-                const menuOpen =
-                    touchDisk &&
-                    (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
-                // Off-hero: freeze intro-text glass morph, but still allow project magnifier.
-                if (sectionNav) {
+                // Work / About: stay pinned in the lower-right corner (mirror of the
+                // pager pill) — no free float, no soft home glide.
+                if (sectionNav && !this.heroTouchDiskDragging) {
+                    const rest = this.getHeroTouchDiskRestPos()
+                    if (
+                        this.heroCursorPos.x !== rest.x ||
+                        this.heroCursorPos.y !== rest.y
+                    ) {
+                        this.heroCursorPos = { x: rest.x, y: rest.y }
+                    }
+                    this.heroCursorGlassPos = { x: rest.x, y: rest.y }
                     this.heroCursorRangeMix = 0
                     this.heroCursorIntroGlassHandoff = false
                     this.heroCursorInRange = false
                     this.heroCursorRangeTight = false
+                    if (this.heroIntroPointer) {
+                        this.heroIntroPointer = null
+                        this.clearFooterPointerShift()
+                    }
+                    this.heroCursorOverHover = false
+                    if (this.heroCursorHoverMix > 0) {
+                        this.heroCursorHoverMix = 0
+                        this.heroCursorHoverLockEl = null
+                        this.heroCursorMagnifierLayout = null
+                        this.heroCursorMirrorHoverTarget = 0
+                    }
+                    if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
+                        this.syncHeroTouchDiskMenuFrostLive()
+                    }
+                    this.heroCursorGlassRaf = requestAnimationFrame(tick)
+                    return
+                }
+                const footerFree =
+                    touchDisk &&
+                    this.canFooterPushPlay() &&
+                    (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging)
+                const footerMix = footerFree ? this.getFooterRangeProximityMix(tx, ty) : 0
+                const footerField = footerFree && footerMix > HERO_CURSOR_INTRO_GLASS_OFF
+                const menuOpen =
+                    touchDisk &&
+                    (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
+                // Off-hero: freeze intro-text glass morph (no project magnifier on touch disk).
+                // Exception: footer title uses the same in-text glass + letter push as the hero.
+                if (sectionNav && !footerField) {
+                    this.heroCursorRangeMix = 0
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorInRange = false
+                    this.heroCursorRangeTight = false
+                    if (this.heroIntroPointer) {
+                        this.heroIntroPointer = null
+                        this.clearFooterPointerShift()
+                    }
                 }
                 const allowIntroGlass =
                     !menuOpen &&
                     (!touchDisk ||
+                        footerField ||
                         (!sectionNav &&
                             (this.heroTouchDiskHasMoved ||
                                 this.heroTouchDiskDragging ||
                                 this.heroTouchDiskEntering)))
+                // Freeze only applies in the hero zone during dissipate — never while
+                // the disk is interacting with the footer (hero is already gone there).
                 const freezeIntroGlass =
                     touchDisk &&
+                    !sectionNav &&
                     this.heroCursorIntroGlassHandoff &&
                     this.heroTouchDiskOnStage &&
                     (this.heroIntroDissipated || this.heroIntroReconsolidating)
                 // Touch-disk only: keep in-text glass while letters fan out / snap back.
-                if (!sectionNav && !freezeIntroGlass) {
-                    const proximityTarget = allowIntroGlass
-                        ? this.getHeroIntroRangeProximityMix(tx, ty)
-                        : 0
+                // Off-hero: same path when the disk is in the footer title field.
+                if ((!sectionNav || footerField) && !freezeIntroGlass) {
+                    const proximityTarget = footerField
+                        ? footerMix
+                        : allowIntroGlass
+                          ? this.getHeroIntroRangeProximityMix(tx, ty)
+                          : 0
                     if (touchDisk && this.heroTouchDiskEntering) {
                         // Fly-in stays glass the whole way; deepen when crossing text.
                         this.heroCursorIntroGlassHandoff = true
@@ -4164,13 +4556,18 @@ export default {
                             this.heroCursorIntroGlassHandoff = false
                         }
                     } else {
-                        const rangeLerp = touchDisk
+                        // Footer: snap into glass a bit faster so the morph reads on a short pass.
+                        const rangeLerp = footerField
                             ? proximityTarget >= this.heroCursorRangeMix
-                                ? 0.09
-                                : 0.11
-                            : proximityTarget >= this.heroCursorRangeMix
-                              ? 0.14
-                              : 0.2
+                                ? 0.22
+                                : 0.16
+                            : touchDisk
+                              ? proximityTarget >= this.heroCursorRangeMix
+                                  ? 0.09
+                                  : 0.11
+                              : proximityTarget >= this.heroCursorRangeMix
+                                ? 0.14
+                                : 0.2
                         this.heroCursorRangeMix +=
                             (proximityTarget - this.heroCursorRangeMix) * rangeLerp
                         if (
@@ -4180,6 +4577,11 @@ export default {
                             this.heroCursorIntroGlassHandoff = true
                             this.closeHeroTouchDiskMenu({ instant: true })
                         }
+                    }
+                    if (footerField) {
+                        this.heroCursorInRange = true
+                        this.heroCursorRangeTight =
+                            footerMix >= 0.85 || this.isNearFooterPush(tx, ty)
                     }
                 }
 
@@ -4193,7 +4595,9 @@ export default {
                         this.heroCursorGlassPos?.x ?? tx,
                         this.heroCursorGlassPos?.y ?? ty,
                     )
+                // Touch disk never morphs into the link magnifier.
                 const hoverTarget =
+                    touchDisk ||
                     menuOpen ||
                     scrollHoverSuppressed ||
                     this.heroCursorInRange ||
@@ -4202,12 +4606,14 @@ export default {
                         : this.isHeroCursorOverHoverTarget(tx, ty)
                           ? 1
                           : 0
-                if (cornerDisk && this.heroCursorHoverMix > 0) {
+                if ((touchDisk || cornerDisk) && this.heroCursorHoverMix > 0) {
                     this.heroCursorHoverMix = 0
                     this.heroCursorHoverLockEl = null
                     this.heroCursorMagnifierLayout = null
+                    this.heroCursorMirrorHoverTarget = 0
                 }
                 const magnifierVisible =
+                    !touchDisk &&
                     !this.heroCursorInRange &&
                     !cornerDisk &&
                     (hoverTarget === 1 || this.heroCursorHoverMix > 0.02)
@@ -4583,6 +4989,23 @@ export default {
             return sourceRect
         },
         updateHeroCursorMagnifierLayout() {
+            // Touch disk never uses the link/project magnifier — but still paints
+            // live hover (case-study curve + About CTA blue) under the disk.
+            if (this.isHeroTouchDiskMode()) {
+                if (this.heroCursorMagnifierLayout) {
+                    this.heroCursorMagnifierLayout = null
+                    this.syncHeroCursorMagnifierTopBarFrostEl(null)
+                }
+                if (this.isHeroTouchDiskCornerParked()) {
+                    this.clearHeroCursorMirrorHoverState()
+                    return
+                }
+                this.syncHeroCursorMirrorHoverState(
+                    this.heroCursorGlassPos.x,
+                    this.heroCursorGlassPos.y
+                )
+                return
+            }
             const rangeMix = this.heroCursorRangeMix
             const cornerParked = this.isHeroTouchDiskCornerParked()
             const hoverMix =
@@ -4905,7 +5328,7 @@ export default {
 
                 this.updateHeroTouchDiskZoneFromScroll()
 
-                // Outside hero: any scroll parks the disk back in the lower-right corner.
+                // Outside hero: pin the disk in the lower-right corner (fixed, like the pill).
                 if (this.heroTouchDiskZone !== 'hero') {
                     if (
                         this.heroTouchDiskMenuOpen ||
@@ -4917,12 +5340,14 @@ export default {
                     this.heroTouchDiskParkZone = this.heroTouchDiskZone
                     this.clearHeroTouchDiskMorph()
                     const pos = this.getHeroTouchDiskRestPos()
+                    this.heroCursorPos = { ...pos }
+                    this.heroCursorGlassPos = { ...pos }
                     this.updateHeroFinePointer(pos.x, pos.y, {
                         introEffects: false,
                         skipHover: true,
                     })
-                    // Leave glass to chase so the return reads soft, not a hard snap.
-                    this.startHeroCursorGlassFollow()
+                    // Re-assert after updateHeroFinePointer (it may start a soft chase).
+                    this.heroCursorGlassPos = { ...pos }
                     this.refreshHeroTouchDiskStage()
                     return
                 }
@@ -4937,8 +5362,7 @@ export default {
 
                 const { x, y } = this.heroCursorPos
                 this.updateHeroFinePointer(x, y, {
-                    introEffects:
-                        this.heroTouchDiskZone === 'hero' && this.canHeroIntroPointerPlay(),
+                    introEffects: this.touchDiskTextEffectsEnabled(),
                     skipHover: true,
                 })
                 if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
@@ -4947,112 +5371,124 @@ export default {
             })
         },
         applyHeroIntroPointerShift() {
-            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
             const pointer = this.heroIntroPointer
-            if (!intro || !pointer) return
+            if (!pointer) return
 
-            const introStyles = getComputedStyle(intro)
-            const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 120)
-            const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
-            const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
-            const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
-            const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
-            const minForce = parseCssPx(introStyles, '--hero-intro-hover-min-force', 0)
-            const radiusExitMult = parseCssPx(introStyles, '--hero-intro-hover-radius-exit-mult', 1)
-            const { x, y } = pointer
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (intro && this.canHeroIntroPointerPlay()) {
+                const introStyles = getComputedStyle(intro)
+                const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 120)
+                const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
+                const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
+                const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
+                const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
+                const minForce = parseCssPx(introStyles, '--hero-intro-hover-min-force', 0)
+                const radiusExitMult = parseCssPx(introStyles, '--hero-intro-hover-radius-exit-mult', 1)
+                const { x, y } = pointer
 
-            const chars = [...intro.querySelectorAll('.hero-intro-char')]
-            const layout = this.heroIntroRestLayout
-            const introRect = intro.getBoundingClientRect()
-            // Prefer frozen rest centers when available — live rects mid-transition
-            // feed back into the force field and vibrate. Drop the cache if the
-            // intro reflowed (resize) so we never push against stale locals.
-            const useRest =
-                layout &&
-                Array.isArray(layout.chars) &&
-                layout.chars.length === chars.length &&
-                Math.abs(layout.introW - introRect.width) < 1.5 &&
-                Math.abs(layout.introH - introRect.height) < 1.5
+                const chars = [...intro.querySelectorAll('.hero-intro-char')]
+                const layout = this.heroIntroRestLayout
+                const introRect = intro.getBoundingClientRect()
+                // Prefer frozen rest centers when available — live rects mid-transition
+                // feed back into the force field and vibrate. Drop the cache if the
+                // intro reflowed (resize) so we never push against stale locals.
+                const useRest =
+                    layout &&
+                    Array.isArray(layout.chars) &&
+                    layout.chars.length === chars.length &&
+                    Math.abs(layout.introW - introRect.width) < 1.5 &&
+                    Math.abs(layout.introH - introRect.height) < 1.5
 
-            // Prefer frozen rest centers (one intro rect) over 156× getBoundingClientRect/frame.
-            let samples
-            if (useRest) {
-                samples = chars.map((el, i) => {
-                    const local = layout.chars[i]
-                    return {
-                        el,
-                        skip: false,
-                        cx: introRect.left + local.x,
-                        cy: introRect.top + local.y,
-                        wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                // Prefer frozen rest centers (one intro rect) over 156× getBoundingClientRect/frame.
+                let samples
+                if (useRest) {
+                    samples = chars.map((el, i) => {
+                        const local = layout.chars[i]
+                        return {
+                            el,
+                            skip: false,
+                            cx: introRect.left + local.x,
+                            cy: introRect.top + local.y,
+                            wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                        }
+                    })
+                } else {
+                    samples = []
+                    for (const el of chars) {
+                        const rect = el.getBoundingClientRect()
+                        if (rect.width <= 0 || rect.height <= 0) {
+                            samples.push({ el, skip: true })
+                            continue
+                        }
+                        const pushX = parseFloat(el.style.getPropertyValue('--hero-intro-push-x')) || 0
+                        const pushY = parseFloat(el.style.getPropertyValue('--hero-intro-push-y')) || 0
+                        samples.push({
+                            el,
+                            skip: false,
+                            cx: rect.left + rect.width / 2 - pushX,
+                            cy: rect.top + rect.height / 2 - pushY,
+                            wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                        })
                     }
-                })
-            } else {
-                samples = []
-                for (const el of chars) {
-                    const rect = el.getBoundingClientRect()
-                    if (rect.width <= 0 || rect.height <= 0) {
-                        samples.push({ el, skip: true })
+                }
+
+                for (const sample of samples) {
+                    const { el } = sample
+                    if (sample.skip) {
+                        el.classList.remove('hero-intro-char--pushed')
+                        el.style.removeProperty('--hero-intro-push-x')
+                        el.style.removeProperty('--hero-intro-push-y')
                         continue
                     }
-                    const pushX = parseFloat(el.style.getPropertyValue('--hero-intro-push-x')) || 0
-                    const pushY = parseFloat(el.style.getPropertyValue('--hero-intro-push-y')) || 0
-                    samples.push({
-                        el,
-                        skip: false,
-                        cx: rect.left + rect.width / 2 - pushX,
-                        cy: rect.top + rect.height / 2 - pushY,
-                        wasPushed: el.classList.contains('hero-intro-char--pushed'),
-                    })
-                }
-            }
 
-            for (const sample of samples) {
-                const { el } = sample
-                if (sample.skip) {
-                    el.classList.remove('hero-intro-char--pushed')
-                    el.style.removeProperty('--hero-intro-push-x')
-                    el.style.removeProperty('--hero-intro-push-y')
-                    continue
-                }
+                    const dx = sample.cx - x
+                    const dy = sample.cy - y
+                    const dist = Math.hypot(dx, dy)
+                    const effectiveRadius = sample.wasPushed ? radius * radiusExitMult : radius
 
-                const dx = sample.cx - x
-                const dy = sample.cy - y
-                const dist = Math.hypot(dx, dy)
-                const effectiveRadius = sample.wasPushed ? radius * radiusExitMult : radius
-
-                if (dist < effectiveRadius) {
-                    const t = dist <= 0 ? 1 : 1 - dist / radius
-                    const force = Math.max(t ** forceExp, minForce) * maxShift
-                    const lift = Math.max(t ** liftExp, minForce) * maxLift
-                    let nx
-                    let ny
-                    if (dist <= 0.5) {
-                        nx = 0
-                        ny = -1
+                    if (dist < effectiveRadius) {
+                        const t = dist <= 0 ? 1 : 1 - dist / radius
+                        const force = Math.max(t ** forceExp, minForce) * maxShift
+                        const lift = Math.max(t ** liftExp, minForce) * maxLift
+                        let nx
+                        let ny
+                        if (dist <= 0.5) {
+                            nx = 0
+                            ny = -1
+                        } else {
+                            nx = dx / dist
+                            ny = dy / dist
+                        }
+                        el.classList.add('hero-intro-char--pushed')
+                        el.style.setProperty('--hero-intro-push-x', `${nx * force}px`)
+                        el.style.setProperty('--hero-intro-push-y', `${ny * force - lift}px`)
                     } else {
-                        nx = dx / dist
-                        ny = dy / dist
+                        el.classList.remove('hero-intro-char--pushed')
+                        el.style.removeProperty('--hero-intro-push-x')
+                        el.style.removeProperty('--hero-intro-push-y')
                     }
-                    el.classList.add('hero-intro-char--pushed')
-                    el.style.setProperty('--hero-intro-push-x', `${nx * force}px`)
-                    el.style.setProperty('--hero-intro-push-y', `${ny * force - lift}px`)
-                } else {
+                }
+            } else if (intro) {
+                for (const el of intro.querySelectorAll('.hero-intro-char')) {
                     el.classList.remove('hero-intro-char--pushed')
                     el.style.removeProperty('--hero-intro-push-x')
                     el.style.removeProperty('--hero-intro-push-y')
                 }
             }
+
+            this.applyFooterPointerShift()
         },
         clearHeroIntroPointerShift() {
             this.heroIntroPointer = null
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
-            if (!intro) return
-            for (const el of intro.querySelectorAll('.hero-intro-char')) {
-                el.classList.remove('hero-intro-char--pushed')
-                el.style.removeProperty('--hero-intro-push-x')
-                el.style.removeProperty('--hero-intro-push-y')
+            if (intro) {
+                for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                    el.classList.remove('hero-intro-char--pushed')
+                    el.style.removeProperty('--hero-intro-push-x')
+                    el.style.removeProperty('--hero-intro-push-y')
+                }
             }
+            this.clearFooterPointerShift()
         },
         onHeroDecorResize() {
             requestAnimationFrame(() => {
@@ -6173,6 +6609,9 @@ export default {
     --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
     --cta-fly-delay: 0.08s;
     --cta-fly-duration: var(--fly-duration);
+    --project-thumb-shadow: 0 3px 20px rgba(0, 0, 0, 0.06);
+    /* Resting shadow: on with no deco line (≤500); off when deco line is present (≥501). */
+    --project-thumb-shadow-rest: var(--project-thumb-shadow);
 
     position: relative;
     width: 100%;
@@ -6417,8 +6856,7 @@ export default {
     transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
 }
 
-.hero-intro-cursor-ball--touch-instant,
-.hero-intro-cursor-magnifier--touch-instant {
+.hero-intro-cursor-ball--touch-instant {
     transition: none !important;
 }
 
@@ -6554,6 +6992,24 @@ export default {
     backdrop-filter: blur(2.5px) saturate(1.35);
     opacity: calc(1 - var(--hero-cursor-hover-expand, 0));
     pointer-events: none;
+}
+
+/* Work / About corner park: slightly stronger frost (matched by the pager pill). */
+.hero-intro-cursor-dot-disk--section-frost::before {
+    background: rgba(255, 255, 255, 0.32);
+    -webkit-backdrop-filter: blur(3.5px) saturate(1.4);
+    backdrop-filter: blur(3.5px) saturate(1.4);
+}
+
+/* Work / About: slightly stronger outer glow (matched by the pager pill). */
+.hero-intro-cursor-dot-disk--section-frost:not(.hero-intro-cursor-dot-disk--menu-frost) {
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 5px rgba(0, 10, 170, 0.16),
+        0 0 10px rgba(0, 10, 170, 0.095),
+        0 0 16px rgba(0, 10, 170, 0.05),
+        0 0 22px rgba(0, 10, 170, 0.028);
 }
 
 /* Menu expand: keep full frost glass (don't fade ::before via hover-expand). */
@@ -6977,21 +7433,16 @@ export default {
 
 .hero-intro-wrap {
     /*
-     * Right inset mirrors content-left → text-left:
-     * (content → deco line) + (deco line → text) = --hero-intro-left
+     * Right viewport gap = left viewport → text gap, including
+     * main inset + page-pad + (deco line + deco→text spacing).
      */
     --hero-intro-right: var(--hero-intro-left);
+    --hero-intro-viewport-inset: calc(
+        var(--portfolio-main-inset-left) + var(--page-pad) + var(--hero-intro-left)
+    );
     position: relative;
     max-width: none;
-    /*
-     * Size to the viewport, not --page-max: left stays on the content column,
-     * right edge tracks 100vw − (page-pad + intro-right) so the box keeps
-     * growing after the main column is capped.
-     */
-    width: calc(
-        100vw - var(--portfolio-main-inset-left) - var(--page-pad) - var(--hero-intro-left) -
-            var(--page-pad) - var(--hero-intro-right)
-    );
+    width: calc(100vw - 2 * var(--hero-intro-viewport-inset));
     margin: var(--hero-logo-gap) 0 0 var(--hero-intro-left);
 }
 
@@ -7103,6 +7554,11 @@ export default {
 }
 
 .hero-intro-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.hero-intro-nobreak {
     display: inline-block;
     white-space: nowrap;
 }
@@ -7440,11 +7896,12 @@ export default {
     max-width: 100%;
     min-width: 0;
     text-decoration: none;
-    overflow: hidden;
+    /* visible so resting/hover shadow isn’t clipped; image inherits radius */
+    overflow: visible;
     border-radius: 20px;
     isolation: isolate;
-    box-shadow: none;
-    transition: border-radius 0.45s ease, box-shadow 0.45s ease;
+    box-shadow: var(--project-thumb-shadow-rest);
+    transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
 }
 
 .project-image-wrap {
@@ -7454,12 +7911,12 @@ export default {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 20px;
     isolation: isolate;
     background: #fff;
-    box-shadow: none;
-    transition: border-radius 0.45s ease, box-shadow 0.45s ease;
+    box-shadow: var(--project-thumb-shadow-rest);
+    transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
 }
 
 .project-image-link picture {
@@ -7476,40 +7933,45 @@ export default {
     display: block;
     border-radius: 20px;
     background: #fff;
-    transition: border-radius 0.45s ease;
+    transition: border-radius 0.18s ease-out;
 }
 
 .project-image-wrap .project-image,
 .project-image-link .project-image {
-    border-radius: 0;
-    transition: none;
+    border-radius: inherit;
+    transition: border-radius 0.18s ease-out;
 }
 
 /* Touch: press feedback — clears on release so the radius can ease back */
 .project:not(.project--upcoming):active .project-image-link,
 .project:not(.project--upcoming):active .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
-    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+    box-shadow: var(--project-thumb-shadow);
 }
 
 /* Touch disk: press on description/company must not morph the thumbnail */
 .portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-link,
 .portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-wrap {
     border-radius: 20px;
-    box-shadow: none;
+    box-shadow: var(--project-thumb-shadow-rest);
 }
 
-.portfolio-page--touch-disk .project-image-link:active,
-.portfolio-page--touch-disk .project--press-expand .project-image-link {
+/* Beat the reset above — project stays :active while a child is pressed */
+.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-link:active,
+.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-image-wrap:active,
+.portfolio-page--touch-disk .project:not(.project--upcoming).project--press-expand .project-image-link,
+.portfolio-page--touch-disk .project:not(.project--upcoming).project--press-expand .project-image-wrap,
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
-    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+    box-shadow: var(--project-thumb-shadow);
 }
 
 /* Touch disk: live page curves with the magnifier (no real :hover) */
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
-    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+    box-shadow: var(--project-thumb-shadow);
 }
 
 /* Pointer devices: hover / focus (avoid sticky hover on touch) */
@@ -7519,7 +7981,7 @@ export default {
     .project:not(.project--upcoming):hover .project-image-wrap,
     .project:not(.project--upcoming):focus-within .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
-        box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+        box-shadow: var(--project-thumb-shadow);
     }
 }
 
@@ -7581,7 +8043,7 @@ export default {
 
 .project-caption-link .project-title {
     /* Match thumbnail border-radius timing */
-    transition: color 0.45s ease;
+    transition: color 0.18s ease-out;
 }
 
 /* Touch / press: blue while held, eases back on release (same as thumbnail) */
@@ -7594,8 +8056,10 @@ export default {
     color: var(--text);
 }
 
-.portfolio-page--touch-disk .project-caption-link .project-title:active,
-.portfolio-page--touch-disk .project--press-expand .project-caption-link .project-title {
+/* Beat the reset above — title / press-expand / disk hover must win while :active */
+.portfolio-page--touch-disk .project:not(.project--upcoming):active .project-caption-link .project-title:active,
+.portfolio-page--touch-disk .project:not(.project--upcoming).project--press-expand .project-caption-link .project-title,
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title {
     color: var(--brand);
 }
 
@@ -7640,7 +8104,8 @@ export default {
 }
 
 .project-year-sep {
-    margin: 0 0.7em;
+    /* ~2× word-space on each side (plain "  " collapses in HTML). */
+    margin: 0 0.5em;
 }
 
 .about {
@@ -8193,30 +8658,60 @@ export default {
     }
 }
 
-/* ≤500px: square work cards and stacked project layout */
+/* ≤500px: swipe work strip — portrait thumbs, 20px gap, 20px next-card peek */
 @media (max-width: 500px) {
     .portfolio-page {
-        --project-w: 100%;
-        --project-w-wide: 100%;
+        --work-swipe-gap: 20px;
+        --work-swipe-peek: 20px;
+        /* Slightly shorter than About photo (201/288) so landscape heroes crop a bit less tight */
+        --work-thumb-aspect: 201 / 270;
+        --project-w: calc(
+            100vw - var(--page-pad) - var(--work-swipe-gap) - var(--work-swipe-peek)
+        );
+        --project-w-wide: var(--project-w);
     }
 
     .work {
-        gap: 0;
-        row-gap: var(--project-stack-gap);
-        width: 100%;
-        max-width: 100%;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        gap: var(--work-swipe-gap);
+        row-gap: 0;
+        grid-auto-rows: auto;
+        width: calc(100% + 2 * var(--page-pad));
+        max-width: none;
         min-width: 0;
-        align-items: stretch;
+        margin-left: calc(-1 * var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        padding-left: var(--page-pad);
+        padding-right: var(--page-pad);
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: var(--page-pad);
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        touch-action: pan-x pan-y;
+    }
+
+    .work::-webkit-scrollbar {
+        display: none;
     }
 
     .work-slot,
     .work-slot--offset {
-        width: 100%;
-        max-width: 100%;
-        justify-self: stretch;
+        flex: 0 0 var(--project-w);
+        width: var(--project-w);
+        max-width: var(--project-w);
+        height: auto;
+        justify-self: start;
+        align-items: flex-start;
+        scroll-snap-align: start;
     }
 
-    /* Mobile: no fly-in; off-screen cards use scroll fade */
+    /* Mobile: no fly-in */
     .portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade),
     .portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade) {
         opacity: 1;
@@ -8244,10 +8739,11 @@ export default {
     .project-image-wrap {
         width: 100%;
         max-width: 100%;
-        aspect-ratio: 1 / 1;
-        overflow: hidden;
+        aspect-ratio: var(--work-thumb-aspect);
+        overflow: visible;
         border-radius: 20px;
-        transition: border-radius 0.45s ease, box-shadow 0.45s ease;
+        box-shadow: var(--project-thumb-shadow-rest);
+        transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
     }
 
     .project:not(.project--upcoming):active .project-image-link,
@@ -8255,7 +8751,7 @@ export default {
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap {
         border-radius: 700px 700px 20px 20px;
-        box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+        box-shadow: var(--project-thumb-shadow);
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -8264,7 +8760,7 @@ export default {
         .project:not(.project--upcoming):focus-within .project-image-link,
         .project:not(.project--upcoming):focus-within .project-image-wrap {
             border-radius: 700px 700px 20px 20px;
-            box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+            box-shadow: var(--project-thumb-shadow);
         }
     }
 
@@ -8274,6 +8770,16 @@ export default {
         height: 100%;
         object-fit: cover;
         object-position: center center;
+    }
+
+    /* Case study crops: bias right so subjects sit better in the tall frame */
+    .project--featured .project-image {
+        object-position: calc(50% + 35px) center;
+    }
+
+    .project--offset .project-image {
+        object-position: calc(50% + 60px + var(--tilt-x, 0px))
+            calc(50% + var(--tilt-y, 0px));
     }
 
     .project-caption {
@@ -8301,12 +8807,21 @@ export default {
     }
 }
 
+/* Deco line present: no resting thumb shadow; softer hover/press shadow on desktop. */
+@media (min-width: 501px) {
+    .portfolio-page {
+        --project-thumb-shadow-rest: none;
+        --project-thumb-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+    }
+}
+
 /* 501–600: square thumbnails only; keep tablet work layout / line / captions */
 @media (min-width: 501px) and (max-width: 600px) {
     .project-image-link,
     .project-image-wrap {
         aspect-ratio: 1 / 1;
-        overflow: hidden;
+        overflow: visible;
+        box-shadow: var(--project-thumb-shadow-rest);
     }
 
     .project-image {
@@ -8315,6 +8830,15 @@ export default {
         height: 100%;
         object-fit: cover;
         object-position: center center;
+    }
+
+    .project--featured .project-image {
+        object-position: calc(50% + 35px) center;
+    }
+
+    .project--offset .project-image {
+        object-position: calc(50% + 60px + var(--tilt-x, 0px))
+            calc(50% + var(--tilt-y, 0px));
     }
 }
 
@@ -8404,8 +8928,9 @@ export default {
     }
 }
 
-/* 501–799 portrait: thumbnail captions use ≤500 (mobile) type */
-@media (min-width: 501px) and (width < 800px) and (orientation: portrait) {
+/* 501–799: case study captions use ≤500 (mobile) type whether or not the
+   work decor line is showing — keeps captions with mobile hero scale. */
+@media (min-width: 501px) and (width < 800px) {
     .project-caption {
         margin-top: 28px;
     }
@@ -8433,7 +8958,7 @@ export default {
     }
 }
 
-/* 501–799 landscape: short viewport — use ≤500 hero type */
+/* 501–799 landscape: short viewport — use ≤500 hero type (captions already mobile above) */
 @media (min-width: 501px) and (width < 800px) and (orientation: landscape) {
     .hero-intro {
         font-size: 22px;
@@ -8714,7 +9239,7 @@ export default {
 }
 
 .hero-intro-cursor-mirror-clone .project-caption-link .project-title {
-    /* Snap — live page keeps 0.45s ease to match thumbnail morph */
+    /* Snap — live page keeps 0.18s ease-out to match thumbnail morph */
     transition: none !important;
 }
 
@@ -8725,6 +9250,6 @@ export default {
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
     border-radius: 700px 700px 20px 20px;
-    box-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+    box-shadow: var(--project-thumb-shadow);
 }
 </style>

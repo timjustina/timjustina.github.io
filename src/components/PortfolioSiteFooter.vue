@@ -35,22 +35,24 @@ import {
     distanceToRect,
     parseCssPx,
 } from '../utils/pushText.js'
-import { MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
 
 const FINE_POINTER_MEDIA_QUERY = '(hover: hover) and (pointer: fine)'
 
 export default {
     name: 'PortfolioSiteFooter',
+    props: {
+        /** When false, Portfolio.vue / SiteCursor owns letter push (avoids wipe races). */
+        localPointerPush: {
+            type: Boolean,
+            default: true,
+        },
+    },
     data() {
         return {
             titleText: 'Drop me a line :))',
             pointer: null,
             lastPointer: null,
             pointerRaf: null,
-            touchPointerId: null,
-            strokeActive: false,
-            mobileTouchMq:
-                typeof window !== 'undefined' ? window.matchMedia(MOBILE_MEDIA_QUERY) : null,
             finePointerMq:
                 typeof window !== 'undefined'
                     ? window.matchMedia(FINE_POINTER_MEDIA_QUERY)
@@ -71,43 +73,28 @@ export default {
         finePointer() {
             return this.finePointerMq?.matches ?? false
         },
-        mobileTouch() {
-            return this.mobileTouchMq?.matches ?? false
-        },
     },
     mounted() {
-        if (!this.pushEnabled) return
+        // Fine pointer only — mobile letter push is owned by the portfolio touch disk.
+        // On the portfolio page, parent owns push so we don't clear its transforms.
+        if (!this.pushEnabled || !this.finePointer || !this.localPointerPush) return
 
         this.onPointerMove = (event) => this.handlePointerMove(event)
-        this.onPointerDown = (event) => this.handlePointerDown(event)
-        this.onPointerUp = (event) => this.handlePointerUp(event)
         this.onScroll = () => this.handleScroll()
 
         window.addEventListener('pointermove', this.onPointerMove, { passive: true })
         window.addEventListener('scroll', this.onScroll, { passive: true })
-        if (this.mobileTouch) {
-            window.addEventListener('pointerdown', this.onPointerDown, { passive: true })
-            window.addEventListener('pointerup', this.onPointerUp, { passive: true })
-            window.addEventListener('pointercancel', this.onPointerUp, { passive: true })
-        }
     },
     beforeUnmount() {
-        if (!this.pushEnabled) return
+        if (!this.onPointerMove) return
 
         window.removeEventListener('pointermove', this.onPointerMove)
         window.removeEventListener('scroll', this.onScroll)
-        window.removeEventListener('pointerdown', this.onPointerDown)
-        window.removeEventListener('pointerup', this.onPointerUp)
-        window.removeEventListener('pointercancel', this.onPointerUp)
         this.clearShift()
     },
     methods: {
         getTitleRoot() {
             return this.$refs.titleRoot ?? null
-        },
-        setStrokeActive(active) {
-            this.strokeActive = active
-            this.getTitleRoot()?.classList.toggle('footer-contact-title--stroke-active', active)
         },
         isNearPointer(x, y) {
             const root = this.getTitleRoot()
@@ -117,16 +104,7 @@ export default {
             const pad = parseCssPx(styles, '--push-char-zone-pad', 4)
             return distanceToRect(x, y, root.getBoundingClientRect()) <= pad
         },
-        scheduleApply({ immediate = false } = {}) {
-            if (immediate) {
-                if (this.pointerRaf != null) {
-                    cancelAnimationFrame(this.pointerRaf)
-                    this.pointerRaf = null
-                }
-                applyPointerCharShift(this.getTitleRoot(), this.pointer)
-                return
-            }
-
+        scheduleApply() {
             if (this.pointerRaf != null) return
             this.pointerRaf = requestAnimationFrame(() => {
                 this.pointerRaf = null
@@ -139,7 +117,6 @@ export default {
                 this.pointerRaf = null
             }
             this.pointer = null
-            this.setStrokeActive(false)
             clearPointerCharShift(this.getTitleRoot())
         },
         updatePointerFromCoords(x, y) {
@@ -147,7 +124,7 @@ export default {
 
             if (this.isNearPointer(x, y)) {
                 this.pointer = { x, y }
-                this.scheduleApply({ immediate: this.mobileTouch && this.strokeActive })
+                this.scheduleApply()
                 return
             }
 
@@ -156,33 +133,8 @@ export default {
             }
         },
         handlePointerMove(event) {
-            if (this.finePointer) {
-                if (event.pointerType !== 'mouse') return
-                this.updatePointerFromCoords(event.clientX, event.clientY)
-                return
-            }
-
-            if (
-                this.mobileTouch &&
-                this.touchPointerId != null &&
-                event.pointerId === this.touchPointerId
-            ) {
-                this.updatePointerFromCoords(event.clientX, event.clientY)
-            }
-        },
-        handlePointerDown(event) {
-            if (!this.mobileTouch) return
-            if (!this.isNearPointer(event.clientX, event.clientY)) return
-
-            this.touchPointerId = event.pointerId
-            this.setStrokeActive(true)
+            if (!this.finePointer || event.pointerType !== 'mouse') return
             this.updatePointerFromCoords(event.clientX, event.clientY)
-        },
-        handlePointerUp(event) {
-            if (this.touchPointerId != null && event.pointerId !== this.touchPointerId) return
-
-            this.touchPointerId = null
-            this.clearShift()
         },
         handleScroll() {
             if (!this.lastPointer) return
@@ -242,6 +194,7 @@ export default {
     letter-spacing: 0;
     color: var(--brand);
     font-synthesis: none;
+    white-space: nowrap;
 }
 
 .footer-contact-title--push {
@@ -284,6 +237,7 @@ export default {
 }
 
 @media (width < 800px) {
+    /* Touch-disk letter push (finger-on-text is disabled on mobile). */
     .footer-contact-title--push {
         --push-char-hover-radius: 160px;
         --push-char-hover-shift: 102px;
@@ -292,11 +246,6 @@ export default {
         --push-char-hover-lift-exp: 1.25;
         --push-char-hover-radius-exit-mult: 1.08;
         --push-char-hover-knock-mult: 0.34;
-        touch-action: pan-y;
-    }
-
-    .footer-contact-title--push.footer-contact-title--stroke-active .footer-contact-char {
-        transition: none;
     }
 
     .footer-contact-title--push .footer-contact-char {
@@ -370,8 +319,8 @@ export default {
 
 @media (max-width: 500px) {
     .footer-contact-title {
-        font-size: 22px;
-        line-height: 33px;
+        font-size: clamp(17px, 5.4vw, 22px);
+        line-height: 1.5;
     }
 }
 </style>

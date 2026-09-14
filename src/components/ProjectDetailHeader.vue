@@ -32,7 +32,7 @@
             <template v-if="client">{{ client }}</template><span
                 v-if="client && period"
                 class="project-header-meta-sep"
-            >//</span><template v-if="period">{{ period }}</template>
+            >/ /</span><template v-if="period">{{ period }}</template>
         </span>
     </header>
 </template>
@@ -263,7 +263,8 @@ export default {
 }
 
 .project-header-meta-sep {
-    margin: 0 0.7em;
+    /* ~2× word-space on each side (plain "  " collapses in HTML). */
+    margin: 0 0.5em;
 }
 
 @media (width < 800px) {
