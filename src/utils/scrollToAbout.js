@@ -52,6 +52,34 @@ export function getAboutScrollTop() {
     return Math.max(0, top + ABOUT_EXTRA_OFFSET)
 }
 
+/**
+ * Whether the viewport is in the about section for touch-disk / pager zoning.
+ * True when scroll reaches the shared work/about boundary, when about fills
+ * most of the viewport, or when scroll is clamped short of the boundary.
+ */
+export function isAboutSectionActive(scrollY = window.scrollY || 0) {
+    const aboutSection = document.getElementById('about')
+    if (!aboutSection) return false
+
+    const aboutTop = getAboutScrollTop()
+    if (aboutTop != null && scrollY >= aboutTop - 0.5) return true
+
+    const vh = window.innerHeight || 0
+    if (vh < 1) return false
+    const aboutRect = aboutSection.getBoundingClientRect()
+    const visible =
+        Math.min(aboutRect.bottom, vh) - Math.max(aboutRect.top, 0)
+    // About owns the screen once its beige fills most of the viewport —
+    // don't wait for the edge to hit the scroll-align line.
+    if (visible >= vh * 0.5) return true
+
+    const maxY = Math.max(0, (document.documentElement.scrollHeight || 0) - vh)
+    // Pinned at the bottom but still short of aboutTop (tall viewports).
+    if (scrollY >= maxY - 1 && aboutRect.top < vh * 0.55) return true
+
+    return false
+}
+
 /** Scroll Y that places a project per mobile/desktop nav rules. */
 export function getProjectScrollTop(project) {
     if (!project) return null

@@ -108,7 +108,7 @@
                 'hero-touch-disk-menu--stack': heroTouchDiskMenuStacked,
                 'hero-touch-disk-menu--left': heroTouchDiskMenuFan === 'left',
                 'hero-touch-disk-menu--right': heroTouchDiskMenuFan === 'right',
-                'hero-touch-disk-menu--visible': heroTouchDiskExpand > 0.35,
+                'hero-touch-disk-menu--visible': heroTouchDiskExpand > 0.12,
             }"
             :style="heroTouchDiskMenuStyle"
             aria-label="Portfolio sections"
@@ -516,8 +516,8 @@ import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import WorkCarouselPager from '../components/WorkCarouselPager.vue'
 import {
-    getAboutScrollTop,
     getWorkScrollTop,
+    isAboutSectionActive,
     scrollToAbout,
     scrollToPortfolioHash,
     scrollToWork,
@@ -587,10 +587,12 @@ const HERO_TOUCH_DISK_REST_GAP_FROM_HERO = 1 / 3
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Arc fly-in duration before idle settle. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
-/** Ignore sub-threshold pointer jitter so taps still register. */
+/** Ignore sub-threshold pointer jitter so taps still register (hero drag only). */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
-const HERO_TOUCH_DISK_EXPAND_MS = 560
+const HERO_TOUCH_DISK_EXPAND_MS = 360
+/** Ignore outside-close / ghost mouse clicks after a touch open. */
+const HERO_TOUCH_DISK_OUTSIDE_CLOSE_GUARD_MS = 420
 /** Soft shared open overshoot for labels / blue dot (frost has its own bounce). */
 const HERO_TOUCH_DISK_EXPAND_OVERSHOOT = 1.06
 /** Frost-only open overshoot — punchy expand then shrink-settle. */
@@ -1208,6 +1210,8 @@ export default {
             heroTouchDiskEntranceRaf: null,
             heroTouchDiskZone: 'hero',
             heroTouchDiskParkZone: 'hero',
+            /** While menu-navigating, keep the destination zone until scroll catches up. */
+            heroTouchDiskZoneLock: null,
             heroTouchDiskMenuOpen: false,
             /** Bumps when label width metrics are remeasured (font load / menu open). */
             heroTouchDiskMenuMetricsRev: 0,
@@ -1231,6 +1235,8 @@ export default {
             heroTouchDiskEdgeVel: { x: 0, y: 0 },
             heroTouchDiskPointerStart: { x: 0, y: 0 },
             heroTouchDiskOutsideCloseBound: false,
+            /** performance.now() until which outside-close is ignored after open. */
+            heroTouchDiskOutsideCloseUntil: 0,
             // Middle work thumb: device-tilt crop reveal (mobile).
             offsetProjectTiltX: 0,
             offsetProjectTiltY: 0,
@@ -3303,17 +3309,31 @@ export default {
             if (typeof window === 'undefined') return 'hero'
             const y = window.scrollY || document.documentElement.scrollTop || 0
             const workTop = getWorkScrollTop()
-            // Same boundary as menu scroll: about starts 20px above the beige edge.
-            const aboutTop = getAboutScrollTop()
             const pastFirstViewport = y > window.innerHeight * 0.55
+            // Same boundary as menu scroll, with a tall-viewport clamp fallback.
+            if (isAboutSectionActive(y)) return 'about'
             if (!pastFirstViewport && (workTop == null || y < workTop - 48)) return 'hero'
-            if (aboutTop != null && y >= aboutTop) return 'about'
             return 'work'
         },
         updateHeroTouchDiskZoneFromScroll() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
             if (this.heroTouchDiskDragging) return
             const next = this.computeHeroTouchDiskZone()
+            const lock = this.heroTouchDiskZoneLock
+            if (lock) {
+                if (next === lock) {
+                    this.heroTouchDiskZoneLock = null
+                } else if (
+                    (lock === 'about' && next === 'work') ||
+                    (lock === 'work' && next === 'about')
+                ) {
+                    // Still traveling toward the menu destination — keep label stable.
+                    return
+                } else {
+                    // Scrolled elsewhere (e.g. back to hero) — release the lock.
+                    this.heroTouchDiskZoneLock = null
+                }
+            }
             if (next === this.heroTouchDiskZone) return
             this.heroTouchDiskZone = next
             this.closeHeroTouchDiskMenu()
@@ -3474,6 +3494,7 @@ export default {
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            this.heroTouchDiskZoneLock = null
             this.heroTouchDiskZone = this.computeHeroTouchDiskZone()
             this.heroTouchDiskParkZone = this.heroTouchDiskZone
             this.closeHeroTouchDiskMenu()
@@ -3692,6 +3713,15 @@ export default {
         },
         openHeroTouchDiskMenu() {
             if (!this.canOpenHeroTouchDiskMenu()) return
+            // Refresh zone so the single-item label matches where we actually are.
+            if (!this.heroTouchDiskZoneLock) {
+                const zone = this.computeHeroTouchDiskZone()
+                if (zone !== this.heroTouchDiskZone) {
+                    this.heroTouchDiskZone = zone
+                    this.heroTouchDiskParkZone = zone
+                    if (zone !== 'hero') this.clearHeroTouchDiskMorph()
+                }
+            }
             // Capture size before clearing morph so glass → frost doesn't snap.
             this.heroTouchDiskMenuFromSize = this.getHeroTouchDiskVisualSize()
             this.heroCursorMagnifierLayout = null
@@ -3708,6 +3738,8 @@ export default {
             this.heroTouchDiskMenuFrostLive = this.heroTouchDiskMenuFrostSize
             this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
             this.heroTouchDiskMenuOpen = true
+            this.heroTouchDiskOutsideCloseUntil =
+                performance.now() + HERO_TOUCH_DISK_OUTSIDE_CLOSE_GUARD_MS
             this.bindHeroTouchDiskOutsideClose()
             this.animateHeroTouchDiskExpand(1)
             // Edge collision: spring the disk inward as frost + labels need room.
@@ -3821,6 +3853,7 @@ export default {
             document.removeEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
         },
         onHeroTouchDiskOutsidePointerDown(event) {
+            if (performance.now() < this.heroTouchDiskOutsideCloseUntil) return
             if (this.heroTouchDiskExpand < 0.2) return
             const t = event.target
             if (!(t instanceof Element)) {
@@ -3921,20 +3954,32 @@ export default {
             event.preventDefault()
             this.closeHeroTouchDiskMenu()
             if (item.action === 'work') {
+                this.heroTouchDiskZoneLock = 'work'
                 this.heroTouchDiskZone = 'work'
                 this.heroTouchDiskHasMoved = false
                 this.clearHeroTouchDiskMorph()
                 this.syncHeroTouchDiskRestPosition()
-                scrollToWork()
+                scrollToWork({
+                    onComplete: () => {
+                        this.heroTouchDiskZoneLock = null
+                        this.updateHeroTouchDiskZoneFromScroll()
+                    },
+                })
                 this.$router.replace({ hash: '#work' }).catch(() => {})
                 return
             }
             if (item.action === 'about') {
+                this.heroTouchDiskZoneLock = 'about'
                 this.heroTouchDiskZone = 'about'
                 this.heroTouchDiskHasMoved = false
                 this.clearHeroTouchDiskMorph()
                 this.syncHeroTouchDiskRestPosition()
-                scrollToAbout()
+                scrollToAbout({
+                    onComplete: () => {
+                        this.heroTouchDiskZoneLock = null
+                        this.updateHeroTouchDiskZoneFromScroll()
+                    },
+                })
                 this.$router.replace({ hash: '#about' }).catch(() => {})
             }
         },
@@ -4001,6 +4046,10 @@ export default {
             if (!this.heroTouchDiskDragging) return
             if (event.pointerId !== this.heroTouchDiskPointerId) return
 
+            // Work / About stay corner-fixed — never turn finger jitter into a
+            // cancelled tap (disk cannot drag here).
+            if (this.heroTouchDiskZone !== 'hero') return
+
             const dx = event.clientX - this.heroTouchDiskPointerStart.x
             const dy = event.clientY - this.heroTouchDiskPointerStart.y
             const slop = HERO_TOUCH_DISK_TAP_SLOP_PX
@@ -4010,9 +4059,6 @@ export default {
                 this.markHeroTouchDiskInteracted()
                 // Keep an open menu open while dragging; tap the center to close.
             }
-
-            // Work / About stay corner-fixed — consume the drag so release isn't a tap.
-            if (this.heroTouchDiskZone !== 'hero') return
 
             event.preventDefault()
             this.moveHeroTouchDiskTo(event.clientX, event.clientY)
@@ -6977,8 +7023,8 @@ export default {
     transform-origin: center center;
     transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
     transition:
-        opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: calc(var(--menu-i, 0) * 45ms);
+        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--menu-i, 0) * 30ms);
 }
 
 .hero-touch-disk-menu__item:active {

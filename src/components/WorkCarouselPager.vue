@@ -26,7 +26,7 @@
 
 <script>
 import { SMALL_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
-import { getAboutScrollTop } from '../utils/scrollToAbout.js'
+import { isAboutSectionActive } from '../utils/scrollToAbout.js'
 
 /** Matches `HERO_TOUCH_DISK_EDGE_GAP_PX` in Portfolio.vue (mobile logo / disk inset). */
 const TOUCH_DISK_EDGE_GAP_PX = 20
@@ -240,10 +240,8 @@ export default {
             const workStillInView =
                 workRect.bottom > PAGER_HEIGHT_PX + TOUCH_DISK_EDGE_GAP_PX &&
                 workRect.top < vh
-            const aboutTop = getAboutScrollTop()
             const y = window.scrollY || document.documentElement.scrollTop || 0
-            const beforeAbout = aboutTop == null || y < aboutTop
-            this.inWorkCarousel = workStillInView && beforeAbout
+            this.inWorkCarousel = workStillInView && !isAboutSectionActive(y)
         },
         slotScrollLeft(work, slot) {
             const workRect = work.getBoundingClientRect()
