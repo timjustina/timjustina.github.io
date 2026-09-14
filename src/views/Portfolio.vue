@@ -7949,6 +7949,19 @@ export default {
     scroll-margin-top: var(--top-bar-height);
 }
 
+/* Soft edge from dashboard hero canvas (#eff3fc → slightly darker, fades inward) */
+.project--featured .project-image-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+        inset 0 0 0 1px rgba(215, 219, 227, 0.08),
+        inset 0 0 10px 2px rgba(215, 219, 227, 0.06);
+}
+
 .project--offset {
     width: var(--project-w);
     max-width: 100%;
