@@ -1302,14 +1302,11 @@ export default {
         heroCursorVisible() {
             if (!this.heroCursorEligible) return false
             if (this.heroTouchDiskMode) {
+                // Off-stage includes footer arrival — hide there even in work/about.
                 return (
                     this.heroCursorActive &&
                     !this.heroCursorBootLocked &&
-                    // Keep the in-text glass alive even if stage clipping flickers
-                    // during dissipate scroll (disk still overlapping the hero).
-                    (this.heroTouchDiskOnStage ||
-                        this.heroCursorIntroGlassHandoff ||
-                        this.heroTouchDiskZone !== 'hero')
+                    this.heroTouchDiskOnStage
                 )
             }
             return this.heroCursorActive || this.heroCursorBootLocked
@@ -3454,16 +3451,43 @@ export default {
                 window.innerHeight,
             )
         },
+        /**
+         * False once the footer reaches the parked disk (lower-right);
+         * true again after scrolling back up past it.
+         */
         computeHeroTouchDiskOnStage() {
-            // Stay visible across the full viewport in every zone (including hero).
-            return true
+            if (typeof window === 'undefined') return true
+            const footer = this.$el?.querySelector('.site-footer')
+            if (!footer) return true
+            const rect = footer.getBoundingClientRect()
+            if (rect.height <= 0) return true
+
+            const vh = window.innerHeight || 0
+            // Top of the idle frost at the work/about rest position.
+            const diskTop =
+                vh - HERO_TOUCH_DISK_EDGE_GAP_PX - HERO_CURSOR_GLASS_IDLE_SIZE
+            // Slight hysteresis so the boundary doesn't flicker.
+            const hideLine = diskTop
+            const showLine = diskTop + 18
+            if (!this.heroTouchDiskOnStage) {
+                return rect.top > showLine
+            }
+            return rect.top > hideLine
         },
         refreshHeroTouchDiskStage() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) {
                 this.heroTouchDiskOnStage = false
                 return
             }
-            this.heroTouchDiskOnStage = this.computeHeroTouchDiskOnStage()
+            const next = this.computeHeroTouchDiskOnStage()
+            if (
+                !next &&
+                this.heroTouchDiskOnStage &&
+                (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02)
+            ) {
+                this.closeHeroTouchDiskMenu()
+            }
+            this.heroTouchDiskOnStage = next
         },
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
