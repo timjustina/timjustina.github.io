@@ -44,6 +44,14 @@
           alt=""
           aria-hidden="true"
         />
+        <!-- Case-study ZoomableImage lightbox is Teleported to body (outside pageEl),
+             so mirror it here so the close × appears under the glass. -->
+        <div
+          class="hero-intro-cursor-magnifier__lightbox-chrome"
+          :style="magnifierChromeStyle"
+        >
+          <div ref="mirrorLightboxRoot" class="hero-intro-cursor-magnifier__clone-host" />
+        </div>
       </div>
     </div>
     <span
@@ -219,6 +227,9 @@ export default {
       mirrorClone: null,
       mirrorFrostBlurClone: null,
       mirrorTopBarClone: null,
+      mirrorLightboxClone: null,
+      mirrorLightboxLive: null,
+      lightboxObserver: null,
       mirrorAwaitingRefresh: false,
       mirrorHoverTarget: 0,
       fineMq: null,
@@ -439,6 +450,7 @@ export default {
     this.onScroll = () => this.onScrollHandler()
 
     this.prime()
+    this.bindLightboxObserver()
     window.addEventListener('pointermove', this.onPointerMove, { passive: true })
     document.addEventListener('pointerenter', this.onPointerEnter, { passive: true })
     window.addEventListener('pointerleave', this.onPointerLeaveWindow, { passive: true })
@@ -446,6 +458,7 @@ export default {
     window.addEventListener('scroll', this.onScroll, { passive: true, capture: true })
   },
   beforeUnmount() {
+    this.unbindLightboxObserver()
     this.fineMq?.removeEventListener('change', this.onFineMqChange)
     window.removeEventListener('pointermove', this.onPointerMove)
     document.removeEventListener('pointerenter', this.onPointerEnter)
@@ -466,6 +479,73 @@ export default {
         document.documentElement.classList.add(CURSOR_DOC_CLASS)
       } else {
         document.documentElement.classList.remove(CURSOR_DOC_CLASS)
+      }
+    },
+    getLiveLightbox() {
+      if (typeof document === 'undefined') return null
+      const el = document.querySelector('.lightbox')
+      return el instanceof Element ? el : null
+    },
+    bindLightboxObserver() {
+      if (typeof MutationObserver === 'undefined' || typeof document === 'undefined') return
+      this.unbindLightboxObserver()
+      this.lightboxObserver = new MutationObserver(() => {
+        this.syncMirrorLightbox()
+        if (this.mirrorHoverTarget === 1) this.updateMagnifierLayout()
+      })
+      this.lightboxObserver.observe(document.body, { childList: true })
+      this.syncMirrorLightbox()
+    },
+    unbindLightboxObserver() {
+      this.lightboxObserver?.disconnect()
+      this.lightboxObserver = null
+    },
+    /**
+     * ZoomableImage teleports `.lightbox` to body (outside pageEl). Without this,
+     * hovering the close × expands the glass over the page clone — the cross is missing.
+     */
+    syncMirrorLightbox() {
+      const root = this.$refs.mirrorLightboxRoot
+      if (!(root instanceof Element)) return
+
+      const live = this.getLiveLightbox()
+      if (!live) {
+        if (this.mirrorLightboxClone) {
+          root.replaceChildren()
+          this.mirrorLightboxClone = null
+          this.mirrorLightboxLive = null
+        }
+        return
+      }
+
+      let clone = this.mirrorLightboxClone
+      if (
+        !clone?.isConnected ||
+        clone.parentElement !== root ||
+        this.mirrorLightboxLive !== live
+      ) {
+        clone = live.cloneNode(true)
+        clone.setAttribute('aria-hidden', 'true')
+        clone.classList.add('hero-intro-cursor-mirror-lightbox')
+        root.replaceChildren(clone)
+        this.mirrorLightboxClone = clone
+        this.mirrorLightboxLive = live
+      }
+
+      // Keep layout in viewport space inside the scaled chrome layer (same as top bar).
+      clone.style.position = 'absolute'
+      clone.style.inset = '0'
+      clone.style.width = '100%'
+      clone.style.height = '100%'
+      clone.style.zIndex = '1'
+      clone.style.overflow = 'hidden'
+      clone.scrollLeft = live.scrollLeft
+      clone.scrollTop = live.scrollTop
+
+      const liveClose = live.querySelector('.lightbox-close')
+      const mirrorClose = clone.querySelector('.lightbox-close')
+      if (liveClose instanceof Element && mirrorClose instanceof Element) {
+        mirrorClose.className = liveClose.className
       }
     },
     prime() {
@@ -738,7 +818,7 @@ export default {
       return null
     },
     clearMirrorHoverState() {
-      for (const root of [this.mirrorClone, this.mirrorTopBarClone]) {
+      for (const root of [this.mirrorClone, this.mirrorTopBarClone, this.mirrorLightboxClone]) {
         root?.querySelectorAll('.hero-cursor-mirror-hover').forEach((el) => {
           el.classList.remove('hero-cursor-mirror-hover')
         })
@@ -833,6 +913,9 @@ export default {
         ) {
           mirrorNode = this.findMirrorNodeFallback(liveNode, chrome)
         }
+        if (!mirrorNode && this.mirrorLightboxClone && liveNode.closest('.lightbox')) {
+          mirrorNode = this.findMirrorNodeFallback(liveNode, this.mirrorLightboxClone)
+        }
         mirrorNode?.classList.add('hero-cursor-mirror-hover')
       }
     },
@@ -890,6 +973,7 @@ export default {
       if (this.magnifierLayout) {
         this.syncMagnifierTopBarFrostEl(this.magnifierLayout)
       }
+      this.syncMirrorLightbox()
     },
     refreshMirrorFrostBlurClone(sourceClone) {
       const frostRoot = this.$refs.mirrorFrostBlurRoot
@@ -1113,6 +1197,7 @@ export default {
 
       this.syncMirrorFrostBlurClone()
       this.syncMirrorTldrState()
+      this.syncMirrorLightbox()
 
       const cloneHost = this.$refs.mirrorRoot
       if (cloneHost instanceof Element && this.magnifierLayout) {
@@ -1142,6 +1227,7 @@ export default {
 
       this.syncMirrorClone()
       this.syncMirrorTopBarChrome()
+      this.syncMirrorLightbox()
       this.syncMirrorHoverState(this.glassPos.x, this.glassPos.y)
 
       const liveTopBar = this.getPageSource()?.querySelector('.portfolio-top-bar .top-bar')
@@ -1196,9 +1282,13 @@ export default {
       if (frostBlurRoot) frostBlurRoot.innerHTML = ''
       const topBarRoot = this.$refs.mirrorTopBarRoot
       if (topBarRoot) topBarRoot.innerHTML = ''
+      const lightboxRoot = this.$refs.mirrorLightboxRoot
+      if (lightboxRoot) lightboxRoot.innerHTML = ''
       this.mirrorClone = null
       this.mirrorFrostBlurClone = null
       this.mirrorTopBarClone = null
+      this.mirrorLightboxClone = null
+      this.mirrorLightboxLive = null
       this.magnifierLayout = null
       this.mirrorHoverTarget = 0
     },
@@ -1377,9 +1467,21 @@ export default {
   object-position: left top;
 }
 
+.hero-intro-cursor-magnifier__lightbox-chrome {
+  z-index: 4;
+  pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__lightbox-chrome .hero-intro-cursor-magnifier__clone-host {
+  position: absolute;
+  inset: 0;
+}
+
 .hero-intro-cursor-magnifier__clone-host,
 .hero-intro-cursor-mirror-clone,
-.hero-intro-cursor-mirror-clone * {
+.hero-intro-cursor-mirror-clone *,
+.hero-intro-cursor-mirror-lightbox,
+.hero-intro-cursor-mirror-lightbox * {
   /* Descendants (e.g. open TL;DR panel-inner) set pointer-events:auto and would
      otherwise punch through the magnifier and steal :hover from the live CTA. */
   pointer-events: none !important;
@@ -1429,5 +1531,28 @@ export default {
 
 .hero-intro-cursor-mirror-clone .project-tldr-copy.hero-cursor-mirror-hover {
   background: #1a2bff !important;
+}
+
+.hero-intro-cursor-mirror-lightbox .lightbox-close.hero-cursor-mirror-hover {
+  color: #000aaa;
+}
+
+/* Lightbox styles are Vue-scoped on the live node; keep the mirror close × readable. */
+.hero-intro-cursor-mirror-lightbox.lightbox {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.hero-intro-cursor-mirror-lightbox .lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  font-size: 36px;
+  line-height: 1;
+  color: #2c2c2c;
 }
 </style>

@@ -593,6 +593,8 @@ const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 const HERO_TOUCH_DISK_EXPAND_MS = 360
 /** Ignore outside-close / ghost mouse clicks after a touch open. */
 const HERO_TOUCH_DISK_OUTSIDE_CLOSE_GUARD_MS = 420
+/** Optimistic zone lock while menu scroll is in flight (must cover scroll duration). */
+const HERO_TOUCH_DISK_ZONE_LOCK_MS = 700
 /** Soft shared open overshoot for labels / blue dot (frost has its own bounce). */
 const HERO_TOUCH_DISK_EXPAND_OVERSHOOT = 1.06
 /** Frost-only open overshoot — punchy expand then shrink-settle. */
@@ -1212,6 +1214,8 @@ export default {
             heroTouchDiskParkZone: 'hero',
             /** While menu-navigating, keep the destination zone until scroll catches up. */
             heroTouchDiskZoneLock: null,
+            /** performance.now() deadline for heroTouchDiskZoneLock (avoid sticky wrong label). */
+            heroTouchDiskZoneLockUntil: 0,
             heroTouchDiskMenuOpen: false,
             /** Bumps when label width metrics are remeasured (font load / menu open). */
             heroTouchDiskMenuMetricsRev: 0,
@@ -2264,9 +2268,9 @@ export default {
             startImageExpand({
                 src: img.currentSrc || img.src,
                 rect,
-                borderRadius: isMobile
-                    ? PRESS_BORDER_RADIUS
-                    : getComputedStyle(img).borderRadius || '20px',
+                borderRadius:
+                    getComputedStyle(shell).borderRadius ||
+                    (isMobile ? PRESS_BORDER_RADIUS : '20px'),
             })
             img.style.opacity = '0'
 
@@ -3321,17 +3325,15 @@ export default {
             const next = this.computeHeroTouchDiskZone()
             const lock = this.heroTouchDiskZoneLock
             if (lock) {
-                if (next === lock) {
+                const lockAlive =
+                    performance.now() < (this.heroTouchDiskZoneLockUntil || 0)
+                if (next === lock || next === 'hero' || !lockAlive) {
+                    // Arrived, left for hero, or lock expired — trust live scroll.
                     this.heroTouchDiskZoneLock = null
-                } else if (
-                    (lock === 'about' && next === 'work') ||
-                    (lock === 'work' && next === 'about')
-                ) {
-                    // Still traveling toward the menu destination — keep label stable.
-                    return
+                    this.heroTouchDiskZoneLockUntil = 0
                 } else {
-                    // Scrolled elsewhere (e.g. back to hero) — release the lock.
-                    this.heroTouchDiskZoneLock = null
+                    // Brief optimistic hold while the menu scroll is in flight.
+                    return
                 }
             }
             if (next === this.heroTouchDiskZone) return
@@ -3495,6 +3497,7 @@ export default {
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
             this.heroTouchDiskZoneLock = null
+            this.heroTouchDiskZoneLockUntil = 0
             this.heroTouchDiskZone = this.computeHeroTouchDiskZone()
             this.heroTouchDiskParkZone = this.heroTouchDiskZone
             this.closeHeroTouchDiskMenu()
@@ -3713,14 +3716,14 @@ export default {
         },
         openHeroTouchDiskMenu() {
             if (!this.canOpenHeroTouchDiskMenu()) return
-            // Refresh zone so the single-item label matches where we actually are.
-            if (!this.heroTouchDiskZoneLock) {
-                const zone = this.computeHeroTouchDiskZone()
-                if (zone !== this.heroTouchDiskZone) {
-                    this.heroTouchDiskZone = zone
-                    this.heroTouchDiskParkZone = zone
-                    if (zone !== 'hero') this.clearHeroTouchDiskMorph()
-                }
+            // Always trust live scroll for the label — drop any stale nav lock.
+            this.heroTouchDiskZoneLock = null
+            this.heroTouchDiskZoneLockUntil = 0
+            const zone = this.computeHeroTouchDiskZone()
+            if (zone !== this.heroTouchDiskZone) {
+                this.heroTouchDiskZone = zone
+                this.heroTouchDiskParkZone = zone
+                if (zone !== 'hero') this.clearHeroTouchDiskMorph()
             }
             // Capture size before clearing morph so glass → frost doesn't snap.
             this.heroTouchDiskMenuFromSize = this.getHeroTouchDiskVisualSize()
@@ -3955,6 +3958,8 @@ export default {
             this.closeHeroTouchDiskMenu()
             if (item.action === 'work') {
                 this.heroTouchDiskZoneLock = 'work'
+                this.heroTouchDiskZoneLockUntil =
+                    performance.now() + HERO_TOUCH_DISK_ZONE_LOCK_MS
                 this.heroTouchDiskZone = 'work'
                 this.heroTouchDiskHasMoved = false
                 this.clearHeroTouchDiskMorph()
@@ -3962,6 +3967,7 @@ export default {
                 scrollToWork({
                     onComplete: () => {
                         this.heroTouchDiskZoneLock = null
+                        this.heroTouchDiskZoneLockUntil = 0
                         this.updateHeroTouchDiskZoneFromScroll()
                     },
                 })
@@ -3970,6 +3976,8 @@ export default {
             }
             if (item.action === 'about') {
                 this.heroTouchDiskZoneLock = 'about'
+                this.heroTouchDiskZoneLockUntil =
+                    performance.now() + HERO_TOUCH_DISK_ZONE_LOCK_MS
                 this.heroTouchDiskZone = 'about'
                 this.heroTouchDiskHasMoved = false
                 this.clearHeroTouchDiskMorph()
@@ -3977,6 +3985,7 @@ export default {
                 scrollToAbout({
                     onComplete: () => {
                         this.heroTouchDiskZoneLock = null
+                        this.heroTouchDiskZoneLockUntil = 0
                         this.updateHeroTouchDiskZoneFromScroll()
                     },
                 })
@@ -7905,7 +7914,9 @@ export default {
     color: #fff;
     text-decoration: none;
     box-sizing: border-box;
-    transition: background 0.2s ease;
+    transition:
+        background 0.2s ease,
+        opacity 0.15s ease;
     box-shadow:
         0 1px 2px rgba(15, 23, 42, 0.18),
         0 2px 4px rgba(15, 23, 42, 0.1);
@@ -7939,12 +7950,16 @@ export default {
         inset -1px 0 2px rgba(255, 255, 255, 0.28);
 }
 
-.cta-button:hover {
-    background: var(--brand-hover);
+/* Hover only on fine pointers — no sticky hover after tap on mobile */
+@media (hover: hover) and (pointer: fine) {
+    .cta-button:hover {
+        background: var(--brand-hover);
+    }
 }
 
+/* Pressed: mute the whole pill (blue + white), not a separate dark fill */
 .cta-button:active {
-    background: var(--brand-active);
+    opacity: 0.7;
     transition: none;
 }
 
@@ -8032,8 +8047,9 @@ export default {
     max-width: 100%;
     min-width: 0;
     text-decoration: none;
-    /* visible so resting/hover shadow isn’t clipped; image inherits radius */
-    overflow: visible;
+    /* Clip the image to this radius — overflow:visible left a square white plate under the curve.
+       Own box-shadow still paints outside; work-strip padding keeps it from being clipped. */
+    overflow: hidden;
     border-radius: 20px;
     isolation: isolate;
     box-shadow: var(--project-thumb-shadow-rest);
@@ -8047,10 +8063,9 @@ export default {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    overflow: visible;
+    overflow: hidden;
     border-radius: 20px;
     isolation: isolate;
-    background: #fff;
     box-shadow: var(--project-thumb-shadow-rest);
     transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
 }
@@ -8067,15 +8082,9 @@ export default {
     max-width: 100%;
     height: auto;
     display: block;
-    border-radius: 20px;
-    background: #fff;
-    transition: border-radius 0.18s ease-out;
-}
-
-.project-image-wrap .project-image,
-.project-image-link .project-image {
-    border-radius: inherit;
-    transition: border-radius 0.18s ease-out;
+    /* Radius comes from the clipping shell — don’t animate a second radius on the img
+       (inherit + transition lagged and showed a non-curving underlayer). */
+    border-radius: 0;
 }
 
 /* Touch: press feedback via JS class only — :active sticks on some mobile browsers. */
@@ -8448,14 +8457,19 @@ export default {
     color: #fff;
     text-decoration: none;
     box-sizing: border-box;
-    transition: background 0.2s ease;
+    transition:
+        background 0.2s ease,
+        opacity 0.15s ease;
     box-shadow:
         0 1px 2px rgba(15, 23, 42, 0.18),
         0 2px 4px rgba(15, 23, 42, 0.1);
 }
 
-.about-action-btn:hover {
-    background: var(--brand-hover);
+/* Hover only on fine pointers — no sticky hover after tap on mobile */
+@media (hover: hover) and (pointer: fine) {
+    .about-action-btn:hover {
+        background: var(--brand-hover);
+    }
 }
 
 /* Touch disk: About CTAs go hover-blue under the glass */
@@ -8463,8 +8477,9 @@ export default {
     background: var(--brand-hover);
 }
 
+/* Pressed: mute the whole pill (blue + white), not a separate dark fill */
 .about-action-btn:active {
-    background: var(--brand-active);
+    opacity: 0.7;
     transition: none;
 }
 
@@ -8856,7 +8871,7 @@ export default {
         width: 100%;
         max-width: 100%;
         aspect-ratio: var(--work-thumb-aspect);
-        overflow: visible;
+        overflow: hidden;
         border-radius: 20px;
         box-shadow: var(--project-thumb-shadow-rest);
         transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
@@ -8934,7 +8949,7 @@ export default {
     .project-image-link,
     .project-image-wrap {
         aspect-ratio: 1 / 1;
-        overflow: visible;
+        overflow: hidden;
         box-shadow: var(--project-thumb-shadow-rest);
     }
 
@@ -9344,7 +9359,7 @@ export default {
 
 .hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-active,
 .hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-active {
-    background: var(--brand-active) !important;
+    opacity: 0.7 !important;
     transition: none !important;
 }
 

@@ -40,9 +40,10 @@ export function getAboutScrollTop() {
     const bioTop = aboutBio.getBoundingClientRect().top + scrollY
     const headerOffset = getHeaderOffset()
 
-    // Mobile: work tops / about starts 20px before the beige background.
+    // Mobile: work ends / about starts 20px before the beige background edge
+    // (viewport-top align; in-flow mobile chrome scrolls away with the page).
     if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
-        return Math.max(0, aboutTop - headerOffset - ABOUT_MOBILE_TOP_GAP)
+        return Math.max(0, aboutTop - ABOUT_MOBILE_TOP_GAP)
     }
 
     const isSmall = window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches
@@ -54,28 +55,38 @@ export function getAboutScrollTop() {
 
 /**
  * Whether the viewport is in the about section for touch-disk / pager zoning.
- * True when scroll reaches the shared work/about boundary, when about fills
- * most of the viewport, or when scroll is clamped short of the boundary.
+ * Prefer the beige edge in the viewport (shared work/about line) over scroll-Y
+ * math — header offset / clamp quirks were leaving the zone stuck on "work".
  */
-export function isAboutSectionActive(scrollY = window.scrollY || 0) {
+export function isAboutSectionActive(
+    scrollY = window.scrollY || document.documentElement.scrollTop || 0,
+) {
     const aboutSection = document.getElementById('about')
     if (!aboutSection) return false
+
+    const aboutRect = aboutSection.getBoundingClientRect()
+    const vh = window.innerHeight || 0
+    const mobile = window.matchMedia(MOBILE_MEDIA_QUERY).matches
+    // Same line as menu scroll: 20px above beige on mobile, flush on desktop.
+    const edgeLine = mobile ? ABOUT_MOBILE_TOP_GAP : 0
+    if (aboutRect.top <= edgeLine + 0.5) return true
+
+    if (vh > 0) {
+        const visible =
+            Math.min(aboutRect.bottom, vh) - Math.max(aboutRect.top, 0)
+        // About owns the zone once beige is a real share of the screen —
+        // don't wait for the edge to hit the top align line.
+        if (visible >= vh * 0.28) return true
+    }
 
     const aboutTop = getAboutScrollTop()
     if (aboutTop != null && scrollY >= aboutTop - 0.5) return true
 
-    const vh = window.innerHeight || 0
-    if (vh < 1) return false
-    const aboutRect = aboutSection.getBoundingClientRect()
-    const visible =
-        Math.min(aboutRect.bottom, vh) - Math.max(aboutRect.top, 0)
-    // About owns the screen once its beige fills most of the viewport —
-    // don't wait for the edge to hit the scroll-align line.
-    if (visible >= vh * 0.5) return true
-
     const maxY = Math.max(0, (document.documentElement.scrollHeight || 0) - vh)
     // Pinned at the bottom but still short of aboutTop (tall viewports).
-    if (scrollY >= maxY - 1 && aboutRect.top < vh * 0.55) return true
+    if (vh > 0 && scrollY >= maxY - 1 && aboutRect.top < vh * 0.65) {
+        return true
+    }
 
     return false
 }

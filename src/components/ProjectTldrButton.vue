@@ -484,7 +484,8 @@ export default {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin: 0 0 0 calc(-1 * var(--project-title-offset, 0px));
+  /* Mobile: align with Also paragraph (not heading hang) */
+  margin: 0;
   padding: 12px 24px;
   min-width: 0;
   width: auto;
@@ -500,11 +501,14 @@ export default {
   font-size: 18px;
   line-height: 27px;
   letter-spacing: 0;
+  white-space: nowrap;
   color: #fff;
   cursor: pointer;
   box-sizing: border-box;
   vertical-align: middle;
-  transition: background 0.2s ease;
+  transition:
+    background 0.2s ease,
+    opacity 0.15s ease;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.18),
     0 2px 4px rgba(15, 23, 42, 0.1);
@@ -537,11 +541,13 @@ export default {
     inset -1px 0 2px rgba(255, 255, 255, 0.28);
 }
 
+/* Pressed: mute the whole pill (blue + white), not a separate dark fill */
 .project-tldr-copy:active {
-  background: #000444;
+  opacity: 0.7;
   transition: none;
 }
 
+/* Hover only on fine pointers — no sticky hover after tap on mobile */
 @media (hover: hover) and (pointer: fine) {
   .project-tldr-copy:hover,
   .project-tldr-copy.hero-cursor-mirror-hover {
@@ -635,7 +641,7 @@ export default {
 
   .project-tldr-copy {
     margin-left: var(--project-title-offset, 0px);
-    width: 223px;
+    width: auto;
     height: 54px;
   }
 }
