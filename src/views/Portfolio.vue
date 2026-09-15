@@ -3,6 +3,7 @@
         class="portfolio-page"
         :class="{
             'portfolio-page--reveal': pageRevealed,
+            'portfolio-page--hero-cascade': heroIntroCascadeReady,
             'portfolio-page--settled': pageEntranceDone,
             'portfolio-page--hero-cursor': heroCursorHideNative,
             'portfolio-page--touch-disk': heroTouchDiskMode,
@@ -326,15 +327,15 @@
                                 @pointercancel="onFeaturedProjectPressEnd"
                                 @click="onFeaturedProjectNavigate"
                             >
-                                <div class="project-caption-header">
+                                <div class="project-caption-header project-caption-shift">
                                     <h2 class="project-title">
                                         IoT Adherence Analytics
                                     </h2>
                                 </div>
-                                <p class="project-description">
+                                <p class="project-description project-caption-shift">
                                     0‑to‑1 design of a caregiver-facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
                                 </p>
-                                <span class="project-year">Kin<span class="project-year-sep">/ /</span>2026</span>
+                                <span class="project-year project-caption-shift">Kin<span class="project-year-sep">/ /</span>2026</span>
                             </router-link>
                         </div>
                     </article>
@@ -353,15 +354,15 @@
                             />
                         </div>
                         <div class="project-caption">
-                            <div class="project-caption-header">
+                            <div class="project-caption-header project-caption-shift">
                                 <h2 class="project-title">
                                     IoT Home Medication Solution
                                 </h2>
                             </div>
-                            <p class="project-description">
+                            <p class="project-description project-caption-shift">
                                 End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence
                             </p>
-                            <span class="project-year">Kin<span class="project-year-sep">/ /</span>2024</span>
+                            <span class="project-year project-caption-shift">Kin<span class="project-year-sep">/ /</span>2024</span>
                         </div>
                     </article>
                 </div>
@@ -379,15 +380,15 @@
                             />
                         </div>
                         <div class="project-caption">
-                            <div class="project-caption-header">
+                            <div class="project-caption-header project-caption-shift">
                                 <h2 class="project-title">
                                     Art Curation and Marketplace
                                 </h2>
                             </div>
-                            <p class="project-description">
+                            <p class="project-description project-caption-shift">
                                 0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
                             </p>
-                            <span class="project-year">PONS<span class="project-year-sep">/ /</span>2019</span>
+                            <span class="project-year project-caption-shift">PONS<span class="project-year-sep">/ /</span>2019</span>
                         </div>
                     </article>
                 </div>
@@ -577,8 +578,6 @@ const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
 const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
 /** Mobile touch disk: edge inset matches mobile logo left pad. */
 const HERO_TOUCH_DISK_EDGE_GAP_PX = 20
-/** Hero rest: inset from the right edge of the viewport (1/3 of screen). */
-const HERO_TOUCH_DISK_REST_FROM_RIGHT = 1 / 3
 /**
  * Hero rest: disk center sits this fraction of the way up from the hero
  * intro top toward the logo bottom (1/3 of that gap).
@@ -1028,6 +1027,14 @@ function magnifierIntersectsLayout(layout, rect) {
 }
 
 const PROJECT_CAPTION_LINE_GAP = 30
+/**
+ * How far above a caption the grow tip starts the slide.
+ */
+const PROJECT_CAPTION_LINE_APPROACH_LEAD_PX = 10
+/** Viewport fraction where the scroll-linked decor tip tracks (from top). */
+const TABLET_DECOR_GROW_TIP_VIEWPORT = 0.7
+/** Desktop entrance: grow from tip to hero-viewport bottom (ms). */
+const DESKTOP_DECOR_HERO_GROW_MS = 780
 
 const HERO_INTRO_PARTS = [
     { text: "I'm Tim Justina Yeung, a ", em: false },
@@ -1133,7 +1140,7 @@ export default {
             pageEntranceDone: false,
             aboutRevealed: false,
             aboutEntranceDone: false,
-            // Hidden on all <800 until measured; tablet then reveals with the line clipped to work.
+            // Hidden on all <800 until measured; tablet then grows the full line after dissipate.
             // ≤500 stays hidden (no work decor line).
             heroDecorHidden:
                 typeof window !== 'undefined' &&
@@ -1173,6 +1180,15 @@ export default {
             // Tablet work-decor: true only after dissipate motion finishes; cleared when reconsolidate starts.
             tabletWorkDecorReady: false,
             tabletWorkDecorRevealTimer: null,
+            /** 0 = fully clipped, 1 = grown through about (ratchets up with scroll). */
+            tabletDecorLineGrowProgress: 0,
+            /** Shift captions before the stroke starts growing (during dissipate wait). */
+            tabletDecorCaptionsPreclear: false,
+            /** Desktop/tablet: letter cascade waits until the decor line is long enough. */
+            heroIntroCascadeReady: false,
+            /** Desktop: entrance grow has reached the hero viewport bottom. */
+            desktopDecorHeroGrowDone: false,
+            desktopDecorEntranceRaf: null,
             // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
             // always reference this — never live layout during scroll/URL-bar resize.
             heroIntroRestLayout: null,
@@ -1763,6 +1779,9 @@ export default {
             this.showLoadingSplash = false
             this.pageRevealed = true
             this.pageEntranceDone = true
+            this.heroIntroCascadeReady = true
+            this.desktopDecorHeroGrowDone = true
+            this.tabletDecorCaptionsPreclear = true
         } else {
             document.documentElement.classList.add('portfolio-booting')
         }
@@ -1939,8 +1958,16 @@ export default {
                 requestAnimationFrame(() => {
                     this.syncHeroDecorHeight()
                     this.syncAboutLocationTextClip()
+                    if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                        this.heroDecorHidden = false
+                        this.syncAboutLineBridge()
+                        this.applyTabletDecorLineGrowProgress(
+                            Math.max(1, this.getTabletDecorLineScrollProgress()),
+                        )
+                    }
                     this.jumpToSectionHash(sectionHash)
                     this.publishDecorLineAlign()
+                    this.syncProjectCaptionLineOffset()
                 })
             })
         } else {
@@ -1984,6 +2011,7 @@ export default {
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
         clearTimeout(this.tabletWorkDecorRevealTimer)
+        this.cancelDesktopDecorLineEntrance()
         clearTimeout(this.heroTouchDiskEntranceTimer)
         if (this.heroTouchDiskEntranceRaf != null) {
             cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
@@ -2529,16 +2557,26 @@ export default {
                 requestAnimationFrame(() => {
                     if (this.pageRevealed) return
                     this.pageRevealed = true
-                    // Tablet-mobile: show work run of the line; intro overlap stays clipped
-                    // until dissipate clears the text box.
-                    if (window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                    const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+                    const isTabletMobile = window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
+                    // Tablet-mobile: line stays fully clipped until dissipate, then
+                    // grows with scroll. Desktop: entrance grow → cascade → scroll grow.
+                    if (isTabletMobile) {
                         this.heroDecorHidden = false
+                        this.heroIntroCascadeReady = true
                         this.syncHeroDecorHeight()
                         this.syncTabletWorkDecorVisibility()
+                        this.schedulePageEntranceSettle()
+                    } else if (isDesktop) {
+                        this.heroDecorHidden = false
+                        this.syncHeroDecorHeight()
+                        this.startDesktopDecorLineEntrance()
+                    } else {
+                        this.heroIntroCascadeReady = true
+                        this.schedulePageEntranceSettle()
                     }
                     this.syncDecorLineX()
                     this.publishDecorLineAlign()
-                    this.schedulePageEntranceSettle()
                     scrollToPortfolioHash(this.$route.hash)
                     if (mobileLetter) {
                         const schedule =
@@ -2762,6 +2800,21 @@ export default {
             if (!revealingDecor) {
                 this.$nextTick(() => {
                     afterDecorSync()
+                    if (this.pageRevealed) {
+                        this.heroDecorHidden = false
+                        this.heroIntroCascadeReady = true
+                        this.desktopDecorHeroGrowDone = true
+                        this.tabletDecorCaptionsPreclear = true
+                        this.syncAboutLineBridge()
+                        const metrics = this.getDecorLineSpanMetrics()
+                        const p = Math.max(
+                            this.tabletDecorLineGrowProgress,
+                            this.getTabletDecorLineScrollProgress(),
+                            metrics?.heroViewportProgress ?? 0,
+                        )
+                        this.applyTabletDecorLineGrowProgress(p)
+                        this.syncProjectCaptionLineOffset()
+                    }
                 })
                 return
             }
@@ -2774,6 +2827,17 @@ export default {
                     requestAnimationFrame(() => {
                         afterDecorSync()
                         this.heroDecorHidden = false
+                        this.heroIntroCascadeReady = true
+                        this.desktopDecorHeroGrowDone = true
+                        this.tabletDecorCaptionsPreclear = true
+                        this.syncAboutLineBridge()
+                        const metrics = this.getDecorLineSpanMetrics()
+                        const p = Math.max(
+                            this.getTabletDecorLineScrollProgress(),
+                            metrics?.heroViewportProgress ?? 0,
+                        )
+                        this.applyTabletDecorLineGrowProgress(p)
+                        this.syncProjectCaptionLineOffset()
                         this.updateHeroLocationVisibility()
                         this.publishDecorLineAlign()
                     })
@@ -3117,8 +3181,16 @@ export default {
             let y
 
             if (this.heroTouchDiskZone === 'hero') {
-                // Hero rest: 1/3 from the right; 1/3 of the logo→hero-text gap above the intro.
-                x = window.innerWidth * (1 - HERO_TOUCH_DISK_REST_FROM_RIGHT)
+                // Hero rest: rightmost X where the open Work/About menu stays in-view
+                // (compact frost + About label) — no edge-spring budge on expand.
+                const vw = window.innerWidth
+                const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
+                const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+                const labelGap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+                const aboutW = getHeroTouchDiskMenuLabelWidth('About')
+                const frostR = getHeroTouchDiskMenuFrostSize(false) / 2
+                const padR = Math.max(frostR, labelGap + aboutW)
+                x = vw - safe - padR
                 y = window.innerHeight * 0.38
                 const intro = this.$el?.querySelector('.hero-intro')
                 const logo = this.$el?.querySelector('.portfolio-top-bar .logo')
@@ -3971,7 +4043,6 @@ export default {
                         this.updateHeroTouchDiskZoneFromScroll()
                     },
                 })
-                this.$router.replace({ hash: '#work' }).catch(() => {})
                 return
             }
             if (item.action === 'about') {
@@ -3989,7 +4060,6 @@ export default {
                         this.updateHeroTouchDiskZoneFromScroll()
                     },
                 })
-                this.$router.replace({ hash: '#about' }).catch(() => {})
             }
         },
         moveHeroTouchDiskTo(clientX, clientY) {
@@ -5693,6 +5763,8 @@ export default {
             )
         },
         onHeroIntroDissipateScrollHandler() {
+            this.updateDesktopDecorLineGrowFromScroll()
+
             if (
                 !this.heroIntroLetterMode ||
                 !this.pageRevealed ||
@@ -5719,6 +5791,7 @@ export default {
             this.heroIntroDissipateRaf = requestAnimationFrame(() => {
                 this.heroIntroDissipateRaf = null
                 this.updateHeroIntroDissipateFromScroll()
+                this.updateTabletDecorLineGrowFromScroll()
             })
         },
         /**
@@ -6082,15 +6155,305 @@ export default {
             clearTimeout(this.tabletWorkDecorRevealTimer)
             this.tabletWorkDecorRevealTimer = null
         },
-        /** Re-clip the intro overlap (reconsolidate start / clear). */
+        /** Hero + bridge + about line segments that form the continuous stroke. */
+        getTabletDecorLineSegments() {
+            const root = this.$el
+            if (!root) return []
+            return ['.hero-decor', '.about-line-bridge', '.about-line']
+                .map((sel) => root.querySelector(sel))
+                .filter((el) => el && getComputedStyle(el).display !== 'none')
+        },
+        setTabletDecorSegmentReveal(el, shownPx, heightPx = 0) {
+            // Clear stylesheet clip; mask does the top→bottom wipe.
+            el.style.clipPath = 'none'
+            el.style.webkitClipPath = 'none'
+            if (shownPx <= 0.5) {
+                el.style.maskImage = 'linear-gradient(#0000 0 0)'
+                el.style.webkitMaskImage = 'linear-gradient(#0000 0 0)'
+                return
+            }
+            if (heightPx > 0 && shownPx >= heightPx - 0.5) {
+                el.style.maskImage = 'none'
+                el.style.webkitMaskImage = 'none'
+                return
+            }
+            const mask = `linear-gradient(to bottom, #000 0, #000 ${shownPx.toFixed(1)}px, #0000 ${shownPx.toFixed(1)}px)`
+            el.style.maskImage = mask
+            el.style.webkitMaskImage = mask
+        },
+        clearTabletDecorLineGrowClips() {
+            for (const el of this.getTabletDecorLineSegments()) {
+                el.style.removeProperty('clip-path')
+                el.style.removeProperty('-webkit-clip-path')
+                el.style.removeProperty('mask-image')
+                el.style.removeProperty('-webkit-mask-image')
+            }
+        },
+        /**
+         * Shared metrics for scroll/entrance grow along the hero→about stroke.
+         * Progress 0 = decor top; 1 = about-line bottom.
+         */
+        getDecorLineSpanMetrics() {
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor || window.getComputedStyle(decor).display === 'none') {
+                return null
+            }
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const intro = this.$el?.querySelector('.hero-intro')
+            const decorTop = decor.getBoundingClientRect().top
+            const endEl =
+                aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                    ? aboutLine
+                    : decor
+            const endBottom = endEl.getBoundingClientRect().bottom
+            const span = Math.max(1, endBottom - decorTop)
+            const introBottom = intro?.getBoundingClientRect().bottom ?? decorTop
+            // First-screen floor — grow at least this far during desktop entrance.
+            const heroViewportBottom = window.innerHeight
+            return {
+                decorTop,
+                span,
+                cascadeProgress: Math.min(
+                    1,
+                    Math.max(0, (introBottom - decorTop) / span),
+                ),
+                heroViewportProgress: Math.min(
+                    1,
+                    Math.max(0, (heroViewportBottom - decorTop) / span),
+                ),
+            }
+        },
+        /**
+         * Scroll-linked grow: tip tracks a point in the viewport along the
+         * hero→about stroke. Returns 0..1 (not ratcheted).
+         */
+        getTabletDecorLineScrollProgress() {
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor || window.getComputedStyle(decor).display === 'none') return 0
+
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const scrollY = Math.max(
+                0,
+                window.scrollY || document.documentElement.scrollTop || 0,
+            )
+            const decorTopDoc = decor.getBoundingClientRect().top + scrollY
+            const endEl =
+                aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                    ? aboutLine
+                    : decor
+            const aboutBottomDoc = endEl.getBoundingClientRect().bottom + scrollY
+            const span = Math.max(1, aboutBottomDoc - decorTopDoc)
+            const tipDoc = scrollY + window.innerHeight * TABLET_DECOR_GROW_TIP_VIEWPORT
+            return Math.min(1, Math.max(0, (tipDoc - decorTopDoc) / span))
+        },
+        /**
+         * Clip hero/bridge/about as one stroke: progress 0 hides all, 1 reveals
+         * through the about-line endpoint. Wipe is always top → bottom.
+         */
+        applyTabletDecorLineGrowProgress(progress) {
+            const segments = this.getTabletDecorLineSegments()
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor || window.getComputedStyle(decor).display === 'none') return
+
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const start = decor.getBoundingClientRect().top
+            const endRect =
+                aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                    ? aboutLine.getBoundingClientRect()
+                    : decor.getBoundingClientRect()
+            const end = Math.max(start + 1, endRect.bottom)
+            const t = Math.min(1, Math.max(0, progress))
+            const revealBottom = start + (end - start) * t
+            this.tabletDecorLineGrowProgress = t
+
+            for (const el of segments) {
+                const rect = el.getBoundingClientRect()
+                if (rect.height <= 0) {
+                    this.setTabletDecorSegmentReveal(el, 0)
+                    continue
+                }
+                const shown = Math.min(rect.height, Math.max(0, revealBottom - rect.top))
+                this.setTabletDecorSegmentReveal(el, shown, rect.height)
+            }
+            this.syncProjectCaptionLineOffset()
+        },
+        cancelDesktopDecorLineEntrance() {
+            if (this.desktopDecorEntranceRaf != null) {
+                cancelAnimationFrame(this.desktopDecorEntranceRaf)
+                this.desktopDecorEntranceRaf = null
+            }
+        },
+        unlockHeroIntroCascade() {
+            if (this.heroIntroCascadeReady) return
+            this.syncHeroIntroCharColumns()
+            this.heroIntroCascadeReady = true
+        },
+        /**
+         * Desktop: grow the line from its tip down to the hero viewport bottom.
+         * Unlock the letter cascade as soon as the stroke covers the intro text.
+         * After the hero phase, further length comes from scroll (ratcheted).
+         */
+        startDesktopDecorLineEntrance() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+
+            this.cancelDesktopDecorLineEntrance()
+            this.desktopDecorHeroGrowDone = false
+            this.heroIntroCascadeReady = false
+            this.tabletDecorCaptionsPreclear = true
+            this.syncAboutLineBridge()
+            this.syncHeroDecorHeight()
+            this.applyTabletDecorLineGrowProgress(0)
+            this.syncProjectCaptionLineOffset()
+
+            const metrics = this.getDecorLineSpanMetrics()
+            if (!metrics) {
+                this.unlockHeroIntroCascade()
+                this.desktopDecorHeroGrowDone = true
+                this.schedulePageEntranceSettle()
+                return
+            }
+
+            const target = Math.max(metrics.heroViewportProgress, metrics.cascadeProgress)
+            const cascadeAt = metrics.cascadeProgress
+
+            if (prefersReducedMotion()) {
+                this.applyTabletDecorLineGrowProgress(
+                    Math.max(target, this.getTabletDecorLineScrollProgress()),
+                )
+                this.unlockHeroIntroCascade()
+                this.desktopDecorHeroGrowDone = true
+                this.schedulePageEntranceSettle()
+                this.updateDesktopDecorLineGrowFromScroll()
+                return
+            }
+
+            const durationMs = DESKTOP_DECOR_HERO_GROW_MS
+            const startTs = performance.now()
+            let cascadeUnlocked = false
+
+            const tick = (now) => {
+                if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                    this.desktopDecorEntranceRaf = null
+                    return
+                }
+                const u = Math.min(1, (now - startTs) / durationMs)
+                // Mild ease-out so the tip is readable without feeling sluggish.
+                const eased = 1 - (1 - u) ** 2
+                const p = target * eased
+                this.applyTabletDecorLineGrowProgress(
+                    Math.max(this.tabletDecorLineGrowProgress, p),
+                )
+
+                if (!cascadeUnlocked && p >= cascadeAt - 0.002) {
+                    cascadeUnlocked = true
+                    this.unlockHeroIntroCascade()
+                    this.schedulePageEntranceSettle()
+                }
+
+                if (u < 1) {
+                    this.desktopDecorEntranceRaf = requestAnimationFrame(tick)
+                    return
+                }
+
+                this.desktopDecorEntranceRaf = null
+                this.applyTabletDecorLineGrowProgress(
+                    Math.max(this.tabletDecorLineGrowProgress, target),
+                )
+                if (!cascadeUnlocked) {
+                    this.unlockHeroIntroCascade()
+                    this.schedulePageEntranceSettle()
+                }
+                this.desktopDecorHeroGrowDone = true
+                this.syncProjectCaptionLineOffset()
+                this.updateDesktopDecorLineGrowFromScroll()
+            }
+            this.desktopDecorEntranceRaf = requestAnimationFrame(tick)
+        },
+        /**
+         * Desktop scroll grow after the hero-viewport entrance phase.
+         * Progress only increases; no retract on scroll-up.
+         */
+        updateDesktopDecorLineGrowFromScroll() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (!this.pageRevealed || !this.desktopDecorHeroGrowDone) return
+            if (this.tabletDecorLineGrowProgress >= 1) return
+
+            this.syncAboutLineBridge()
+            const next = Math.max(
+                this.tabletDecorLineGrowProgress,
+                this.getTabletDecorLineScrollProgress(),
+            )
+            if (next <= this.tabletDecorLineGrowProgress) return
+            this.applyTabletDecorLineGrowProgress(next)
+        },
+        /**
+         * Advance the tablet decor grow from scroll. Progress only increases
+         * (no retract on scroll-up); reconsolidate resets via hide.
+         */
+        updateTabletDecorLineGrowFromScroll() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) return
+            if (!this.tabletWorkDecorReady) return
+            if (this.tabletDecorLineGrowProgress >= 1) return
+
+            this.syncAboutLineBridge()
+            const next = Math.max(
+                this.tabletDecorLineGrowProgress,
+                this.getTabletDecorLineScrollProgress(),
+            )
+            if (next <= this.tabletDecorLineGrowProgress) return
+            this.applyTabletDecorLineGrowProgress(next)
+        },
+        /**
+         * Show: sync to scroll (ratchet). Hide / instant: snap. Retract only on hide
+         * (reconsolidate) — never from scrolling up.
+         */
+        syncTabletDecorLineGrow({ show, instant = false } = {}) {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                // Desktop owns its grow masks — don't clear them from tablet sync.
+                return
+            }
+
+            this.syncAboutLineBridge()
+
+            if (!show) {
+                this.applyTabletDecorLineGrowProgress(0)
+                this.syncProjectCaptionLineOffset()
+                return
+            }
+
+            if (instant || prefersReducedMotion()) {
+                const p = Math.max(
+                    this.tabletDecorLineGrowProgress,
+                    this.getTabletDecorLineScrollProgress(),
+                    prefersReducedMotion() ? 1 : 0,
+                )
+                this.applyTabletDecorLineGrowProgress(p)
+                this.syncProjectCaptionLineOffset()
+                return
+            }
+
+            this.updateTabletDecorLineGrowFromScroll()
+            // If still at 0 (scrolled very little), paint the empty mask so CSS
+            // default isn't fighting a missing inline style.
+            if (this.tabletDecorLineGrowProgress <= 0) {
+                this.applyTabletDecorLineGrowProgress(0)
+            }
+            this.syncProjectCaptionLineOffset()
+        },
+        /** Re-clip / hide the full tablet line (reconsolidate start / clear). */
         hideTabletWorkDecorLine() {
             this.clearTabletWorkDecorRevealTimer()
             this.tabletWorkDecorReady = false
-            this.syncTabletWorkDecorVisibility()
+            this.tabletDecorCaptionsPreclear = false
+            this.syncTabletWorkDecorVisibility({ instant: true })
         },
         /**
-         * After dissipate is partly clear, unclip the intro-overlapping segment.
-         * Instant dissipate unclips immediately (letters already gone).
+         * After dissipate is partly clear, unlock scroll-linked grow from the hero
+         * top through about. Instant dissipate snaps to the current scroll progress.
          */
         scheduleTabletWorkDecorReveal({ instant = false } = {}) {
             this.clearTabletWorkDecorRevealTimer()
@@ -6098,14 +6461,18 @@ export default {
             if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) return
 
             if (instant) {
+                this.tabletDecorCaptionsPreclear = true
                 this.tabletWorkDecorReady = true
-                this.syncTabletWorkDecorVisibility()
+                this.syncTabletWorkDecorVisibility({ instant: true })
                 return
             }
 
-            // Keep intro overlap clipped while early letters are still flying out.
+            // Keep the stroke clipped, but start shifting captions immediately so
+            // padding has already moved by the time the grow tip reaches work.
             this.tabletWorkDecorReady = false
-            this.syncTabletWorkDecorVisibility()
+            this.tabletDecorCaptionsPreclear = true
+            this.syncTabletWorkDecorVisibility({ instant: true })
+            this.$nextTick(() => this.syncProjectCaptionLineOffset())
 
             const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
             const waitMs = this.getHeroIntroDissipateWaitMs(intro, 0.12)
@@ -6113,56 +6480,18 @@ export default {
                 this.tabletWorkDecorRevealTimer = null
                 if (!this.heroIntroDissipated || this.heroIntroReconsolidating) return
                 this.tabletWorkDecorReady = true
-                this.syncTabletWorkDecorVisibility()
+                this.syncTabletWorkDecorVisibility({ instant: false })
             }, waitMs)
         },
         /**
-         * Clip the top of `.hero-decor` so it starts below the hero intro box.
-         * `revealIntro` true → full line including the intro overlap.
+         * Tablet-mobile (501–799): no static work run. The full hero→about stroke
+         * stays clipped until dissipate, then grows with scroll (ratchet; retract
+         * only on reconsolidate).
          */
-        applyTabletWorkDecorIntroClip(revealIntro) {
-            const decor = this.$el?.querySelector('.hero-decor')
-            if (!decor) return
-
-            if (
-                typeof window === 'undefined' ||
-                !window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
-            ) {
-                decor.style.removeProperty('--hero-decor-intro-clip')
-                return
-            }
-
-            if (revealIntro) {
-                decor.style.setProperty('--hero-decor-intro-clip', '0px')
-                return
-            }
-
-            const intro = this.$el?.querySelector('.hero-intro')
-            if (!intro) {
-                decor.style.setProperty('--hero-decor-intro-clip', '0px')
-                return
-            }
-
-            const decorTop = decor.getBoundingClientRect().top
-            const introBottom = intro.getBoundingClientRect().bottom
-            const introClip = Math.round(introBottom - decorTop)
-            // Cover through the text box and on past the fold so the line
-            // only reads below the first viewport until dissipate unclips.
-            const viewportClip = Math.round(window.innerHeight - decorTop + 12)
-            const clip = Math.max(0, Math.max(introClip, viewportClip))
-            decor.style.setProperty('--hero-decor-intro-clip', `${clip}px`)
-        },
-        /**
-         * Tablet-mobile (501–799): the work/about run of the line stays visible.
-         * Only the segment overlapping the hero intro unclips after dissipate,
-         * and reclips when reconsolidate starts.
-         */
-        syncTabletWorkDecorVisibility() {
+        syncTabletWorkDecorVisibility({ instant = false } = {}) {
             if (typeof window === 'undefined') return
             if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
-                this.$el
-                    ?.querySelector('.hero-decor')
-                    ?.style.removeProperty('--hero-decor-intro-clip')
+                // Desktop grow is independent — don't wipe its masks here.
                 return
             }
 
@@ -6171,13 +6500,17 @@ export default {
                 !prefersReducedMotion() &&
                 this.pageEntranceDone
 
-            // Work run always on once the page is up; intro overlap is clip-gated.
+            // Element stays measurable once the page is up; grow clip gates paint.
             this.heroDecorHidden = !(this.pageRevealed || this.pageEntranceDone)
-            const revealIntro = canDissipate ? this.tabletWorkDecorReady : this.pageEntranceDone
+            const showLine = canDissipate ? this.tabletWorkDecorReady : this.pageEntranceDone
+            if (!canDissipate) {
+                this.tabletDecorCaptionsPreclear = showLine
+            }
 
             this.$nextTick(() => {
                 this.syncHeroDecorHeight()
-                this.applyTabletWorkDecorIntroClip(revealIntro)
+                this.syncAboutLineBridge()
+                this.syncTabletDecorLineGrow({ show: showLine, instant })
                 this.syncProjectCaptionLineOffset()
                 if (!this.heroDecorHidden) this.publishDecorLineAlign()
             })
@@ -6539,16 +6872,20 @@ export default {
             this.syncAboutLineBridge()
             this.syncProjectCaptionLineOffset()
 
-            // Keep tablet intro-overlap clip accurate after layout changes.
+            // Keep decor grow clip accurate after layout changes (tablet + desktop).
             if (window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
-                const canDissipate =
-                    this.heroIntroLetterMode &&
-                    !prefersReducedMotion() &&
-                    this.pageEntranceDone
-                const revealIntro = canDissipate
-                    ? this.tabletWorkDecorReady
-                    : this.pageEntranceDone
-                this.applyTabletWorkDecorIntroClip(revealIntro)
+                this.applyTabletDecorLineGrowProgress(this.tabletDecorLineGrowProgress)
+                if (this.tabletWorkDecorReady && this.tabletDecorLineGrowProgress < 1) {
+                    this.updateTabletDecorLineGrowFromScroll()
+                }
+            } else if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                this.applyTabletDecorLineGrowProgress(this.tabletDecorLineGrowProgress)
+                if (this.desktopDecorHeroGrowDone && this.tabletDecorLineGrowProgress < 1) {
+                    this.updateDesktopDecorLineGrowFromScroll()
+                }
+            } else if (this.tabletDecorLineGrowProgress > 0) {
+                this.clearTabletDecorLineGrowClips()
+                this.tabletDecorLineGrowProgress = 0
             }
         },
         onHeroDecorFlyEnd(event) {
@@ -6616,9 +6953,17 @@ export default {
             const captions = root.querySelectorAll('.work .project-caption')
             if (!captions.length) return
 
+            const clearBlock = (block) => {
+                block.style.removeProperty('--project-caption-line-offset')
+                block.style.removeProperty('--project-caption-shift-delay')
+                block.style.removeProperty('transition')
+            }
+
             if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
                 for (const caption of captions) {
-                    caption.style.removeProperty('--project-caption-line-offset')
+                    for (const block of caption.querySelectorAll('.project-caption-shift')) {
+                        clearBlock(block)
+                    }
                 }
                 return
             }
@@ -6630,60 +6975,69 @@ export default {
             const lineLeft =
                 pageLeft + parseCssPx(getComputedStyle(root), '--portfolio-decor-line-x', 0)
             const lineRight = lineLeft + lineWidth
-            const segments = []
+            const isTabletMobile = window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
+            const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+            const growViewport = isTabletMobile || isDesktop
 
             const decor = root.querySelector('.hero-decor')
-            if (decor && getComputedStyle(decor).display !== 'none' && !this.heroDecorHidden) {
-                const decorRect = decor.getBoundingClientRect()
-                if (decorRect.height > 0) {
-                    segments.push({
-                        top: decorRect.top,
-                        bottom: decorRect.bottom,
-                        lineLeft,
-                        lineRight,
-                    })
-                }
+            const decorVisible =
+                decor &&
+                getComputedStyle(decor).display !== 'none' &&
+                !this.heroDecorHidden
+
+            // Tip of the growing stroke (viewport Y). Non-grow layouts treat the
+            // stroke as fully present.
+            let tipY = Number.POSITIVE_INFINITY
+            if (growViewport && decorVisible) {
+                const aboutLine = root.querySelector('.about-line')
+                const start = decor.getBoundingClientRect().top
+                const endEl =
+                    aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                        ? aboutLine
+                        : decor
+                const end = Math.max(start + 1, endEl.getBoundingClientRect().bottom)
+                tipY = start + (end - start) * this.tabletDecorLineGrowProgress
             }
 
-            const bridge = root.querySelector('.about-line-bridge')
-            if (bridge && getComputedStyle(bridge).display !== 'none') {
-                const bridgeHeight =
-                    parseFloat(getComputedStyle(bridge).getPropertyValue('--bridge-h')) || 0
-                if (bridgeHeight > 0) {
-                    const bridgeRect = bridge.getBoundingClientRect()
-                    if (bridgeRect.height > 0) {
-                        segments.push({
-                            top: bridgeRect.top,
-                            bottom: bridgeRect.bottom,
-                            lineLeft,
-                            lineRight,
-                        })
-                    }
-                }
-            }
+            // About-like stagger: title → description → year (matches meta/bio/actions gaps).
+            const shiftDelaysSec = [0, 0.12, 0.2]
 
             for (const caption of captions) {
-                const capRect = caption.getBoundingClientRect()
+                const blocks = [...caption.querySelectorAll('.project-caption-shift')]
+                if (!blocks.length) continue
+
+                const title =
+                    caption.querySelector('.project-caption-header.project-caption-shift') ||
+                    blocks[0]
+                const titleRect = title.getBoundingClientRect()
+                const approaching =
+                    !growViewport ||
+                    tipY >= titleRect.top - PROJECT_CAPTION_LINE_APPROACH_LEAD_PX
+
                 let offset = 0
-
-                for (const segment of segments) {
-                    if (segment.bottom <= capRect.top || segment.top >= capRect.bottom) continue
-                    if (segment.lineLeft >= capRect.right) continue
-
-                    const clearance = capRect.left - segment.lineRight
-                    if (clearance >= PROJECT_CAPTION_LINE_GAP) continue
-
-                    offset = Math.max(
-                        offset,
-                        Math.ceil(segment.lineRight + PROJECT_CAPTION_LINE_GAP - capRect.left),
-                    )
+                if (approaching && lineLeft < titleRect.right) {
+                    // padding-left does not move the border-box left, so this
+                    // resting edge stays stable across frames.
+                    const clearance = titleRect.left - lineRight
+                    if (clearance < PROJECT_CAPTION_LINE_GAP) {
+                        offset = Math.max(
+                            0,
+                            Math.ceil(lineRight + PROJECT_CAPTION_LINE_GAP - titleRect.left),
+                        )
+                    }
                 }
 
-                if (offset > 0) {
-                    caption.style.setProperty('--project-caption-line-offset', `${offset}px`)
-                } else {
-                    caption.style.removeProperty('--project-caption-line-offset')
-                }
+                blocks.forEach((block, index) => {
+                    if (offset > 0) {
+                        block.style.setProperty(
+                            '--project-caption-shift-delay',
+                            `${shiftDelaysSec[index] ?? shiftDelaysSec[shiftDelaysSec.length - 1]}s`,
+                        )
+                        block.style.setProperty('--project-caption-line-offset', `${offset}px`)
+                    } else {
+                        clearBlock(block)
+                    }
+                })
             }
         },
     },
@@ -6778,10 +7132,11 @@ export default {
     will-change: auto;
 }
 
-/* Squiggle snappier; paragraph a touch slower — not in lockstep */
+/* Decor line: no horizontal fly-in — length grows top→bottom (desktop entrance + scroll). */
 .portfolio-page--reveal .hero-decor.portfolio-fly--from-right {
-    animation: portfolio-fly-from-right var(--hero-line-fly-duration, 1.05s) var(--fly-ease)
-        var(--hero-line-fly-delay, 0.08s) both;
+    animation: none;
+    opacity: 1;
+    transform: none;
 }
 
 .portfolio-page--reveal .hero-intro.portfolio-fly--from-right:not(.hero-intro--chars) {
@@ -7595,7 +7950,6 @@ export default {
     --hero-decor-bottom-offset: 65px;
     --hero-decor-top-offset: 7px;
     --hero-decor-below-intro-gap: 0;
-    --hero-decor-intro-clip: 0px;
     position: absolute;
     top: 7px;
     right: auto;
@@ -7605,9 +7959,6 @@ export default {
     height: var(--hero-decor-height);
     overflow: hidden;
     pointer-events: none;
-    /* Tablet: clip intro overlap; work run stays visible underneath. */
-    clip-path: inset(var(--hero-decor-intro-clip) 0 0 0);
-    transition: clip-path 0.4s var(--fly-ease);
 }
 
 .hero-decor::after {
@@ -7675,7 +8026,7 @@ export default {
     font-size: 26px;
     font-style: normal;
     font-weight: 300;
-    line-height: 39px;
+    line-height: 1.45;
     letter-spacing: 0;
     color: #616161;
     font-synthesis: none;
@@ -7723,7 +8074,7 @@ export default {
     /* No permanent will-change — ~150 promoted layers stutter mobile GPUs during cascade */
 }
 
-.portfolio-page--reveal .hero-intro--chars .hero-intro-char {
+.portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro--chars .hero-intro-char {
     animation: portfolio-fly-from-right var(--hero-intro-char-duration, 0.85s) var(--fly-ease)
         var(--hero-intro-char-delay) both;
 }
@@ -7764,11 +8115,9 @@ export default {
 /* Desktop: type ":)" after the block fly-in — cursor first, then one char at a time */
 @media (min-width: 800px) {
     .hero-intro {
-        --hero-intro-fly-end: 1.63s; /* 0.08s delay + 1.55s duration */
+        /* Afterthought follows the letter cascade (unlocked when the line is long enough). */
         --hero-intro-afterthought-beat: 0.06s;
-        --hero-intro-afterthought-start: calc(
-            var(--hero-intro-fly-end) + var(--hero-intro-afterthought-beat)
-        );
+        --hero-intro-afterthought-start: calc(2.39s + var(--hero-intro-afterthought-beat));
         --hero-intro-type-cursor-lead: 0.18s;
         --hero-intro-type-char-2-gap: 0.38s; /* brief beat between : and ) */
         --hero-intro-type-char-1-at: var(--hero-intro-type-cursor-lead);
@@ -7805,17 +8154,17 @@ export default {
         visibility: hidden;
     }
 
-    .portfolio-page--reveal .hero-intro-afterthought-char:nth-child(1) {
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro-afterthought-char:nth-child(1) {
         animation: hero-intro-char-reveal 0.02s steps(1, end)
             calc(var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-1-at)) forwards;
     }
 
-    .portfolio-page--reveal .hero-intro-afterthought-char:nth-child(2) {
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro-afterthought-char:nth-child(2) {
         animation: hero-intro-char-reveal 0.02s steps(1, end)
             calc(var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at)) forwards;
     }
 
-    .portfolio-page--reveal .hero-intro-afterthought-cursor {
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro-afterthought-cursor {
         visibility: visible;
         --hero-intro-type-cursor-post-at: calc(
             var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at)
@@ -8128,9 +8477,11 @@ export default {
 }
 
 @media (min-width: 501px) {
-    .project-caption {
+    .project-caption-shift {
+        /* Triggered from the title; description/year follow with staggered delay. */
         padding-left: var(--project-caption-line-offset, 0px);
-        transition: padding-left 0.4s ease;
+        transition: padding-left 0.6s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1))
+            var(--project-caption-shift-delay, 0s);
     }
 }
 
@@ -8624,11 +8975,9 @@ export default {
     }
 
     .portfolio-page {
-        --hero-line-fly-delay: 0.08s;
-        --hero-line-fly-duration: 1.05s;
-        /* Line lands first (1.13s); cascade starts on a short beat after */
-        --hero-intro-cascade-start: 1.27s;
-        --hero-intro-cascade-end: 3.62s;
+        /* Cascade starts when the growing line covers the intro (JS unlocks). */
+        --hero-intro-cascade-start: 0.04s;
+        --hero-intro-cascade-end: 2.39s;
     }
 
     .hero-intro.hero-intro--chars.portfolio-fly {
@@ -8971,7 +9320,7 @@ export default {
     }
 }
 
-/* 501px–<800px: mobile hero + desktop work layout; intro overlap clip-gated */
+/* 501px–<800px: mobile hero + desktop work layout; line grows after dissipate */
 @media (min-width: 501px) and (width < 800px) {
     .hero {
         margin-bottom: 100px;
@@ -8989,7 +9338,7 @@ export default {
     .hero-decor {
         display: block;
         left: var(--hero-decor-left);
-        /* Height filled by JS; intro overlap clipped until dissipate. */
+        /* Height filled by JS; fully clipped until post-dissipate grow. */
         --hero-decor-height: 0px;
         top: 0;
     }
@@ -9001,6 +9350,24 @@ export default {
     .about-line-bridge,
     .about-line {
         display: block;
+    }
+
+    /* No static work/about stroke — JS mask-wipes top → bottom (entrance + scroll). */
+    .hero-decor,
+    .about-line-bridge,
+    .about-line {
+        -webkit-mask-image: linear-gradient(#0000 0 0);
+        mask-image: linear-gradient(#0000 0 0);
+    }
+}
+
+/* Desktop: same grow mask default (entrance then scroll-linked). */
+@media (min-width: 800px) {
+    .hero-decor,
+    .about-line-bridge,
+    .about-line {
+        -webkit-mask-image: linear-gradient(#0000 0 0);
+        mask-image: linear-gradient(#0000 0 0);
     }
 }
 
@@ -9048,7 +9415,7 @@ export default {
 @media (min-width: 501px) and (width < 800px) {
     .hero-intro {
         font-size: 26px;
-        line-height: 39px;
+        line-height: 1.45;
     }
 
     .project-description {
@@ -9091,7 +9458,7 @@ export default {
 @media (min-width: 501px) and (width < 800px) and (orientation: landscape) {
     .hero-intro {
         font-size: 22px;
-        line-height: 33px;
+        line-height: 1.45;
     }
 }
 
@@ -9289,7 +9656,7 @@ export default {
     .hero-intro {
         max-width: 100%;
         font-size: 22px;
-        line-height: 33px;
+        line-height: 1.45;
     }
 
     .project-caption {

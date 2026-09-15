@@ -430,22 +430,15 @@ export default {
   pointer-events: none;
 }
 
-/* Soft top/left/right shadow — bottom clipped */
+/* Soft top/left/right shadow — bottom clipped (off while hero glass is clear) */
 .pageOverlayTopBar :global(.project-hero + .project-header)::after {
   z-index: 0;
   left: calc(50% - var(--project-hero-glass-width) / 2);
   width: var(--project-hero-glass-width);
   height: var(--project-hero-glass-image-cover);
-  background: rgba(255, 255, 255, 0.01);
+  background: transparent;
   border: 1px solid transparent;
-  box-shadow:
-    0 -2px 8px rgba(15, 23, 42, 0.025),
-    0 -6px 18px rgba(15, 23, 42, 0.03),
-    0 -12px 28px rgba(15, 23, 42, 0.02),
-    -4px 0 12px rgba(15, 23, 42, 0.018),
-    4px 0 12px rgba(15, 23, 42, 0.018),
-    -8px 0 20px rgba(15, 23, 42, 0.015),
-    8px 0 20px rgba(15, 23, 42, 0.015);
+  box-shadow: none;
   clip-path: inset(-32px -22px 0 -22px);
 }
 
@@ -456,24 +449,11 @@ export default {
   transform: translate3d(-50%, 0, 0);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  /* Light fill so backdrop blur can read; no mask — mask + backdrop-filter cancels blur in Chromium */
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.1) 42%,
-    rgba(255, 255, 255, 0.04) 72%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  backdrop-filter: blur(28px) saturate(2);
-  -webkit-backdrop-filter: blur(28px) saturate(2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 2px 10px rgba(255, 255, 255, 0.55),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -2px 8px rgba(255, 255, 255, 0.28),
-    inset 1px 0 6px rgba(255, 255, 255, 0.22),
-    inset -1px 0 6px rgba(255, 255, 255, 0.22);
+  border: 1px solid transparent;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 
 /* White wash: covers side shadows under the title/meta; behind text, above glass.
