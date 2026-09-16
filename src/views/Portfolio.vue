@@ -71,6 +71,7 @@
                     (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
                 'hero-intro-cursor-dot-disk--menu-frost':
                     heroTouchDiskExpand > 0.02 || heroTouchDiskMenuOpen,
+                'hero-intro-cursor-dot-disk--menu-pill': heroTouchDiskMenuFrostPillActive,
             }"
             :style="heroCursorDotDiskStyle"
             aria-hidden="true"
@@ -603,8 +604,11 @@ const HERO_TOUCH_DISK_FROST_DIP_PX = 18
 /** Frost open: linear progress window for the squash (0…1). */
 const HERO_TOUCH_DISK_FROST_DIP_UNTIL = 0.24
 /** Blue center diameter while menu is open (idle dot is 8). */
-const HERO_TOUCH_DISK_MENU_DOT_SIZE = 12
-/** Gap from blue center edge to the near edge of a menu label (menu open). */
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 6
+/**
+ * Gap from blue center edge to the near edge of a menu label.
+ * Matches carousel pager `--pager-edge-gap` (20).
+ */
 const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
 /** Must match `.hero-touch-disk-menu__item` box height (lh 30 + pad 14). */
 const HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX = 44
@@ -615,8 +619,8 @@ const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
  * Near edges the whole disk elastically bounces inward so labels + frost stay in view.
  * Single-item menus stay horizontal on a preferred side.
  */
-/** Viewport padding so labels / frost rim stay fully on-screen. */
-const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = 12
+/** Viewport inset for open menu — matches mobile `--page-pad` / logo edge gap. */
+const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = HERO_TOUCH_DISK_EDGE_GAP_PX
 /**
  * Lower-corner park pocket (Work/About): keep the idle disk — no project magnifier.
  * Rest (~43px inset) still sits inside.
@@ -682,77 +686,50 @@ function getHeroTouchDiskMenuLabelWidth(label) {
 }
 
 /**
- * Frost diameter: rim bisects the wider label (Work or About).
- * Radius = blueR + label gap + half label width → diameter = blue + 2·gap + label.
- * Used over blank space; over content we expand to the full cover size.
+ * Menu frost size — matches work-carousel-pager rhythm:
+ * height 46, uniform 20px gaps (edge pad = label↔blue gap).
+ * Dual pill sizes each side from its own label so Work and About
+ * both get the same space to the rim.
  */
-function getHeroTouchDiskMenuFrostSizeCompact() {
-    if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
-    const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
-    return (
-        HERO_TOUCH_DISK_MENU_DOT_SIZE +
-        2 * HERO_TOUCH_DISK_MENU_LABEL_GAP_PX +
-        maxLabel
-    )
-}
-
-/** Gap from the outer edge of the longest label to the frost rim (content cover). */
 const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
 
-/** Frost diameter: blue → gap → longest label → gap past its outer edge. */
-function getHeroTouchDiskMenuFrostSizeCover() {
+function getHeroTouchDiskMenuFrostMetrics(dual = false) {
     if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
-    const maxLabel = heroTouchDiskMenuLabelMaxWidthPx || 58
-    return (
-        HERO_TOUCH_DISK_MENU_DOT_SIZE +
-        2 *
-            (HERO_TOUCH_DISK_MENU_LABEL_GAP_PX +
-                maxLabel +
-                HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX)
-    )
-}
+    const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+    const gap = HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+    const outer = HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX
+    const workW = heroTouchDiskMenuLabelWidths.Work || 48
+    const aboutW = heroTouchDiskMenuLabelWidths.About || 58
 
-function getHeroTouchDiskMenuFrostSize(cover = false) {
-    return cover
-        ? getHeroTouchDiskMenuFrostSizeCover()
-        : getHeroTouchDiskMenuFrostSizeCompact()
-}
-
-/** Page content that needs full label frost backing (vs blank page chrome). */
-const HERO_TOUCH_DISK_CONTENT_SELECTOR = [
-    '.hero-intro',
-    '.hero-role',
-    '.hero-location',
-    '.project',
-    '.about-photo',
-    '.about-photo-column',
-    '.about-intro',
-    '.about-bio',
-    '.about-actions',
-    '.portfolio-site-footer',
-    '.portfolio-top-bar',
-    '.top-bar',
-].join(', ')
-
-const HERO_TOUCH_DISK_CONTENT_IGNORE_SELECTOR = [
-    '.hero-intro-cursor-ball',
-    '.hero-intro-cursor-magnifier',
-    '.hero-intro-cursor-drag-hit',
-    '.hero-touch-disk-menu',
-].join(', ')
-
-/** True when a viewport point sits on real page content (not empty background). */
-function isHeroTouchDiskPointOverContent(x, y) {
-    if (typeof document === 'undefined') return false
-    const stack =
-        document.elementsFromPoint?.(x, y) ??
-        [document.elementFromPoint(x, y)].filter(Boolean)
-    for (const el of stack) {
-        if (!(el instanceof Element)) continue
-        if (el.closest(HERO_TOUCH_DISK_CONTENT_IGNORE_SELECTOR)) continue
-        if (el.closest(HERO_TOUCH_DISK_CONTENT_SELECTOR)) return true
+    if (dual) {
+        // edge + Work + gap + blueR  |  blueR + gap + About + edge
+        const left = outer + workW + gap + blueR
+        const right = outer + aboutW + gap + blueR
+        const height = HERO_CURSOR_GLASS_IDLE_SIZE
+        return {
+            width: left + right,
+            height,
+            left,
+            right,
+            halfH: height / 2,
+            pill: true,
+        }
     }
-    return false
+
+    const maxLabel = Math.max(workW, aboutW, heroTouchDiskMenuLabelMaxWidthPx || 58)
+    const halfW = outer + maxLabel + gap + blueR
+    return {
+        width: halfW * 2,
+        height: halfW * 2,
+        left: halfW,
+        right: halfW,
+        halfH: halfW,
+        pill: false,
+    }
+}
+
+function getHeroTouchDiskMenuFrostSize(dual = false) {
+    return getHeroTouchDiskMenuFrostMetrics(dual).width
 }
 
 /** Open: soft overshoot past 1 then settle. Close: ease-out cubic. */
@@ -1237,10 +1214,11 @@ export default {
             heroTouchDiskMenuMetricsRev: 0,
             /** Visual diameter at menu-open start — expand lerps from this (smooth from glass). */
             heroTouchDiskMenuFromSize: null,
-            /** When true, menu frost uses the full label-cover diameter. */
-            heroTouchDiskMenuOverContent: false,
-            /** Soft-lerped frost diameter while the menu is open. */
-            heroTouchDiskMenuFrostLive: 0,
+            /** Soft-lerped frost left/right extents from blue center (pill can be asymmetric). */
+            heroTouchDiskMenuFrostLiveL: 0,
+            heroTouchDiskMenuFrostLiveR: 0,
+            /** Soft-lerped frost height (pill) while the menu is open. */
+            heroTouchDiskMenuFrostLiveH: 0,
             heroTouchDiskPopping: false,
             heroTouchDiskPopTimer: null,
             heroTouchDiskPopRaf: null,
@@ -1415,9 +1393,33 @@ export default {
                 placeHeroTouchDiskMenuRadial(about, 'right', 0, gap, aboutW),
             ]
         },
+        /** Dual Work+About menu (hero zone) uses a horizontal pill frost. */
+        heroTouchDiskMenuFrostDual() {
+            return this.heroTouchDiskZone === 'hero'
+        },
+        heroTouchDiskMenuFrostPillActive() {
+            return (
+                this.heroTouchDiskMenuFrostDual &&
+                (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
+            )
+        },
         heroTouchDiskMenuFrostSize() {
             void this.heroTouchDiskMenuMetricsRev
-            return getHeroTouchDiskMenuFrostSize(this.heroTouchDiskMenuOverContent)
+            return getHeroTouchDiskMenuFrostSize(this.heroTouchDiskMenuFrostDual)
+        },
+        heroTouchDiskMenuFrostHeight() {
+            void this.heroTouchDiskMenuMetricsRev
+            return getHeroTouchDiskMenuFrostMetrics(this.heroTouchDiskMenuFrostDual)
+                .height
+        },
+        heroTouchDiskMenuFrostLeft() {
+            void this.heroTouchDiskMenuMetricsRev
+            return getHeroTouchDiskMenuFrostMetrics(this.heroTouchDiskMenuFrostDual).left
+        },
+        heroTouchDiskMenuFrostRight() {
+            void this.heroTouchDiskMenuMetricsRev
+            return getHeroTouchDiskMenuFrostMetrics(this.heroTouchDiskMenuFrostDual)
+                .right
         },
         heroTouchDiskMenuStyle() {
             const { x, y } = this.heroCursorGlassPos
@@ -1588,17 +1590,30 @@ export default {
             const frostExpand = menuOpen ? 0 : expand
             const { x, y } = this.heroCursorGlassPos
             // Continuous size: idle (or current glass) → open frost.
-            let size
+            let sizeW
+            let sizeH
+            let marginL
             if (menuOpen) {
                 const idle = HERO_CURSOR_GLASS_IDLE_SIZE
-                const open =
-                    this.heroTouchDiskMenuFrostLive > 0
-                        ? this.heroTouchDiskMenuFrostLive
-                        : this.heroTouchDiskMenuFrostSize
+                const idleR = idle / 2
+                const dual = this.heroTouchDiskMenuFrostDual
+                const openL =
+                    this.heroTouchDiskMenuFrostLiveL > 0
+                        ? this.heroTouchDiskMenuFrostLiveL
+                        : this.heroTouchDiskMenuFrostLeft
+                const openR =
+                    this.heroTouchDiskMenuFrostLiveR > 0
+                        ? this.heroTouchDiskMenuFrostLiveR
+                        : this.heroTouchDiskMenuFrostRight
+                const openH =
+                    this.heroTouchDiskMenuFrostLiveH > 0
+                        ? this.heroTouchDiskMenuFrostLiveH
+                        : this.heroTouchDiskMenuFrostHeight
                 const from =
                     this.heroTouchDiskMenuFromSize != null
                         ? this.heroTouchDiskMenuFromSize
                         : idle
+                const fromR = from / 2
                 // Frost-only bounce on open; labels/blue use the milder shared expand.
                 let blend
                 let dip = 0
@@ -1610,11 +1625,17 @@ export default {
                 } else {
                     blend = Math.min(expandT, 1.15)
                 }
-                size = from + (open - from) * blend - dip
+                const left = fromR + (openL - fromR) * blend - (dual ? dip * 0.15 : dip / 2)
+                const right = fromR + (openR - fromR) * blend - (dual ? dip * 0.15 : dip / 2)
+                sizeW = Math.max(idle, left + right)
+                sizeH = from + (openH - from) * blend - dip
+                marginL = -Math.max(idleR, left)
             } else {
-                size = heroCursorDotDiskSize(hoverMix)
+                sizeW = heroCursorDotDiskSize(hoverMix)
+                sizeH = sizeW
+                marginL = -sizeW / 2
             }
-            const half = size / 2
+            const halfH = sizeH / 2
             const baseOpacity = menuOpen
                 ? 1
                 : heroCursorHoverDiskOpacity(hoverMix)
@@ -1631,9 +1652,9 @@ export default {
                 transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale * sink})`,
                 '--hero-cursor-hover-mix': hoverMix,
                 '--hero-cursor-hover-expand': frostExpand,
-                width: `${size}px`,
-                height: `${size}px`,
-                margin: `${-half}px 0 0 ${-half}px`,
+                width: `${sizeW}px`,
+                height: `${sizeH}px`,
+                margin: `${-halfH}px 0 0 ${marginL}px`,
                 opacity,
                 visibility: this.heroTouchDiskMode
                     ? 'visible'
@@ -3169,6 +3190,14 @@ export default {
         isHeroTouchDiskMode() {
             return this.heroIntroLetterMode && isHeroTouchDiskEnvironment()
         },
+        /** Page content inset — keep the open pill inside `--page-pad`. */
+        getHeroTouchDiskPageMarginPx() {
+            const fallback = HERO_TOUCH_DISK_EDGE_GAP_PX
+            const el = this.$el
+            if (!el || typeof getComputedStyle === 'undefined') return fallback
+            const pad = parseFloat(getComputedStyle(el).getPropertyValue('--page-pad'))
+            return Number.isFinite(pad) && pad > 0 ? pad : fallback
+        },
         getHeroTouchDiskRestPos() {
             const bounds = this.getHeroTouchDiskBounds()
             const radius = bounds.radius
@@ -3178,17 +3207,18 @@ export default {
             let y
 
             if (this.heroTouchDiskZone === 'hero') {
-                // Hero rest: rightmost X where the open Work/About menu stays in-view
-                // (compact frost + About label) — no edge-spring budge on expand.
+                // Park where the open Work/About pill already fits inside the
+                // page margin, so expand doesn't edge-spring the disk inward.
+                measureHeroTouchDiskMenuLabelWidths()
                 const vw = window.innerWidth
-                const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
-                const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
-                const labelGap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
-                const aboutW = getHeroTouchDiskMenuLabelWidth('About')
-                const frostR = getHeroTouchDiskMenuFrostSize(false) / 2
-                const padR = Math.max(frostR, labelGap + aboutW)
-                x = vw - safe - padR
-                y = window.innerHeight * 0.38
+                const vh = window.innerHeight
+                const safe = Math.max(
+                    HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX,
+                    this.getHeroTouchDiskPageMarginPx(),
+                )
+                const metrics = getHeroTouchDiskMenuFrostMetrics(true)
+                x = vw - safe - metrics.right
+                y = vh * 0.38
                 const intro = this.$el?.querySelector('.hero-intro')
                 const logo = this.$el?.querySelector('.portfolio-top-bar .logo')
                 if (intro) {
@@ -3196,18 +3226,26 @@ export default {
                     if (introRect.height > 0) {
                         const logoBottom = logo?.getBoundingClientRect().bottom
                         if (logoBottom != null && introRect.top > logoBottom) {
-                            const gap = introRect.top - logoBottom
-                            y = introRect.top - gap * HERO_TOUCH_DISK_REST_GAP_FROM_HERO
+                            const introGap = introRect.top - logoBottom
+                            y = introRect.top - introGap * HERO_TOUCH_DISK_REST_GAP_FROM_HERO
                         } else {
                             y = introRect.top
                         }
                     }
                 }
-            } else {
-                // Work / About: fixed lower-right corner (mirrors the pager pill).
-                x = window.innerWidth - gap - radius
-                y = window.innerHeight - gap - radius
+                const minX = safe + metrics.left
+                const maxX = Math.max(minX, vw - safe - metrics.right)
+                const minY = safe + metrics.halfH
+                const maxY = Math.max(minY, vh - safe - metrics.halfH)
+                return {
+                    x: Math.round(Math.min(maxX, Math.max(minX, x))),
+                    y: Math.round(Math.min(maxY, Math.max(minY, y))),
+                }
             }
+
+            // Work / About: fixed lower-right corner (mirrors the pager pill).
+            x = window.innerWidth - gap - radius
+            y = window.innerHeight - gap - radius
 
             return {
                 x: Math.round(Math.min(bounds.maxX, Math.max(bounds.minX, x))),
@@ -3225,26 +3263,45 @@ export default {
 
             return { minX, maxX, minY, maxY, radius }
         },
-        /** Current frosted-disk radius (includes open bounce overshoot). */
-        getHeroTouchDiskMenuVisualRadius() {
+        /** Current frosted-disk extents for edge pads (settled — no open overshoot). */
+        getHeroTouchDiskMenuVisualExtents() {
             const idle = HERO_CURSOR_GLASS_IDLE_SIZE
-            const open =
-                this.heroTouchDiskMenuFrostLive > 0
-                    ? this.heroTouchDiskMenuFrostLive
-                    : this.heroTouchDiskMenuFrostSize
+            const idleR = idle / 2
+            const openL =
+                this.heroTouchDiskMenuFrostLiveL > 0
+                    ? this.heroTouchDiskMenuFrostLiveL
+                    : this.heroTouchDiskMenuFrostLeft
+            const openR =
+                this.heroTouchDiskMenuFrostLiveR > 0
+                    ? this.heroTouchDiskMenuFrostLiveR
+                    : this.heroTouchDiskMenuFrostRight
+            const openH =
+                this.heroTouchDiskMenuFrostLiveH > 0
+                    ? this.heroTouchDiskMenuFrostLiveH
+                    : this.heroTouchDiskMenuFrostHeight
             const from =
                 this.heroTouchDiskMenuFromSize != null
                     ? this.heroTouchDiskMenuFromSize
                     : idle
-            const expandT = this.heroTouchDiskExpand
-            let blend
-            if (this.heroTouchDiskPopping && this.heroTouchDiskExpandOpening) {
-                blend = heroTouchDiskFrostExpandEase(this.heroTouchDiskExpandLinear)
-            } else {
-                blend = Math.min(Math.max(expandT, 0), 1.15)
+            const fromR = from / 2
+            // Clamp to 1 — frost graphic may overshoot, but edge pads stay at the
+            // settled open size so a pre-parked rest pos isn't spring-bumped.
+            const blend = Math.min(Math.max(this.heroTouchDiskExpand, 0), 1)
+            const left = Math.max(idleR, fromR + (openL - fromR) * blend)
+            const right = Math.max(idleR, fromR + (openR - fromR) * blend)
+            const height = Math.max(idle, from + (openH - from) * blend)
+            return {
+                left,
+                right,
+                halfW: Math.max(left, right),
+                halfH: height / 2,
+                width: left + right,
+                height,
             }
-            const size = Math.max(idle, from + (open - from) * blend)
-            return size / 2
+        },
+        /** @deprecated use getHeroTouchDiskMenuVisualExtents().halfW */
+        getHeroTouchDiskMenuVisualRadius() {
+            return this.getHeroTouchDiskMenuVisualExtents().halfW
         },
         /**
          * Center bounds when the menu is open: frost rim + horizontal labels stay in view.
@@ -3254,17 +3311,21 @@ export default {
             const idleR = HERO_CURSOR_GLASS_IDLE_SIZE / 2
             const vw = typeof window !== 'undefined' ? window.innerWidth : 400
             const vh = typeof window !== 'undefined' ? window.innerHeight : 800
-            const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
+            const safe = Math.max(
+                HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX,
+                this.getHeroTouchDiskPageMarginPx(),
+            )
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
             const labelH = HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX
-            const frostR = this.getHeroTouchDiskMenuVisualRadius()
+            const { left: frostL, right: frostR, halfH: frostH } =
+                this.getHeroTouchDiskMenuVisualExtents()
             const expandT = Math.max(0, Math.min(1, this.heroTouchDiskExpand))
 
-            let padL = frostR
+            let padL = frostL
             let padR = frostR
-            let padT = frostR
-            let padB = frostR
+            let padT = frostH
+            let padB = frostH
 
             if (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about') {
                 // Match single-item outward flip: pad the side the label actually uses.
@@ -3274,23 +3335,24 @@ export default {
                 const diskX = this.heroCursorGlassPos?.x ?? 0
                 const outwardLeft = diskX >= gap + labelW + safe
                 if (outwardLeft) {
-                    padL = Math.max(frostR, gap + labelW)
+                    padL = Math.max(frostL, gap + labelW)
                 } else {
                     padR = Math.max(frostR, gap + labelW)
                 }
-                padT = Math.max(frostR, labelH / 2)
-                padB = Math.max(frostR, labelH / 2)
+                padT = Math.max(frostH, labelH / 2)
+                padB = Math.max(frostH, labelH / 2)
             } else {
                 const workW = getHeroTouchDiskMenuLabelWidth('Work')
                 const aboutW = getHeroTouchDiskMenuLabelWidth('About')
-                padL = Math.max(frostR, gap + workW)
+                padL = Math.max(frostL, gap + workW)
                 padR = Math.max(frostR, gap + aboutW)
-                padT = Math.max(frostR, labelH / 2)
-                padB = Math.max(frostR, labelH / 2)
+                padT = Math.max(frostH, labelH / 2)
+                padB = Math.max(frostH, labelH / 2)
             }
 
             // Blend from idle radius → full menu pads as the frost expands.
-            const mix = (openPad) => idleR + (openPad - idleR) * expandT
+            const mix = (openPad, idlePad = idleR) =>
+                idlePad + (openPad - idlePad) * expandT
             let minX = safe + mix(padL)
             let maxX = vw - safe - mix(padR)
             let minY = safe + mix(padT)
@@ -3793,8 +3855,9 @@ export default {
                 this.heroTouchDiskPopping = false
                 this.heroTouchDiskSinkScale = 1
                 this.heroTouchDiskMenuFromSize = null
-                this.heroTouchDiskMenuFrostLive = 0
-                this.heroTouchDiskMenuOverContent = false
+                this.heroTouchDiskMenuFrostLiveL = 0
+                this.heroTouchDiskMenuFrostLiveR = 0
+                this.heroTouchDiskMenuFrostLiveH = 0
                 this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 return
             }
@@ -3833,8 +3896,9 @@ export default {
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
             this.refreshHeroTouchDiskMenuMetrics()
-            this.syncHeroTouchDiskMenuOverContent()
-            this.heroTouchDiskMenuFrostLive = this.heroTouchDiskMenuFrostSize
+            this.heroTouchDiskMenuFrostLiveL = this.heroTouchDiskMenuFrostLeft
+            this.heroTouchDiskMenuFrostLiveR = this.heroTouchDiskMenuFrostRight
+            this.heroTouchDiskMenuFrostLiveH = this.heroTouchDiskMenuFrostHeight
             this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
             this.heroTouchDiskMenuOpen = true
             this.heroTouchDiskOutsideCloseUntil =
@@ -3844,54 +3908,45 @@ export default {
             // Edge collision: spring the disk inward as frost + labels need room.
             this.startHeroCursorGlassFollow()
         },
-        /**
-         * Cover frost when the blue disk or either label sits on page content;
-         * compact frost is fine over blank space.
-         */
-        syncHeroTouchDiskMenuOverContent() {
-            if (!this.heroTouchDiskMode) {
-                this.heroTouchDiskMenuOverContent = false
-                return
-            }
-            const diskX = this.heroCursorGlassPos?.x ?? this.heroCursorPos?.x ?? 0
-            const diskY = this.heroCursorGlassPos?.y ?? this.heroCursorPos?.y ?? 0
-            if (isHeroTouchDiskPointOverContent(diskX, diskY)) {
-                this.heroTouchDiskMenuOverContent = true
-                return
-            }
-            // Labels can overhang onto content even when the blue sits on blank.
-            for (const item of this.heroTouchDiskMenuItems) {
-                const lx = diskX + (parseFloat(item.x) || 0)
-                const ly = diskY + (parseFloat(item.y) || 0)
-                if (isHeroTouchDiskPointOverContent(lx, ly)) {
-                    this.heroTouchDiskMenuOverContent = true
-                    return
-                }
-            }
-            this.heroTouchDiskMenuOverContent = false
-        },
-        /** Keep live frost diameter tracking compact↔cover while the menu is up. */
+        /** Keep live frost size stable while the menu is up. */
         syncHeroTouchDiskMenuFrostLive() {
             if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) {
-                this.heroTouchDiskMenuFrostLive = 0
+                this.heroTouchDiskMenuFrostLiveL = 0
+                this.heroTouchDiskMenuFrostLiveR = 0
+                this.heroTouchDiskMenuFrostLiveH = 0
                 return
             }
-            this.syncHeroTouchDiskMenuOverContent()
-            const target = this.heroTouchDiskMenuFrostSize
+            const targetL = this.heroTouchDiskMenuFrostLeft
+            const targetR = this.heroTouchDiskMenuFrostRight
+            const targetH = this.heroTouchDiskMenuFrostHeight
             const expandT = this.heroTouchDiskExpand
-            if (this.heroTouchDiskMenuFrostLive <= 0) {
-                this.heroTouchDiskMenuFrostLive = target
+            if (this.heroTouchDiskMenuFrostLiveL <= 0) {
+                this.heroTouchDiskMenuFrostLiveL = targetL
+                this.heroTouchDiskMenuFrostLiveR = targetR
+                this.heroTouchDiskMenuFrostLiveH = targetH
                 return
             }
             // During open/close expand, track the target directly — style lerps from→open.
             if (expandT < 0.98 && this.heroTouchDiskPopping) {
-                this.heroTouchDiskMenuFrostLive = target
+                this.heroTouchDiskMenuFrostLiveL = targetL
+                this.heroTouchDiskMenuFrostLiveR = targetR
+                this.heroTouchDiskMenuFrostLiveH = targetH
                 return
             }
-            this.heroTouchDiskMenuFrostLive +=
-                (target - this.heroTouchDiskMenuFrostLive) * 0.22
-            if (Math.abs(target - this.heroTouchDiskMenuFrostLive) < 0.5) {
-                this.heroTouchDiskMenuFrostLive = target
+            this.heroTouchDiskMenuFrostLiveL +=
+                (targetL - this.heroTouchDiskMenuFrostLiveL) * 0.22
+            this.heroTouchDiskMenuFrostLiveR +=
+                (targetR - this.heroTouchDiskMenuFrostLiveR) * 0.22
+            this.heroTouchDiskMenuFrostLiveH +=
+                (targetH - this.heroTouchDiskMenuFrostLiveH) * 0.22
+            if (Math.abs(targetL - this.heroTouchDiskMenuFrostLiveL) < 0.5) {
+                this.heroTouchDiskMenuFrostLiveL = targetL
+            }
+            if (Math.abs(targetR - this.heroTouchDiskMenuFrostLiveR) < 0.5) {
+                this.heroTouchDiskMenuFrostLiveR = targetR
+            }
+            if (Math.abs(targetH - this.heroTouchDiskMenuFrostLiveH) < 0.5) {
+                this.heroTouchDiskMenuFrostLiveH = targetH
             }
         },
         /** Menu from blue-dot, glass, or magnifier — available across the full viewport. */
@@ -3986,8 +4041,9 @@ export default {
                 if (to < 0.5) {
                     this.unbindHeroTouchDiskOutsideClose()
                     this.heroTouchDiskMenuFromSize = null
-                    this.heroTouchDiskMenuFrostLive = 0
-                    this.heroTouchDiskMenuOverContent = false
+                    this.heroTouchDiskMenuFrostLiveL = 0
+                    this.heroTouchDiskMenuFrostLiveR = 0
+                    this.heroTouchDiskMenuFrostLiveH = 0
                     this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 } else {
                     this.syncHeroTouchDiskMenuFrostLive()
@@ -4031,8 +4087,9 @@ export default {
                 if (to < 0.5) {
                     this.unbindHeroTouchDiskOutsideClose()
                     this.heroTouchDiskMenuFromSize = null
-                    this.heroTouchDiskMenuFrostLive = 0
-                    this.heroTouchDiskMenuOverContent = false
+                    this.heroTouchDiskMenuFrostLiveL = 0
+                    this.heroTouchDiskMenuFrostLiveR = 0
+                    this.heroTouchDiskMenuFrostLiveH = 0
                     this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 } else {
                     this.syncHeroTouchDiskMenuFrostLive()
@@ -7529,6 +7586,11 @@ export default {
     background: rgba(255, 255, 255, 0.34);
     -webkit-backdrop-filter: blur(5px) saturate(1.45);
     backdrop-filter: blur(5px) saturate(1.45);
+}
+
+/* Dual Work+About: stadium pill that hugs both labels. */
+.hero-intro-cursor-dot-disk--menu-pill {
+    border-radius: 9999px;
 }
 
 .hero-intro-cursor-glass-ball {
