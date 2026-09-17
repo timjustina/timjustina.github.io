@@ -8,6 +8,7 @@
                 'top-bar--glass': topBarRecalled && !isInFlowMobileHome,
                 'top-bar--in-flow': isInFlowMobileHome,
                 'top-bar--nav-hero-align': navHeroAlign,
+                'top-bar--fade-away': useFirstPageFade,
                 'top-bar--snap': topBarSnap,
             }"
         >
@@ -140,6 +141,7 @@ export default {
             lastScrollY: 0,
             scrollTicking: false,
             overHero: true,
+            wasOnFirstPage: true,
             isMobileViewport: false,
             workLineClipRaf: null,
         }
@@ -151,6 +153,10 @@ export default {
         },
         isInFlowMobileHome() {
             return this.$route.path === '/' && this.isMobileViewport
+        },
+        /** Desktop home: fade with location/company instead of sliding up. */
+        useFirstPageFade() {
+            return this.$route.path === '/' && !this.isMobileViewport
         },
         showNav() {
             if (!this.navHeroAlign || window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
@@ -172,10 +178,14 @@ export default {
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
         if (SECTION_HASHES.has(this.$route.hash) && !this.isInFlowMobileHome) {
             this.topBarHidden = true
+            this.wasOnFirstPage = false
         }
     },
     mounted() {
         this.lastScrollY = window.scrollY
+        if (this.useFirstPageFade) {
+            this.wasOnFirstPage = this.isOnFirstPage()
+        }
         window.addEventListener('scroll', this.onScroll, { passive: true })
         window.addEventListener('resize', this.onResize, { passive: true })
         window.addEventListener(SECTION_JUMP_EVENT, this.onSectionJump)
@@ -185,6 +195,12 @@ export default {
         this.$nextTick(() => {
             this.updateNavDecorAlign()
             this.updateHeroOverlap()
+            if (this.useFirstPageFade) {
+                this.wasOnFirstPage = this.isOnFirstPage()
+                if (!this.wasOnFirstPage && !SECTION_HASHES.has(this.$route.hash)) {
+                    this.topBarHidden = true
+                }
+            }
             if (this.$refs.topBarContent) {
                 this.navAlignObserver = new ResizeObserver(() => {
                     this.updateNavDecorAlign()
@@ -234,6 +250,9 @@ export default {
         },
         onResize() {
             this.syncMobileTopBarState()
+            if (this.useFirstPageFade) {
+                this.wasOnFirstPage = this.isOnFirstPage()
+            }
             this.updateNavDecorAlign()
             this.updateHeroOverlap()
             this.syncWorkLineTextClip()
@@ -242,8 +261,17 @@ export default {
         onSectionJump() {
             if (this.isInFlowMobileHome) return
             this.topBarHidden = true
+            this.topBarRecalled = false
+            this.wasOnFirstPage = false
             this.lastScrollY = window.scrollY
             this.updateHeroOverlap()
+        },
+        /** Same threshold as Portfolio hero-role / hero-location. */
+        isOnFirstPage() {
+            const workFirst = document.querySelector('#work-first')
+            if (!workFirst) return window.scrollY <= 0
+            // Sub-pixel slack: 100svh can sit slightly below window.innerHeight
+            return workFirst.getBoundingClientRect().top >= window.innerHeight - 1
         },
         onScroll() {
             if (this.scrollTicking) return
@@ -264,31 +292,39 @@ export default {
                 const delta = y - this.lastScrollY
                 this.updateHeroOverlap()
 
-                // Home hero top: bar is already present — snap with no slide.
-                const atHomeHeroTop =
-                    this.$route.path === '/' && this.overHero && y <= 1
-                if (atHomeHeroTop || y <= 0) {
-                    this.snapShowTopBarAtTop()
-                } else if (delta > 5 && y > this.getTopBarHeight()) {
-                    this.topBarHidden = true
-                } else if (delta < -5) {
-                    // Home hero: no scroll-up recall — bar stays tucked away.
-                    if (!(this.$route.path === '/' && this.overHero)) {
+                if (this.useFirstPageFade) {
+                    const onFirst = this.isOnFirstPage()
+
+                    if (onFirst && y <= 1) {
+                        this.snapShowTopBarAtTop()
+                    } else if (onFirst) {
+                        // Stay visible with location/company for the whole first page.
+                        this.topBarHidden = false
+                        this.topBarRecalled = false
+                    } else if (this.wasOnFirstPage) {
+                        // Leaving first page — fade out with location/company.
+                        this.topBarHidden = true
+                        this.topBarRecalled = false
+                    } else if (delta > 5) {
+                        this.topBarHidden = true
+                    } else if (delta < -5) {
+                        this.topBarHidden = false
+                        this.topBarRecalled = true
+                    }
+
+                    this.wasOnFirstPage = onFirst
+                } else {
+                    // Case studies / non-home: slide hide on scroll direction.
+                    if (y <= 0) {
+                        this.snapShowTopBarAtTop()
+                    } else if (delta > 5 && y > this.getTopBarHeight()) {
+                        this.topBarHidden = true
+                    } else if (delta < -5) {
                         this.topBarHidden = false
                         this.topBarRecalled = true
                     }
                 }
 
-                // Home hero: if a recalled bar scrolls back into the hero, tuck it away.
-                if (
-                    this.$route.path === '/' &&
-                    this.overHero &&
-                    this.topBarRecalled &&
-                    !atHomeHeroTop
-                ) {
-                    this.topBarHidden = true
-                    this.topBarRecalled = false
-                }
                 this.syncWorkLineTextClip()
                 this.startWorkLineClipPoll()
                 this.lastScrollY = y
@@ -301,13 +337,14 @@ export default {
             const el = this.$el?.querySelector('.top-bar')
             if (el) {
                 el.style.transition = 'none'
-                // Force style flush so transform won't animate when unhiding.
+                // Force style flush so show won't animate when unhiding at top.
                 void el.offsetHeight
             }
 
             this.topBarSnap = true
             this.topBarHidden = false
             this.topBarRecalled = false
+            this.wasOnFirstPage = true
 
             this.$nextTick(() => {
                 const bar = this.$el?.querySelector('.top-bar')
@@ -526,6 +563,8 @@ export default {
     backdrop-filter: blur(28px) saturate(2);
     -webkit-backdrop-filter: blur(28px) saturate(2);
     transform: translate3d(0, 0, 0);
+    opacity: 1;
+    visibility: visible;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     border-bottom: none;
@@ -534,6 +573,16 @@ export default {
        glass) briefly drop blur; animating it back reads as a sharp flash. */
     transition:
         transform 0.3s ease,
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+/* Desktop home: match hero-role / hero-location fade when leaving first page */
+.top-bar--fade-away {
+    transition:
+        opacity 0.3s ease,
+        visibility 0.3s ease,
         background-color 0.25s ease,
         border-color 0.25s ease,
         box-shadow 0.25s ease;
@@ -579,6 +628,13 @@ export default {
 
 .top-bar--hidden {
     transform: translate3d(0, -100%, 0);
+}
+
+.top-bar--fade-away.top-bar--hidden {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .top-bar--snap {

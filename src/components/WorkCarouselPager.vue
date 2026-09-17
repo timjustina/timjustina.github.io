@@ -5,6 +5,7 @@
             type="button"
             class="work-carousel-pager"
             :class="{ 'work-carousel-pager--visible': active && inWorkCarousel }"
+            :style="pagerCornerStyle"
             :aria-label="`Next project, ${activeIndex + 1} of ${count}`"
             @click="advance"
         >
@@ -31,7 +32,7 @@ import { isAboutSectionActive } from '../utils/scrollToAbout.js'
 /** Matches `HERO_TOUCH_DISK_EDGE_GAP_PX` in Portfolio.vue (mobile logo / disk inset). */
 const TOUCH_DISK_EDGE_GAP_PX = 20
 /** Idle frosted touch-disk diameter. */
-const PAGER_HEIGHT_PX = 46
+const PAGER_HEIGHT_PX = 48
 /** Idle blue center of the touch disk. */
 const DOT_SIZE_PX = 8
 
@@ -54,6 +55,16 @@ export default {
         }
     },
     computed: {
+        /** Inline corner lock — survives if CSS vars fail on teleported nodes. */
+        pagerCornerStyle() {
+            const gap = `${this.edgeGapPx}px`
+            return {
+                left: gap,
+                bottom: gap,
+                right: 'auto',
+                top: 'auto',
+            }
+        },
         /**
          * SVG alpha mask: white = frost, transparent = hole (evenodd).
          * Inactive dots punch clear through to the page; active keeps frost under the fill.
@@ -364,8 +375,8 @@ export default {
 
 <style scoped>
 .work-carousel-pager {
-    /* Height matches idle frosted touch-disk diameter (46px). */
-    --pager-height: 46px;
+    /* Height matches idle frosted touch-disk diameter (48px). */
+    --pager-height: 48px;
     /* Dot matches idle blue center of the touch disk (8px). */
     --pager-dot: 8px;
     /* Same inset as the touch disk (`HERO_TOUCH_DISK_EDGE_GAP_PX`). */
@@ -409,10 +420,11 @@ export default {
     visibility: hidden;
     pointer-events: none;
     transform: translateY(6px);
+    /* Match work/about corner disk stage fade. */
     transition:
-        opacity 0.28s ease,
-        visibility 0.28s ease,
-        transform 0.28s ease;
+        opacity 0.32s ease,
+        visibility 0.32s ease,
+        transform 0.32s ease;
 }
 
 .work-carousel-pager:focus-visible {
@@ -442,6 +454,13 @@ export default {
     visibility: visible;
     pointer-events: auto;
     transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .work-carousel-pager {
+        transition: none;
+        transform: none;
+    }
 }
 
 .work-carousel-pager__dot {

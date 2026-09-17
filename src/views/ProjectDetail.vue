@@ -5,6 +5,7 @@
     :class="[$style.page, overlayTopBar && $style.pageOverlayTopBar]"
   >
     <SiteCursor v-if="siteCursorDesktop" :page-el="pageRootEl" />
+    <CaseStudyCornerDisk />
     <PortfolioTopBar :transparent="overlayTopBar" nav-hero-align />
     <main :class="[$style.main, fullWidthImages && $style.mainFullWidthImages]">
       <slot />
@@ -17,6 +18,7 @@
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import SiteCursor from '../components/SiteCursor.vue'
+import CaseStudyCornerDisk from '../components/CaseStudyCornerDisk.vue'
 import {
   CASE_STUDY_DESKTOP_MEDIA_QUERY,
   CASE_STUDY_MOBILE_MEDIA_QUERY,
@@ -39,7 +41,7 @@ function isSiteCursorDesktop() {
 
 export default {
   name: 'ProjectDetail',
-  components: { PortfolioTopBar, PortfolioSiteFooter, SiteCursor },
+  components: { PortfolioTopBar, PortfolioSiteFooter, SiteCursor, CaseStudyCornerDisk },
   props: {
     fullWidthImages: {
       type: Boolean,

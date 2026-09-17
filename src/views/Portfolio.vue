@@ -65,7 +65,11 @@
             :class="{
                 'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
-                'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
+                'hero-intro-cursor-ball--touch-instant':
+                    heroTouchDiskDissipateInstant || heroTouchDiskMenuChromeInstant,
+                'hero-intro-cursor-ball--stage-chrome':
+                    heroTouchDiskMode &&
+                    (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
                 'hero-intro-cursor-dot-disk--section-frost':
                     heroTouchDiskMode &&
                     (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
@@ -85,7 +89,8 @@
                 'hero-intro-cursor-glass-ball--in-range': heroCursorIntroGlassInRangeGlow,
                 'hero-intro-cursor-glass-ball--in-range-tight': heroCursorRangeTight,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
-                'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
+                'hero-intro-cursor-ball--touch-instant':
+                    heroTouchDiskDissipateInstant || heroTouchDiskMenuChromeInstant,
             }"
             :style="heroCursorIntroGlassStyle"
             aria-hidden="true"
@@ -98,19 +103,22 @@
                 'hero-intro-cursor-ball--in-range': heroCursorInRange,
                 'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
                 'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
-                'hero-intro-cursor-ball--touch-instant': heroTouchDiskDissipateInstant,
+                'hero-intro-cursor-ball--touch-instant':
+                    heroTouchDiskDissipateInstant || heroTouchDiskMenuChromeInstant,
+                'hero-intro-cursor-ball--stage-chrome':
+                    heroTouchDiskMode &&
+                    (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
             }"
             :style="heroCursorBallStyle"
             aria-hidden="true"
         />
         <nav
-            v-if="heroTouchDiskMode && heroTouchDiskExpand > 0.08 && heroCursorVisible"
+            v-if="heroTouchDiskMode && heroTouchDiskExpand > 0.08 && heroCursorVisible && heroTouchDiskOnStage"
             class="hero-touch-disk-menu"
             :class="{
                 'hero-touch-disk-menu--stack': heroTouchDiskMenuStacked,
                 'hero-touch-disk-menu--left': heroTouchDiskMenuFan === 'left',
                 'hero-touch-disk-menu--right': heroTouchDiskMenuFan === 'right',
-                'hero-touch-disk-menu--visible': heroTouchDiskExpand > 0.12,
             }"
             :style="heroTouchDiskMenuStyle"
             aria-label="Portfolio sections"
@@ -128,12 +136,7 @@
                 :href="item.href || '#'"
                 :target="item.external ? '_blank' : undefined"
                 :rel="item.external ? 'noopener noreferrer' : undefined"
-                :style="{
-                    '--menu-i': index,
-                    left: item.x,
-                    top: item.y,
-                    '--menu-rot': item.rot,
-                }"
+                :style="heroTouchDiskMenuItemStyle(item, index)"
                 @click="onHeroTouchDiskMenuItemClick(item, $event)"
             >{{ item.label }}</a>
         </nav>
@@ -229,6 +232,9 @@
                             'hero-intro--chars': heroIntroLetterMode,
                             'hero-intro--dissipated': heroIntroDissipated,
                             'hero-intro--reconsolidating': heroIntroReconsolidating,
+                            'hero-intro--first-page-hidden': heroIntroScrollHidden,
+                            'hero-intro--scroll-replay': heroIntroScrollReplaying,
+                            'hero-intro--scroll-replay-run': heroIntroScrollReplayArmed,
                         }"
                         :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
                     >
@@ -564,7 +570,7 @@ const HERO_CURSOR_MAGNIFY_BOOST = 0.25
 const HERO_CURSOR_LAYER_Z = 10002
 const HERO_CURSOR_HOVER_LOCK_PAD = 8
 const HERO_CURSOR_DOT_SIZE = 8
-const HERO_CURSOR_GLASS_IDLE_SIZE = 46
+const HERO_CURSOR_GLASS_IDLE_SIZE = 48
 const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
 const HERO_CURSOR_HOLLOW_END = 0.28
 const HERO_CURSOR_HOVER_LERP = 0.3
@@ -587,6 +593,14 @@ const HERO_TOUCH_DISK_REST_GAP_FROM_HERO = 1 / 3
 const HERO_TOUCH_DISK_HIT_SIZE = 56
 /** Arc fly-in duration before idle settle. */
 const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
+/** Wait after the fly-in stage ends before the idle jiggle starts. */
+const HERO_TOUCH_DISK_JIGGLE_DELAY_MS = 2000
+/** Full jiggle cycle length (one quick SW nudge, then rest). */
+const HERO_TOUCH_DISK_JIGGLE_PERIOD_MS = 5000
+/** Burst length inside each cycle — longer = softer, less jerky. */
+const HERO_TOUCH_DISK_JIGGLE_BURST_MS = 720
+/** Soft glide when the disk trips the hero viewport bottom → work. */
+const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
 /** Ignore sub-threshold pointer jitter so taps still register (hero drag only). */
 const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
 /** Tap open/close expand duration (continuous — no settle pause). */
@@ -604,7 +618,7 @@ const HERO_TOUCH_DISK_FROST_DIP_PX = 18
 /** Frost open: linear progress window for the squash (0…1). */
 const HERO_TOUCH_DISK_FROST_DIP_UNTIL = 0.24
 /** Blue center diameter while menu is open (idle dot is 8). */
-const HERO_TOUCH_DISK_MENU_DOT_SIZE = 6
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 4
 /**
  * Gap from blue center edge to the near edge of a menu label.
  * Matches carousel pager `--pager-edge-gap` (20).
@@ -615,9 +629,9 @@ const HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX = 44
 /** Must match `.hero-touch-disk-menu__item` typography for width measure. */
 const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
 /**
- * Two-item hero menu: Work at 180° + About at 0° (always horizontal).
- * Near edges the whole disk elastically bounces inward so labels + frost stay in view.
- * Single-item menus stay horizontal on a preferred side.
+ * Dual Work+About (hero): Work at 180° + About at 0°.
+ * Corner (work/about): single opposite label; frost pill grows left from a fixed center.
+ * Near edges the dual disk elastically bounces inward so labels + frost stay in view.
  */
 /** Viewport inset for open menu — matches mobile `--page-pad` / logo edge gap. */
 const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = HERO_TOUCH_DISK_EDGE_GAP_PX
@@ -661,8 +675,8 @@ function measureHeroTouchDiskMenuLabelWidths() {
         'padding:0',
         'border:0',
         'font-family:"Work Sans",sans-serif',
-        'font-size:20px',
-        'font-weight:400',
+        'font-size:18px',
+        'font-weight:500',
         'line-height:30px',
         'font-synthesis:none',
     ].join(';')
@@ -687,31 +701,47 @@ function getHeroTouchDiskMenuLabelWidth(label) {
 
 /**
  * Menu frost size — matches work-carousel-pager rhythm:
- * height 46, uniform 20px gaps (edge pad = label↔blue gap).
- * Dual pill sizes each side from its own label so Work and About
- * both get the same space to the rim.
+ * height matches idle frost (48), uniform 20px gaps (edge pad = label↔blue gap).
+ * @param {'dual'|'left'|'circle'} mode
+ * @param {number} [labelWidth] glyph width for `left` mode
  */
 const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
 
-function getHeroTouchDiskMenuFrostMetrics(dual = false) {
+function getHeroTouchDiskMenuFrostMetrics(mode = 'circle', labelWidth = 0) {
     if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
     const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
     const gap = HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
     const outer = HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX
     const workW = heroTouchDiskMenuLabelWidths.Work || 48
     const aboutW = heroTouchDiskMenuLabelWidths.About || 58
+    const height = HERO_CURSOR_GLASS_IDLE_SIZE
+    const idleR = height / 2
 
-    if (dual) {
+    if (mode === 'dual') {
         // edge + Work + gap + blueR  |  blueR + gap + About + edge
         const left = outer + workW + gap + blueR
         const right = outer + aboutW + gap + blueR
-        const height = HERO_CURSOR_GLASS_IDLE_SIZE
         return {
             width: left + right,
             height,
             left,
             right,
-            halfH: height / 2,
+            halfH: idleR,
+            pill: true,
+        }
+    }
+
+    if (mode === 'left') {
+        // Fixed right cap (idle radius); grow left for the single label.
+        const w = labelWidth || Math.max(workW, aboutW, heroTouchDiskMenuLabelMaxWidthPx || 58)
+        const left = outer + w + gap + blueR
+        const right = idleR
+        return {
+            width: left + right,
+            height,
+            left,
+            right,
+            halfH: idleR,
             pill: true,
         }
     }
@@ -728,8 +758,8 @@ function getHeroTouchDiskMenuFrostMetrics(dual = false) {
     }
 }
 
-function getHeroTouchDiskMenuFrostSize(dual = false) {
-    return getHeroTouchDiskMenuFrostMetrics(dual).width
+function getHeroTouchDiskMenuFrostSize(mode = 'circle', labelWidth = 0) {
+    return getHeroTouchDiskMenuFrostMetrics(mode, labelWidth).width
 }
 
 /** Open: soft overshoot past 1 then settle. Close: ease-out cubic. */
@@ -756,6 +786,34 @@ function heroTouchDiskFrostOpenDipPx(t) {
     const until = HERO_TOUCH_DISK_FROST_DIP_UNTIL
     if (t <= 0 || t >= until) return 0
     return Math.sin((t / until) * Math.PI) * HERO_TOUCH_DISK_FROST_DIP_PX
+}
+
+/**
+ * Signed distance + outward normal for a horizontal stadium (pill) whose
+ * blue-center sits at (cx, cy), with left/right extents and half-height.
+ * Negative sdf = inside the frost outline.
+ */
+function heroTouchDiskStadiumField(px, py, cx, cy, left, right, halfH) {
+    const dx = px - cx
+    const dy = py - cy
+    const r = Math.max(halfH, 0.5)
+    const x0 = -left + r
+    const x1 = right - r
+    if (x1 < x0) {
+        const cr = Math.max(left, right, r)
+        const dist = Math.hypot(dx, dy)
+        if (dist < 1e-5) return { sdf: -cr, nx: 0, ny: -1 }
+        return { sdf: dist - cr, nx: dx / dist, ny: dy / dist }
+    }
+    const qx = dx < x0 ? x0 : dx > x1 ? x1 : dx
+    const ex = dx - qx
+    const ey = dy
+    const dist = Math.hypot(ex, ey)
+    if (dist < 1e-5) {
+        // On the medial axis — lift letters up out of the pill.
+        return { sdf: -r, nx: 0, ny: -1 }
+    }
+    return { sdf: dist - r, nx: ex / dist, ny: ey / dist }
 }
 
 /** Place a label on a ray; left keeps end toward blue, right keeps start toward blue. */
@@ -796,6 +854,26 @@ function isHeroTouchDiskInLowerCorner(diskX, diskY, vw, vh) {
 function heroTouchDiskQuadPoint(t, p0, p1, p2) {
     const u = 1 - t
     return u * u * p0 + 2 * u * t * p1 + t * t * p2
+}
+
+/**
+ * Soft SW attention nudge — single raised-cosine out-and-back (no reverse whip).
+ * Returns pixel offset + scale; rest of the 5s period is identity.
+ */
+function heroTouchDiskJiggleSample(elapsedMs) {
+    const period = HERO_TOUCH_DISK_JIGGLE_PERIOD_MS
+    const burst = HERO_TOUCH_DISK_JIGGLE_BURST_MS
+    const local = ((elapsedMs % period) + period) % period
+    if (local >= burst) return { x: 0, y: 0, scale: 1 }
+    const u = local / burst
+    // Smooth 0→1→0 envelope (derivative 0 at ends — no snap).
+    const envelope = Math.sin(u * Math.PI)
+    const soft = envelope * envelope
+    return {
+        x: -4.5 * soft,
+        y: 4.5 * soft,
+        scale: 1 + 0.055 * soft,
+    }
 }
 
 function isHeroCursorEnvironment() {
@@ -1124,6 +1202,12 @@ export default {
                 window.matchMedia(MOBILE_MEDIA_QUERY).matches,
             heroLocationVisible: false,
             heroLocationScrollTicking: false,
+            /** Desktop: hero intro faded off after leaving the first viewport. */
+            heroIntroScrollHidden: false,
+            heroIntroHasLeftFirstPage: false,
+            heroIntroScrollReplaying: false,
+            heroIntroScrollReplayArmed: false,
+            heroIntroScrollReplayTimer: null,
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
@@ -1200,9 +1284,20 @@ export default {
             heroTouchDiskDissipateInstant: false,
             heroTouchDiskEntrance: 0,
             heroTouchDiskEntering: false,
+            /** True only after the fly-in has fully landed as the idle disk. */
+            heroTouchDiskSettled: false,
             heroTouchDiskIdle: true,
+            /** Idle attention pulse — stops on first touch. */
+            heroTouchDiskBreathe: false,
+            heroTouchDiskBreatheTimer: null,
+            heroTouchDiskJiggleRaf: null,
+            heroTouchDiskJiggleStartedAt: 0,
+            /** Shared SW nudge applied to frost + blue so they stay locked. */
+            heroTouchDiskJiggleNudge: { x: 0, y: 0, scale: 1 },
             heroTouchDiskEntranceTimer: null,
             heroTouchDiskEntranceRaf: null,
+            /** True after a hero-bottom drag trips the work teleport (once per gesture). */
+            heroTouchDiskWorkJumped: false,
             heroTouchDiskZone: 'hero',
             heroTouchDiskParkZone: 'hero',
             /** While menu-navigating, keep the destination zone until scroll catches up. */
@@ -1280,17 +1375,20 @@ export default {
         heroCursorVisible() {
             if (!this.heroCursorEligible) return false
             if (this.heroTouchDiskMode) {
-                // Off-stage includes footer arrival — hide there even in work/about.
-                return (
-                    this.heroCursorActive &&
-                    !this.heroCursorBootLocked &&
-                    this.heroTouchDiskOnStage
-                )
+                // Stay mounted while off-stage so the corner disk can fade out
+                // (footer arrival) and fade back in on scroll up.
+                return this.heroCursorActive && !this.heroCursorBootLocked
             }
             return this.heroCursorActive || this.heroCursorBootLocked
         },
+        /** 0 when the footer covers the corner park — opacity-faded, not unmounted. */
+        heroTouchDiskStageOpacity() {
+            if (!this.heroTouchDiskMode) return 1
+            return this.heroTouchDiskOnStage ? 1 : 0
+        },
         heroTouchDiskHitActive() {
             if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
+            if (!this.heroTouchDiskOnStage) return false
             if (this.heroTouchDiskZone !== 'hero') return true
             return !this.heroIntroDissipated
         },
@@ -1341,6 +1439,17 @@ export default {
                 this.heroTouchDiskExpand < 0.02
             )
         },
+        /** Hero-only jiggle every 5s until first touch — starts 2s after fly-in ends. */
+        heroTouchDiskJiggleActive() {
+            return (
+                this.heroTouchDiskBreathe &&
+                this.heroTouchDiskSettled &&
+                this.heroTouchDiskIdleMotion &&
+                !this.heroTouchDiskEntering &&
+                !this.heroTouchDiskPopping &&
+                this.heroTouchDiskZone === 'hero'
+            )
+        },
         heroTouchDiskMenuFan() {
             return 'left'
         },
@@ -1354,8 +1463,6 @@ export default {
             // Geometry uses the *open* blue size so labels don't crawl during expand.
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
-            const diskX = this.heroCursorGlassPos?.x ?? 0
-            const safe = HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX
 
             const work = { id: 'work', label: 'Work', action: 'work' }
             const about = { id: 'about', label: 'About', action: 'about' }
@@ -1377,15 +1484,13 @@ export default {
                           anchor: 'start',
                       }
 
-            // Single item: horizontal on the outward side (away from the near edge).
+            // Corner: single opposite section, always left of the fixed blue center.
             if (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about') {
                 const base = this.heroTouchDiskZone === 'work' ? about : work
-                const labelW = getHeroTouchDiskMenuLabelWidth(base.label)
-                const outwardLeft = diskX >= gap + labelW + safe
-                return [placeOutward(base, outwardLeft)]
+                return [placeOutward(base, true)]
             }
 
-            // Two items: always Work @ 180° / About @ 0°.
+            // Hero: Work @ 180° / About @ 0°.
             const workW = getHeroTouchDiskMenuLabelWidth('Work')
             const aboutW = getHeroTouchDiskMenuLabelWidth('About')
             return [
@@ -1393,33 +1498,52 @@ export default {
                 placeHeroTouchDiskMenuRadial(about, 'right', 0, gap, aboutW),
             ]
         },
-        /** Dual Work+About menu (hero zone) uses a horizontal pill frost. */
+        /** Frost layout: dual (hero), left-growing pill (corner), or circle. */
+        heroTouchDiskMenuFrostMode() {
+            if (this.heroTouchDiskZone === 'hero') return 'dual'
+            if (
+                this.heroTouchDiskZone === 'work' ||
+                this.heroTouchDiskZone === 'about'
+            ) {
+                return 'left'
+            }
+            return 'circle'
+        },
+        /** Dual Work+About menu (hero) — drives edge-spring / safe bounds. */
         heroTouchDiskMenuFrostDual() {
-            return this.heroTouchDiskZone === 'hero'
+            return this.heroTouchDiskMenuFrostMode === 'dual'
         },
         heroTouchDiskMenuFrostPillActive() {
+            const mode = this.heroTouchDiskMenuFrostMode
             return (
-                this.heroTouchDiskMenuFrostDual &&
+                (mode === 'dual' || mode === 'left') &&
                 (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
             )
         },
-        heroTouchDiskMenuFrostSize() {
+        heroTouchDiskMenuFrostMetrics() {
             void this.heroTouchDiskMenuMetricsRev
-            return getHeroTouchDiskMenuFrostSize(this.heroTouchDiskMenuFrostDual)
+            const mode = this.heroTouchDiskMenuFrostMode
+            if (mode === 'left') {
+                const label =
+                    this.heroTouchDiskZone === 'work' ? 'About' : 'Work'
+                return getHeroTouchDiskMenuFrostMetrics(
+                    'left',
+                    getHeroTouchDiskMenuLabelWidth(label),
+                )
+            }
+            return getHeroTouchDiskMenuFrostMetrics(mode)
+        },
+        heroTouchDiskMenuFrostSize() {
+            return this.heroTouchDiskMenuFrostMetrics.width
         },
         heroTouchDiskMenuFrostHeight() {
-            void this.heroTouchDiskMenuMetricsRev
-            return getHeroTouchDiskMenuFrostMetrics(this.heroTouchDiskMenuFrostDual)
-                .height
+            return this.heroTouchDiskMenuFrostMetrics.height
         },
         heroTouchDiskMenuFrostLeft() {
-            void this.heroTouchDiskMenuMetricsRev
-            return getHeroTouchDiskMenuFrostMetrics(this.heroTouchDiskMenuFrostDual).left
+            return this.heroTouchDiskMenuFrostMetrics.left
         },
         heroTouchDiskMenuFrostRight() {
-            void this.heroTouchDiskMenuMetricsRev
-            return getHeroTouchDiskMenuFrostMetrics(this.heroTouchDiskMenuFrostDual)
-                .right
+            return this.heroTouchDiskMenuFrostMetrics.right
         },
         heroTouchDiskMenuStyle() {
             const { x, y } = this.heroCursorGlassPos
@@ -1429,7 +1553,17 @@ export default {
         },
         heroCursorDotDiskVisible() {
             if (!this.heroCursorVisible) return false
+            // Menu open must show frost immediately (skip glass-handoff hide).
+            if (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen) return true
             return heroCursorDotDiskShouldShow(this.heroCursorIntroGlassHandoff)
+        },
+        /** Kill the ~1s touch-fade when swapping glass ↔ menu frost among hero text. */
+        heroTouchDiskMenuChromeInstant() {
+            return (
+                this.heroTouchDiskMenuOpen ||
+                this.heroTouchDiskExpand > 0.02 ||
+                this.heroTouchDiskPopping
+            )
         },
         heroCursorIntroGlassVisible() {
             if (!this.heroCursorVisible || !this.heroCursorIntroGlassHandoff) return false
@@ -1534,11 +1668,20 @@ export default {
             const entranceFade = this.heroTouchDiskIdleMotion
                 ? this.heroTouchDiskEntranceFade
                 : 1
-            const outOpacity = opacity * dissipateFade * entranceFade
+            const stageFade = this.heroTouchDiskStageOpacity
+            const stageChrome =
+                this.heroTouchDiskMode &&
+                (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about')
+            const outOpacity = opacity * dissipateFade * entranceFade * stageFade
             const sink =
                 this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
+            const jiggle = this.heroTouchDiskJiggleActive
+                ? this.heroTouchDiskJiggleNudge
+                : { x: 0, y: 0, scale: 1 }
             const style = {
-                transform: `translate3d(${x}px, ${y}px, 0) scale(${scale * sink})`,
+                // Position stays in transform (no CSS transition) so corner snaps
+                // don't fly across the screen. Stage lift uses `translate` like the pill.
+                transform: `translate3d(${x + jiggle.x}px, ${y + jiggle.y}px, 0) scale(${scale * sink * jiggle.scale})`,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
@@ -1546,13 +1689,24 @@ export default {
                 boxSizing: 'border-box',
                 opacity: outOpacity,
                 zIndex: menuOpen ? 10005 : undefined,
-                visibility:
-                    this.heroTouchDiskMode
+                // Corner chrome: same visibility fade as the carousel pill.
+                visibility: stageChrome
+                    ? stageFade > 0
                         ? 'visible'
-                        : outOpacity < 0.02 && scale < 0.02
-                          ? 'hidden'
-                          : 'visible',
+                        : 'hidden'
+                    : this.heroTouchDiskMode
+                      ? 'visible'
+                      : outOpacity < 0.02 && scale < 0.02
+                        ? 'hidden'
+                        : 'visible',
             }
+            // Same 6px rise as `.work-carousel-pager` — independent of position transform.
+            // Always set so a leftover lift doesn't stick after leaving the corner zone.
+            style.translate = stageChrome
+                ? stageFade > 0
+                    ? '0 0'
+                    : '0 6px'
+                : '0'
 
             if (useGlassRingBorder) {
                 style['--hero-cursor-hover-expand'] = hoverExpand
@@ -1594,42 +1748,11 @@ export default {
             let sizeH
             let marginL
             if (menuOpen) {
-                const idle = HERO_CURSOR_GLASS_IDLE_SIZE
-                const idleR = idle / 2
-                const dual = this.heroTouchDiskMenuFrostDual
-                const openL =
-                    this.heroTouchDiskMenuFrostLiveL > 0
-                        ? this.heroTouchDiskMenuFrostLiveL
-                        : this.heroTouchDiskMenuFrostLeft
-                const openR =
-                    this.heroTouchDiskMenuFrostLiveR > 0
-                        ? this.heroTouchDiskMenuFrostLiveR
-                        : this.heroTouchDiskMenuFrostRight
-                const openH =
-                    this.heroTouchDiskMenuFrostLiveH > 0
-                        ? this.heroTouchDiskMenuFrostLiveH
-                        : this.heroTouchDiskMenuFrostHeight
-                const from =
-                    this.heroTouchDiskMenuFromSize != null
-                        ? this.heroTouchDiskMenuFromSize
-                        : idle
-                const fromR = from / 2
-                // Frost-only bounce on open; labels/blue use the milder shared expand.
-                let blend
-                let dip = 0
-                if (this.heroTouchDiskPopping && this.heroTouchDiskExpandOpening) {
-                    const u = this.heroTouchDiskExpandLinear
-                    blend = heroTouchDiskFrostExpandEase(u)
-                    const fromIdle = Math.abs(from - idle) < 4
-                    if (fromIdle) dip = heroTouchDiskFrostOpenDipPx(u)
-                } else {
-                    blend = Math.min(expandT, 1.15)
-                }
-                const left = fromR + (openL - fromR) * blend - (dual ? dip * 0.15 : dip / 2)
-                const right = fromR + (openR - fromR) * blend - (dual ? dip * 0.15 : dip / 2)
-                sizeW = Math.max(idle, left + right)
-                sizeH = from + (openH - from) * blend - dip
-                marginL = -Math.max(idleR, left)
+                const idleR = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+                const live = this.getHeroTouchDiskMenuLiveFrostExtents()
+                sizeW = live.width
+                sizeH = live.height
+                marginL = -Math.max(idleR, live.left)
             } else {
                 sizeW = heroCursorDotDiskSize(hoverMix)
                 sizeH = sizeW
@@ -1642,25 +1765,46 @@ export default {
             const entranceFade = this.heroTouchDiskIdleMotion
                 ? this.heroTouchDiskEntranceFade
                 : 1
-            const opacity = baseOpacity * this.heroTouchDiskDissipateFade * entranceFade
+            const stageFade = this.heroTouchDiskStageOpacity
+            const stageChrome =
+                this.heroTouchDiskMode &&
+                (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about')
+            const opacity =
+                baseOpacity *
+                this.heroTouchDiskDissipateFade *
+                entranceFade *
+                stageFade
             const forwardScale =
                 menuOpen ? 1 : 1 + heroCursorHoverDiskForward(hoverMix)
             const sink =
                 this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
+            const jiggle = this.heroTouchDiskJiggleActive
+                ? this.heroTouchDiskJiggleNudge
+                : { x: 0, y: 0, scale: 1 }
 
             return {
-                transform: `translate3d(${x}px, ${y}px, 0) scale(${forwardScale * sink})`,
+                transform: `translate3d(${x + jiggle.x}px, ${y + jiggle.y}px, 0) scale(${forwardScale * sink * jiggle.scale})`,
+                // Same 6px rise as the carousel pill; never transition `transform`.
+                translate: stageChrome
+                    ? stageFade > 0
+                        ? '0 0'
+                        : '0 6px'
+                    : '0',
                 '--hero-cursor-hover-mix': hoverMix,
                 '--hero-cursor-hover-expand': frostExpand,
                 width: `${sizeW}px`,
                 height: `${sizeH}px`,
                 margin: `${-halfH}px 0 0 ${marginL}px`,
                 opacity,
-                visibility: this.heroTouchDiskMode
-                    ? 'visible'
-                    : opacity < 0.02
-                      ? 'hidden'
-                      : 'visible',
+                visibility: stageChrome
+                    ? stageFade > 0
+                        ? 'visible'
+                        : 'hidden'
+                    : this.heroTouchDiskMode
+                      ? 'visible'
+                      : opacity < 0.02
+                        ? 'hidden'
+                        : 'visible',
             }
         },
         heroCursorIntroGlassStyle() {
@@ -2028,9 +2172,15 @@ export default {
         this.stopHeroCursorGlassFollow()
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
+        clearTimeout(this.heroIntroScrollReplayTimer)
         clearTimeout(this.tabletWorkDecorRevealTimer)
         this.cancelDesktopDecorLineEntrance()
         clearTimeout(this.heroTouchDiskEntranceTimer)
+        clearTimeout(this.heroTouchDiskBreatheTimer)
+        if (this.heroTouchDiskJiggleRaf != null) {
+            cancelAnimationFrame(this.heroTouchDiskJiggleRaf)
+            this.heroTouchDiskJiggleRaf = null
+        }
         if (this.heroTouchDiskEntranceRaf != null) {
             cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
             this.heroTouchDiskEntranceRaf = null
@@ -2061,6 +2211,43 @@ export default {
         }
     },
     methods: {
+        /**
+         * Labels compress into the blue center with expand — no CSS opacity lag.
+         * Scale/opacity track the frost so collapse matches the disk speed.
+         */
+        heroTouchDiskMenuItemStyle(item, index) {
+            const t = Math.max(0, Math.min(1, this.heroTouchDiskExpand))
+            // Collapse: steep so words vanish ahead of the frost.
+            // Open: gentler so labels bloom with the pill.
+            const closing =
+                this.heroTouchDiskPopping && !this.heroTouchDiskExpandOpening
+            const compress = closing
+                ? Math.max(0, Math.min(1, t * t * t * 2.2))
+                : Math.max(0, Math.min(1, Math.pow(t, 0.75)))
+            const x0 = parseFloat(item.x) || 0
+            const y0 = parseFloat(item.y) || 0
+            const towardCenter =
+                item.anchor === 'end' ||
+                (item.anchor === 'radial' && x0 < 0)
+            const origin = towardCenter
+                ? 'right center'
+                : item.anchor === 'start' || (item.anchor === 'radial' && x0 > 0)
+                  ? 'left center'
+                  : 'center center'
+            let translate = 'translate(-50%, -50%)'
+            if (item.anchor === 'end') translate = 'translate(-100%, -50%)'
+            else if (item.anchor === 'start') translate = 'translate(0, -50%)'
+            const rot = item.rot || '0deg'
+            return {
+                '--menu-i': index,
+                left: `${x0 * compress}px`,
+                top: `${y0 * compress}px`,
+                opacity: compress,
+                transformOrigin: origin,
+                transform: `${translate} rotate(${rot}) scaleX(${compress}) scaleY(${0.85 + 0.15 * compress})`,
+                pointerEvents: compress > 0.4 ? 'auto' : 'none',
+            }
+        },
         initOffsetProjectTilt() {
             if (!supportsDeviceOrientation()) return
             this.onOffsetProjectTiltOrientation = (event) => {
@@ -2694,6 +2881,8 @@ export default {
             this.syncProjectCaptionLineOffset()
             this.syncTabletWorkDecorVisibility()
             this.publishDecorLineAlign()
+            // First-page fade for hero text only after entrance — sync if already scrolled away.
+            this.updateHeroLocationVisibility()
             this.$nextTick(() => {
                 if (this.heroTouchDiskMode) {
                     this.primeHeroTouchDisk()
@@ -2876,6 +3065,8 @@ export default {
         updateHeroLocationVisibility() {
             if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
                 this.heroLocationVisible = false
+                this.heroIntroScrollHidden = false
+                this.clearHeroIntroScrollReplay()
                 return
             }
 
@@ -2887,7 +3078,82 @@ export default {
 
             const top = workFirst.getBoundingClientRect().top
             // Sub-pixel slack: 100svh can sit slightly below window.innerHeight on some viewports
-            this.heroLocationVisible = top >= window.innerHeight - 1
+            const next = top >= window.innerHeight - 1
+            const prev = this.heroLocationVisible
+            this.heroLocationVisible = next
+
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                this.heroIntroScrollHidden = false
+                this.clearHeroIntroScrollReplay()
+                return
+            }
+
+            if (!this.pageEntranceDone) {
+                this.heroIntroScrollHidden = false
+                return
+            }
+
+            if (prev && !next) {
+                this.heroIntroHasLeftFirstPage = true
+                this.heroIntroScrollHidden = true
+                this.clearHeroIntroScrollReplay()
+                this.clearHeroIntroPointerShift()
+            } else if (!prev && next && this.heroIntroHasLeftFirstPage) {
+                this.heroIntroScrollHidden = false
+                this.replayHeroIntroFlyInFromScroll()
+            } else {
+                this.heroIntroScrollHidden = !next
+                if (!next) this.heroIntroHasLeftFirstPage = true
+            }
+        },
+        clearHeroIntroScrollReplay() {
+            clearTimeout(this.heroIntroScrollReplayTimer)
+            this.heroIntroScrollReplayTimer = null
+            this.heroIntroScrollReplaying = false
+            this.heroIntroScrollReplayArmed = false
+        },
+        /** Desktop: replay the letter cascade when scrolling back onto the first page. */
+        replayHeroIntroFlyInFromScroll() {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (!this.pageEntranceDone || prefersReducedMotion()) return
+
+            this.clearHeroIntroScrollReplay()
+            this.clearHeroIntroPointerShift()
+            this.heroIntroScrollReplaying = true
+            this.heroIntroScrollReplayArmed = false
+
+            this.$nextTick(() => {
+                if (this.heroIntroLetterMode) {
+                    this.syncHeroIntroCharColumns()
+                }
+                const intro = this.$el?.querySelector('.hero-intro')
+                if (intro) void intro.offsetWidth
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        if (!this.heroIntroScrollReplaying) return
+                        this.heroIntroScrollReplayArmed = true
+
+                        const styles = intro ? getComputedStyle(intro) : null
+                        const cascadeEnd = parseCssTimeSec(
+                            styles,
+                            '--hero-intro-cascade-end',
+                            2.39,
+                        )
+                        const charDuration = parseCssTimeSec(
+                            styles,
+                            '--hero-intro-char-duration',
+                            1.15,
+                        )
+                        const waitMs = Math.ceil((cascadeEnd + charDuration + 0.85) * 1000)
+                        this.heroIntroScrollReplayTimer = setTimeout(() => {
+                            this.heroIntroScrollReplaying = false
+                            this.heroIntroScrollReplayArmed = false
+                            this.heroIntroScrollReplayTimer = null
+                        }, waitMs)
+                    })
+                })
+            })
         },
         onHeroLocationScroll() {
             if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
@@ -3079,6 +3345,13 @@ export default {
          */
         touchDiskTextEffectsEnabled() {
             if (!this.isHeroTouchDiskMode()) return false
+            // Dual Work/About pill: no letter push while the menu is open.
+            if (
+                this.heroTouchDiskMenuFrostDual &&
+                (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
+            ) {
+                return false
+            }
             if (this.heroTouchDiskZone === 'hero') {
                 return this.canHeroIntroPointerPlay()
             }
@@ -3181,6 +3454,52 @@ export default {
                 skipHover: true,
             })
         },
+        /**
+         * While the menu frost is open, keep hero letters hugging the live pill
+         * outline (not the idle circular glass field). Dual menu: no push.
+         */
+        syncHeroTouchDiskMenuTextMorph() {
+            if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) return
+            if (this.heroTouchDiskMenuFrostDual) {
+                if (this.heroIntroPointer) {
+                    this.heroIntroPointer = null
+                    this.clearHeroIntroPointerShift()
+                }
+                this.clearFooterPointerShift()
+                return
+            }
+            if (!this.touchDiskTextEffectsEnabled()) return
+            if (this.heroIntroDissipated) return
+            const { x, y } = this.heroCursorGlassPos
+            // Pill in hero text collapses to glass — don't keep a stadium letter hole.
+            if (this.getHeroIntroTextProximityMix(x, y) >= HERO_CURSOR_INTRO_GLASS_ON) {
+                return
+            }
+            if (!this.isHeroIntroPointerNear(x, y)) {
+                if (this.heroIntroPointer) {
+                    this.heroIntroPointer = null
+                    this.clearHeroIntroPointerShift()
+                }
+                return
+            }
+            this.heroIntroPointer = { x, y }
+            this.applyHeroIntroPointerShift()
+        },
+        /** After menu close: resume circular glass letter morph if still in text. */
+        restoreHeroTouchDiskGlassTextMorph() {
+            if (!this.touchDiskTextEffectsEnabled()) {
+                if (this.heroIntroPointer) {
+                    this.heroIntroPointer = null
+                    this.clearHeroIntroPointerShift()
+                }
+                return
+            }
+            const { x, y } = this.heroCursorGlassPos
+            this.updateHeroFinePointer(x, y, {
+                introEffects: true,
+                skipHover: true,
+            })
+        },
         isHeroIntroFinePointer() {
             return (
                 typeof window !== 'undefined' &&
@@ -3216,7 +3535,7 @@ export default {
                     HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX,
                     this.getHeroTouchDiskPageMarginPx(),
                 )
-                const metrics = getHeroTouchDiskMenuFrostMetrics(true)
+                const metrics = getHeroTouchDiskMenuFrostMetrics('dual')
                 x = vw - safe - metrics.right
                 y = vh * 0.38
                 const intro = this.$el?.querySelector('.hero-intro')
@@ -3299,6 +3618,57 @@ export default {
                 height,
             }
         },
+        /**
+         * Live frost extents including open overshoot / dip — matches the
+         * rendered menu pill so letter morph hugs the same outline.
+         */
+        getHeroTouchDiskMenuLiveFrostExtents() {
+            const idle = HERO_CURSOR_GLASS_IDLE_SIZE
+            const pill =
+                this.heroTouchDiskMenuFrostMode === 'dual' ||
+                this.heroTouchDiskMenuFrostMode === 'left'
+            const openL =
+                this.heroTouchDiskMenuFrostLiveL > 0
+                    ? this.heroTouchDiskMenuFrostLiveL
+                    : this.heroTouchDiskMenuFrostLeft
+            const openR =
+                this.heroTouchDiskMenuFrostLiveR > 0
+                    ? this.heroTouchDiskMenuFrostLiveR
+                    : this.heroTouchDiskMenuFrostRight
+            const openH =
+                this.heroTouchDiskMenuFrostLiveH > 0
+                    ? this.heroTouchDiskMenuFrostLiveH
+                    : this.heroTouchDiskMenuFrostHeight
+            const from =
+                this.heroTouchDiskMenuFromSize != null
+                    ? this.heroTouchDiskMenuFromSize
+                    : idle
+            const fromR = from / 2
+            const expandT = this.heroTouchDiskExpand
+            let blend
+            let dip = 0
+            if (this.heroTouchDiskPopping && this.heroTouchDiskExpandOpening) {
+                const u = this.heroTouchDiskExpandLinear
+                blend = heroTouchDiskFrostExpandEase(u)
+                const fromIdle = Math.abs(from - idle) < 4
+                if (fromIdle) dip = heroTouchDiskFrostOpenDipPx(u)
+            } else {
+                blend = Math.min(Math.max(expandT, 0), 1.15)
+            }
+            // Left pill: keep the right cap stable (idle radius) while left blooms.
+            const left = fromR + (openL - fromR) * blend - (pill ? dip * 0.15 : dip / 2)
+            const right = pill
+                ? fromR + (openR - fromR) * blend - dip * 0.15
+                : fromR + (openR - fromR) * blend - dip / 2
+            const height = Math.max(idle / 2, from + (openH - from) * blend - dip)
+            return {
+                left: Math.max(idle / 4, left),
+                right: Math.max(idle / 4, right),
+                halfH: height / 2,
+                width: Math.max(idle, left + right),
+                height,
+            }
+        },
         /** @deprecated use getHeroTouchDiskMenuVisualExtents().halfW */
         getHeroTouchDiskMenuVisualRadius() {
             return this.getHeroTouchDiskMenuVisualExtents().halfW
@@ -3322,32 +3692,20 @@ export default {
                 this.getHeroTouchDiskMenuVisualExtents()
             const expandT = Math.max(0, Math.min(1, this.heroTouchDiskExpand))
 
-            let padL = frostL
-            let padR = frostR
-            let padT = frostH
-            let padB = frostH
-
-            if (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about') {
-                // Match single-item outward flip: pad the side the label actually uses.
-                const label =
-                    this.heroTouchDiskZone === 'work' ? 'About' : 'Work'
-                const labelW = getHeroTouchDiskMenuLabelWidth(label)
-                const diskX = this.heroCursorGlassPos?.x ?? 0
-                const outwardLeft = diskX >= gap + labelW + safe
-                if (outwardLeft) {
-                    padL = Math.max(frostL, gap + labelW)
-                } else {
-                    padR = Math.max(frostR, gap + labelW)
-                }
-                padT = Math.max(frostH, labelH / 2)
-                padB = Math.max(frostH, labelH / 2)
+            const workW = getHeroTouchDiskMenuLabelWidth('Work')
+            const aboutW = getHeroTouchDiskMenuLabelWidth('About')
+            let padL
+            let padR
+            let padT = Math.max(frostH, labelH / 2)
+            let padB = Math.max(frostH, labelH / 2)
+            if (this.heroTouchDiskMenuFrostMode === 'left') {
+                const labelW =
+                    this.heroTouchDiskZone === 'work' ? aboutW : workW
+                padL = Math.max(frostL, gap + labelW)
+                padR = frostR
             } else {
-                const workW = getHeroTouchDiskMenuLabelWidth('Work')
-                const aboutW = getHeroTouchDiskMenuLabelWidth('About')
                 padL = Math.max(frostL, gap + workW)
                 padR = Math.max(frostR, gap + aboutW)
-                padT = Math.max(frostH, labelH / 2)
-                padB = Math.max(frostH, labelH / 2)
             }
 
             // Blend from idle radius → full menu pads as the frost expands.
@@ -3372,12 +3730,8 @@ export default {
         clampHeroTouchDiskToMenuSafe(x, y, { rubber = false } = {}) {
             const menuOpen =
                 this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
-            // Single-item (Work/About zones): idle viewport bounds only — labels may
-            // sit past the edge, matching pre-bounce behavior.
-            const useMenuSafe =
-                menuOpen &&
-                this.heroTouchDiskZone !== 'work' &&
-                this.heroTouchDiskZone !== 'about'
+            // Corner left-pill stays parked — only the dual hero menu edge-springs.
+            const useMenuSafe = menuOpen && this.heroTouchDiskMenuFrostDual
             const bounds = useMenuSafe
                 ? this.getHeroTouchDiskMenuSafeBounds()
                 : this.getHeroTouchDiskBounds()
@@ -3392,18 +3746,15 @@ export default {
                 y: Math.min(bounds.maxY, Math.max(bounds.minY, y)),
             }
         },
-        /** Underdamped spring so the open menu elastically settles in-view. */
+        /** Underdamped spring so the open dual pill elastically settles in-view. */
         stepHeroTouchDiskEdgeSpring() {
             if (!this.heroTouchDiskMode || !this.heroCursorActive) return false
             if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) {
                 this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 return false
             }
-            // Double menu only — single-item menus keep the old free edge behavior.
-            if (
-                this.heroTouchDiskZone === 'work' ||
-                this.heroTouchDiskZone === 'about'
-            ) {
+            // Dual hero menu only — corner left-pill keeps a fixed center.
+            if (!this.heroTouchDiskMenuFrostDual) {
                 this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
                 return false
             }
@@ -3452,8 +3803,14 @@ export default {
         },
         updateHeroTouchDiskZoneFromScroll() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
-            if (this.heroTouchDiskDragging) return
             const next = this.computeHeroTouchDiskZone()
+            // Hero drag in progress: still allow leaving hero so the disk can
+            // hard-pin to the work/about corner (avoids a stuck mid-screen park).
+            if (this.heroTouchDiskDragging) {
+                if (next === 'hero' || next === this.heroTouchDiskZone) return
+                this.endHeroTouchDiskDrag()
+                this.heroTouchDiskHasMoved = false
+            }
             const lock = this.heroTouchDiskZoneLock
             if (lock) {
                 const lockAlive =
@@ -3541,6 +3898,11 @@ export default {
                 this.heroTouchDiskOnStage = false
                 return
             }
+            // Bottom-edge work jump: stay vanished until scroll lands.
+            if (this.heroTouchDiskWorkJumped) {
+                this.heroTouchDiskOnStage = false
+                return
+            }
             const next = this.computeHeroTouchDiskOnStage()
             if (
                 !next &&
@@ -3553,7 +3915,12 @@ export default {
         },
         syncHeroTouchDiskRestPosition() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
-            if (this.heroTouchDiskDragging) return
+            // Corner zones always win — don't leave a hero-drag mid-screen.
+            if (this.heroTouchDiskDragging && this.heroTouchDiskZone === 'hero') return
+            if (this.heroTouchDiskDragging) {
+                this.endHeroTouchDiskDrag()
+                this.heroTouchDiskHasMoved = false
+            }
             // Don't yank the glass ball to rest while the hero entrance arc is playing.
             if (this.heroTouchDiskEntering && this.heroTouchDiskZone === 'hero') return
             const zoneChanged = this.heroTouchDiskParkZone !== this.heroTouchDiskZone
@@ -3639,6 +4006,70 @@ export default {
             this.heroTouchDiskEntranceTimer = null
             this.heroTouchDiskDissipateInstant = false
         },
+        clearHeroTouchDiskJiggle() {
+            clearTimeout(this.heroTouchDiskBreatheTimer)
+            this.heroTouchDiskBreatheTimer = null
+            if (this.heroTouchDiskJiggleRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskJiggleRaf)
+                this.heroTouchDiskJiggleRaf = null
+            }
+            this.heroTouchDiskBreathe = false
+            this.heroTouchDiskJiggleStartedAt = 0
+            this.heroTouchDiskJiggleNudge = { x: 0, y: 0, scale: 1 }
+        },
+        scheduleHeroTouchDiskJiggle() {
+            this.clearHeroTouchDiskJiggle()
+            if (
+                !this.heroTouchDiskSettled ||
+                !this.heroTouchDiskIdle ||
+                !this.isHeroTouchDiskMode() ||
+                this.heroTouchDiskZone !== 'hero' ||
+                this.heroTouchDiskEntering ||
+                prefersReducedMotion()
+            ) {
+                return
+            }
+            this.heroTouchDiskBreatheTimer = setTimeout(() => {
+                this.heroTouchDiskBreatheTimer = null
+                if (
+                    this.heroTouchDiskSettled &&
+                    this.heroTouchDiskIdle &&
+                    this.isHeroTouchDiskMode() &&
+                    this.heroTouchDiskZone === 'hero' &&
+                    !this.heroTouchDiskEntering &&
+                    !this.heroTouchDiskDragging &&
+                    !this.heroTouchDiskHasMoved
+                ) {
+                    this.heroTouchDiskBreathe = true
+                    this.startHeroTouchDiskJiggleLoop()
+                }
+            }, HERO_TOUCH_DISK_JIGGLE_DELAY_MS)
+        },
+        startHeroTouchDiskJiggleLoop() {
+            if (this.heroTouchDiskJiggleRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskJiggleRaf)
+                this.heroTouchDiskJiggleRaf = null
+            }
+            this.heroTouchDiskJiggleStartedAt = performance.now()
+            const tick = (now) => {
+                this.heroTouchDiskJiggleRaf = null
+                // Breathe off → stop. Otherwise keep the loop alive so a one-frame
+                // gate flicker cannot kill the 5s cycle permanently.
+                if (!this.heroTouchDiskBreathe) {
+                    this.heroTouchDiskJiggleNudge = { x: 0, y: 0, scale: 1 }
+                    return
+                }
+                if (this.heroTouchDiskJiggleActive) {
+                    this.heroTouchDiskJiggleNudge = heroTouchDiskJiggleSample(
+                        now - this.heroTouchDiskJiggleStartedAt,
+                    )
+                } else {
+                    this.heroTouchDiskJiggleNudge = { x: 0, y: 0, scale: 1 }
+                }
+                this.heroTouchDiskJiggleRaf = requestAnimationFrame(tick)
+            }
+            this.heroTouchDiskJiggleRaf = requestAnimationFrame(tick)
+        },
         finishHeroTouchDiskEntrance(endPos) {
             this.cancelHeroTouchDiskEntranceFlight()
             this.heroTouchDiskEntering = false
@@ -3651,6 +4082,9 @@ export default {
                     skipHover: true,
                 })
             }
+            // Latter stage after the fly-in — jiggle schedules from here, settle visuals unchanged.
+            this.heroTouchDiskSettled = true
+            this.scheduleHeroTouchDiskJiggle()
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -3663,6 +4097,8 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskWorkJumped = false
+            this.heroTouchDiskDissipateInstant = false
             this.heroCursorActive = true
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
@@ -3675,7 +4111,9 @@ export default {
             // Stay invisible until beginHeroTouchDiskEntrance places the glass start pose.
             this.heroTouchDiskEntrance = 0
             this.heroTouchDiskEntering = false
+            this.heroTouchDiskSettled = false
             this.heroTouchDiskIdle = true
+            this.clearHeroTouchDiskJiggle()
             this.syncHeroCursorDocumentClass()
             this.startHeroCursorGlassFollow()
             this.refreshHeroTouchDiskStage()
@@ -3687,11 +4125,15 @@ export default {
             if (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) {
                 this.heroTouchDiskEntrance = 1
                 this.heroTouchDiskEntering = false
+                this.heroTouchDiskSettled = true
                 this.heroTouchDiskIdle = false
+                this.clearHeroTouchDiskJiggle()
                 return
             }
 
             this.heroTouchDiskIdle = true
+            this.heroTouchDiskSettled = false
+            this.clearHeroTouchDiskJiggle()
             const end = this.getHeroTouchDiskRestPos()
             // Arc fly-in is a hero-first-appear motion; other zones snap in place.
             const canFly =
@@ -3714,6 +4156,7 @@ export default {
             // Pose as glass off-screen first; stay opacity-0 until the first flight frame
             // so sync/layout cannot flash a glass ball at rest.
             this.heroTouchDiskEntering = true
+            this.heroTouchDiskSettled = false
             this.heroTouchDiskEntrance = 0
             this.heroCursorIntroGlassHandoff = true
             this.heroCursorRangeMix = 0.85
@@ -3751,13 +4194,18 @@ export default {
                         introEffects: false,
                         skipHover: true,
                     })
-                    this.finishHeroTouchDiskEntrance(park)
+                    // Corner park: settled but no hero jiggle.
+                    this.heroTouchDiskEntering = false
+                    this.heroTouchDiskEntrance = 1
+                    this.heroTouchDiskSettled = true
+                    this.clearHeroTouchDiskJiggle()
                     return
                 }
 
                 if (!revealed) {
                     revealed = true
                     this.heroTouchDiskDissipateInstant = true
+                    // Opacity reveal only — not "settled" for jiggle gating.
                     this.heroTouchDiskEntrance = 1
                     this.$nextTick(() => {
                         requestAnimationFrame(() => {
@@ -3789,12 +4237,19 @@ export default {
             this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
         },
         markHeroTouchDiskInteracted() {
-            if (!this.heroTouchDiskIdle && !this.heroTouchDiskEntering) {
+            if (
+                !this.heroTouchDiskIdle &&
+                !this.heroTouchDiskBreathe &&
+                !this.heroTouchDiskBreatheTimer &&
+                !this.heroTouchDiskEntering
+            ) {
                 return
             }
             this.cancelHeroTouchDiskEntranceFlight()
             this.heroTouchDiskIdle = false
             this.heroTouchDiskEntering = false
+            this.heroTouchDiskSettled = true
+            this.clearHeroTouchDiskJiggle()
             if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
         },
         stopHeroTouchDisk() {
@@ -3811,10 +4266,14 @@ export default {
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = null
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskWorkJumped = false
+            this.heroTouchDiskDissipateInstant = false
             this.heroTouchDiskOnStage = false
             this.heroTouchDiskEntrance = 0
             this.heroTouchDiskEntering = false
+            this.heroTouchDiskSettled = false
             this.heroTouchDiskIdle = true
+            this.clearHeroTouchDiskJiggle()
             this.heroTouchDiskPopping = false
             this.heroTouchDiskSinkScale = 1
             this.heroTouchDiskExpand = 0
@@ -3840,6 +4299,38 @@ export default {
             this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
             this.refreshHeroTouchDiskStage()
         },
+        /** Drag the disk to the hero viewport floor → park in work + scroll. */
+        triggerHeroTouchDiskWorkJump() {
+            if (this.heroTouchDiskWorkJumped) return
+            this.heroTouchDiskWorkJumped = true
+            this.endHeroTouchDiskDrag()
+            // Snap shut before scroll — animated close lags behind the redirect.
+            this.closeHeroTouchDiskMenu({ instant: true })
+            // Vanish in place — never glide/snap visibly back to a park.
+            this.heroTouchDiskDissipateInstant = true
+            this.heroTouchDiskOnStage = false
+            this.heroTouchDiskZoneLock = 'work'
+            this.heroTouchDiskZoneLockUntil =
+                performance.now() +
+                Math.max(HERO_TOUCH_DISK_ZONE_LOCK_MS, HERO_TOUCH_DISK_WORK_SNAP_MS)
+            this.heroTouchDiskZone = 'work'
+            this.heroTouchDiskHasMoved = false
+            this.clearHeroTouchDiskMorph()
+            // Pin the work corner while hidden so reveal doesn't travel.
+            this.syncHeroTouchDiskRestPosition()
+            scrollToWork({
+                duration: HERO_TOUCH_DISK_WORK_SNAP_MS,
+                onComplete: () => {
+                    this.heroTouchDiskZoneLock = null
+                    this.heroTouchDiskZoneLockUntil = 0
+                    this.heroTouchDiskWorkJumped = false
+                    this.heroTouchDiskDissipateInstant = false
+                    this.updateHeroTouchDiskZoneFromScroll()
+                    this.syncHeroTouchDiskRestPosition()
+                },
+            })
+            this.$router.replace({ hash: '#work' }).catch(() => {})
+        },
         closeHeroTouchDiskMenu(options = {}) {
             this.unbindHeroTouchDiskOutsideClose()
             if (this.heroTouchDiskExpand <= 0.02 && !this.heroTouchDiskMenuOpen) return
@@ -3859,6 +4350,7 @@ export default {
                 this.heroTouchDiskMenuFrostLiveR = 0
                 this.heroTouchDiskMenuFrostLiveH = 0
                 this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                this.restoreHeroTouchDiskGlassTextMorph()
                 return
             }
             this.animateHeroTouchDiskExpand(0)
@@ -3895,6 +4387,9 @@ export default {
             this.heroCursorIntroGlassHandoff = false
             this.heroCursorInRange = false
             this.heroCursorRangeTight = false
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
+            this.clearFooterPointerShift()
             this.refreshHeroTouchDiskMenuMetrics()
             this.heroTouchDiskMenuFrostLiveL = this.heroTouchDiskMenuFrostLeft
             this.heroTouchDiskMenuFrostLiveR = this.heroTouchDiskMenuFrostRight
@@ -3949,9 +4444,10 @@ export default {
                 this.heroTouchDiskMenuFrostLiveH = targetH
             }
         },
-        /** Menu from blue-dot, glass, or magnifier — available across the full viewport. */
+        /** Menu from blue-dot or glass — available across the hero viewport. */
         canOpenHeroTouchDiskMenu() {
             if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
+            if (!this.heroTouchDiskOnStage) return false
             if (this.heroTouchDiskZone !== 'hero') return true
             // Letter dissipate / reconsolidate still use the magnifier window, not the disk hit.
             if (this.heroIntroDissipated || this.heroIntroReconsolidating) return false
@@ -4045,10 +4541,12 @@ export default {
                     this.heroTouchDiskMenuFrostLiveR = 0
                     this.heroTouchDiskMenuFrostLiveH = 0
                     this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                    this.restoreHeroTouchDiskGlassTextMorph()
                 } else {
                     this.syncHeroTouchDiskMenuFrostLive()
                     this.stepHeroTouchDiskEdgeSpring()
                     this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                    this.syncHeroTouchDiskMenuTextMorph()
                 }
                 return
             }
@@ -4074,6 +4572,8 @@ export default {
                 const e = heroTouchDiskExpandEase(t, opening)
                 this.heroTouchDiskExpand = from + (to - from) * e
                 this.syncHeroTouchDiskMenuFrostLive()
+                this.stepHeroTouchDiskEdgeSpring()
+                this.syncHeroTouchDiskMenuTextMorph()
                 if (t < 1) {
                     this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
                     return
@@ -4091,10 +4591,12 @@ export default {
                     this.heroTouchDiskMenuFrostLiveR = 0
                     this.heroTouchDiskMenuFrostLiveH = 0
                     this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                    this.restoreHeroTouchDiskGlassTextMorph()
                 } else {
                     this.syncHeroTouchDiskMenuFrostLive()
                     this.stepHeroTouchDiskEdgeSpring()
                     this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                    this.syncHeroTouchDiskMenuTextMorph()
                 }
             }
             this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
@@ -4108,7 +4610,8 @@ export default {
                 return
             }
             event.preventDefault()
-            this.closeHeroTouchDiskMenu()
+            // Snap shut before scroll — animated close lags behind the redirect.
+            this.closeHeroTouchDiskMenu({ instant: true })
             if (item.action === 'work') {
                 this.heroTouchDiskZoneLock = 'work'
                 this.heroTouchDiskZoneLockUntil =
@@ -4150,6 +4653,7 @@ export default {
             const rawY = clientY + this.heroTouchDiskGrabOffset.y
             const menuOpen =
                 this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            const { radius } = this.getHeroTouchDiskBounds()
             const { x, y } = menuOpen
                 ? this.clampHeroTouchDiskToMenuSafe(rawX, rawY, { rubber: true })
                 : (() => {
@@ -4159,11 +4663,22 @@ export default {
                           y: Math.min(maxY, Math.max(minY, rawY)),
                       }
                   })()
+            // Pill dragged into hero text collapses to the glass ball.
+            this.yieldHeroTouchDiskMenuToGlassIfNeeded(x, y)
             this.updateHeroFinePointer(x, y, {
                 introEffects: this.touchDiskTextEffectsEnabled(),
             })
             this.heroCursorGlassPos = { x, y }
             this.refreshHeroTouchDiskStage()
+
+            // During drag on hero: viewport-bottom contact → park + scroll to work.
+            if (
+                this.heroTouchDiskDragging &&
+                !this.heroTouchDiskWorkJumped &&
+                y >= window.innerHeight - radius - 1
+            ) {
+                this.triggerHeroTouchDiskWorkJump()
+            }
         },
         onHeroTouchDiskPointerDown(event) {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -4187,6 +4702,7 @@ export default {
 
             const { x, y } = this.heroCursorGlassPos
             this.heroTouchDiskDragging = true
+            this.heroTouchDiskWorkJumped = false
             this.heroTouchDiskHasMoved = false
             this.heroTouchDiskPointerId = event.pointerId
             this.heroTouchDiskPointerStart = { x: event.clientX, y: event.clientY }
@@ -4227,12 +4743,15 @@ export default {
             if (event.pointerId !== this.heroTouchDiskPointerId) return
 
             const wasTap =
-                this.heroTouchDiskDragging && !this.heroTouchDiskHasMoved
+                this.heroTouchDiskDragging &&
+                !this.heroTouchDiskHasMoved &&
+                !this.heroTouchDiskWorkJumped
 
             if (
                 this.heroTouchDiskDragging &&
                 this.heroTouchDiskHasMoved &&
-                this.heroTouchDiskZone === 'hero'
+                this.heroTouchDiskZone === 'hero' &&
+                !this.heroTouchDiskWorkJumped
             ) {
                 this.moveHeroTouchDiskTo(event.clientX, event.clientY)
             }
@@ -4355,6 +4874,48 @@ export default {
                 }
             }
             return false
+        },
+        /** Hero intro only (no footer) — used for menu ↔ glass handoff. */
+        getHeroIntroTextProximityMix(x, y) {
+            let maxMix = 0
+            for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
+                const { outerPad, innerPad } = this.getPushTargetRangePads(el)
+                const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
+                if (distance >= outerPad) continue
+                if (distance <= innerPad) return 1
+                const linear = (outerPad - distance) / (outerPad - innerPad)
+                maxMix = Math.max(maxMix, heroCursorRangeSmoothstep(linear))
+            }
+            return maxMix
+        },
+        /**
+         * Open menu pill dragged into hero text → collapse to glass ball.
+         * Tap-open from glass is allowed; only a drag into text triggers this.
+         */
+        yieldHeroTouchDiskMenuToGlassIfNeeded(x, y) {
+            if (!this.heroTouchDiskDragging && !this.heroTouchDiskHasMoved) return false
+            const menuOpen =
+                this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            if (!menuOpen) return false
+            // Don't gate on touchDiskTextEffectsEnabled() — that blocks letter push
+            // while the dual Work/About pill is open, which would also kill this handoff.
+            if (!this.isHeroTouchDiskMode() || this.heroTouchDiskZone !== 'hero') {
+                return false
+            }
+            if (!this.canHeroIntroPointerPlay()) return false
+            if (this.getHeroIntroTextProximityMix(x, y) < HERO_CURSOR_INTRO_GLASS_ON) {
+                return false
+            }
+            // Already collapsing toward idle — don't restart the expand raf.
+            if (this.heroTouchDiskPopping && !this.heroTouchDiskExpandOpening) {
+                return true
+            }
+            // Free the disk so glass handoff can engage after the pill closes.
+            this.heroTouchDiskHasMoved = true
+            this.markHeroTouchDiskInteracted()
+            this.closeHeroTouchDiskMenu()
+            return true
         },
         classifyHeroIntroTouchGesture(event) {
             const start = this.heroIntroTouchStart
@@ -4746,7 +5307,7 @@ export default {
                 const touchDisk = this.isHeroTouchDiskMode()
                 const sectionNav = touchDisk && this.heroTouchDiskZone !== 'hero'
                 // Work / About: stay pinned in the lower-right corner (mirror of the
-                // pager pill) — no free float, no soft home glide.
+                // pager pill). Left-pill menu grows from that fixed center.
                 if (sectionNav && !this.heroTouchDiskDragging) {
                     const rest = this.getHeroTouchDiskRestPos()
                     if (
@@ -4974,6 +5535,19 @@ export default {
                 if (menuOpen || this.heroTouchDiskExpand > 0.02) {
                     this.syncHeroTouchDiskMenuFrostLive()
                     this.stepHeroTouchDiskEdgeSpring()
+                    this.syncHeroTouchDiskMenuTextMorph()
+                } else if (
+                    touchDisk &&
+                    this.heroCursorIntroGlassHandoff &&
+                    this.touchDiskTextEffectsEnabled() &&
+                    !this.heroIntroDissipated
+                ) {
+                    // Keep the letter hole locked to the visible glass center.
+                    const { x: gx, y: gy } = this.heroCursorGlassPos
+                    if (this.isHeroIntroPointerNear(gx, gy)) {
+                        this.heroIntroPointer = { x: gx, y: gy }
+                        this.applyHeroIntroPointerShift()
+                    }
                 }
 
                 this.heroCursorGlassRaf = requestAnimationFrame(tick)
@@ -5597,7 +6171,6 @@ export default {
             }
 
             if (!this.isHeroTouchDiskMode() || !this.heroCursorActive) return
-            if (this.heroTouchDiskDragging) return
 
             this.heroCursorScrollHoverSuppressUntil = performance.now() + 140
             this.heroCursorHoverLockEl = null
@@ -5613,6 +6186,9 @@ export default {
 
                 // Outside hero: pin the disk in the lower-right corner (fixed, like the pill).
                 if (this.heroTouchDiskZone !== 'hero') {
+                    if (this.heroTouchDiskDragging) {
+                        this.endHeroTouchDiskDrag()
+                    }
                     if (
                         this.heroTouchDiskMenuOpen ||
                         this.heroTouchDiskExpand > 0.02
@@ -5634,6 +6210,9 @@ export default {
                     this.refreshHeroTouchDiskStage()
                     return
                 }
+
+                // Still on hero and finger-down — don't fight the drag.
+                if (this.heroTouchDiskDragging) return
 
                 if (!this.heroTouchDiskHasMoved) {
                     this.syncHeroTouchDiskRestPosition()
@@ -5667,7 +6246,34 @@ export default {
                 const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
                 const minForce = parseCssPx(introStyles, '--hero-intro-hover-min-force', 0)
                 const radiusExitMult = parseCssPx(introStyles, '--hero-intro-hover-radius-exit-mult', 1)
-                const { x, y } = pointer
+                // Touch-disk glass: field center = visible ball (not a lagged cursor target).
+                // Also drop the upward lift so the hole stays centered on the ball.
+                const touchGlass =
+                    this.isHeroTouchDiskMode() &&
+                    (this.heroCursorIntroGlassHandoff || this.heroCursorInRange)
+                const x = touchGlass
+                    ? this.heroCursorGlassPos?.x ?? pointer.x
+                    : pointer.x
+                const y = touchGlass
+                    ? this.heroCursorGlassPos?.y ?? pointer.y
+                    : pointer.y
+                const menuMorph =
+                    this.isHeroTouchDiskMode() &&
+                    !this.heroTouchDiskMenuFrostDual &&
+                    (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen) &&
+                    // Among hero text the pill yields to glass — keep the circular field.
+                    this.getHeroIntroTextProximityMix(x, y) < HERO_CURSOR_INTRO_GLASS_ON
+                const frost = menuMorph ? this.getHeroTouchDiskMenuLiveFrostExtents() : null
+                // Same reach / knock as the glass ball, shaped to the pill outline.
+                const softPad = frost
+                    ? Math.max(24, radius - HERO_CURSOR_GLASS_IDLE_SIZE / 2)
+                    : 0
+                const fieldSpan = frost ? softPad + frost.halfH : 0
+                const morphShift = maxShift
+                // Radial-only for touch glass so the void rings the ball; pill keeps a little lift.
+                const morphLift = frost ? maxLift * 0.35 : touchGlass ? 0 : maxLift
+                const morphForceExp = forceExp
+                const morphLiftExp = liftExp
 
                 const chars = [...intro.querySelectorAll('.hero-intro-char')]
                 const layout = this.heroIntroRestLayout
@@ -5724,24 +6330,60 @@ export default {
                         continue
                     }
 
-                    const dx = sample.cx - x
-                    const dy = sample.cy - y
-                    const dist = Math.hypot(dx, dy)
-                    const effectiveRadius = sample.wasPushed ? radius * radiusExitMult : radius
+                    let force = 0
+                    let lift = 0
+                    let nx = 0
+                    let ny = -1
+                    let inside = false
 
-                    if (dist < effectiveRadius) {
-                        const t = dist <= 0 ? 1 : 1 - dist / radius
-                        const force = Math.max(t ** forceExp, minForce) * maxShift
-                        const lift = Math.max(t ** liftExp, minForce) * maxLift
-                        let nx
-                        let ny
-                        if (dist <= 0.5) {
-                            nx = 0
-                            ny = -1
-                        } else {
-                            nx = dx / dist
-                            ny = dy / dist
+                    if (frost) {
+                        const { sdf, nx: snx, ny: sny } = heroTouchDiskStadiumField(
+                            sample.cx,
+                            sample.cy,
+                            x,
+                            y,
+                            frost.left,
+                            frost.right,
+                            frost.halfH,
+                        )
+                        const effectivePad = sample.wasPushed
+                            ? softPad * radiusExitMult
+                            : softPad
+                        if (sdf < effectivePad && fieldSpan > 0) {
+                            inside = true
+                            const t = Math.max(
+                                0,
+                                Math.min(1, (effectivePad - sdf) / fieldSpan),
+                            )
+                            force = Math.max(t ** morphForceExp, minForce) * morphShift
+                            lift = Math.max(t ** morphLiftExp, minForce) * morphLift
+                            nx = snx
+                            ny = sny
                         }
+                    } else {
+                        const dx = sample.cx - x
+                        const dy = sample.cy - y
+                        const dist = Math.hypot(dx, dy)
+                        const effectiveRadius = sample.wasPushed
+                            ? radius * radiusExitMult
+                            : radius
+
+                        if (dist < effectiveRadius) {
+                            inside = true
+                            const t = dist <= 0 ? 1 : 1 - dist / radius
+                            force = Math.max(t ** morphForceExp, minForce) * morphShift
+                            lift = Math.max(t ** morphLiftExp, minForce) * morphLift
+                            if (dist <= 0.5) {
+                                nx = 0
+                                ny = -1
+                            } else {
+                                nx = dx / dist
+                                ny = dy / dist
+                            }
+                        }
+                    }
+
+                    if (inside) {
                         el.classList.add('hero-intro-char--pushed')
                         el.style.setProperty('--hero-intro-push-x', `${nx * force}px`)
                         el.style.setProperty('--hero-intro-push-y', `${ny * force - lift}px`)
@@ -7424,8 +8066,27 @@ export default {
     transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
 }
 
+/* Work/About corner park: match carousel pill fade.
+   Only opacity / visibility / translate — never `transform`, or corner
+   snaps would ease across the whole screen. */
+.hero-intro-cursor-ball--stage-chrome {
+    transition:
+        opacity 0.32s ease,
+        visibility 0.32s ease,
+        translate 0.32s ease;
+}
+
 .hero-intro-cursor-ball--touch-instant {
     transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-intro-cursor-ball--touch-fade,
+    .hero-intro-cursor-ball--stage-chrome,
+    .hero-intro-cursor-dot-disk.hero-intro-cursor-ball--stage-chrome,
+    .hero-intro-cursor-dot-disk.hero-intro-cursor-ball--touch-fade {
+        transition: none;
+    }
 }
 
 .hero-touch-disk-menu {
@@ -7452,74 +8113,37 @@ export default {
     padding: 7px 0;
     box-sizing: border-box;
     font-family: 'Work Sans', sans-serif;
-    font-size: 20px;
-    font-weight: 400;
+    font-size: 18px;
+    font-weight: 500;
     line-height: 30px;
     color: var(--brand);
     text-decoration: none;
     white-space: nowrap;
     pointer-events: auto;
+    /* Opacity / scale driven every frame by expand — no CSS lag on collapse. */
     opacity: 0;
-    /*
-     * Center the box on (left, top), then rotate around that center so the word
-     * stays on a straight radial line through the blue dot. No position transition —
-     * animating transform while dragging made the pivot look like it was sliding.
-     */
-    transform-origin: center center;
-    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
-    transition:
-        opacity 0.14s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: calc(var(--menu-i, 0) * 30ms);
+    will-change: transform, opacity;
+    transition: none;
 }
 
 .hero-touch-disk-menu__item:active {
     color: var(--brand-active);
 }
 
-.hero-touch-disk-menu .hero-touch-disk-menu__item {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
-}
-
-.hero-touch-disk-menu--visible .hero-touch-disk-menu__item {
-    opacity: 1;
-    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
-}
-
-/* Single-item outward: left (end toward blue) or right (start toward blue). */
-.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-end,
-.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
-    .hero-touch-disk-menu__item--anchor-end {
-    transform: translate(-100%, -50%);
-}
-
-.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-start,
-.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
-    .hero-touch-disk-menu__item--anchor-start {
-    transform: translate(0, -50%);
-}
-
-/* Two-item clock-arm rays: centered on the ray, rotated with --menu-rot. */
-.hero-touch-disk-menu--stack .hero-touch-disk-menu__item--anchor-radial,
-.hero-touch-disk-menu--stack.hero-touch-disk-menu--visible
-    .hero-touch-disk-menu__item--anchor-radial {
-    transform: translate(-50%, -50%) rotate(var(--menu-rot, 0deg));
-}
-
 @media (prefers-reduced-motion: reduce) {
     .hero-touch-disk-menu__item {
         transition: none;
-        transition-delay: 0s;
     }
 }
 
 .hero-intro-cursor-dot-disk {
-    width: 46px;
-    height: 46px;
-    margin: -23px 0 0 -23px;
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
     background: transparent;
     transform-origin: center center;
-    /* Size is driven every frame by expand — avoid a second CSS transition lag. */
+    /* Size is driven every frame by expand — avoid a second CSS transition lag.
+       Opacity still fades via --touch-fade / --stage-chrome (later rules). */
     transition: none;
     border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
         color-mix(
@@ -7569,6 +8193,20 @@ export default {
     backdrop-filter: blur(3.5px) saturate(1.4);
 }
 
+/* Restore stage fade after `.hero-intro-cursor-dot-disk { transition: none }`. */
+.hero-intro-cursor-dot-disk.hero-intro-cursor-ball--stage-chrome {
+    transition:
+        opacity 0.32s ease,
+        visibility 0.32s ease,
+        translate 0.32s ease;
+}
+
+.hero-intro-cursor-dot-disk.hero-intro-cursor-ball--touch-fade:not(
+        .hero-intro-cursor-ball--stage-chrome
+    ):not(.hero-intro-cursor-ball--touch-instant) {
+    transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
+}
+
 /* Work / About: slightly stronger outer glow (matched by the pager pill). */
 .hero-intro-cursor-dot-disk--section-frost:not(.hero-intro-cursor-dot-disk--menu-frost) {
     box-shadow:
@@ -7580,7 +8218,11 @@ export default {
         0 0 22px rgba(0, 10, 170, 0.028);
 }
 
-/* Menu expand: keep full frost glass (don't fade ::before via hover-expand). */
+/* Menu expand: keep full frost glass (don't fade ::before via hover-expand).
+   Also skip touch-fade opacity — glass→frost among hero text must blur instantly. */
+.hero-intro-cursor-dot-disk--menu-frost {
+    transition: none !important;
+}
 .hero-intro-cursor-dot-disk--menu-frost::before {
     opacity: 1;
     background: rgba(255, 255, 255, 0.34);
@@ -7594,9 +8236,9 @@ export default {
 }
 
 .hero-intro-cursor-glass-ball {
-    width: 46px;
-    height: 46px;
-    margin: -23px 0 0 -23px;
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.8);
     z-index: 10002;
@@ -9058,6 +9700,71 @@ export default {
         white-space: nowrap;
         display: flex;
         align-items: center;
+    }
+
+    /* First-page exit: fade with location / company / top bar (0.3s). */
+    .hero-intro {
+        transition:
+            opacity 0.3s ease,
+            visibility 0.3s ease;
+    }
+
+    .portfolio-page--settled .portfolio-main .hero-intro.portfolio-fly.hero-intro--first-page-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    /* Scroll-back: replay letter cascade (no fade-in — fly in instead). */
+    .portfolio-page--settled .portfolio-main .hero-intro.portfolio-fly.hero-intro--scroll-replay {
+        transition: none;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+        animation: none !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay
+        .hero-intro-char,
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay
+        .hero-intro-char.hero-intro-char--pushed {
+        opacity: 0;
+        transform: translate3d(var(--fly-distance), 0, 0);
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
+        .hero-intro-char,
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
+        .hero-intro-char.hero-intro-char--pushed {
+        animation: portfolio-fly-from-right var(--hero-intro-char-duration, 1.15s) var(--fly-ease)
+            var(--hero-intro-char-delay) both !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro.portfolio-fly.hero-intro--scroll-replay:not(.hero-intro--chars) {
+        opacity: 0;
+        transform: translate3d(var(--fly-distance), 0, 0);
+        animation: none !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro.portfolio-fly.hero-intro--scroll-replay.hero-intro--scroll-replay-run:not(
+            .hero-intro--chars
+        ) {
+        animation: portfolio-fly-from-right 1.55s var(--fly-ease) both !important;
     }
 
     .portfolio-page {
