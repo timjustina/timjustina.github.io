@@ -1,0 +1,10544 @@
+<template>
+    <div
+        class="portfolio-page"
+        :class="{
+            'portfolio-page--reveal': pageRevealed,
+            'portfolio-page--hero-cascade': heroIntroCascadeReady,
+            'portfolio-page--settled': pageEntranceDone,
+            'portfolio-page--hero-cursor': heroCursorHideNative,
+            'portfolio-page--touch-disk': heroTouchDiskMode,
+        }"
+    >
+    <Teleport to="body">
+        <div
+            v-if="heroCursorEligible && !heroTouchDiskMode"
+            class="hero-intro-cursor-magnifier"
+            :style="heroCursorMagnifierWindowStyle"
+            aria-hidden="true"
+        >
+            <div class="hero-intro-cursor-magnifier__stage">
+                <div
+                    ref="heroCursorMagnifierScaled"
+                    class="hero-intro-cursor-magnifier__scaled"
+                    :style="heroCursorMagnifierScaledStyle"
+                >
+                    <div ref="heroCursorMirrorRoot" class="hero-intro-cursor-magnifier__clone-host" />
+                </div>
+                <div
+                    ref="heroCursorMagnifierTopBarFrost"
+                    class="hero-intro-cursor-magnifier__top-bar-frost"
+                    aria-hidden="true"
+                >
+                    <div
+                        ref="heroCursorMagnifierTopBarFrostBlurHost"
+                        class="hero-intro-cursor-magnifier__top-bar-frost-blur-host"
+                    >
+                        <div
+                            ref="heroCursorMagnifierTopBarFrostBlurScaled"
+                            class="hero-intro-cursor-magnifier__top-bar-frost-blur"
+                        >
+                            <div
+                                ref="heroCursorMirrorFrostBlurRoot"
+                                class="hero-intro-cursor-magnifier__clone-host"
+                            />
+                        </div>
+                    </div>
+                    <div class="hero-intro-cursor-magnifier__top-bar-frost-tint" />
+                </div>
+                <div
+                    class="hero-intro-cursor-magnifier__top-bar-chrome"
+                    :style="heroCursorMagnifierChromeStyle"
+                >
+                    <div ref="heroCursorMirrorTopBarRoot" class="hero-intro-cursor-magnifier__clone-host" />
+                </div>
+                <img
+                    ref="heroCursorMagnifierLogo"
+                    class="hero-intro-cursor-magnifier__logo"
+                    alt=""
+                    aria-hidden="true"
+                />
+            </div>
+        </div>
+        <span
+            v-if="heroCursorEligible"
+            class="hero-intro-cursor-ball hero-intro-cursor-dot-disk"
+            :class="{
+                'hero-intro-cursor-ball--visible': heroCursorDotDiskVisible,
+                'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
+                'hero-intro-cursor-ball--touch-instant':
+                    heroTouchDiskDissipateInstant || heroTouchDiskMenuChromeInstant,
+                'hero-intro-cursor-ball--stage-chrome':
+                    heroTouchDiskMode &&
+                    (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
+                'hero-intro-cursor-dot-disk--section-frost':
+                    heroTouchDiskMode &&
+                    (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
+                'hero-intro-cursor-dot-disk--menu-frost':
+                    heroTouchDiskExpand > 0.02 || heroTouchDiskMenuOpen,
+                'hero-intro-cursor-dot-disk--menu-pill': heroTouchDiskMenuFrostPillActive,
+            }"
+            :style="heroCursorDotDiskStyle"
+            aria-hidden="true"
+        />
+        <span
+            v-if="heroCursorEligible"
+            class="hero-intro-cursor-ball hero-intro-cursor-glass-ball"
+            :class="{
+                'hero-intro-cursor-ball--visible': heroCursorIntroGlassVisible,
+                'hero-intro-cursor-glass-ball--from-disk': heroCursorIntroGlassFromDisk,
+                'hero-intro-cursor-glass-ball--in-range': heroCursorIntroGlassInRangeGlow,
+                'hero-intro-cursor-glass-ball--in-range-tight': heroCursorRangeTight,
+                'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
+                'hero-intro-cursor-ball--touch-instant':
+                    heroTouchDiskDissipateInstant || heroTouchDiskMenuChromeInstant,
+            }"
+            :style="heroCursorIntroGlassStyle"
+            aria-hidden="true"
+        />
+        <span
+            v-if="heroCursorEligible"
+            class="hero-intro-cursor-ball hero-intro-cursor-ball--dot"
+            :class="{
+                'hero-intro-cursor-ball--visible': heroCursorVisible,
+                'hero-intro-cursor-ball--in-range': heroCursorInRange,
+                'hero-intro-cursor-ball--hover-expand': heroCursorDotHoverExpand,
+                'hero-intro-cursor-ball--touch-fade': heroTouchDiskMode,
+                'hero-intro-cursor-ball--touch-instant':
+                    heroTouchDiskDissipateInstant || heroTouchDiskMenuChromeInstant,
+                'hero-intro-cursor-ball--stage-chrome':
+                    heroTouchDiskMode &&
+                    (heroTouchDiskZone === 'work' || heroTouchDiskZone === 'about'),
+            }"
+            :style="heroCursorBallStyle"
+            aria-hidden="true"
+        />
+        <nav
+            v-if="heroTouchDiskMode && heroTouchDiskExpand > 0.08 && heroCursorVisible && heroTouchDiskOnStage"
+            class="hero-touch-disk-menu"
+            :class="{
+                'hero-touch-disk-menu--stack': heroTouchDiskMenuStacked,
+                'hero-touch-disk-menu--left': heroTouchDiskMenuFan === 'left',
+                'hero-touch-disk-menu--right': heroTouchDiskMenuFan === 'right',
+            }"
+            :style="heroTouchDiskMenuStyle"
+            aria-label="Portfolio sections"
+        >
+            <a
+                v-for="(item, index) in heroTouchDiskMenuItems"
+                :key="item.id"
+                class="hero-touch-disk-menu__item"
+                :class="{
+                    'hero-touch-disk-menu__item--external': item.external,
+                    'hero-touch-disk-menu__item--anchor-end': item.anchor === 'end',
+                    'hero-touch-disk-menu__item--anchor-start': item.anchor === 'start',
+                    'hero-touch-disk-menu__item--anchor-radial': item.anchor === 'radial',
+                }"
+                :href="item.href || '#'"
+                :target="item.external ? '_blank' : undefined"
+                :rel="item.external ? 'noopener noreferrer' : undefined"
+                :style="heroTouchDiskMenuItemStyle(item, index)"
+                @click="onHeroTouchDiskMenuItemClick(item, $event)"
+            >{{ item.label }}</a>
+        </nav>
+        <span
+            v-if="heroTouchDiskMode && heroCursorVisible && heroTouchDiskHitActive"
+            class="hero-intro-cursor-drag-hit"
+            :style="heroTouchDiskHitStyle"
+            aria-hidden="true"
+            @pointerdown="onHeroTouchDiskPointerDown"
+            @pointermove="onHeroTouchDiskPointerMove"
+            @pointerup="onHeroTouchDiskPointerUp"
+            @pointercancel="onHeroTouchDiskPointerUp"
+        />
+    </Teleport>
+    <WorkCarouselPager
+        :active="heroTouchDiskMode && heroTouchDiskZone === 'work'"
+    />
+    <div
+            v-if="showLoadingSplash || logoHandoff"
+            class="loading-splash"
+            :class="{ 'loading-splash--handoff': logoHandoff }"
+            aria-busy="true"
+            aria-live="polite"
+            aria-label="Loading"
+        >
+            <img
+                v-show="!logoHandoff"
+                class="loading-splash-frame"
+                :class="{ 'loading-splash-frame--rotating': loadingRotating }"
+                :src="loadingFrames[loadingFrameIndex]"
+                :style="{ transform: loadingSplashFrameTransform }"
+                alt=""
+                width="84"
+                height="84"
+            />
+            <img
+                v-if="logoHandoff"
+                class="loading-splash-handoff-logo"
+                :src="menuLogo"
+                :style="logoHandoffStyle"
+                alt=""
+                width="84"
+                height="42"
+                @transitionend="onLogoHandoffTransitionEnd"
+            />
+        </div>
+
+        <div
+            class="portfolio-content"
+            :class="{ 'portfolio-content--logo-handoff': logoHandoff }"
+            :aria-hidden="(showLoadingSplash || logoHandoff) && !pageRevealed ? 'true' : undefined"
+        >
+        <PortfolioTopBar transparent always-transparent nav-hero-align />
+
+        <p
+            class="hero-role"
+            :class="{ 'hero-role--visible': heroLocationVisible && pageRevealed }"
+            aria-label="Designing at Kin"
+        >
+            <span class="hero-role-icon-wrap" aria-hidden="true" v-html="officeIconSvg" />
+            <span class="hero-role-text">Designing @ Kin</span>
+        </p>
+
+        <p
+            class="hero-location"
+            :class="{ 'hero-location--visible': heroLocationVisible && pageRevealed }"
+            aria-label="London / Barcelona"
+        >
+            <span class="hero-location-icon-wrap" aria-hidden="true" v-html="locationIconSvg" />
+            <span class="hero-location-text">London / Barcelona</span>
+        </p>
+
+        <main class="portfolio-main">
+            <section class="hero">
+                <div class="hero-intro-wrap">
+                    <div class="hero-decor-anchor" aria-hidden="true"></div>
+                    <div
+                        class="hero-decor portfolio-fly portfolio-fly--from-right"
+                        :class="{ 'hero-decor--hidden': heroDecorHidden }"
+                        aria-hidden="true"
+                    >
+                        <picture>
+                            <img
+                                class="hero-decor-line"
+                                :src="lineAnimationExtended"
+                                alt=""
+                            />
+                        </picture>
+                    </div>
+                    <p
+                        class="hero-intro portfolio-fly portfolio-fly--from-right"
+                        :class="{
+                            'hero-intro--chars': heroIntroLetterMode,
+                            'hero-intro--dissipated': heroIntroDissipated,
+                            'hero-intro--reconsolidating': heroIntroReconsolidating,
+                            'hero-intro--first-page-hidden': heroIntroScrollHidden,
+                            'hero-intro--scroll-replay': heroIntroScrollReplaying,
+                            'hero-intro--scroll-replay-run': heroIntroScrollReplayArmed,
+                        }"
+                        :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
+                    >
+                        <template v-if="heroIntroLetterMode">
+                            <span class="hero-intro-chars" aria-hidden="true">
+                                <component
+                                    :is="part.em ? 'strong' : 'span'"
+                                    v-for="(part, partIndex) in heroIntroParts"
+                                    :key="partIndex"
+                                    :class="{
+                                        'hero-intro-em': part.em,
+                                        'hero-intro-em--keep': part.keep,
+                                    }"
+                                >
+                                    <template v-for="(token, tokenIndex) in part.tokens" :key="tokenIndex">
+                                        <span
+                                            v-if="token.type === 'group'"
+                                            class="hero-intro-nobreak"
+                                        >
+                                            <span
+                                                v-for="(word, wordIndex) in token.words"
+                                                :key="wordIndex"
+                                                class="hero-intro-word"
+                                            >
+                                                <span
+                                                    v-for="ch in word.chars"
+                                                    :key="ch.i"
+                                                    class="hero-intro-char"
+                                                    :class="{
+                                                        'hero-intro-char--afterthought': ch.afterthought,
+                                                    }"
+                                                >{{ ch.c }}</span><span
+                                                    v-if="word.trailing"
+                                                    class="hero-intro-word-space"
+                                                >{{ word.trailing }}</span>
+                                            </span>
+                                        </span>
+                                        <span
+                                            v-else
+                                            class="hero-intro-word"
+                                        >
+                                            <span
+                                                v-for="ch in token.chars"
+                                                :key="ch.i"
+                                                class="hero-intro-char"
+                                                :class="{
+                                                    'hero-intro-char--afterthought': ch.afterthought,
+                                                }"
+                                            >{{ ch.c }}</span><span
+                                                v-if="token.trailing"
+                                                class="hero-intro-word-space"
+                                            >{{ token.trailing }}</span>
+                                        </span>
+                                    </template>
+                                </component>
+                            </span>
+                        </template>
+                        <template v-else>
+                            <span class="hero-intro-lead">I'm Tim Justina Yeung, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and academic research.
+                            <span class="hero-intro-nobreak">I deeply</span> enjoy understanding complex problems and providing creative solutions
+                            <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
+                        </template>
+                    </p>
+                </div>
+            </section>
+
+            <section id="work" class="work">
+                <div class="work-slot">
+                    <article
+                        id="work-first"
+                        class="project project--featured portfolio-fly portfolio-fly--from-right"
+                    >
+                        <router-link
+                            to="/work/DashboardDesign"
+                            class="project-image-link"
+                            @pointerdown="onFeaturedProjectPress"
+                            @pointerup="onFeaturedProjectPressEnd"
+                            @pointercancel="onFeaturedProjectPressEnd"
+                            @click="onFeaturedProjectNavigate"
+                        >
+                            <img
+                                class="project-image"
+                                :src="dashboardHero"
+                                width="2400"
+                                height="1352"
+                                decoding="async"
+                                fetchpriority="high"
+                                alt="IoT Adherence Analytics"
+                            />
+                        </router-link>
+                        <div class="project-caption">
+                            <router-link
+                                to="/work/DashboardDesign"
+                                class="project-caption-link"
+                                @pointerdown="onFeaturedProjectPress"
+                                @pointerup="onFeaturedProjectPressEnd"
+                                @pointercancel="onFeaturedProjectPressEnd"
+                                @click="onFeaturedProjectNavigate"
+                            >
+                                <div class="project-caption-header project-caption-shift">
+                                    <h2 class="project-title">
+                                        IoT Adherence Analytics
+                                    </h2>
+                                </div>
+                                <p class="project-description project-caption-shift">
+                                    0‑to‑1 design of a caregiver-facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
+                                </p>
+                                <span class="project-year project-caption-shift">Kin<span class="project-year-sep">/ /</span>2026</span>
+                            </router-link>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="work-slot work-slot--offset">
+                    <article
+                        class="project project--offset project--upcoming portfolio-fly portfolio-fly--from-left"
+                        :style="offsetProjectTiltStyle"
+                    >
+                        <div class="project-image-wrap">
+                            <img
+                                class="project-image"
+                                :src="multiplatformHero"
+                                alt="IoT Home Medication Solution"
+                            />
+                        </div>
+                        <div class="project-caption">
+                            <div class="project-caption-header project-caption-shift">
+                                <h2 class="project-title">
+                                    IoT Home Medication Solution
+                                </h2>
+                            </div>
+                            <p class="project-description project-caption-shift">
+                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence
+                            </p>
+                            <span class="project-year project-caption-shift">Kin<span class="project-year-sep">/ /</span>2024</span>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="work-slot">
+                    <article
+                        id="work-last"
+                        class="project project--upcoming portfolio-fly portfolio-fly--from-right"
+                    >
+                        <div class="project-image-wrap">
+                            <img
+                                class="project-image"
+                                :src="marketplaceHero"
+                                alt="Art Curation and Marketplace"
+                            />
+                        </div>
+                        <div class="project-caption">
+                            <div class="project-caption-header project-caption-shift">
+                                <h2 class="project-title">
+                                    Art Curation and Marketplace
+                                </h2>
+                            </div>
+                            <p class="project-description project-caption-shift">
+                                0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
+                            </p>
+                            <span class="project-year project-caption-shift">PONS<span class="project-year-sep">/ /</span>2019</span>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </main>
+
+        <span class="about-line-bridge" aria-hidden="true">
+            <img
+                class="about-line-bridge-img portfolio-decor-line-img"
+                :src="lineAnimationExtended"
+                alt=""
+            />
+        </span>
+
+        <section
+            id="about"
+            class="about"
+            :class="{ 'about--reveal': aboutRevealed, 'about--settled': aboutEntranceDone }"
+        >
+            <span class="about-line" aria-hidden="true">
+                <img
+                    class="about-line-img portfolio-decor-line-img"
+                    :src="lineAnimationExtended"
+                    alt=""
+                />
+            </span>
+            <div class="about-inner">
+                <div class="about-photo-column portfolio-fly portfolio-fly--from-left">
+                    <img
+                        v-if="aboutPhoto"
+                        class="about-photo"
+                        :src="aboutPhoto"
+                        alt="Tim Justina Yeung"
+                    />
+                    <div v-else class="about-photo about-photo--placeholder" />
+                </div>
+                <div id="about-bio" class="about-text-column">
+                    <div class="about-intro">
+                        <h2 class="about-heading portfolio-fly portfolio-fly--from-left">About Tim ( 湉 )</h2>
+                        <div class="about-meta portfolio-fly portfolio-fly--from-right">
+                            <p class="about-location" aria-label="London / Barcelona">
+                                <span class="about-location-icon-wrap" aria-hidden="true" v-html="locationIconSvg" />
+                                <span class="about-location-text-wrap">
+                                    <span class="about-location-text">London / Barcelona</span>
+                                    <span class="about-location-text-white-stack" aria-hidden="true">
+                                        <span class="about-location-text-white-inner">
+                                            <span class="about-location-text about-location-text--glow">London / Barcelona</span>
+                                            <span class="about-location-text about-location-text--soft">London / Barcelona</span>
+                                            <span class="about-location-text about-location-text--white">London / Barcelona</span>
+                                        </span>
+                                    </span>
+                                </span>
+                            </p>
+                            <p class="about-role" aria-label="Designing at Kin">
+                                <span class="about-role-icon-wrap" aria-hidden="true" v-html="officeIconSvg" />
+                                <span class="about-role-text-wrap">
+                                    <span class="about-role-text">Designing @ Kin</span>
+                                    <span class="about-role-text-white-stack" aria-hidden="true">
+                                        <span class="about-role-text-white-inner">
+                                            <span class="about-role-text about-role-text--glow">Designing @ Kin</span>
+                                            <span class="about-role-text about-role-text--soft">Designing @ Kin</span>
+                                            <span class="about-role-text about-role-text--white">Designing @ Kin</span>
+                                        </span>
+                                    </span>
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    <p class="about-bio portfolio-fly portfolio-fly--from-left">
+                        Started in the east, ended up in the west. Started in academia, ended up in the
+                        real world. Started as a curious child, ended up a very curious adult. Trained to
+                        solve problems with no precedent.
+                        <br><br>
+                        Think good designs elevate people; bad designs are costly;
+                        effective designs are invisible champions.
+                        <br><br>
+                        At work, value a good team. Figure out
+                        context and metrics before jumping in. Have high tolerance for ambiguity. Very comfortable with data.
+                        Think critically. Interrogate LLMs.
+                        <br><br>
+                        Like to work out in free time - old books and films for the brain,
+                        gym and swim for the rest. Drink wild beers on cheat days. Love a good conversation.
+                        <br><br>
+                        For the nerds: a <a href="https://journals.biologists.com/dev/article/151/24/dev204256/363461/Short-range-Fgf-signalling-patterns-hindbrain" class="about-link">link</a> to my past life in
+                        developmental neurobiology
+                        (research paper).
+                    </p>
+                    <div class="about-actions portfolio-fly portfolio-fly--from-left">
+                        <div class="about-actions-row">
+                            <a
+                                href="https://www.linkedin.com/in/timjustina"
+                                class="about-action-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >Linkedin</a>
+                            <a
+                                :href="cvUrl"
+                                class="about-action-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >CV</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <PortfolioSiteFooter :local-pointer-push="false" />
+        </div>
+    </div>
+</template>
+
+<script>
+import dashboardHero from '../assets/1_dashboard/0_dashboard_hero_detail-2400.jpg'
+import multiplatformHero from '../assets/2_multiplatform/0_multiplatform_hero.jpg'
+import marketplaceHero from '../assets/3_marketplace/0_marketplace_hero.jpg'
+import aboutPhoto from '../assets/portrait.jpg'
+import lineAnimationExtended from '../assets/line_animation_extended.svg'
+import loadingNormal from '../assets/loading/loading_normal.svg'
+import loadingFolded from '../assets/loading/loading_folded.svg'
+import menuLogo from '../assets/TjyCutoutLogo.svg'
+import locationIconSvg from '../assets/location.svg?raw'
+import officeIconSvg from '../assets/1_dashboard/office.svg?raw'
+import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
+import PortfolioTopBar from '../components/PortfolioTopBar.vue'
+import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
+import WorkCarouselPager from '../components/WorkCarouselPager.vue'
+import {
+    getWorkScrollTop,
+    isAboutSectionActive,
+    scrollToAbout,
+    scrollToPortfolioHash,
+    scrollToWork,
+} from '../utils/scrollToAbout.js'
+import {
+    DESKTOP_MEDIA_QUERY,
+    MOBILE_ABOUT_MEDIA_QUERY,
+    MOBILE_MEDIA_QUERY,
+    SMALL_MOBILE_MEDIA_QUERY,
+    TABLET_MOBILE_MEDIA_QUERY,
+    WORK_DECOR_LINE_MEDIA_QUERY,
+} from '../utils/breakpoints.js'
+import {
+    cancelImageExpand,
+    prefersReducedMotion,
+    PRESS_BORDER_RADIUS,
+    startImageExpand,
+} from '../utils/imageExpandTransition.js'
+import {
+    lerpTilt,
+    needsOrientationPermission,
+    orientationToShift,
+    requestOrientationPermission,
+    supportsDeviceOrientation,
+} from '../utils/deviceTilt.js'
+import {
+    applyPointerCharShift,
+    clearPointerCharShift,
+} from '../utils/pushText.js'
+
+const LOADING_FRAME_MS = 500
+const LOADING_PAUSE_MS = 250
+const LOADING_ROTATE_MS = 800
+const LOADING_MAX_ITERATIONS = 6
+const LOGO_HANDOFF_MS = 850
+const LOGO_HANDOFF_REVEAL_LEAD_MS = 140
+const LOGO_HANDOFF_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+const PORTFOLIO_SECTION_HASHES = new Set(['#about', '#work-first', '#work'])
+const PORTFOLIO_DECOR_LINE_SYNCED_EVENT = 'portfolio-decor-line-synced'
+const HERO_CURSOR_MAGNIFY_BOOST = 0.25
+const HERO_CURSOR_LAYER_Z = 10002
+const HERO_CURSOR_HOVER_LOCK_PAD = 8
+const HERO_CURSOR_DOT_SIZE = 8
+const HERO_CURSOR_GLASS_IDLE_SIZE = 48
+const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
+const HERO_CURSOR_HOLLOW_END = 0.28
+const HERO_CURSOR_HOVER_LERP = 0.3
+const HERO_CURSOR_HOVER_DISK_EXPAND_IN = 0.1
+const HERO_CURSOR_HOVER_DOT_RING_OUT = 0.22
+const HERO_CURSOR_RANGE_END_SIZE = 32
+const HERO_CURSOR_RANGE_POP = 1.5
+const HERO_CURSOR_RANGE_DOT_PEAK = 1.85
+const HERO_CURSOR_RANGE_EXPAND_END = 0.34
+const HERO_CURSOR_INTRO_GLASS_ON = 0.04
+const HERO_CURSOR_INTRO_GLASS_OFF = 0.008
+const HERO_CURSOR_MIRROR_HOVER_ANCESTORS = ['.project', '.project--upcoming']
+/** Mobile touch disk: edge inset matches mobile logo left pad. */
+const HERO_TOUCH_DISK_EDGE_GAP_PX = 20
+/**
+ * Hero rest: disk center sits this fraction of the way up from the hero
+ * intro top toward the logo bottom (1/3 of that gap).
+ */
+const HERO_TOUCH_DISK_REST_GAP_FROM_HERO = 1 / 3
+const HERO_TOUCH_DISK_HIT_SIZE = 56
+/** Arc fly-in duration before idle settle. */
+const HERO_TOUCH_DISK_ENTRANCE_MS = 1100
+/** Wait after the fly-in stage ends before the idle jiggle starts. */
+const HERO_TOUCH_DISK_JIGGLE_DELAY_MS = 2000
+/** Full jiggle cycle length (one quick SW nudge, then rest). */
+const HERO_TOUCH_DISK_JIGGLE_PERIOD_MS = 5000
+/** Burst length inside each cycle — longer = softer, less jerky. */
+const HERO_TOUCH_DISK_JIGGLE_BURST_MS = 720
+/** Soft glide when the disk trips the hero viewport bottom → work. */
+const HERO_TOUCH_DISK_WORK_SNAP_MS = 980
+/** Ignore sub-threshold pointer jitter so taps still register (hero drag only). */
+const HERO_TOUCH_DISK_TAP_SLOP_PX = 8
+/** Tap open/close expand duration (continuous — no settle pause). */
+const HERO_TOUCH_DISK_EXPAND_MS = 360
+/** Ignore outside-close / ghost mouse clicks after a touch open. */
+const HERO_TOUCH_DISK_OUTSIDE_CLOSE_GUARD_MS = 420
+/** Optimistic zone lock while menu scroll is in flight (must cover scroll duration). */
+const HERO_TOUCH_DISK_ZONE_LOCK_MS = 700
+/** Soft shared open overshoot for labels / blue dot (frost has its own bounce). */
+const HERO_TOUCH_DISK_EXPAND_OVERSHOOT = 1.06
+/** Frost-only open overshoot — punchy expand then shrink-settle. */
+const HERO_TOUCH_DISK_FROST_OVERSHOOT = 1.62
+/** Frost open: initial squash depth (px) before the expand shoots out. */
+const HERO_TOUCH_DISK_FROST_DIP_PX = 18
+/** Frost open: linear progress window for the squash (0…1). */
+const HERO_TOUCH_DISK_FROST_DIP_UNTIL = 0.24
+/** Blue center diameter while menu is open (idle dot is 8). */
+const HERO_TOUCH_DISK_MENU_DOT_SIZE = 4
+/**
+ * Gap from blue center edge to the near edge of a menu label.
+ * Matches carousel pager `--pager-edge-gap` (20).
+ */
+const HERO_TOUCH_DISK_MENU_LABEL_GAP_PX = 20
+/** Must match `.hero-touch-disk-menu__item` box height (lh 30 + pad 14). */
+const HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX = 44
+/** Must match `.hero-touch-disk-menu__item` typography for width measure. */
+const HERO_TOUCH_DISK_MENU_MEASURE_LABELS = ['Work', 'About']
+/**
+ * Dual Work+About (hero): Work at 180° + About at 0°.
+ * Corner (work/about): single opposite label; frost pill grows left from a fixed center.
+ * Near edges the dual disk elastically bounces inward so labels + frost stay in view.
+ */
+/** Viewport inset for open menu — matches mobile `--page-pad` / logo edge gap. */
+const HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX = HERO_TOUCH_DISK_EDGE_GAP_PX
+/**
+ * Lower-corner park pocket (Work/About): keep the idle disk — no project magnifier.
+ * Rest (~43px inset) still sits inside.
+ */
+const HERO_TOUCH_DISK_CORNER_BAND_PX = 120
+/** Elastic spring toward menu-safe position (underdamped for a soft bounce). */
+const HERO_TOUCH_DISK_EDGE_SPRING_K = 0.28
+const HERO_TOUCH_DISK_EDGE_SPRING_DAMP = 0.68
+/** While dragging open, how much past the safe edge rubber-bands (0 = hard clamp). */
+const HERO_TOUCH_DISK_EDGE_RUBBER = 0.28
+const HERO_CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
+/** Mobile dissipate: leave soon after scroll starts; reconsolidate before y hits 0. */
+const HERO_INTRO_DISSIPATE_LEAVE_PX = 72
+const HERO_INTRO_DISSIPATE_RETURN_PX = 480
+
+/** Per-label glyph widths + max (DOM-measured to match rendered text). */
+const heroTouchDiskMenuLabelWidths = Object.create(null)
+let heroTouchDiskMenuLabelMaxWidthPx = 0
+
+function measureHeroTouchDiskMenuLabelWidths() {
+    if (typeof document === 'undefined') {
+        heroTouchDiskMenuLabelWidths.Work = 48
+        heroTouchDiskMenuLabelWidths.About = 58
+        heroTouchDiskMenuLabelMaxWidthPx = 58
+        return heroTouchDiskMenuLabelWidths
+    }
+
+    const probe = document.createElement('span')
+    probe.setAttribute('aria-hidden', 'true')
+    probe.style.cssText = [
+        'position:absolute',
+        'left:-9999px',
+        'top:0',
+        'visibility:hidden',
+        'pointer-events:none',
+        'white-space:nowrap',
+        'margin:0',
+        'padding:0',
+        'border:0',
+        'font-family:"Work Sans",sans-serif',
+        'font-size:18px',
+        'font-weight:500',
+        'line-height:30px',
+        'font-synthesis:none',
+    ].join(';')
+    document.body.appendChild(probe)
+
+    let max = 0
+    for (const label of HERO_TOUCH_DISK_MENU_MEASURE_LABELS) {
+        probe.textContent = label
+        const w = probe.getBoundingClientRect().width
+        heroTouchDiskMenuLabelWidths[label] = w
+        max = Math.max(max, w)
+    }
+    probe.remove()
+    heroTouchDiskMenuLabelMaxWidthPx = Math.max(max, 1)
+    return heroTouchDiskMenuLabelWidths
+}
+
+function getHeroTouchDiskMenuLabelWidth(label) {
+    if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
+    return heroTouchDiskMenuLabelWidths[label] || heroTouchDiskMenuLabelMaxWidthPx || 58
+}
+
+/**
+ * Menu frost size — matches work-carousel-pager rhythm:
+ * height matches idle frost (48), uniform 20px gaps (edge pad = label↔blue gap).
+ * @param {'dual'|'left'|'circle'} mode
+ * @param {number} [labelWidth] glyph width for `left` mode
+ */
+const HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX = 20
+
+function getHeroTouchDiskMenuFrostMetrics(mode = 'circle', labelWidth = 0) {
+    if (!heroTouchDiskMenuLabelMaxWidthPx) measureHeroTouchDiskMenuLabelWidths()
+    const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+    const gap = HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+    const outer = HERO_TOUCH_DISK_MENU_FROST_OUTER_GAP_PX
+    const workW = heroTouchDiskMenuLabelWidths.Work || 48
+    const aboutW = heroTouchDiskMenuLabelWidths.About || 58
+    const height = HERO_CURSOR_GLASS_IDLE_SIZE
+    const idleR = height / 2
+
+    if (mode === 'dual') {
+        // edge + Work + gap + blueR  |  blueR + gap + About + edge
+        const left = outer + workW + gap + blueR
+        const right = outer + aboutW + gap + blueR
+        return {
+            width: left + right,
+            height,
+            left,
+            right,
+            halfH: idleR,
+            pill: true,
+        }
+    }
+
+    if (mode === 'left') {
+        // Fixed right cap (idle radius); grow left for the single label.
+        const w = labelWidth || Math.max(workW, aboutW, heroTouchDiskMenuLabelMaxWidthPx || 58)
+        const left = outer + w + gap + blueR
+        const right = idleR
+        return {
+            width: left + right,
+            height,
+            left,
+            right,
+            halfH: idleR,
+            pill: true,
+        }
+    }
+
+    const maxLabel = Math.max(workW, aboutW, heroTouchDiskMenuLabelMaxWidthPx || 58)
+    const halfW = outer + maxLabel + gap + blueR
+    return {
+        width: halfW * 2,
+        height: halfW * 2,
+        left: halfW,
+        right: halfW,
+        halfH: halfW,
+        pill: false,
+    }
+}
+
+function getHeroTouchDiskMenuFrostSize(mode = 'circle', labelWidth = 0) {
+    return getHeroTouchDiskMenuFrostMetrics(mode, labelWidth).width
+}
+
+/** Open: soft overshoot past 1 then settle. Close: ease-out cubic. */
+function heroTouchDiskExpandEase(t, opening) {
+    const x = Math.max(0, Math.min(1, t))
+    if (!opening) return 1 - (1 - x) ** 3
+    const c1 = HERO_TOUCH_DISK_EXPAND_OVERSHOOT
+    const c3 = c1 + 1
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
+}
+
+/**
+ * Frost disk only — obvious squash then rubber-band expand on open.
+ * `t` is linear 0…1 animation progress.
+ */
+function heroTouchDiskFrostExpandEase(t) {
+    const x = Math.max(0, Math.min(1, t))
+    const c1 = HERO_TOUCH_DISK_FROST_OVERSHOOT
+    const c3 = c1 + 1
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
+}
+
+function heroTouchDiskFrostOpenDipPx(t) {
+    const until = HERO_TOUCH_DISK_FROST_DIP_UNTIL
+    if (t <= 0 || t >= until) return 0
+    return Math.sin((t / until) * Math.PI) * HERO_TOUCH_DISK_FROST_DIP_PX
+}
+
+/**
+ * Signed distance + outward normal for a horizontal stadium (pill) whose
+ * blue-center sits at (cx, cy), with left/right extents and half-height.
+ * Negative sdf = inside the frost outline.
+ */
+function heroTouchDiskStadiumField(px, py, cx, cy, left, right, halfH) {
+    const dx = px - cx
+    const dy = py - cy
+    const r = Math.max(halfH, 0.5)
+    const x0 = -left + r
+    const x1 = right - r
+    if (x1 < x0) {
+        const cr = Math.max(left, right, r)
+        const dist = Math.hypot(dx, dy)
+        if (dist < 1e-5) return { sdf: -cr, nx: 0, ny: -1 }
+        return { sdf: dist - cr, nx: dx / dist, ny: dy / dist }
+    }
+    const qx = dx < x0 ? x0 : dx > x1 ? x1 : dx
+    const ex = dx - qx
+    const ey = dy
+    const dist = Math.hypot(ex, ey)
+    if (dist < 1e-5) {
+        // On the medial axis — lift letters up out of the pill.
+        return { sdf: -r, nx: 0, ny: -1 }
+    }
+    return { sdf: dist - r, nx: ex / dist, ny: ey / dist }
+}
+
+/** Place a label on a ray; left keeps end toward blue, right keeps start toward blue. */
+function placeHeroTouchDiskMenuRadial(base, side, deg, gap, width) {
+    const centerR = gap + width / 2
+    const rad = (deg * Math.PI) / 180
+    const rot = side === 'left' ? deg - 180 : deg
+    return {
+        ...base,
+        x: `${Math.cos(rad) * centerR}px`,
+        y: `${Math.sin(rad) * centerR}px`,
+        rot: `${rot}deg`,
+        anchor: 'radial',
+    }
+}
+
+/** Soft rubber-band past a [min, max] range (iOS-style). */
+function heroTouchDiskRubber(value, min, max, factor = HERO_TOUCH_DISK_EDGE_RUBBER) {
+    if (max < min) {
+        const mid = (min + max) / 2
+        return mid
+    }
+    if (value < min) return min - (min - value) * factor
+    if (value > max) return max + (value - max) * factor
+    return value
+}
+
+/** Lower-left / lower-right park zones — keep the disk (no project magnifier). */
+function isHeroTouchDiskInLowerCorner(diskX, diskY, vw, vh) {
+    const band = HERO_TOUCH_DISK_CORNER_BAND_PX
+    const nearBottom = diskY >= vh - band
+    const nearLeft = diskX <= band
+    const nearRight = diskX >= vw - band
+    return nearBottom && (nearLeft || nearRight)
+}
+
+/** Quadratic Bézier point (t in 0…1). */
+function heroTouchDiskQuadPoint(t, p0, p1, p2) {
+    const u = 1 - t
+    return u * u * p0 + 2 * u * t * p1 + t * t * p2
+}
+
+/**
+ * Soft SW attention nudge — single raised-cosine out-and-back (no reverse whip).
+ * Returns pixel offset + scale; rest of the 5s period is identity.
+ */
+function heroTouchDiskJiggleSample(elapsedMs) {
+    const period = HERO_TOUCH_DISK_JIGGLE_PERIOD_MS
+    const burst = HERO_TOUCH_DISK_JIGGLE_BURST_MS
+    const local = ((elapsedMs % period) + period) % period
+    if (local >= burst) return { x: 0, y: 0, scale: 1 }
+    const u = local / burst
+    // Smooth 0→1→0 envelope (derivative 0 at ends — no snap).
+    const envelope = Math.sin(u * Math.PI)
+    const soft = envelope * envelope
+    return {
+        x: -4.5 * soft,
+        y: 4.5 * soft,
+        scale: 1 + 0.055 * soft,
+    }
+}
+
+function isHeroCursorEnvironment() {
+    return (
+        typeof window !== 'undefined' &&
+        window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+}
+
+function isHeroTouchDiskEnvironment() {
+    return (
+        typeof window !== 'undefined' &&
+        !window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+}
+
+function getHeroCursorInitialPos() {
+    return {
+        x: Math.round(window.innerWidth / 2),
+        y: Math.round(window.innerHeight / 2),
+    }
+}
+
+const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
+    'a[href]',
+    'button:not(:disabled)',
+    '[role="button"]',
+    'label',
+    'input:not(:disabled)',
+    'textarea:not(:disabled)',
+    'select:not(:disabled)',
+    '.cta-button',
+    '.nav-link',
+    '.project-image-link',
+    '.project-caption-link',
+    '.about-action-btn',
+    '.footer-email',
+    '.project-tldr-trigger',
+].join(', ')
+
+function heroCursorHoverMorph(hoverMix) {
+    if (hoverMix <= 0) return { hollow: 0, expand: 0 }
+    if (hoverMix <= HERO_CURSOR_HOLLOW_END) {
+        const t = hoverMix / HERO_CURSOR_HOLLOW_END
+        return { hollow: 1 - (1 - t) ** 2.2, expand: 0 }
+    }
+    const t = (hoverMix - HERO_CURSOR_HOLLOW_END) / (1 - HERO_CURSOR_HOLLOW_END)
+    return { hollow: 1, expand: 1 - (1 - t) ** 3 }
+}
+
+function heroCursorHoverDiskForward(hoverMix) {
+    if (hoverMix <= 0) return 0
+    const t = Math.min(1, hoverMix)
+    const crest = Math.sin(Math.min(t, 0.92) / 0.92 * Math.PI)
+    const settle = t > 0.78 ? (t - 0.78) / 0.22 : 0
+    return crest * 0.14 * (1 - settle)
+}
+
+function heroCursorHoverDiskOpacity(hoverMix) {
+    if (hoverMix <= 0) return 1
+    const { hollow, expand } = heroCursorHoverMorph(hoverMix)
+    if (expand <= 0) {
+        return Math.max(0.4, 1 - hollow * 0.42)
+    }
+    if (expand < HERO_CURSOR_HOVER_DISK_EXPAND_IN) {
+        return (
+            0.4 +
+            heroCursorRangeSmoothstep(expand / HERO_CURSOR_HOVER_DISK_EXPAND_IN) * 0.6
+        )
+    }
+    return 1
+}
+
+function heroCursorDotDiskShouldShow(introGlassHandoff) {
+    return !introGlassHandoff
+}
+
+function heroCursorHoverExpandSize(hoverMix) {
+    const { expand } = heroCursorHoverMorph(hoverMix)
+    if (expand <= 0) return HERO_CURSOR_DOT_SIZE
+    const targetSize = heroCursorDotDiskSize(hoverMix)
+    const easedExpand = 1 - (1 - expand) ** 2.8
+    return HERO_CURSOR_DOT_SIZE + (targetSize - HERO_CURSOR_DOT_SIZE) * easedExpand
+}
+
+function heroCursorDistanceToRect(x, y, rect) {
+    const cx = Math.max(rect.left, Math.min(x, rect.right))
+    const cy = Math.max(rect.top, Math.min(y, rect.bottom))
+    return Math.hypot(x - cx, y - cy)
+}
+
+function heroCursorRangeSmoothstep(t) {
+    const x = Math.max(0, Math.min(1, t))
+    return x * x * (3 - 2 * x)
+}
+
+function heroCursorRangeBounceOut(t) {
+    const n1 = 7.5625
+    const d1 = 2.75
+    if (t < 1 / d1) return n1 * t * t
+    if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75
+    if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375
+    return n1 * (t -= 2.625 / d1) * t + 0.984375
+}
+
+function heroCursorRangeExpandEase(t) {
+    const c1 = 2.9
+    const c3 = c1 + 1
+    return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+}
+
+function heroCursorRangeGlassSize(outSize, rangeMix) {
+    if (rangeMix <= 0.001) return outSize
+    if (rangeMix >= 1) return HERO_CURSOR_RANGE_END_SIZE
+
+    const peakSize = outSize * HERO_CURSOR_RANGE_POP
+    if (rangeMix <= HERO_CURSOR_RANGE_EXPAND_END) {
+        const t = rangeMix / HERO_CURSOR_RANGE_EXPAND_END
+        const eased = heroCursorRangeExpandEase(t)
+        return outSize + (peakSize - outSize) * eased
+    }
+
+    const t = (rangeMix - HERO_CURSOR_RANGE_EXPAND_END) / (1 - HERO_CURSOR_RANGE_EXPAND_END)
+    const shrink = heroCursorRangeBounceOut(t)
+    return HERO_CURSOR_RANGE_END_SIZE + (peakSize - HERO_CURSOR_RANGE_END_SIZE) * (1 - shrink)
+}
+
+function heroCursorRangeDotVisual(rangeMix) {
+    if (rangeMix <= 0) return { scale: 1, opacity: 1 }
+    if (rangeMix >= 1) return { scale: 0, opacity: 0 }
+
+    const peakScale = HERO_CURSOR_RANGE_DOT_PEAK
+    let scale
+    if (rangeMix <= HERO_CURSOR_RANGE_EXPAND_END) {
+        const t = rangeMix / HERO_CURSOR_RANGE_EXPAND_END
+        scale = 1 + (peakScale - 1) * heroCursorRangeExpandEase(t)
+    } else {
+        const t = (rangeMix - HERO_CURSOR_RANGE_EXPAND_END) / (1 - HERO_CURSOR_RANGE_EXPAND_END)
+        scale = peakScale * (1 - heroCursorRangeBounceOut(t))
+    }
+
+    const fadeStart = HERO_CURSOR_RANGE_EXPAND_END * 0.55
+    let opacity = 1
+    if (rangeMix > fadeStart) {
+        const t = (rangeMix - fadeStart) / (1 - fadeStart)
+        opacity = Math.max(0, 1 - heroCursorRangeBounceOut(t))
+    }
+
+    return { scale, opacity }
+}
+
+function heroCursorDotDiskSize(hoverMix) {
+    const fullHover = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA
+    if (hoverMix <= 0) return HERO_CURSOR_GLASS_IDLE_SIZE
+    const { hollow, expand } = heroCursorHoverMorph(hoverMix)
+    if (expand <= 0) {
+        return (
+            HERO_CURSOR_GLASS_IDLE_SIZE +
+            (HERO_CURSOR_DOT_SIZE - HERO_CURSOR_GLASS_IDLE_SIZE) * hollow
+        )
+    }
+    return HERO_CURSOR_DOT_SIZE + (fullHover - HERO_CURSOR_DOT_SIZE) * expand
+}
+
+function heroCursorIntroBallSize(hoverMix, rangeMix) {
+    const outSize = HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA * hoverMix
+    return heroCursorRangeGlassSize(outSize, rangeMix)
+}
+
+function parseCssTimeSec(styles, prop, fallback) {
+    const raw = styles.getPropertyValue(prop).trim()
+    if (!raw) return fallback
+    const n = parseFloat(raw)
+    return Number.isFinite(n) ? n : fallback
+}
+
+function parseCssPx(styles, prop, fallback) {
+    const raw = styles.getPropertyValue(prop).trim()
+    if (!raw) return fallback
+    const n = parseFloat(raw)
+    return Number.isFinite(n) ? n : fallback
+}
+
+function magnifierStageRectFromViewportRect(layout, rect) {
+    const combinedScale = layout.scale * layout.forwardScale
+    return {
+        left: Math.round(layout.half + (rect.left - layout.cx) * combinedScale),
+        top: Math.round(layout.half + (rect.top - layout.cy) * combinedScale),
+        width: Math.round(rect.width * combinedScale),
+        height: Math.round(rect.height * combinedScale),
+        scale: combinedScale,
+    }
+}
+
+function magnifierIntersectsLayout(layout, rect) {
+    return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > layout.windowTop &&
+        rect.top < layout.windowTop + layout.size &&
+        rect.right > layout.windowLeft &&
+        rect.left < layout.windowLeft + layout.size
+    )
+}
+
+const PROJECT_CAPTION_LINE_GAP = 30
+/**
+ * How far above a caption the grow tip starts the slide.
+ */
+const PROJECT_CAPTION_LINE_APPROACH_LEAD_PX = 10
+/** Viewport fraction where the scroll-linked decor tip tracks (from top). */
+const TABLET_DECOR_GROW_TIP_VIEWPORT = 0.7
+/** Desktop entrance: grow from tip to hero-viewport bottom (ms). */
+const DESKTOP_DECOR_HERO_GROW_MS = 780
+
+const HERO_INTRO_PARTS = [
+    { text: "I'm Tim Justina Yeung, a ", em: false },
+    { text: 'Product Designer', em: true, keep: true },
+    {
+        text: ' with a background in Neuroscience and academic research. I deeply enjoy understanding complex problems and providing creative solutions ',
+        em: false,
+    },
+    { text: 'for people :)', em: true, keep: true, afterthoughtSuffix: ':)' },
+]
+
+function buildHeroIntroParts(parts) {
+    let i = 0
+    const built = parts.map((part) => ({
+        em: Boolean(part.em),
+        keep: Boolean(part.keep),
+        tokens: [],
+    }))
+
+    // Trailing spaces hang off the previous word so a wrap never starts with
+    // whitespace (avoids a leftover indent like before "and research").
+    let prevWord = null
+    parts.forEach((part, partIndex) => {
+        const chunks = String(part.text)
+            .split(/(\s+)/)
+            .filter((token) => token.length > 0)
+
+        for (const token of chunks) {
+            if (/^\s+$/.test(token)) {
+                if (prevWord) {
+                    prevWord.trailing += token
+                }
+                continue
+            }
+
+            const isAfterthought =
+                Boolean(part.afterthoughtSuffix) && token === part.afterthoughtSuffix
+            const word = {
+                type: 'word',
+                chars: Array.from(token).map((c) => ({
+                    c,
+                    i: i++,
+                    afterthought: isAfterthought,
+                })),
+                trailing: '',
+            }
+            built[partIndex].tokens.push(word)
+            prevWord = word
+        }
+    })
+
+    // Keep a lone sentence-start "I" glued to the next word so it never
+    // sits alone at the end of a wrapped line (e.g. "I" / "deeply enjoy…").
+    for (const part of built) {
+        const nextTokens = []
+        for (let t = 0; t < part.tokens.length; t++) {
+            const cur = part.tokens[t]
+            const next = part.tokens[t + 1]
+            const curText = cur.chars.map((ch) => ch.c).join('')
+            if (curText === 'I' && next) {
+                nextTokens.push({ type: 'group', words: [cur, next] })
+                t += 1
+                continue
+            }
+            nextTokens.push(cur)
+        }
+        part.tokens = nextTokens
+    }
+
+    return built
+}
+
+const HERO_INTRO_BUILT = buildHeroIntroParts(HERO_INTRO_PARTS)
+const HERO_INTRO_PLAIN = HERO_INTRO_PARTS.map((part) => part.text).join('')
+
+export default {
+    name: 'Portfolio',
+    components: { PortfolioTopBar, PortfolioSiteFooter, WorkCarouselPager },
+    data() {
+        return {
+            dashboardHero,
+            multiplatformHero,
+            marketplaceHero,
+            aboutPhoto,
+            lineAnimationExtended,
+            loadingFrames: [loadingNormal, loadingFolded],
+            menuLogo,
+            locationIconSvg,
+            officeIconSvg,
+            cvUrl,
+            showLoadingSplash: true,
+            logoHandoff: false,
+            logoHandoffStyle: null,
+            logoHandoffTimer: null,
+            logoHandoffRevealTimer: null,
+            loadingFrameIndex: 0,
+            loadingIteration: 0,
+            loadingTimer: null,
+            loadingRotationDeg: 0,
+            loadingRotating: false,
+            pageRevealed: false,
+            pageRevealArmed: false,
+            pageEntranceDone: false,
+            aboutRevealed: false,
+            aboutEntranceDone: false,
+            // Hidden on all <800 until measured; tablet then grows the full line after dissipate.
+            // ≤500 stays hidden (no work decor line).
+            heroDecorHidden:
+                typeof window !== 'undefined' &&
+                window.matchMedia(MOBILE_MEDIA_QUERY).matches,
+            heroLocationVisible: false,
+            heroLocationScrollTicking: false,
+            /** Desktop: hero intro faded off after leaving the first viewport. */
+            heroIntroScrollHidden: false,
+            heroIntroHasLeftFirstPage: false,
+            heroIntroScrollReplaying: false,
+            heroIntroScrollReplayArmed: false,
+            heroIntroScrollReplayTimer: null,
+            firstProjectPrefetchStarted: false,
+            firstProjectPrefetchIdleId: null,
+            aboutLocationClipRaf: null,
+            featuredExpandPending: false,
+            featuredExpandTimer: null,
+            featuredPressClearTimer: null,
+            featuredPressAt: 0,
+            featuredPressArticle: null,
+            featuredPressReleaseBound: false,
+            heroIntroParts: HERO_INTRO_BUILT,
+            heroIntroPlain: HERO_INTRO_PLAIN,
+            // Letter cascade on all breakpoints; reduced motion keeps static block text.
+            heroIntroLetterMode:
+                typeof window !== 'undefined' &&
+                !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+            heroIntroPointerRaf: null,
+            heroIntroPointer: null,
+            heroIntroActivePointerId: null,
+            heroIntroTapLingerTimer: null,
+            heroIntroTouchStart: null,
+            heroIntroTouchMode: null,
+            heroIntroTouchGuardActive: false,
+            // Mobile (<800): text lifts off viewport bottom → fan out; near-top scroll → reconsolidate.
+            heroIntroDissipated: false,
+            heroIntroDissipatePrepared: false,
+            heroIntroDissipateMaxDelay: 0,
+            heroIntroDissipateRaf: null,
+            heroIntroReconsolidating: false,
+            heroIntroReconsolidateTimer: null,
+            heroIntroDissipateScrollY: null,
+            // Tablet work-decor: true only after dissipate motion finishes; cleared when reconsolidate starts.
+            tabletWorkDecorReady: false,
+            tabletWorkDecorRevealTimer: null,
+            /** 0 = fully clipped, 1 = grown through about (ratchets up with scroll). */
+            tabletDecorLineGrowProgress: 0,
+            /** Shift captions before the stroke starts growing (during dissipate wait). */
+            tabletDecorCaptionsPreclear: false,
+            /** Desktop/tablet: letter cascade waits until the decor line is long enough. */
+            heroIntroCascadeReady: false,
+            /** Desktop: entrance grow has reached the hero viewport bottom. */
+            desktopDecorHeroGrowDone: false,
+            desktopDecorEntranceRaf: null,
+            // Frozen rest geometry (intro size + per-glyph centers). Dissipate rays
+            // always reference this — never live layout during scroll/URL-bar resize.
+            heroIntroRestLayout: null,
+            // Width when --mobile-hero-height was last set; ignore height-only URL-bar resizes.
+            lockedMobileHeroWidth: null,
+            heroCursorActive: isHeroCursorEnvironment(),
+            heroCursorInRange: false,
+            heroCursorRangeTight: false,
+            heroCursorRangeMix: 0,
+            heroCursorHoverMix: 0,
+            heroCursorOverHover: false,
+            heroCursorPos: isHeroCursorEnvironment() ? getHeroCursorInitialPos() : { x: 0, y: 0 },
+            heroCursorGlassPos: isHeroCursorEnvironment() ? getHeroCursorInitialPos() : { x: 0, y: 0 },
+            heroCursorGlassRaf: null,
+            heroCursorMagnifierLayout: null,
+            heroCursorMirrorClone: null,
+            heroCursorMirrorFrostBlurClone: null,
+            heroCursorMirrorTopBarClone: null,
+            heroCursorMirrorAwaitingRefresh: false,
+            heroCursorMirrorHoverTarget: 0,
+            // Live element under pointerdown — clone cannot use :active.
+            heroCursorPressTarget: null,
+            heroCursorHoverLockEl: null,
+            heroCursorScrollHoverSuppressUntil: 0,
+            heroCursorIntroGlassHandoff: false,
+            // Mobile touch disk (drag to move; separate from fine-pointer cursor).
+            heroTouchDiskDragging: false,
+            heroTouchDiskHasMoved: false,
+            heroTouchDiskPointerId: null,
+            heroTouchDiskGrabOffset: { x: 0, y: 0 },
+            heroTouchDiskOnStage: true,
+            heroTouchDiskDissipateInstant: false,
+            heroTouchDiskEntrance: 0,
+            heroTouchDiskEntering: false,
+            /** True only after the fly-in has fully landed as the idle disk. */
+            heroTouchDiskSettled: false,
+            heroTouchDiskIdle: true,
+            /** Idle attention pulse — stops on first touch. */
+            heroTouchDiskBreathe: false,
+            heroTouchDiskBreatheTimer: null,
+            heroTouchDiskJiggleRaf: null,
+            heroTouchDiskJiggleStartedAt: 0,
+            /** Shared SW nudge applied to frost + blue so they stay locked. */
+            heroTouchDiskJiggleNudge: { x: 0, y: 0, scale: 1 },
+            heroTouchDiskEntranceTimer: null,
+            heroTouchDiskEntranceRaf: null,
+            /** True after a hero-bottom drag trips the work teleport (once per gesture). */
+            heroTouchDiskWorkJumped: false,
+            heroTouchDiskZone: 'hero',
+            heroTouchDiskParkZone: 'hero',
+            /** While menu-navigating, keep the destination zone until scroll catches up. */
+            heroTouchDiskZoneLock: null,
+            /** performance.now() deadline for heroTouchDiskZoneLock (avoid sticky wrong label). */
+            heroTouchDiskZoneLockUntil: 0,
+            heroTouchDiskMenuOpen: false,
+            /** Bumps when label width metrics are remeasured (font load / menu open). */
+            heroTouchDiskMenuMetricsRev: 0,
+            /** Visual diameter at menu-open start — expand lerps from this (smooth from glass). */
+            heroTouchDiskMenuFromSize: null,
+            /** Soft-lerped frost left/right extents from blue center (pill can be asymmetric). */
+            heroTouchDiskMenuFrostLiveL: 0,
+            heroTouchDiskMenuFrostLiveR: 0,
+            /** Soft-lerped frost height (pill) while the menu is open. */
+            heroTouchDiskMenuFrostLiveH: 0,
+            heroTouchDiskPopping: false,
+            heroTouchDiskPopTimer: null,
+            heroTouchDiskPopRaf: null,
+            heroTouchDiskSinkScale: 1,
+            /** 0 = idle size, 1 = full menu frost — drives continuous expand. */
+            heroTouchDiskExpand: 0,
+            /** Linear 0…1 progress of the active expand/close animation. */
+            heroTouchDiskExpandLinear: 0,
+            /** True while an open (not close) expand animation is running. */
+            heroTouchDiskExpandOpening: false,
+            /** Elastic edge bounce velocity while the menu is open. */
+            heroTouchDiskEdgeVel: { x: 0, y: 0 },
+            heroTouchDiskPointerStart: { x: 0, y: 0 },
+            heroTouchDiskOutsideCloseBound: false,
+            /** performance.now() until which outside-close is ignored after open. */
+            heroTouchDiskOutsideCloseUntil: 0,
+            // Middle work thumb: device-tilt crop reveal (mobile).
+            offsetProjectTiltX: 0,
+            offsetProjectTiltY: 0,
+            offsetProjectTiltTargetX: 0,
+            offsetProjectTiltTargetY: 0,
+            offsetProjectTiltRaf: null,
+            offsetProjectTiltListening: false,
+            offsetProjectTiltPermission: 'unknown',
+        }
+    },
+    computed: {
+        offsetProjectTiltStyle() {
+            return {
+                '--tilt-x': `${this.offsetProjectTiltX.toFixed(2)}px`,
+                '--tilt-y': `${this.offsetProjectTiltY.toFixed(2)}px`,
+            }
+        },
+        heroIntroFinePointer() {
+            return (
+                typeof window !== 'undefined' &&
+                window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches
+            )
+        },
+        heroTouchDiskMode() {
+            return this.heroIntroLetterMode && isHeroTouchDiskEnvironment()
+        },
+        heroCursorEligible() {
+            return (
+                this.heroIntroLetterMode &&
+                (this.heroIntroFinePointer || this.heroTouchDiskMode)
+            )
+        },
+        heroCursorBootLocked() {
+            return this.showLoadingSplash || this.logoHandoff || !this.pageEntranceDone
+        },
+        heroCursorHideNative() {
+            return (
+                this.heroIntroFinePointer &&
+                this.heroCursorEligible &&
+                (this.heroCursorActive || this.heroCursorBootLocked)
+            )
+        },
+        heroCursorVisible() {
+            if (!this.heroCursorEligible) return false
+            if (this.heroTouchDiskMode) {
+                // Stay mounted while off-stage so the corner disk can fade out
+                // (footer arrival) and fade back in on scroll up.
+                return this.heroCursorActive && !this.heroCursorBootLocked
+            }
+            return this.heroCursorActive || this.heroCursorBootLocked
+        },
+        /** 0 when the footer covers the corner park — opacity-faded, not unmounted. */
+        heroTouchDiskStageOpacity() {
+            if (!this.heroTouchDiskMode) return 1
+            return this.heroTouchDiskOnStage ? 1 : 0
+        },
+        heroTouchDiskHitActive() {
+            if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
+            if (!this.heroTouchDiskOnStage) return false
+            if (this.heroTouchDiskZone !== 'hero') return true
+            return !this.heroIntroDissipated
+        },
+        heroTouchDiskHitStyle() {
+            if (!this.heroTouchDiskHitActive) {
+                return { pointerEvents: 'none', visibility: 'hidden' }
+            }
+            const { x, y } = this.heroCursorGlassPos
+            const expand = this.heroTouchDiskExpand
+            const dot =
+                HERO_CURSOR_DOT_SIZE +
+                (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) * expand
+            // Menu open: only the blue center is the close/toggle target.
+            const size =
+                expand > 0.02
+                    ? Math.max(HERO_TOUCH_DISK_HIT_SIZE, dot + 12)
+                    : HERO_TOUCH_DISK_HIT_SIZE
+            const half = size / 2
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+                width: `${size}px`,
+                height: `${size}px`,
+                margin: `${-half}px 0 0 ${-half}px`,
+                zIndex: expand > 0.02 ? 10006 : 10003,
+            }
+        },
+        heroTouchDiskDissipateFade() {
+            if (!this.heroTouchDiskMode) return 1
+            // Section float stays fully opaque while hero letters dissipate.
+            if (this.heroTouchDiskZone !== 'hero') return 1
+            // In-text glass morph should stay put through dissipate / reconsolidate;
+            // only the idle (non-handoff) disk fades with the hero letters.
+            if (this.heroCursorIntroGlassHandoff) return 1
+            return this.heroIntroDissipated ? 0 : 1
+        },
+        /** Idle appear only — never applied to magnifier / active morph opacity. */
+        heroTouchDiskEntranceFade() {
+            if (!this.heroTouchDiskMode) return 1
+            return this.heroTouchDiskEntrance
+        },
+        heroTouchDiskIdleMotion() {
+            return (
+                this.heroTouchDiskMode &&
+                this.heroTouchDiskIdle &&
+                !this.heroTouchDiskDragging &&
+                !this.heroTouchDiskHasMoved &&
+                !this.heroTouchDiskMenuOpen &&
+                this.heroTouchDiskExpand < 0.02
+            )
+        },
+        /** Hero-only jiggle every 5s until first touch — starts 2s after fly-in ends. */
+        heroTouchDiskJiggleActive() {
+            return (
+                this.heroTouchDiskBreathe &&
+                this.heroTouchDiskSettled &&
+                this.heroTouchDiskIdleMotion &&
+                !this.heroTouchDiskEntering &&
+                !this.heroTouchDiskPopping &&
+                this.heroTouchDiskZone === 'hero'
+            )
+        },
+        heroTouchDiskMenuFan() {
+            return 'left'
+        },
+        /** Horizontal labels — edge collisions bounce the disk, not the words. */
+        heroTouchDiskMenuStacked() {
+            return true
+        },
+        heroTouchDiskMenuItems() {
+            // Depend on metrics rev so font-load remounts refresh placement.
+            void this.heroTouchDiskMenuMetricsRev
+            // Geometry uses the *open* blue size so labels don't crawl during expand.
+            const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+            const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+
+            const work = { id: 'work', label: 'Work', action: 'work' }
+            const about = { id: 'about', label: 'About', action: 'about' }
+
+            const placeOutward = (base, outwardLeft) =>
+                outwardLeft
+                    ? {
+                          ...base,
+                          x: `${-gap}px`,
+                          y: '0px',
+                          rot: '0deg',
+                          anchor: 'end',
+                      }
+                    : {
+                          ...base,
+                          x: `${gap}px`,
+                          y: '0px',
+                          rot: '0deg',
+                          anchor: 'start',
+                      }
+
+            // Corner: single opposite section, always left of the fixed blue center.
+            if (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about') {
+                const base = this.heroTouchDiskZone === 'work' ? about : work
+                return [placeOutward(base, true)]
+            }
+
+            // Hero: Work @ 180° / About @ 0°.
+            const workW = getHeroTouchDiskMenuLabelWidth('Work')
+            const aboutW = getHeroTouchDiskMenuLabelWidth('About')
+            return [
+                placeHeroTouchDiskMenuRadial(work, 'left', 180, gap, workW),
+                placeHeroTouchDiskMenuRadial(about, 'right', 0, gap, aboutW),
+            ]
+        },
+        /** Frost layout: dual (hero), left-growing pill (corner), or circle. */
+        heroTouchDiskMenuFrostMode() {
+            if (this.heroTouchDiskZone === 'hero') return 'dual'
+            if (
+                this.heroTouchDiskZone === 'work' ||
+                this.heroTouchDiskZone === 'about'
+            ) {
+                return 'left'
+            }
+            return 'circle'
+        },
+        /** Dual Work+About menu (hero) — drives edge-spring / safe bounds. */
+        heroTouchDiskMenuFrostDual() {
+            return this.heroTouchDiskMenuFrostMode === 'dual'
+        },
+        heroTouchDiskMenuFrostPillActive() {
+            const mode = this.heroTouchDiskMenuFrostMode
+            return (
+                (mode === 'dual' || mode === 'left') &&
+                (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
+            )
+        },
+        heroTouchDiskMenuFrostMetrics() {
+            void this.heroTouchDiskMenuMetricsRev
+            const mode = this.heroTouchDiskMenuFrostMode
+            if (mode === 'left') {
+                const label =
+                    this.heroTouchDiskZone === 'work' ? 'About' : 'Work'
+                return getHeroTouchDiskMenuFrostMetrics(
+                    'left',
+                    getHeroTouchDiskMenuLabelWidth(label),
+                )
+            }
+            return getHeroTouchDiskMenuFrostMetrics(mode)
+        },
+        heroTouchDiskMenuFrostSize() {
+            return this.heroTouchDiskMenuFrostMetrics.width
+        },
+        heroTouchDiskMenuFrostHeight() {
+            return this.heroTouchDiskMenuFrostMetrics.height
+        },
+        heroTouchDiskMenuFrostLeft() {
+            return this.heroTouchDiskMenuFrostMetrics.left
+        },
+        heroTouchDiskMenuFrostRight() {
+            return this.heroTouchDiskMenuFrostMetrics.right
+        },
+        heroTouchDiskMenuStyle() {
+            const { x, y } = this.heroCursorGlassPos
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+            }
+        },
+        heroCursorDotDiskVisible() {
+            if (!this.heroCursorVisible) return false
+            // Menu open must show frost immediately (skip glass-handoff hide).
+            if (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen) return true
+            return heroCursorDotDiskShouldShow(this.heroCursorIntroGlassHandoff)
+        },
+        /** Kill the ~1s touch-fade when swapping glass ↔ menu frost among hero text. */
+        heroTouchDiskMenuChromeInstant() {
+            return (
+                this.heroTouchDiskMenuOpen ||
+                this.heroTouchDiskExpand > 0.02 ||
+                this.heroTouchDiskPopping
+            )
+        },
+        heroCursorIntroGlassVisible() {
+            if (!this.heroCursorVisible || !this.heroCursorIntroGlassHandoff) return false
+            // Touch-disk fly-in: hide until the first flight frame reveals it.
+            if (this.heroTouchDiskMode && this.heroTouchDiskEntrance < 0.02) return false
+            return true
+        },
+        heroCursorIntroGlassFromDisk() {
+            const mix = this.heroCursorRangeMix
+            return mix > 0 && mix <= HERO_CURSOR_RANGE_EXPAND_END
+        },
+        heroCursorIntroGlassInRangeGlow() {
+            if (this.heroCursorRangeMix <= HERO_CURSOR_RANGE_EXPAND_END) return false
+            // Letter-push is gated off during dissipate/reconsolidate, which clears
+            // heroCursorInRange — still show the glass look while among the text.
+            if (this.heroCursorInRange) return true
+            return this.heroTouchDiskMode && this.heroCursorIntroGlassHandoff
+        },
+        heroCursorDotHoverExpand() {
+            if (this.heroTouchDiskMode) return false
+            if (this.heroCursorIntroGlassHandoff) return false
+            if (this.isHeroTouchDiskCornerParked()) return false
+            const hoverMix = this.heroCursorHoverMix
+            if (hoverMix <= 0) return false
+            const { expand } = heroCursorHoverMorph(hoverMix)
+            return expand > 0.001 && expand < HERO_CURSOR_HOVER_DOT_RING_OUT
+        },
+        heroCursorBallStyle() {
+            if (!this.heroCursorVisible) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
+            const rangeMix = this.heroCursorRangeMix
+            const sectionNav = this.heroTouchDiskMode && this.heroTouchDiskZone !== 'hero'
+            const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
+            const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
+            const cornerParked = this.isHeroTouchDiskCornerParked()
+            const hoverMix =
+                this.heroTouchDiskMode ||
+                menuOpen ||
+                this.heroCursorInRange ||
+                cornerParked
+                    ? 0
+                    : this.heroCursorHoverMix
+
+            let x = this.heroCursorPos.x
+            let y = this.heroCursorPos.y
+            let size = HERO_CURSOR_DOT_SIZE
+            let scale = 1
+            let opacity = 1
+            let background = '#000aaa'
+            let borderWidth = 0
+            let hoverExpand = 0
+            let useGlassRingBorder = false
+
+            // Touch disk: keep the center dot locked to the frost disk (glass pos)
+            // so a sink never reads as lateral slip between layers.
+            if (this.heroTouchDiskMode) {
+                ;({ x, y } = this.heroCursorGlassPos)
+            }
+
+            if (menuOpen) {
+                size =
+                    HERO_CURSOR_DOT_SIZE +
+                    (HERO_TOUCH_DISK_MENU_DOT_SIZE - HERO_CURSOR_DOT_SIZE) *
+                        Math.min(1, Math.max(0, expandT))
+            } else if (this.heroCursorIntroGlassHandoff) {
+                const dotVisual = heroCursorRangeDotVisual(rangeMix)
+                scale = dotVisual.scale
+                opacity = dotVisual.opacity
+            } else if (hoverMix > 0) {
+                const { hollow, expand } = heroCursorHoverMorph(hoverMix)
+                if (expand <= 0) {
+                    background = `rgba(0, 10, 170, ${1 - hollow})`
+                    borderWidth = hollow * 1.5
+                } else {
+                    hoverExpand = expand
+                    size = heroCursorHoverExpandSize(hoverMix)
+                    background = 'transparent'
+                    useGlassRingBorder = true
+                    ;({ x, y } = this.heroCursorGlassPos)
+                    if (expand >= HERO_CURSOR_HOVER_DISK_EXPAND_IN * 0.45) {
+                        const t = Math.min(
+                            1,
+                            (expand - HERO_CURSOR_HOVER_DISK_EXPAND_IN * 0.45) /
+                                HERO_CURSOR_HOVER_DOT_RING_OUT
+                        )
+                        opacity = Math.max(0, 1 - heroCursorRangeSmoothstep(t))
+                    }
+                }
+            } else if (sectionNav) {
+                /* idle blue dot — position already locked to glass */
+            }
+
+            const half = size / 2
+            const dissipateFade = this.heroTouchDiskDissipateFade
+            // Entrance fade is idle-only so range / text-pass morph stays untouched.
+            const entranceFade = this.heroTouchDiskIdleMotion
+                ? this.heroTouchDiskEntranceFade
+                : 1
+            const stageFade = this.heroTouchDiskStageOpacity
+            const stageChrome =
+                this.heroTouchDiskMode &&
+                (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about')
+            const outOpacity = opacity * dissipateFade * entranceFade * stageFade
+            const sink =
+                this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
+            const jiggle = this.heroTouchDiskJiggleActive
+                ? this.heroTouchDiskJiggleNudge
+                : { x: 0, y: 0, scale: 1 }
+            const style = {
+                // Position stays in transform (no CSS transition) so corner snaps
+                // don't fly across the screen. Stage lift uses `translate` like the pill.
+                transform: `translate3d(${x + jiggle.x}px, ${y + jiggle.y}px, 0) scale(${scale * sink * jiggle.scale})`,
+                width: `${size}px`,
+                height: `${size}px`,
+                margin: `${-half}px 0 0 ${-half}px`,
+                background,
+                boxSizing: 'border-box',
+                opacity: outOpacity,
+                zIndex: menuOpen ? 10005 : undefined,
+                // Corner chrome: same visibility fade as the carousel pill.
+                visibility: stageChrome
+                    ? stageFade > 0
+                        ? 'visible'
+                        : 'hidden'
+                    : this.heroTouchDiskMode
+                      ? 'visible'
+                      : outOpacity < 0.02 && scale < 0.02
+                        ? 'hidden'
+                        : 'visible',
+            }
+            // Same 6px rise as `.work-carousel-pager` — independent of position transform.
+            // Always set so a leftover lift doesn't stick after leaving the corner zone.
+            style.translate = stageChrome
+                ? stageFade > 0
+                    ? '0 0'
+                    : '0 6px'
+                : '0'
+
+            if (useGlassRingBorder) {
+                style['--hero-cursor-hover-expand'] = hoverExpand
+                style.border = 'none'
+            } else if (borderWidth > 0.01) {
+                style.border = `${borderWidth}px solid #000aaa`
+            } else {
+                style.border = 'none'
+            }
+
+            return style
+        },
+        heroCursorDotDiskStyle() {
+            if (!this.heroCursorDotDiskVisible) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
+            const expandT = this.heroTouchDiskMode ? this.heroTouchDiskExpand : 0
+            const menuOpen = expandT > 0.02 || this.heroTouchDiskMenuOpen
+            const cornerParked = this.isHeroTouchDiskCornerParked()
+            const hoverMix =
+                this.heroTouchDiskMode ||
+                menuOpen ||
+                this.heroCursorInRange ||
+                cornerParked
+                    ? 0
+                    : this.heroCursorHoverMix
+            const { expand } = heroCursorHoverMorph(hoverMix)
+            // Keep expand-mix at 0 while menuing so ::before frost opacity stays full
+            // (hover-expand was fading the glass out).
+            const frostExpand = menuOpen ? 0 : expand
+            const { x, y } = this.heroCursorGlassPos
+            // Continuous size: idle (or current glass) → open frost.
+            let sizeW
+            let sizeH
+            let marginL
+            if (menuOpen) {
+                const idleR = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+                const live = this.getHeroTouchDiskMenuLiveFrostExtents()
+                sizeW = live.width
+                sizeH = live.height
+                marginL = -Math.max(idleR, live.left)
+            } else {
+                sizeW = heroCursorDotDiskSize(hoverMix)
+                sizeH = sizeW
+                marginL = -sizeW / 2
+            }
+            const halfH = sizeH / 2
+            const baseOpacity = menuOpen
+                ? 1
+                : heroCursorHoverDiskOpacity(hoverMix)
+            const entranceFade = this.heroTouchDiskIdleMotion
+                ? this.heroTouchDiskEntranceFade
+                : 1
+            const stageFade = this.heroTouchDiskStageOpacity
+            const stageChrome =
+                this.heroTouchDiskMode &&
+                (this.heroTouchDiskZone === 'work' || this.heroTouchDiskZone === 'about')
+            const opacity =
+                baseOpacity *
+                this.heroTouchDiskDissipateFade *
+                entranceFade *
+                stageFade
+            const forwardScale =
+                menuOpen ? 1 : 1 + heroCursorHoverDiskForward(hoverMix)
+            const sink =
+                this.heroTouchDiskMode ? this.heroTouchDiskSinkScale : 1
+            const jiggle = this.heroTouchDiskJiggleActive
+                ? this.heroTouchDiskJiggleNudge
+                : { x: 0, y: 0, scale: 1 }
+
+            return {
+                transform: `translate3d(${x + jiggle.x}px, ${y + jiggle.y}px, 0) scale(${forwardScale * sink * jiggle.scale})`,
+                // Same 6px rise as the carousel pill; never transition `transform`.
+                translate: stageChrome
+                    ? stageFade > 0
+                        ? '0 0'
+                        : '0 6px'
+                    : '0',
+                '--hero-cursor-hover-mix': hoverMix,
+                '--hero-cursor-hover-expand': frostExpand,
+                width: `${sizeW}px`,
+                height: `${sizeH}px`,
+                margin: `${-halfH}px 0 0 ${marginL}px`,
+                opacity,
+                visibility: stageChrome
+                    ? stageFade > 0
+                        ? 'visible'
+                        : 'hidden'
+                    : this.heroTouchDiskMode
+                      ? 'visible'
+                      : opacity < 0.02
+                        ? 'hidden'
+                        : 'visible',
+            }
+        },
+        heroCursorIntroGlassStyle() {
+            if (!this.heroCursorIntroGlassVisible) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
+            const { x, y } = this.heroCursorGlassPos
+            const rangeMix = this.heroCursorRangeMix
+            // During dissipate, letter-push is off so inRange clears — treat handoff
+            // as still-in-text so size/glow don't collapse to a bare ring.
+            const hoverMix =
+                this.heroTouchDiskMode ||
+                this.heroCursorInRange ||
+                this.isHeroTouchDiskCornerParked()
+                    ? 0
+                    : this.heroCursorHoverMix
+            const size = heroCursorIntroBallSize(hoverMix, rangeMix)
+            const half = size / 2
+            const entranceFade = this.heroTouchDiskMode
+                ? this.heroTouchDiskEntranceFade
+                : 1
+            const opacity = entranceFade
+
+            // Touch-disk entrance gates glass too — otherwise handoff shows a rest/start flash
+            // before the fly-in opacity path runs on the idle disk layers.
+            return {
+                transform: `translate3d(${x}px, ${y}px, 0)`,
+                '--hero-cursor-range-mix': rangeMix,
+                '--hero-cursor-hover-mix': hoverMix,
+                width: `${size}px`,
+                height: `${size}px`,
+                margin: `${-half}px 0 0 ${-half}px`,
+                opacity,
+                visibility: opacity < 0.02 ? 'hidden' : 'visible',
+            }
+        },
+        heroCursorMagnifierWindowStyle() {
+            const layout = this.heroCursorMagnifierLayout
+            if (!layout) {
+                return {
+                    opacity: 0,
+                    visibility: 'hidden',
+                    pointerEvents: 'none',
+                }
+            }
+
+            const opacity = (layout.opacity ?? 1) * this.heroTouchDiskDissipateFade
+
+            return {
+                position: 'fixed',
+                left: `${layout.windowLeft}px`,
+                top: `${layout.windowTop}px`,
+                width: `${layout.size}px`,
+                height: `${layout.size}px`,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                opacity,
+                visibility: this.heroTouchDiskMode
+                    ? opacity > 0.001 || this.heroIntroDissipated || this.heroIntroReconsolidating
+                        ? 'visible'
+                        : 'hidden'
+                    : opacity < 0.02
+                      ? 'hidden'
+                      : 'visible',
+                pointerEvents: 'none',
+                zIndex: HERO_CURSOR_LAYER_Z - 1,
+            }
+        },
+        heroCursorMagnifierScaledStyle() {
+            const layout = this.heroCursorMagnifierLayout
+            if (!layout || typeof window === 'undefined') {
+                return { display: 'none' }
+            }
+
+            const combinedScale = layout.scale * layout.forwardScale
+
+            return {
+                position: 'absolute',
+                left: `${layout.half - layout.cx}px`,
+                top: `${layout.half - layout.cy}px`,
+                width: `${window.innerWidth}px`,
+                height: `${window.innerHeight}px`,
+                transform: `scale(${combinedScale})`,
+                transformOrigin: `${layout.cx}px ${layout.cy}px`,
+                '--hero-cursor-magnifier-scale': String(combinedScale),
+            }
+        },
+        heroCursorMagnifierChromeStyle() {
+            const layout = this.heroCursorMagnifierLayout
+            if (!layout || typeof window === 'undefined') {
+                return { display: 'none' }
+            }
+
+            const combinedScale = layout.scale * layout.forwardScale
+
+            return {
+                position: 'absolute',
+                left: `${layout.half - layout.cx}px`,
+                top: `${layout.half - layout.cy}px`,
+                width: `${window.innerWidth}px`,
+                height: `${window.innerHeight}px`,
+                opacity: 1,
+                transform: `scale(${combinedScale})`,
+                transformOrigin: `${layout.cx}px ${layout.cy}px`,
+                '--hero-cursor-magnifier-scale': String(combinedScale),
+            }
+        },
+        loadingSplashFrameTransform() {
+            return `rotate(${this.loadingRotationDeg}deg)`
+        },
+    },
+    watch: {
+        heroCursorHideNative() {
+            this.syncHeroCursorDocumentClass()
+        },
+    },
+    mounted() {
+        if (this.heroCursorEligible) {
+            this.syncHeroCursorDocumentClass()
+        }
+
+        const sectionHash = PORTFOLIO_SECTION_HASHES.has(this.$route.hash)
+            ? this.$route.hash
+            : ''
+
+        // Arriving from a case study (or deep link) with Work/About: skip splash
+        // and jump straight to the section once layout is ready.
+        if (sectionHash) {
+            this.showLoadingSplash = false
+            this.pageRevealed = true
+            this.pageEntranceDone = true
+            this.heroIntroCascadeReady = true
+            this.desktopDecorHeroGrowDone = true
+            this.tabletDecorCaptionsPreclear = true
+        } else {
+            document.documentElement.classList.add('portfolio-booting')
+        }
+
+        this.heroIntroLetterMq = window.matchMedia(MOBILE_MEDIA_QUERY)
+        this.heroIntroReduceMq = window.matchMedia('(prefers-reduced-motion: reduce)')
+        this.heroCursorFineMq = window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ)
+        this.onHeroIntroLetterMqChange = () => {
+            this.onMobileHeroLayoutChange()
+        }
+        this.onHeroCursorFineMqChange = () => {
+            this.onHeroCursorPointerModeChange()
+        }
+        this.heroIntroLetterMq.addEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroIntroReduceMq.addEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroCursorFineMq.addEventListener('change', this.onHeroCursorFineMqChange)
+
+        if (this.pageEntranceDone) {
+            this.$nextTick(() => this.lockHeroViewportHeight())
+        }
+
+        this.onHeroPointerMove = (event) => this.onHeroPointerMoveHandler(event)
+        this.onHeroPointerDown = (event) => this.onHeroPointerDownHandler(event)
+        this.onHeroPointerUp = (event) => this.onHeroPointerUpHandler(event)
+        this.onHeroPointerEndHandler = () => this.onHeroPointerEndHandlerImpl()
+        this.onHeroPointerLeaveWindow = (event) => {
+            if (event.relatedTarget != null) return
+            const { clientX: x, clientY: y } = event
+            const margin = 2
+            if (
+                x >= -margin &&
+                y >= -margin &&
+                x <= window.innerWidth + margin &&
+                y <= window.innerHeight + margin
+            ) {
+                return
+            }
+            this.onHeroPointerEndHandlerImpl()
+        }
+        this.onHeroPointerScroll = () => this.onHeroPointerScrollHandler()
+        this.onHeroTouchMove = (event) => this.onHeroTouchMoveHandler(event)
+        this.onHeroPointerEnter = (event) => {
+            if (!this.isHeroIntroFinePointer() || event.pointerType !== 'mouse') return
+            if (!this.heroIntroLetterMode) return
+            this.updateHeroFinePointer(event.clientX, event.clientY, {
+                introEffects: this.canHeroIntroPointerPlay(),
+            })
+        }
+        if (this.heroIntroLetterMode && this.isHeroIntroFinePointer()) {
+            this.primeHeroCursor()
+        } else if (this.heroIntroLetterMode && this.pageEntranceDone && isHeroTouchDiskEnvironment()) {
+            this.$nextTick(() => this.primeHeroTouchDisk())
+        }
+        window.addEventListener('pointermove', this.onHeroPointerMove, { passive: true })
+        document.addEventListener('pointerenter', this.onHeroPointerEnter, { passive: true })
+        window.addEventListener('pointerdown', this.onHeroPointerDown, { passive: true })
+        window.addEventListener('pointerup', this.onHeroPointerUp, { passive: true })
+        window.addEventListener('pointercancel', this.onHeroPointerUp, { passive: true })
+        window.addEventListener('blur', this.onHeroPointerEndHandler)
+        document.addEventListener('mouseout', this.onHeroPointerLeaveWindow)
+        window.addEventListener('scroll', this.onHeroPointerScroll, { passive: true, capture: true })
+        this.onHeroIntroDissipateScroll = () => this.onHeroIntroDissipateScrollHandler()
+        window.addEventListener('scroll', this.onHeroIntroDissipateScroll, { passive: true })
+        this.onMobileHeroOrientation = () => {
+            window.setTimeout(() => {
+                this.lockHeroViewportHeight({ force: true })
+                // Same as width resize: capture refuses mid-dissipate, so snap
+                // clear first or landscape→portrait leaves letters opacity:0.
+                const wasInFlight =
+                    this.heroIntroDissipated || this.heroIntroReconsolidating
+                this.clearHeroIntroPointerShift()
+                this.invalidateHeroIntroRestLayout()
+                if (wasInFlight) {
+                    this.clearHeroIntroDissipate()
+                }
+                this.$nextTick(() => {
+                    this.captureHeroIntroRestLayout()
+                    this.updateHeroIntroDissipateFromScroll({
+                        instant: true,
+                        forcePrepare: true,
+                    })
+                    if (this.isHeroTouchDiskMode()) {
+                        if (!this.heroTouchDiskHasMoved) this.syncHeroTouchDiskRestPosition()
+                        else this.clampHeroTouchDiskIntoViewport()
+                    }
+                })
+            }, 250)
+        }
+        window.addEventListener('orientationchange', this.onMobileHeroOrientation)
+
+        this.heroDecorObserver = new ResizeObserver(() => {
+            // Measuring work slots mid-cascade forces reflow across the page.
+            if (this.pageRevealed && !this.pageEntranceDone) return
+            requestAnimationFrame(() => {
+                this.syncHeroDecorHeight()
+                if (this.isHeroTouchDiskMode() && !this.heroTouchDiskHasMoved) {
+                    this.syncHeroTouchDiskRestPosition()
+                }
+            })
+        })
+        const main = this.$el?.querySelector('.portfolio-main')
+        const work = this.$el?.querySelector('.work')
+        const workFirst = this.$el?.querySelector('#work-first')
+        const workLast = this.$el?.querySelector('#work-last')
+        const heroIntro = this.$el?.querySelector('.hero-intro')
+        if (main) {
+            this.heroDecorObserver.observe(main)
+        }
+        if (work) {
+            this.heroDecorObserver.observe(work)
+        }
+        if (workFirst) {
+            this.heroDecorObserver.observe(workFirst)
+        }
+        if (workLast) {
+            this.heroDecorObserver.observe(workLast)
+        }
+        // Observing the intro itself re-fires as cascade letters move — skip on mobile.
+        if (heroIntro && window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+            this.heroDecorObserver.observe(heroIntro)
+        }
+
+        const heroDecor = this.$el?.querySelector('.hero-decor')
+        if (heroDecor) {
+            heroDecor.addEventListener('animationend', this.onHeroDecorFlyEnd)
+        }
+
+        for (const article of [workFirst, workLast]) {
+            const heroImage = article?.querySelector('.project-image')
+            if (heroImage && !heroImage.complete) {
+                heroImage.addEventListener('load', () => {
+                    this.syncHeroDecorHeight()
+                    this.syncProjectCaptionLineOffset()
+                }, { once: true })
+            }
+        }
+
+        this.syncDecorLineX()
+        this.syncHeroDecorHeight()
+        this.syncProjectCaptionLineOffset()
+        this.syncAboutLocationTextClip()
+        window.addEventListener('resize', this.onHeroDecorResize, { passive: true })
+        window.addEventListener('scroll', this.onHeroLocationScroll, { passive: true })
+        document.fonts?.ready?.then(() => {
+            this.syncHeroDecorHeight()
+            this.syncProjectCaptionLineOffset()
+            this.syncAboutLocationTextClip()
+            if (!this.pageRevealed) {
+                this.syncHeroIntroCharColumns()
+            }
+            if (sectionHash) {
+                this.jumpToSectionHash(sectionHash)
+            }
+        })
+
+        const aboutInner = this.$el?.querySelector('.about-inner')
+        if (aboutInner) {
+            this.aboutLocationClipObserver = new ResizeObserver(() => {
+                requestAnimationFrame(() => this.syncAboutLocationTextClip())
+            })
+            this.aboutLocationClipObserver.observe(aboutInner)
+        }
+
+        // Work jumps use the normal IO reveal; About jumps start the slide-in after scroll.
+        if (sectionHash !== '#about') {
+            this.setupAboutReveal()
+        }
+        this.setupProjectScrollFade(sectionHash)
+        this.setupHeroLocationVisibility()
+        this.scheduleFirstProjectPrefetch()
+
+        if (sectionHash) {
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    this.syncHeroDecorHeight()
+                    this.syncAboutLocationTextClip()
+                    if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                        this.heroDecorHidden = false
+                        this.syncAboutLineBridge()
+                        this.applyTabletDecorLineGrowProgress(
+                            Math.max(1, this.getTabletDecorLineScrollProgress()),
+                        )
+                    }
+                    this.jumpToSectionHash(sectionHash)
+                    this.publishDecorLineAlign()
+                    this.syncProjectCaptionLineOffset()
+                })
+            })
+        } else {
+            this.scheduleLoadingAdvance()
+        }
+
+        if (this.pageRevealed) {
+            this.schedulePageEntranceSettle()
+        }
+
+        this.initOffsetProjectTilt()
+    },
+    beforeUnmount() {
+        this.teardownOffsetProjectTilt()
+        this.clearLoadingTimer()
+        this.clearLogoHandoffTimer()
+        clearTimeout(this.aboutEntranceTimer)
+        clearTimeout(this.pageEntranceSettleTimer)
+        clearTimeout(this.featuredExpandTimer)
+        clearTimeout(this.featuredPressClearTimer)
+        this.unbindFeaturedPressReleaseListeners()
+        this.featuredPressArticle?.classList.remove('project--press-expand')
+        this.featuredPressArticle = null
+        document.documentElement.classList.remove('portfolio-booting')
+        document.documentElement.classList.remove('portfolio-hero-cursor')
+        this.heroDecorObserver?.disconnect()
+        this.aboutLocationClipObserver?.disconnect()
+        this.stopAboutLocationTextClipPoll()
+        this.aboutRevealObserver?.disconnect()
+        this.projectFadeObserver?.disconnect()
+        this.heroLocationObserver?.disconnect()
+        window.removeEventListener('resize', this.onHeroDecorResize)
+        window.removeEventListener('scroll', this.onHeroLocationScroll)
+        this.heroIntroLetterMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroIntroReduceMq?.removeEventListener('change', this.onHeroIntroLetterMqChange)
+        this.heroCursorFineMq?.removeEventListener('change', this.onHeroCursorFineMqChange)
+        if (this.heroIntroPointerRaf != null) cancelAnimationFrame(this.heroIntroPointerRaf)
+        if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
+        if (this.heroIntroDissipateRaf != null) cancelAnimationFrame(this.heroIntroDissipateRaf)
+        this.stopHeroCursorGlassFollow()
+        clearTimeout(this.heroIntroTapLingerTimer)
+        clearTimeout(this.heroIntroReconsolidateTimer)
+        clearTimeout(this.heroIntroScrollReplayTimer)
+        clearTimeout(this.tabletWorkDecorRevealTimer)
+        this.cancelDesktopDecorLineEntrance()
+        clearTimeout(this.heroTouchDiskEntranceTimer)
+        clearTimeout(this.heroTouchDiskBreatheTimer)
+        if (this.heroTouchDiskJiggleRaf != null) {
+            cancelAnimationFrame(this.heroTouchDiskJiggleRaf)
+            this.heroTouchDiskJiggleRaf = null
+        }
+        if (this.heroTouchDiskEntranceRaf != null) {
+            cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
+            this.heroTouchDiskEntranceRaf = null
+        }
+        clearTimeout(this.heroTouchDiskPopTimer)
+        if (this.heroTouchDiskPopRaf != null) {
+            cancelAnimationFrame(this.heroTouchDiskPopRaf)
+            this.heroTouchDiskPopRaf = null
+        }
+        this.unbindHeroTouchDiskOutsideClose()
+        this.disableHeroIntroTouchGuard()
+        this.clearHeroIntroPointerShift()
+        this.clearHeroIntroDissipate()
+        window.removeEventListener('pointermove', this.onHeroPointerMove)
+        document.removeEventListener('pointerenter', this.onHeroPointerEnter)
+        window.removeEventListener('pointerdown', this.onHeroPointerDown)
+        window.removeEventListener('pointerup', this.onHeroPointerUp)
+        window.removeEventListener('pointercancel', this.onHeroPointerUp)
+        window.removeEventListener('orientationchange', this.onMobileHeroOrientation)
+        this.clearHeroViewportHeight()
+        window.removeEventListener('blur', this.onHeroPointerEndHandler)
+        document.removeEventListener('mouseout', this.onHeroPointerLeaveWindow)
+        window.removeEventListener('scroll', this.onHeroPointerScroll, { capture: true })
+        window.removeEventListener('scroll', this.onHeroIntroDissipateScroll)
+        this.$el?.querySelector('.hero-decor')?.removeEventListener('animationend', this.onHeroDecorFlyEnd)
+        if (this.firstProjectPrefetchIdleId != null && 'cancelIdleCallback' in window) {
+            cancelIdleCallback(this.firstProjectPrefetchIdleId)
+        }
+    },
+    methods: {
+        /**
+         * Labels compress into the blue center with expand — no CSS opacity lag.
+         * Scale/opacity track the frost so collapse matches the disk speed.
+         */
+        heroTouchDiskMenuItemStyle(item, index) {
+            const t = Math.max(0, Math.min(1, this.heroTouchDiskExpand))
+            // Collapse: steep so words vanish ahead of the frost.
+            // Open: gentler so labels bloom with the pill.
+            const closing =
+                this.heroTouchDiskPopping && !this.heroTouchDiskExpandOpening
+            const compress = closing
+                ? Math.max(0, Math.min(1, t * t * t * 2.2))
+                : Math.max(0, Math.min(1, Math.pow(t, 0.75)))
+            const x0 = parseFloat(item.x) || 0
+            const y0 = parseFloat(item.y) || 0
+            const towardCenter =
+                item.anchor === 'end' ||
+                (item.anchor === 'radial' && x0 < 0)
+            const origin = towardCenter
+                ? 'right center'
+                : item.anchor === 'start' || (item.anchor === 'radial' && x0 > 0)
+                  ? 'left center'
+                  : 'center center'
+            let translate = 'translate(-50%, -50%)'
+            if (item.anchor === 'end') translate = 'translate(-100%, -50%)'
+            else if (item.anchor === 'start') translate = 'translate(0, -50%)'
+            const rot = item.rot || '0deg'
+            return {
+                '--menu-i': index,
+                left: `${x0 * compress}px`,
+                top: `${y0 * compress}px`,
+                opacity: compress,
+                transformOrigin: origin,
+                transform: `${translate} rotate(${rot}) scaleX(${compress}) scaleY(${0.85 + 0.15 * compress})`,
+                pointerEvents: compress > 0.4 ? 'auto' : 'none',
+            }
+        },
+        initOffsetProjectTilt() {
+            if (!supportsDeviceOrientation()) return
+            this.onOffsetProjectTiltOrientation = (event) => {
+                if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
+                if (prefersReducedMotion()) {
+                    this.offsetProjectTiltTargetX = 0
+                    this.offsetProjectTiltTargetY = 0
+                    this.kickOffsetProjectTiltLerp()
+                    return
+                }
+                const shift = orientationToShift(event.beta, event.gamma)
+                this.offsetProjectTiltTargetX = shift.x
+                this.offsetProjectTiltTargetY = shift.y
+                this.kickOffsetProjectTiltLerp()
+            }
+            this.onOffsetProjectTiltPermissionGesture = () => {
+                this.tryStartOffsetProjectTilt()
+            }
+            this.onOffsetProjectTiltMqChange = () => {
+                if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+                    this.bindOffsetProjectTiltPermissionGesture()
+                    if (
+                        !needsOrientationPermission() ||
+                        this.offsetProjectTiltPermission === 'granted'
+                    ) {
+                        this.startOffsetProjectTilt()
+                    }
+                } else {
+                    this.stopOffsetProjectTilt()
+                }
+            }
+            this.offsetProjectTiltMq = window.matchMedia(MOBILE_MEDIA_QUERY)
+            this.offsetProjectTiltMq.addEventListener('change', this.onOffsetProjectTiltMqChange)
+            if (this.offsetProjectTiltMq.matches) {
+                this.bindOffsetProjectTiltPermissionGesture()
+                // Non-iOS: listen immediately. iOS waits for a user gesture.
+                if (!needsOrientationPermission()) {
+                    this.startOffsetProjectTilt()
+                }
+            }
+        },
+        teardownOffsetProjectTilt() {
+            this.stopOffsetProjectTilt()
+            this.unbindOffsetProjectTiltPermissionGesture()
+            this.offsetProjectTiltMq?.removeEventListener(
+                'change',
+                this.onOffsetProjectTiltMqChange,
+            )
+            this.offsetProjectTiltMq = null
+        },
+        bindOffsetProjectTiltPermissionGesture() {
+            if (this.offsetProjectTiltPermissionGestureBound) return
+            // Capture any first touch/click so iOS can grant orientation access.
+            window.addEventListener('pointerdown', this.onOffsetProjectTiltPermissionGesture, {
+                passive: true,
+            })
+            this.offsetProjectTiltPermissionGestureBound = true
+        },
+        unbindOffsetProjectTiltPermissionGesture() {
+            if (!this.offsetProjectTiltPermissionGestureBound) return
+            window.removeEventListener('pointerdown', this.onOffsetProjectTiltPermissionGesture)
+            this.offsetProjectTiltPermissionGestureBound = false
+        },
+        async tryStartOffsetProjectTilt() {
+            if (this.offsetProjectTiltListening) {
+                this.unbindOffsetProjectTiltPermissionGesture()
+                return
+            }
+            if (prefersReducedMotion()) return
+            if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
+            if (this.offsetProjectTiltPermission === 'denied') {
+                this.unbindOffsetProjectTiltPermissionGesture()
+                return
+            }
+            if (needsOrientationPermission() && this.offsetProjectTiltPermission !== 'granted') {
+                const state = await requestOrientationPermission()
+                this.offsetProjectTiltPermission = state
+                if (state !== 'granted') {
+                    this.unbindOffsetProjectTiltPermissionGesture()
+                    return
+                }
+            } else {
+                this.offsetProjectTiltPermission = 'granted'
+            }
+            this.startOffsetProjectTilt()
+            this.unbindOffsetProjectTiltPermissionGesture()
+        },
+        startOffsetProjectTilt() {
+            if (this.offsetProjectTiltListening) return
+            window.addEventListener('deviceorientation', this.onOffsetProjectTiltOrientation, {
+                passive: true,
+            })
+            this.offsetProjectTiltListening = true
+        },
+        stopOffsetProjectTilt() {
+            if (this.offsetProjectTiltListening) {
+                window.removeEventListener(
+                    'deviceorientation',
+                    this.onOffsetProjectTiltOrientation,
+                )
+                this.offsetProjectTiltListening = false
+            }
+            if (this.offsetProjectTiltRaf != null) {
+                cancelAnimationFrame(this.offsetProjectTiltRaf)
+                this.offsetProjectTiltRaf = null
+            }
+            this.offsetProjectTiltTargetX = 0
+            this.offsetProjectTiltTargetY = 0
+            this.offsetProjectTiltX = 0
+            this.offsetProjectTiltY = 0
+            this.unbindOffsetProjectTiltPermissionGesture()
+        },
+        kickOffsetProjectTiltLerp() {
+            if (this.offsetProjectTiltRaf != null) return
+            const tick = () => {
+                const next = lerpTilt(
+                    { x: this.offsetProjectTiltX, y: this.offsetProjectTiltY },
+                    {
+                        x: this.offsetProjectTiltTargetX,
+                        y: this.offsetProjectTiltTargetY,
+                    },
+                )
+                this.offsetProjectTiltX = next.x
+                this.offsetProjectTiltY = next.y
+                if (next.settled) {
+                    this.offsetProjectTiltRaf = null
+                    return
+                }
+                this.offsetProjectTiltRaf = requestAnimationFrame(tick)
+            }
+            this.offsetProjectTiltRaf = requestAnimationFrame(tick)
+        },
+        bindFeaturedPressReleaseListeners() {
+            if (this.featuredPressReleaseBound) return
+            this.featuredPressReleaseBound = true
+            this.onFeaturedPressWindowEnd = () => {
+                this.onFeaturedProjectPressEnd()
+            }
+            this.onFeaturedPressWorkScroll = () => {
+                // Swipe took over — drop the curve immediately (no click race).
+                this.clearFeaturedPressExpand({ immediate: true })
+            }
+            // Capture on window: release may not retarget the link after a swipe.
+            window.addEventListener('pointerup', this.onFeaturedPressWindowEnd, true)
+            window.addEventListener('pointercancel', this.onFeaturedPressWindowEnd, true)
+            document.getElementById('work')?.addEventListener(
+                'scroll',
+                this.onFeaturedPressWorkScroll,
+                { passive: true },
+            )
+        },
+        unbindFeaturedPressReleaseListeners() {
+            if (!this.featuredPressReleaseBound) return
+            this.featuredPressReleaseBound = false
+            if (this.onFeaturedPressWindowEnd) {
+                window.removeEventListener('pointerup', this.onFeaturedPressWindowEnd, true)
+                window.removeEventListener('pointercancel', this.onFeaturedPressWindowEnd, true)
+                this.onFeaturedPressWindowEnd = null
+            }
+            if (this.onFeaturedPressWorkScroll) {
+                document
+                    .getElementById('work')
+                    ?.removeEventListener('scroll', this.onFeaturedPressWorkScroll)
+                this.onFeaturedPressWorkScroll = null
+            }
+        },
+        clearFeaturedPressExpand({ immediate = false } = {}) {
+            clearTimeout(this.featuredPressClearTimer)
+            this.featuredPressClearTimer = null
+            this.unbindFeaturedPressReleaseListeners()
+            if (this.featuredExpandPending) return
+
+            const article = this.featuredPressArticle
+            const clear = () => {
+                article?.classList.remove('project--press-expand')
+                this.$el
+                    ?.querySelectorAll('.project--press-expand')
+                    .forEach((el) => el.classList.remove('project--press-expand'))
+                this.featuredPressArticle = null
+                this.featuredPressAt = 0
+            }
+
+            if (immediate) {
+                clear()
+                return
+            }
+            // pointerup fires before click — brief delay so a real tap can
+            // cancel the undo and keep the round for the expand transition.
+            this.featuredPressClearTimer = window.setTimeout(() => {
+                this.featuredPressClearTimer = null
+                if (this.featuredExpandPending) return
+                clear()
+            }, 80)
+        },
+        onFeaturedProjectPress(event) {
+            if (event.pointerType === 'mouse' && event.button !== 0) return
+            if (prefersReducedMotion()) return
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
+            const article = event.currentTarget.closest('.project')
+            clearTimeout(this.featuredPressClearTimer)
+            this.featuredPressClearTimer = null
+            // Keep round while pressed; release clears it unless a navigate starts.
+            // Drive the curve via class only — :active sticks on some mobile browsers.
+            article?.classList.add('project--press-expand')
+            this.featuredPressArticle = article
+            this.featuredPressAt = performance.now()
+            this.bindFeaturedPressReleaseListeners()
+        },
+        onFeaturedProjectPressEnd() {
+            if (!window.matchMedia(SMALL_MOBILE_MEDIA_QUERY).matches) return
+            if (this.featuredExpandPending) return
+            if (!this.featuredPressArticle && !this.featuredPressReleaseBound) return
+            this.clearFeaturedPressExpand()
+        },
+        onFeaturedProjectNavigate(event) {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+            if (event.button != null && event.button !== 0) return
+            if (prefersReducedMotion()) return
+            if (this.featuredExpandPending) return
+
+            const article = event.currentTarget.closest('.project')
+            const img = article?.querySelector('.project-image')
+            if (!img) return
+
+            event.preventDefault()
+            this.unbindFeaturedPressReleaseListeners()
+            clearTimeout(this.featuredPressClearTimer)
+            clearTimeout(this.featuredExpandTimer)
+            this.featuredPressClearTimer = null
+            this.featuredExpandTimer = null
+            this.featuredExpandPending = false
+            this.featuredPressAt = 0
+            this.featuredPressArticle = article
+
+            const shell =
+                article.querySelector('.project-image-link') ||
+                article.querySelector('.project-image-wrap') ||
+                img
+            const rect = shell.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) {
+                article?.classList.remove('project--press-expand')
+                this.featuredPressArticle = null
+                this.$router.push('/work/DashboardDesign')
+                return
+            }
+
+            // Same expand path on mobile and desktop
+            const isMobile = window.matchMedia(MOBILE_MEDIA_QUERY).matches
+            if (isMobile) article.classList.add('project--press-expand')
+
+            startImageExpand({
+                src: img.currentSrc || img.src,
+                rect,
+                borderRadius:
+                    getComputedStyle(shell).borderRadius ||
+                    (isMobile ? PRESS_BORDER_RADIUS : '20px'),
+            })
+            img.style.opacity = '0'
+
+            this.$router.push('/work/DashboardDesign').catch(() => {
+                img.style.opacity = ''
+                article?.classList.remove('project--press-expand')
+                this.featuredPressArticle = null
+                cancelImageExpand()
+            })
+        },
+        jumpToSectionHash(hash) {
+            scrollToPortfolioHash(hash, { duration: 0 })
+            // Keep top bar hidden after the instant jump (no scroll delta to trigger it).
+            window.dispatchEvent(new Event('portfolio-section-jump'))
+            if (hash === '#work' || hash === '#work-first') {
+                this.revealAllProjects()
+            }
+            if (this.isHeroTouchDiskMode()) {
+                if (hash === '#about') this.heroTouchDiskZone = 'about'
+                else if (hash === '#work' || hash === '#work-first') {
+                    this.heroTouchDiskZone = 'work'
+                }
+                this.closeHeroTouchDiskMenu()
+                this.heroTouchDiskHasMoved = false
+                if (this.heroTouchDiskEntering) {
+                    this.cancelHeroTouchDiskEntranceFlight()
+                    this.heroTouchDiskEntering = false
+                    this.heroTouchDiskEntrance = 1
+                    this.heroTouchDiskIdle = false
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorRangeMix = 0
+                }
+                this.clearHeroTouchDiskMorph()
+                this.$nextTick(() => this.syncHeroTouchDiskRestPosition())
+            }
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    this.updateHeroLocationVisibility()
+                    this.updateHeroIntroDissipateFromScroll({ instant: true })
+                })
+            })
+            if (hash !== '#about' || this.aboutRevealed) return
+
+            // Start the about slide-in after the jump so it animates into place.
+            this.aboutRevealed = true
+            this.scheduleAboutEntranceEnd()
+        },
+        setupProjectScrollFade(sectionHash = '') {
+            const projects = [...(this.$el?.querySelectorAll('.work .project') ?? [])]
+            if (!projects.length) return
+
+            // Clear prior state so breakpoint changes don't leave the wrong mode.
+            this.projectFadeObserver?.disconnect()
+            this.projectFadeObserver = null
+            for (const project of projects) {
+                project.classList.remove('project--scroll-fade', 'project--in-view')
+            }
+
+            if (prefersReducedMotion()) {
+                this.revealAllProjects()
+                return
+            }
+
+            // Deep-link into work: show cards immediately (no fade after jump).
+            if (sectionHash === '#work' || sectionHash === '#work-first') {
+                this.revealAllProjects()
+                return
+            }
+
+            // Deco line present (≥501): thumbnails stay put — no scroll fade.
+            // ≤500 swipe strip: keep every card painted so the next one can peek.
+            this.revealAllProjects()
+        },
+        revealAllProjects() {
+            this.projectFadeObserver?.disconnect()
+            this.projectFadeObserver = null
+            for (const project of this.$el?.querySelectorAll('.work .project') ?? []) {
+                project.classList.remove('project--scroll-fade')
+                project.classList.add('project--in-view')
+            }
+        },
+        setupAboutReveal() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                this.aboutRevealed = true
+                this.aboutEntranceDone = true
+                return
+            }
+
+            const about = this.$el?.querySelector('#about')
+            if (!about) return
+
+            const isMobileAbout = window.matchMedia(MOBILE_ABOUT_MEDIA_QUERY).matches
+
+            this.aboutRevealObserver = new IntersectionObserver(
+                (entries) => {
+                    const entry = entries[0]
+                    if (!entry) return
+
+                    if (isMobileAbout) {
+                        // Start once the beige about background fills 1/3 of the viewport
+                        const viewportHeight = entry.rootBounds?.height ?? 0
+                        const visibleHeight = entry.intersectionRect.height
+                        if (viewportHeight <= 0 || visibleHeight < viewportHeight / 3) return
+                    } else if (!entry.isIntersecting) {
+                        return
+                    }
+
+                    this.aboutRevealed = true
+                    this.aboutRevealObserver?.disconnect()
+                    this.aboutRevealObserver = null
+                    this.scheduleAboutEntranceEnd()
+                },
+                isMobileAbout
+                    ? {
+                          root: null,
+                          // Dense steps so we can measure visible height as it scrolls in
+                          threshold: Array.from({ length: 21 }, (_, i) => i / 20),
+                          rootMargin: '0px',
+                      }
+                    : {
+                          root: null,
+                          threshold: 0.2,
+                          rootMargin: '0px 0px -12% 0px',
+                      }
+            )
+            this.aboutRevealObserver.observe(about)
+        },
+        scheduleAboutEntranceEnd() {
+            clearTimeout(this.aboutEntranceTimer)
+            const page = this.$el
+            const durationMs =
+                (parseFloat(getComputedStyle(page).getPropertyValue('--fly-duration')) || 1.25) *
+                1000
+            // Longest about stagger is photo at 0.18s
+            this.pollAboutLocationTextClip()
+            this.aboutEntranceTimer = setTimeout(() => {
+                this.aboutEntranceDone = true
+                this.stopAboutLocationTextClipPoll()
+                this.syncAboutLocationTextClip()
+            }, durationMs + 200)
+        },
+        clearLoadingTimer() {
+            if (this.loadingTimer != null) {
+                clearTimeout(this.loadingTimer)
+                this.loadingTimer = null
+            }
+        },
+        clearLogoHandoffTimer() {
+            if (this.logoHandoffTimer != null) {
+                clearTimeout(this.logoHandoffTimer)
+                this.logoHandoffTimer = null
+            }
+            if (this.logoHandoffRevealTimer != null) {
+                clearTimeout(this.logoHandoffRevealTimer)
+                this.logoHandoffRevealTimer = null
+            }
+        },
+        areMainPageImagesLoaded() {
+            const imgs = [...this.$el.querySelectorAll('.portfolio-content img')]
+            if (!imgs.length) return false
+            return imgs.every((img) => img.complete)
+        },
+        finishLoadingSplash() {
+            this.clearLoadingTimer()
+            const isMobile = window.matchMedia(MOBILE_MEDIA_QUERY).matches
+            if (!isMobile || prefersReducedMotion()) {
+                this.completeLoadingHandoff()
+                return
+            }
+            this.startLogoHandoff()
+        },
+        startLogoHandoff() {
+            const frame = this.$el?.querySelector('.loading-splash-frame')
+            const dest = this.$el?.querySelector('.portfolio-top-bar .logo')
+            if (!frame || !dest) {
+                this.completeLoadingHandoff()
+                return
+            }
+
+            const from = frame.getBoundingClientRect()
+            const to = dest.getBoundingClientRect()
+            if (from.width <= 0 || to.width <= 0 || to.height <= 0) {
+                this.completeLoadingHandoff()
+                return
+            }
+
+            // loading_normal sits in an 84×84 canvas with the mark in the top half
+            const startW = from.width
+            const startH = from.height / 2
+            const startL = from.left
+            const startT = from.top
+
+            this.logoHandoffStyle = {
+                left: `${startL}px`,
+                top: `${startT}px`,
+                width: `${startW}px`,
+                height: `${startH}px`,
+                transform: 'translate(0, 0) scale(1, 1)',
+                transition: 'none',
+            }
+            this.logoHandoff = true
+
+            this.clearLogoHandoffTimer()
+            this.logoHandoffTimer = setTimeout(() => {
+                this.completeLoadingHandoff()
+            }, LOGO_HANDOFF_MS + 40)
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (!this.logoHandoff) return
+                    const dx = to.left - startL
+                    const dy = to.top - startT
+                    const sx = to.width / startW
+                    const sy = to.height / startH
+                    this.logoHandoffStyle = {
+                        left: `${startL}px`,
+                        top: `${startT}px`,
+                        width: `${startW}px`,
+                        height: `${startH}px`,
+                        transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`,
+                        transition: `transform ${LOGO_HANDOFF_MS}ms ${LOGO_HANDOFF_EASE}`,
+                    }
+
+                    const revealAt = Math.max(0, LOGO_HANDOFF_MS - LOGO_HANDOFF_REVEAL_LEAD_MS)
+                    this.logoHandoffRevealTimer = setTimeout(() => {
+                        this.beginPageReveal()
+                    }, revealAt)
+                })
+            })
+        },
+        onLogoHandoffTransitionEnd(event) {
+            if (event.propertyName !== 'transform') return
+            this.completeLoadingHandoff()
+        },
+        beginPageReveal() {
+            if (this.pageRevealed || this.pageRevealArmed) return
+            this.pageRevealArmed = true
+            document.documentElement.classList.remove('portfolio-booting')
+            this.syncHeroDecorHeight()
+            this.syncAboutLocationTextClip()
+            this.syncHeroIntroCharColumns()
+            // Pin the mobile floor and snapshot resting glyph geometry BEFORE the
+            // from-right cascade starts. Early-scroll dissipate must use this, not a
+            // mid-cascade measure.
+            const mobileLetter =
+                this.heroIntroLetterMode &&
+                (this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            if (mobileLetter) {
+                this.lockHeroViewportHeight({ force: true })
+                void this.$el?.offsetHeight
+                this.captureHeroIntroRestLayout({ preAnimation: true })
+            }
+            // Let the measure/write burst settle for two frames before starting
+            // ~150 letter animations — otherwise the cascade hitchs on first paint.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (this.pageRevealed) return
+                    this.pageRevealed = true
+                    const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+                    const isTabletMobile = window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
+                    // Tablet-mobile: line stays fully clipped until dissipate, then
+                    // grows with scroll. Desktop: entrance grow → cascade → scroll grow.
+                    if (isTabletMobile) {
+                        this.heroDecorHidden = false
+                        this.heroIntroCascadeReady = true
+                        this.syncHeroDecorHeight()
+                        this.syncTabletWorkDecorVisibility()
+                        this.schedulePageEntranceSettle()
+                    } else if (isDesktop) {
+                        this.heroDecorHidden = false
+                        this.syncHeroDecorHeight()
+                        this.startDesktopDecorLineEntrance()
+                    } else {
+                        this.heroIntroCascadeReady = true
+                        this.schedulePageEntranceSettle()
+                    }
+                    this.syncDecorLineX()
+                    this.publishDecorLineAlign()
+                    scrollToPortfolioHash(this.$route.hash)
+                    if (mobileLetter) {
+                        const schedule =
+                            typeof requestIdleCallback === 'function'
+                                ? (cb) => requestIdleCallback(cb, { timeout: 400 })
+                                : (cb) => setTimeout(cb, 180)
+                        schedule(() => {
+                            if (!this.heroIntroDissipatePrepared) {
+                                this.prepareHeroIntroDissipateTargets()
+                            }
+                        })
+                    }
+                })
+            })
+        },
+        schedulePageEntranceSettle() {
+            if (this.pageEntranceDone || this.pageEntranceSettleScheduled) return
+            this.pageEntranceSettleScheduled = true
+
+            if (prefersReducedMotion()) {
+                this.markPageEntranceDone()
+                this.$nextTick(() => {
+                    requestAnimationFrame(() => this.publishDecorLineAlign())
+                })
+                return
+            }
+
+            // Wait until the longest hero motion finishes.
+            let settleMs = 2300
+            const intro = this.$el?.querySelector('.hero-intro')
+
+            if (this.heroIntroLetterMode) {
+                const pageStyles = getComputedStyle(this.$el)
+                const introStyles = intro ? getComputedStyle(intro) : pageStyles
+                const ctaDelay = parseCssTimeSec(pageStyles, '--cta-fly-delay', 0.08)
+                const ctaDuration = parseCssTimeSec(pageStyles, '--cta-fly-duration', 1.25)
+                const ctaEnd = ctaDelay + ctaDuration
+                const lineFlyDurationRaw = pageStyles.getPropertyValue('--hero-line-fly-duration').trim()
+                const lineFlyDelay = parseCssTimeSec(pageStyles, '--hero-line-fly-delay', 0.08)
+                const lineFlyDuration = lineFlyDurationRaw ? parseFloat(lineFlyDurationRaw) : 0
+                const cascadeStart = parseCssTimeSec(
+                    introStyles,
+                    '--hero-intro-cascade-start',
+                    lineFlyDurationRaw ? lineFlyDelay + lineFlyDuration + 0.14 : 0.04
+                )
+                const cascadeEnd = parseCssTimeSec(introStyles, '--hero-intro-cascade-end', ctaEnd)
+                const charDuration = parseCssTimeSec(introStyles, '--hero-intro-char-duration', 0.85)
+                const slowestLineMult = 1.1
+                const maxDelay = Math.max(
+                    cascadeStart,
+                    cascadeEnd - charDuration * slowestLineMult
+                )
+                const isMobileTouchDisk =
+                    isHeroTouchDiskEnvironment() &&
+                    (this.heroIntroLetterMq?.matches ??
+                        window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+                if (isMobileTouchDisk) {
+                    // ":)" is in the cascade — settle shortly after the cascade window ends.
+                    settleMs = Math.ceil(
+                        (maxDelay + charDuration * slowestLineMult + 0.12) * 1000,
+                    )
+                } else {
+                    const afterthoughtStart =
+                        Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) +
+                        0.22 +
+                        0.1 +
+                        0.05
+                    settleMs = Math.ceil((afterthoughtStart + charDuration + 0.15) * 1000)
+                }
+            } else {
+                settleMs = 300
+            }
+
+            clearTimeout(this.pageEntranceSettleTimer)
+            this.pageEntranceSettleTimer = setTimeout(() => {
+                this.markPageEntranceDone()
+            }, settleMs)
+        },
+        markPageEntranceDone({ prioritizeDissipate = false } = {}) {
+            clearTimeout(this.pageEntranceSettleTimer)
+            this.pageEntranceSettleTimer = null
+            if (this.pageEntranceDone) {
+                // Cascade already settled; still honor an early-scroll dissipate ask.
+                if (prioritizeDissipate) {
+                    this.$nextTick(() => {
+                        requestAnimationFrame(() => {
+                            this.updateHeroIntroDissipateFromScroll({ forcePrepare: true })
+                        })
+                    })
+                }
+                return
+            }
+            this.pageEntranceDone = true
+            this.syncHeroCursorDocumentClass()
+            this.lockHeroViewportHeight()
+            this.syncHeroDecorHeight()
+            this.syncProjectCaptionLineOffset()
+            this.syncTabletWorkDecorVisibility()
+            this.publishDecorLineAlign()
+            // First-page fade for hero text only after entrance — sync if already scrolled away.
+            this.updateHeroLocationVisibility()
+            this.$nextTick(() => {
+                if (this.heroTouchDiskMode) {
+                    this.primeHeroTouchDisk()
+                }
+                requestAnimationFrame(() => {
+                    // Prefer the pre-cascade snapshot; only measure now if missing.
+                    if (!this.heroIntroRestLayout) {
+                        this.captureHeroIntroRestLayout()
+                    }
+                    this.updateHeroIntroDissipateFromScroll({
+                        // Early scroll: animate dissipate. Normal settle: snap to match scroll.
+                        instant: !prioritizeDissipate,
+                        forcePrepare: true,
+                    })
+                    if (
+                        this.heroTouchDiskMode &&
+                        !this.heroTouchDiskHasMoved &&
+                        !this.heroTouchDiskEntering
+                    ) {
+                        this.syncHeroTouchDiskRestPosition()
+                    }
+                })
+            })
+        },
+        onMobileHeroLayoutChange() {
+            const isMobile = this.heroIntroLetterMq.matches
+            const hasDecorLine = window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches
+            const isTabletMobile = window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
+            const nextLetter = !this.heroIntroReduceMq.matches
+            const letterChanged = nextLetter !== this.heroIntroLetterMode
+            // Desktop only: unhide after leaving ≤500. Tablet stays dissipate-gated.
+            const revealingDecor =
+                this.heroDecorHidden && hasDecorLine && !isTabletMobile
+
+            if (letterChanged && !nextLetter) {
+                this.onHeroPointerEndHandlerImpl({ preserveTouchDisk: false })
+            }
+
+            // ≤500: stacked work, no decor line, scroll-fade cards.
+            if (isMobile && !hasDecorLine) {
+                this.heroDecorHidden = true
+                this.heroLocationVisible = false
+                if (letterChanged) this.heroIntroLetterMode = nextLetter
+                if (!nextLetter) this.clearHeroIntroDissipate()
+                this.syncProjectCaptionLineOffset()
+                this.$nextTick(() => {
+                    this.lockHeroViewportHeight({ force: true })
+                    this.invalidateHeroIntroRestLayout()
+                    // Deco line gone → enable scroll fade for off-screen cards
+                    requestAnimationFrame(() => {
+                        this.setupProjectScrollFade()
+                        if (nextLetter) {
+                            this.captureHeroIntroRestLayout()
+                            this.updateHeroIntroDissipateFromScroll({
+                                instant: true,
+                                forcePrepare: true,
+                            })
+                            if (
+                                this.pageEntranceDone &&
+                                isHeroTouchDiskEnvironment() &&
+                                !this.isHeroIntroFinePointer()
+                            ) {
+                                this.primeHeroTouchDisk()
+                            }
+                        }
+                    })
+                })
+                return
+            }
+
+            // ≥501: desktop-style work. Desktop always shows the line; tablet only
+            // after hero-intro dissipate (hidden again after reconsolidate).
+            this.revealAllProjects()
+
+            if (isTabletMobile) {
+                this.heroLocationVisible = false
+                if (letterChanged) this.heroIntroLetterMode = nextLetter
+                if (!nextLetter) this.clearHeroIntroDissipate()
+                this.$nextTick(() => {
+                    this.lockHeroViewportHeight({ force: true })
+                    this.syncHeroDecorHeight()
+                    this.syncProjectCaptionLineOffset()
+                    this.syncAboutLocationTextClip()
+                    if (this.heroIntroLetterMode && !this.pageRevealed) {
+                        this.syncHeroIntroCharColumns()
+                    }
+                    if (nextLetter) {
+                        this.invalidateHeroIntroRestLayout()
+                        this.captureHeroIntroRestLayout()
+                        this.updateHeroIntroDissipateFromScroll({
+                            instant: true,
+                            forcePrepare: true,
+                        })
+                        if (
+                            this.pageEntranceDone &&
+                            isHeroTouchDiskEnvironment() &&
+                            !this.isHeroIntroFinePointer()
+                        ) {
+                            this.primeHeroTouchDisk()
+                        }
+                    }
+                    this.syncTabletWorkDecorVisibility()
+                })
+                return
+            }
+
+            this.lockHeroViewportHeight({ force: true })
+            this.clearHeroIntroDissipate()
+            if (letterChanged) this.heroIntroLetterMode = nextLetter
+
+            const afterDecorSync = () => {
+                this.lockHeroViewportHeight({ force: true })
+                this.syncHeroDecorHeight()
+                this.syncProjectCaptionLineOffset()
+                this.syncAboutLocationTextClip()
+                if (this.heroIntroLetterMode && !this.pageRevealed) {
+                    this.syncHeroIntroCharColumns()
+                }
+            }
+
+            // Already showing the line: sync without a hide flash.
+            if (!revealingDecor) {
+                this.$nextTick(() => {
+                    afterDecorSync()
+                    if (this.pageRevealed) {
+                        this.heroDecorHidden = false
+                        this.heroIntroCascadeReady = true
+                        this.desktopDecorHeroGrowDone = true
+                        this.tabletDecorCaptionsPreclear = true
+                        this.syncAboutLineBridge()
+                        const metrics = this.getDecorLineSpanMetrics()
+                        const p = Math.max(
+                            this.tabletDecorLineGrowProgress,
+                            this.getTabletDecorLineScrollProgress(),
+                            metrics?.heroViewportProgress ?? 0,
+                        )
+                        this.applyTabletDecorLineGrowProgress(p)
+                        this.syncProjectCaptionLineOffset()
+                    }
+                })
+                return
+            }
+
+            // Leaving ≤500 → desktop: keep line invisible until height matches layout.
+            this.heroDecorHidden = true
+
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        afterDecorSync()
+                        this.heroDecorHidden = false
+                        this.heroIntroCascadeReady = true
+                        this.desktopDecorHeroGrowDone = true
+                        this.tabletDecorCaptionsPreclear = true
+                        this.syncAboutLineBridge()
+                        const metrics = this.getDecorLineSpanMetrics()
+                        const p = Math.max(
+                            this.getTabletDecorLineScrollProgress(),
+                            metrics?.heroViewportProgress ?? 0,
+                        )
+                        this.applyTabletDecorLineGrowProgress(p)
+                        this.syncProjectCaptionLineOffset()
+                        this.updateHeroLocationVisibility()
+                        this.publishDecorLineAlign()
+                    })
+                })
+            })
+        },
+        setupHeroLocationVisibility() {
+            const workFirst = this.$el?.querySelector('#work-first')
+            if (!workFirst) return
+
+            this.heroLocationObserver = new IntersectionObserver(
+                () => this.updateHeroLocationVisibility(),
+                { threshold: [0, 1] },
+            )
+            this.heroLocationObserver.observe(workFirst)
+            this.updateHeroLocationVisibility()
+        },
+        updateHeroLocationVisibility() {
+            if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
+                this.heroLocationVisible = false
+                this.heroIntroScrollHidden = false
+                this.clearHeroIntroScrollReplay()
+                return
+            }
+
+            const workFirst = this.$el?.querySelector('#work-first')
+            if (!workFirst) {
+                this.heroLocationVisible = false
+                return
+            }
+
+            const top = workFirst.getBoundingClientRect().top
+            // Sub-pixel slack: 100svh can sit slightly below window.innerHeight on some viewports
+            const next = top >= window.innerHeight - 1
+            const prev = this.heroLocationVisible
+            this.heroLocationVisible = next
+
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                this.heroIntroScrollHidden = false
+                this.clearHeroIntroScrollReplay()
+                return
+            }
+
+            if (!this.pageEntranceDone) {
+                this.heroIntroScrollHidden = false
+                return
+            }
+
+            if (prev && !next) {
+                this.heroIntroHasLeftFirstPage = true
+                this.heroIntroScrollHidden = true
+                this.clearHeroIntroScrollReplay()
+                this.clearHeroIntroPointerShift()
+            } else if (!prev && next && this.heroIntroHasLeftFirstPage) {
+                this.heroIntroScrollHidden = false
+                this.replayHeroIntroFlyInFromScroll()
+            } else {
+                this.heroIntroScrollHidden = !next
+                if (!next) this.heroIntroHasLeftFirstPage = true
+            }
+        },
+        clearHeroIntroScrollReplay() {
+            clearTimeout(this.heroIntroScrollReplayTimer)
+            this.heroIntroScrollReplayTimer = null
+            this.heroIntroScrollReplaying = false
+            this.heroIntroScrollReplayArmed = false
+        },
+        /** Desktop: replay the letter cascade when scrolling back onto the first page. */
+        replayHeroIntroFlyInFromScroll() {
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (!this.pageEntranceDone || prefersReducedMotion()) return
+
+            this.clearHeroIntroScrollReplay()
+            this.clearHeroIntroPointerShift()
+            this.heroIntroScrollReplaying = true
+            this.heroIntroScrollReplayArmed = false
+
+            this.$nextTick(() => {
+                if (this.heroIntroLetterMode) {
+                    this.syncHeroIntroCharColumns()
+                }
+                const intro = this.$el?.querySelector('.hero-intro')
+                if (intro) void intro.offsetWidth
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        if (!this.heroIntroScrollReplaying) return
+                        this.heroIntroScrollReplayArmed = true
+
+                        const styles = intro ? getComputedStyle(intro) : null
+                        const cascadeEnd = parseCssTimeSec(
+                            styles,
+                            '--hero-intro-cascade-end',
+                            2.39,
+                        )
+                        const charDuration = parseCssTimeSec(
+                            styles,
+                            '--hero-intro-char-duration',
+                            1.15,
+                        )
+                        const waitMs = Math.ceil((cascadeEnd + charDuration + 0.85) * 1000)
+                        this.heroIntroScrollReplayTimer = setTimeout(() => {
+                            this.heroIntroScrollReplaying = false
+                            this.heroIntroScrollReplayArmed = false
+                            this.heroIntroScrollReplayTimer = null
+                        }, waitMs)
+                    })
+                })
+            })
+        },
+        onHeroLocationScroll() {
+            if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
+            if (this.heroLocationScrollTicking) return
+            this.heroLocationScrollTicking = true
+            requestAnimationFrame(() => {
+                this.updateHeroLocationVisibility()
+                this.heroLocationScrollTicking = false
+            })
+        },
+        completeLoadingHandoff() {
+            if (!this.showLoadingSplash && !this.logoHandoff) return
+            this.clearLoadingTimer()
+            this.clearLogoHandoffTimer()
+            this.showLoadingSplash = false
+            this.logoHandoff = false
+            this.logoHandoffStyle = null
+            document.documentElement.classList.remove('portfolio-booting')
+            if (!this.pageRevealed) {
+                this.beginPageReveal()
+            }
+        },
+        scheduleLoadingAdvance() {
+            this.clearLoadingTimer()
+            this.loadingTimer = setTimeout(() => {
+                // Only leave while on normal — right before folded would appear,
+                // so the last thing shown is always the logo.
+                if (this.loadingFrameIndex === 0) {
+                    if (
+                        this.areMainPageImagesLoaded() ||
+                        this.loadingIteration >= LOADING_MAX_ITERATIONS
+                    ) {
+                        this.finishLoadingSplash()
+                        return
+                    }
+
+                    // normal → folded
+                    this.loadingRotating = false
+                    this.loadingFrameIndex = 1
+                    this.scheduleLoadingAdvance()
+                    return
+                }
+
+                // After folded hold, full 360° spin, then back to normal
+                this.rotateLoadingFullTurn()
+            }, LOADING_FRAME_MS)
+        },
+        rotateLoadingFullTurn() {
+            this.clearLoadingTimer()
+            this.loadingRotating = true
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // Full turn counterclockwise
+                    this.loadingRotationDeg -= 360
+                })
+            })
+
+            // Spin, pause, then return to normal (exit check happens there)
+            this.loadingTimer = setTimeout(() => {
+                this.loadingRotating = false
+
+                this.loadingTimer = setTimeout(() => {
+                    this.$nextTick(() => {
+                        this.loadingIteration += 1
+                        this.loadingFrameIndex = 0
+                        this.scheduleLoadingAdvance()
+                    })
+                }, LOADING_PAUSE_MS)
+            }, LOADING_ROTATE_MS)
+        },
+        waitForImage(img) {
+            if (!img || img.complete) return Promise.resolve()
+            return new Promise((resolve) => {
+                img.addEventListener('load', resolve, { once: true })
+                img.addEventListener('error', resolve, { once: true })
+            })
+        },
+        scheduleFirstProjectPrefetch() {
+            const upcomingImages = [
+                ...this.$el.querySelectorAll('.project--upcoming .project-image'),
+            ]
+            Promise.all(upcomingImages.map((img) => this.waitForImage(img))).then(() => {
+                this.prefetchFirstProject()
+            })
+        },
+        prefetchFirstProject() {
+            if (this.firstProjectPrefetchStarted) return
+            this.firstProjectPrefetchStarted = true
+
+            const run = () => {
+                this.firstProjectPrefetchIdleId = null
+                import('../prefetch/dashboardDesign.js')
+                    .then((mod) => mod.prefetchDashboardDesign())
+                    .catch(() => {})
+            }
+
+            if ('requestIdleCallback' in window) {
+                this.firstProjectPrefetchIdleId = requestIdleCallback(run, { timeout: 2000 })
+            } else {
+                setTimeout(run, 200)
+            }
+        },
+        lockHeroViewportHeight({ force = false } = {}) {
+            const isMobile = this.heroIntroLetterMq?.matches
+
+            if (isMobile) {
+                this.$el?.style.removeProperty('--desktop-hero-min-height')
+                const existing = this.$el?.style.getPropertyValue('--mobile-hero-height').trim()
+                const width = window.innerWidth
+                // Keep the first lock across URL-bar show/hide (height-only resize).
+                // Relock on force, first set, or real width change (orientation / split view).
+                if (
+                    existing &&
+                    !force &&
+                    this.lockedMobileHeroWidth === width
+                ) {
+                    this.updateHeroLocationVisibility()
+                    return
+                }
+                // Measure from CSS 100svh (small viewport) so the floor never grows when
+                // the URL bar hides — innerHeight would, and flex-end would shove the
+                // intro down. Drop any prior px lock, read the svh-sized wrap, re-pin.
+                this.$el?.style.removeProperty('--mobile-hero-height')
+                const wrap = this.$el?.querySelector('.hero-intro-wrap')
+                void wrap?.offsetHeight
+                let height = wrap ? Math.round(wrap.getBoundingClientRect().height) : 0
+                if (height < 1) {
+                    const pageStyles = getComputedStyle(this.$el)
+                    const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
+                    height = Math.max(0, Math.round(this.measureSmallViewportHeight() - topBarHeight))
+                }
+                this.$el?.style.setProperty('--mobile-hero-height', `${height}px`)
+                this.lockedMobileHeroWidth = width
+            } else if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                this.$el?.style.removeProperty('--mobile-hero-height')
+                this.lockedMobileHeroWidth = null
+                this.$el?.style.setProperty(
+                    '--desktop-hero-min-height',
+                    `${Math.round(window.innerHeight)}px`,
+                )
+            } else {
+                this.clearHeroViewportHeight()
+            }
+
+            this.updateHeroLocationVisibility()
+        },
+        measureSmallViewportHeight() {
+            const probe = document.createElement('div')
+            probe.style.cssText =
+                'position:absolute;left:0;top:0;height:100svh;width:0;pointer-events:none;visibility:hidden'
+            document.body.appendChild(probe)
+            const h = probe.offsetHeight || window.innerHeight
+            probe.remove()
+            return h
+        },
+        clearHeroViewportHeight() {
+            this.$el?.style.removeProperty('--mobile-hero-height')
+            this.$el?.style.removeProperty('--desktop-hero-min-height')
+            this.lockedMobileHeroWidth = null
+        },
+        invalidateHeroIntroRestLayout() {
+            this.heroIntroRestLayout = null
+            this.heroIntroDissipatePrepared = false
+        },
+        canHeroIntroPointerPlay() {
+            return (
+                this.heroIntroLetterMode &&
+                this.pageEntranceDone &&
+                !this.heroIntroDissipated &&
+                // Desktop / fine-pointer: never play during reconsolidate.
+                // Touch-disk only: may keep repelling while letters snap back.
+                (!this.heroIntroReconsolidating || this.isHeroTouchDiskGlassRepelActive()) &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined'
+            )
+        },
+        /** Footer title push stays available after the hero dissipates. */
+        canFooterPushPlay() {
+            return (
+                this.heroIntroLetterMode &&
+                this.pageEntranceDone &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined'
+            )
+        },
+        /**
+         * Touch-disk text field: hero zone uses intro play rules; off-hero only while
+         * free (dragged) so the disk can repel the footer title like the intro.
+         */
+        touchDiskTextEffectsEnabled() {
+            if (!this.isHeroTouchDiskMode()) return false
+            // Dual Work/About pill: no letter push while the menu is open.
+            if (
+                this.heroTouchDiskMenuFrostDual &&
+                (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
+            ) {
+                return false
+            }
+            if (this.heroTouchDiskZone === 'hero') {
+                return this.canHeroIntroPointerPlay()
+            }
+            return (
+                this.canFooterPushPlay() &&
+                (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging)
+            )
+        },
+        getFooterPushRoot() {
+            return this.$el?.querySelector('.footer-contact-title--push') ?? null
+        },
+        getFooterEmailEl() {
+            return this.$el?.querySelector('a.footer-email') ?? null
+        },
+        /**
+         * Prefer email magnifier over title glass — clear the glass field early
+         * while approaching the mailto link (large pad above the email).
+         * Touch disk skips this (no magnifier).
+         */
+        isPreferFooterEmailMagnifier(x, y) {
+            // Touch disk has no magnifier — keep footer title glass available.
+            if (this.isHeroTouchDiskMode()) return false
+            const email = this.getFooterEmailEl()
+            if (!email) return false
+            const rect = email.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) return false
+            const padX = 16
+            const padTop = 32
+            const padBottom = 12
+            return (
+                x >= rect.left - padX &&
+                x <= rect.right + padX &&
+                y >= rect.top - padTop &&
+                y <= rect.bottom + padBottom
+            )
+        },
+        isNearFooterPush(x, y) {
+            if (this.isPreferFooterEmailMagnifier(x, y)) return false
+            const footer = this.getFooterPushRoot()
+            if (!footer || !this.canFooterPushPlay()) return false
+            // Same AABB as isHeroIntroPointerNear so glass morph and letter push stay aligned.
+            // Keep the bottom pad modest so glass yields to the email magnifier sooner.
+            const pad = this.getPushTargetZonePad(footer)
+            const padBottom = Math.min(pad, 14)
+            const rect = footer.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) return false
+            return (
+                x >= rect.left - pad &&
+                x <= rect.right + pad &&
+                y >= rect.top - pad &&
+                y <= rect.bottom + padBottom
+            )
+        },
+        /** Proximity mix for the footer title only (ignores off-screen hero intro). */
+        getFooterRangeProximityMix(x, y) {
+            if (this.isPreferFooterEmailMagnifier(x, y)) return 0
+            const footer = this.getFooterPushRoot()
+            if (!footer || !this.canFooterPushPlay()) return 0
+            const { outerPad, innerPad } = this.getPushTargetRangePads(footer)
+            const rect = footer.getBoundingClientRect()
+            // Don't let the glass field reach down into the email row.
+            if (y > rect.bottom + 14) return 0
+            const distance = heroCursorDistanceToRect(x, y, rect)
+            if (distance >= outerPad) return 0
+            if (distance <= innerPad) return 1
+            const linear = (outerPad - distance) / (outerPad - innerPad)
+            return heroCursorRangeSmoothstep(linear)
+        },
+        applyFooterPointerShift() {
+            const footer = this.getFooterPushRoot()
+            const pointer = this.heroIntroPointer
+            if (!footer || !pointer || !this.canFooterPushPlay()) {
+                if (footer) clearPointerCharShift(footer)
+                return
+            }
+            applyPointerCharShift(footer, pointer)
+        },
+        clearFooterPointerShift() {
+            clearPointerCharShift(this.getFooterPushRoot())
+        },
+        isHeroTouchDiskGlassRepelActive() {
+            // Touch-disk path only — fine-pointer desktop must not enter here.
+            return (
+                this.isHeroTouchDiskMode() &&
+                !this.isHeroIntroFinePointer() &&
+                this.heroCursorActive &&
+                (this.heroTouchDiskHasMoved ||
+                    this.heroTouchDiskDragging ||
+                    this.heroTouchDiskEntering) &&
+                this.heroCursorIntroGlassHandoff
+            )
+        },
+        /** Re-apply letter push around a stationary in-text touch disk. */
+        syncHeroTouchDiskIntroRepel() {
+            if (!this.isHeroTouchDiskGlassRepelActive()) return
+            if (this.heroIntroDissipated) return
+            const { x, y } = this.heroCursorPos
+            this.updateHeroFinePointer(x, y, {
+                introEffects: true,
+                skipHover: true,
+            })
+        },
+        /**
+         * While the menu frost is open, keep hero letters hugging the live pill
+         * outline (not the idle circular glass field). Dual menu: no push.
+         */
+        syncHeroTouchDiskMenuTextMorph() {
+            if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) return
+            if (this.heroTouchDiskMenuFrostDual) {
+                if (this.heroIntroPointer) {
+                    this.heroIntroPointer = null
+                    this.clearHeroIntroPointerShift()
+                }
+                this.clearFooterPointerShift()
+                return
+            }
+            if (!this.touchDiskTextEffectsEnabled()) return
+            if (this.heroIntroDissipated) return
+            const { x, y } = this.heroCursorGlassPos
+            // Pill in hero text collapses to glass — don't keep a stadium letter hole.
+            if (this.getHeroIntroTextProximityMix(x, y) >= HERO_CURSOR_INTRO_GLASS_ON) {
+                return
+            }
+            if (!this.isHeroIntroPointerNear(x, y)) {
+                if (this.heroIntroPointer) {
+                    this.heroIntroPointer = null
+                    this.clearHeroIntroPointerShift()
+                }
+                return
+            }
+            this.heroIntroPointer = { x, y }
+            this.applyHeroIntroPointerShift()
+        },
+        /** After menu close: resume circular glass letter morph if still in text. */
+        restoreHeroTouchDiskGlassTextMorph() {
+            if (!this.touchDiskTextEffectsEnabled()) {
+                if (this.heroIntroPointer) {
+                    this.heroIntroPointer = null
+                    this.clearHeroIntroPointerShift()
+                }
+                return
+            }
+            const { x, y } = this.heroCursorGlassPos
+            this.updateHeroFinePointer(x, y, {
+                introEffects: true,
+                skipHover: true,
+            })
+        },
+        isHeroIntroFinePointer() {
+            return (
+                typeof window !== 'undefined' &&
+                window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches
+            )
+        },
+        isHeroTouchDiskMode() {
+            return this.heroIntroLetterMode && isHeroTouchDiskEnvironment()
+        },
+        /** Page content inset — keep the open pill inside `--page-pad`. */
+        getHeroTouchDiskPageMarginPx() {
+            const fallback = HERO_TOUCH_DISK_EDGE_GAP_PX
+            const el = this.$el
+            if (!el || typeof getComputedStyle === 'undefined') return fallback
+            const pad = parseFloat(getComputedStyle(el).getPropertyValue('--page-pad'))
+            return Number.isFinite(pad) && pad > 0 ? pad : fallback
+        },
+        getHeroTouchDiskRestPos() {
+            const bounds = this.getHeroTouchDiskBounds()
+            const radius = bounds.radius
+            const gap = HERO_TOUCH_DISK_EDGE_GAP_PX
+
+            let x
+            let y
+
+            if (this.heroTouchDiskZone === 'hero') {
+                // Park where the open Work/About pill already fits inside the
+                // page margin, so expand doesn't edge-spring the disk inward.
+                measureHeroTouchDiskMenuLabelWidths()
+                const vw = window.innerWidth
+                const vh = window.innerHeight
+                const safe = Math.max(
+                    HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX,
+                    this.getHeroTouchDiskPageMarginPx(),
+                )
+                const metrics = getHeroTouchDiskMenuFrostMetrics('dual')
+                x = vw - safe - metrics.right
+                y = vh * 0.38
+                const intro = this.$el?.querySelector('.hero-intro')
+                const logo = this.$el?.querySelector('.portfolio-top-bar .logo')
+                if (intro) {
+                    const introRect = intro.getBoundingClientRect()
+                    if (introRect.height > 0) {
+                        const logoBottom = logo?.getBoundingClientRect().bottom
+                        if (logoBottom != null && introRect.top > logoBottom) {
+                            const introGap = introRect.top - logoBottom
+                            y = introRect.top - introGap * HERO_TOUCH_DISK_REST_GAP_FROM_HERO
+                        } else {
+                            y = introRect.top
+                        }
+                    }
+                }
+                const minX = safe + metrics.left
+                const maxX = Math.max(minX, vw - safe - metrics.right)
+                const minY = safe + metrics.halfH
+                const maxY = Math.max(minY, vh - safe - metrics.halfH)
+                return {
+                    x: Math.round(Math.min(maxX, Math.max(minX, x))),
+                    y: Math.round(Math.min(maxY, Math.max(minY, y))),
+                }
+            }
+
+            // Work / About: fixed lower-right corner (mirrors the pager pill).
+            x = window.innerWidth - gap - radius
+            y = window.innerHeight - gap - radius
+
+            return {
+                x: Math.round(Math.min(bounds.maxX, Math.max(bounds.minX, x))),
+                y: Math.round(Math.min(bounds.maxY, Math.max(bounds.minY, y))),
+            }
+        },
+        getHeroTouchDiskBounds() {
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = window.innerWidth
+            const vh = window.innerHeight
+            const minX = radius
+            const maxX = Math.max(minX, vw - radius)
+            const minY = radius
+            const maxY = Math.max(minY, vh - radius)
+
+            return { minX, maxX, minY, maxY, radius }
+        },
+        /** Current frosted-disk extents for edge pads (settled — no open overshoot). */
+        getHeroTouchDiskMenuVisualExtents() {
+            const idle = HERO_CURSOR_GLASS_IDLE_SIZE
+            const idleR = idle / 2
+            const openL =
+                this.heroTouchDiskMenuFrostLiveL > 0
+                    ? this.heroTouchDiskMenuFrostLiveL
+                    : this.heroTouchDiskMenuFrostLeft
+            const openR =
+                this.heroTouchDiskMenuFrostLiveR > 0
+                    ? this.heroTouchDiskMenuFrostLiveR
+                    : this.heroTouchDiskMenuFrostRight
+            const openH =
+                this.heroTouchDiskMenuFrostLiveH > 0
+                    ? this.heroTouchDiskMenuFrostLiveH
+                    : this.heroTouchDiskMenuFrostHeight
+            const from =
+                this.heroTouchDiskMenuFromSize != null
+                    ? this.heroTouchDiskMenuFromSize
+                    : idle
+            const fromR = from / 2
+            // Clamp to 1 — frost graphic may overshoot, but edge pads stay at the
+            // settled open size so a pre-parked rest pos isn't spring-bumped.
+            const blend = Math.min(Math.max(this.heroTouchDiskExpand, 0), 1)
+            const left = Math.max(idleR, fromR + (openL - fromR) * blend)
+            const right = Math.max(idleR, fromR + (openR - fromR) * blend)
+            const height = Math.max(idle, from + (openH - from) * blend)
+            return {
+                left,
+                right,
+                halfW: Math.max(left, right),
+                halfH: height / 2,
+                width: left + right,
+                height,
+            }
+        },
+        /**
+         * Live frost extents including open overshoot / dip — matches the
+         * rendered menu pill so letter morph hugs the same outline.
+         */
+        getHeroTouchDiskMenuLiveFrostExtents() {
+            const idle = HERO_CURSOR_GLASS_IDLE_SIZE
+            const pill =
+                this.heroTouchDiskMenuFrostMode === 'dual' ||
+                this.heroTouchDiskMenuFrostMode === 'left'
+            const openL =
+                this.heroTouchDiskMenuFrostLiveL > 0
+                    ? this.heroTouchDiskMenuFrostLiveL
+                    : this.heroTouchDiskMenuFrostLeft
+            const openR =
+                this.heroTouchDiskMenuFrostLiveR > 0
+                    ? this.heroTouchDiskMenuFrostLiveR
+                    : this.heroTouchDiskMenuFrostRight
+            const openH =
+                this.heroTouchDiskMenuFrostLiveH > 0
+                    ? this.heroTouchDiskMenuFrostLiveH
+                    : this.heroTouchDiskMenuFrostHeight
+            const from =
+                this.heroTouchDiskMenuFromSize != null
+                    ? this.heroTouchDiskMenuFromSize
+                    : idle
+            const fromR = from / 2
+            const expandT = this.heroTouchDiskExpand
+            let blend
+            let dip = 0
+            if (this.heroTouchDiskPopping && this.heroTouchDiskExpandOpening) {
+                const u = this.heroTouchDiskExpandLinear
+                blend = heroTouchDiskFrostExpandEase(u)
+                const fromIdle = Math.abs(from - idle) < 4
+                if (fromIdle) dip = heroTouchDiskFrostOpenDipPx(u)
+            } else {
+                blend = Math.min(Math.max(expandT, 0), 1.15)
+            }
+            // Left pill: keep the right cap stable (idle radius) while left blooms.
+            const left = fromR + (openL - fromR) * blend - (pill ? dip * 0.15 : dip / 2)
+            const right = pill
+                ? fromR + (openR - fromR) * blend - dip * 0.15
+                : fromR + (openR - fromR) * blend - dip / 2
+            const height = Math.max(idle / 2, from + (openH - from) * blend - dip)
+            return {
+                left: Math.max(idle / 4, left),
+                right: Math.max(idle / 4, right),
+                halfH: height / 2,
+                width: Math.max(idle, left + right),
+                height,
+            }
+        },
+        /** @deprecated use getHeroTouchDiskMenuVisualExtents().halfW */
+        getHeroTouchDiskMenuVisualRadius() {
+            return this.getHeroTouchDiskMenuVisualExtents().halfW
+        },
+        /**
+         * Center bounds when the menu is open: frost rim + horizontal labels stay in view.
+         * Pads grow with expand so the disk elastically nudges inward as it blooms.
+         */
+        getHeroTouchDiskMenuSafeBounds() {
+            const idleR = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 400
+            const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+            const safe = Math.max(
+                HERO_TOUCH_DISK_MENU_SIDE_SAFE_PX,
+                this.getHeroTouchDiskPageMarginPx(),
+            )
+            const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
+            const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
+            const labelH = HERO_TOUCH_DISK_MENU_LABEL_HEIGHT_PX
+            const { left: frostL, right: frostR, halfH: frostH } =
+                this.getHeroTouchDiskMenuVisualExtents()
+            const expandT = Math.max(0, Math.min(1, this.heroTouchDiskExpand))
+
+            const workW = getHeroTouchDiskMenuLabelWidth('Work')
+            const aboutW = getHeroTouchDiskMenuLabelWidth('About')
+            let padL
+            let padR
+            let padT = Math.max(frostH, labelH / 2)
+            let padB = Math.max(frostH, labelH / 2)
+            if (this.heroTouchDiskMenuFrostMode === 'left') {
+                const labelW =
+                    this.heroTouchDiskZone === 'work' ? aboutW : workW
+                padL = Math.max(frostL, gap + labelW)
+                padR = frostR
+            } else {
+                padL = Math.max(frostL, gap + workW)
+                padR = Math.max(frostR, gap + aboutW)
+            }
+
+            // Blend from idle radius → full menu pads as the frost expands.
+            const mix = (openPad, idlePad = idleR) =>
+                idlePad + (openPad - idlePad) * expandT
+            let minX = safe + mix(padL)
+            let maxX = vw - safe - mix(padR)
+            let minY = safe + mix(padT)
+            let maxY = vh - safe - mix(padB)
+            if (maxX < minX) {
+                const mid = (minX + maxX) / 2
+                minX = mid
+                maxX = mid
+            }
+            if (maxY < minY) {
+                const mid = (minY + maxY) / 2
+                minY = mid
+                maxY = mid
+            }
+            return { minX, maxX, minY, maxY }
+        },
+        clampHeroTouchDiskToMenuSafe(x, y, { rubber = false } = {}) {
+            const menuOpen =
+                this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            // Corner left-pill stays parked — only the dual hero menu edge-springs.
+            const useMenuSafe = menuOpen && this.heroTouchDiskMenuFrostDual
+            const bounds = useMenuSafe
+                ? this.getHeroTouchDiskMenuSafeBounds()
+                : this.getHeroTouchDiskBounds()
+            if (rubber && useMenuSafe) {
+                return {
+                    x: heroTouchDiskRubber(x, bounds.minX, bounds.maxX),
+                    y: heroTouchDiskRubber(y, bounds.minY, bounds.maxY),
+                }
+            }
+            return {
+                x: Math.min(bounds.maxX, Math.max(bounds.minX, x)),
+                y: Math.min(bounds.maxY, Math.max(bounds.minY, y)),
+            }
+        },
+        /** Underdamped spring so the open dual pill elastically settles in-view. */
+        stepHeroTouchDiskEdgeSpring() {
+            if (!this.heroTouchDiskMode || !this.heroCursorActive) return false
+            if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) {
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                return false
+            }
+            // Dual hero menu only — corner left-pill keeps a fixed center.
+            if (!this.heroTouchDiskMenuFrostDual) {
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                return false
+            }
+            if (this.heroTouchDiskDragging) return false
+
+            const bounds = this.getHeroTouchDiskMenuSafeBounds()
+            const pos = this.heroCursorGlassPos
+            const tx = Math.min(bounds.maxX, Math.max(bounds.minX, pos.x))
+            const ty = Math.min(bounds.maxY, Math.max(bounds.minY, pos.y))
+            const dx = tx - pos.x
+            const dy = ty - pos.y
+            const vel = this.heroTouchDiskEdgeVel
+            const dist = Math.hypot(dx, dy)
+            const speed = Math.hypot(vel.x, vel.y)
+            if (dist < 0.35 && speed < 0.35) {
+                if (dist > 0.01) {
+                    this.heroCursorPos = { x: tx, y: ty }
+                    this.heroCursorGlassPos = { x: tx, y: ty }
+                }
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                return false
+            }
+
+            vel.x =
+                vel.x * HERO_TOUCH_DISK_EDGE_SPRING_DAMP +
+                dx * HERO_TOUCH_DISK_EDGE_SPRING_K
+            vel.y =
+                vel.y * HERO_TOUCH_DISK_EDGE_SPRING_DAMP +
+                dy * HERO_TOUCH_DISK_EDGE_SPRING_K
+            const nx = pos.x + vel.x
+            const ny = pos.y + vel.y
+            this.heroCursorPos = { x: nx, y: ny }
+            this.heroCursorGlassPos = { x: nx, y: ny }
+            this.heroTouchDiskHasMoved = true
+            return true
+        },
+        computeHeroTouchDiskZone() {
+            if (typeof window === 'undefined') return 'hero'
+            const y = window.scrollY || document.documentElement.scrollTop || 0
+            const workTop = getWorkScrollTop()
+            const pastFirstViewport = y > window.innerHeight * 0.55
+            // Same boundary as menu scroll, with a tall-viewport clamp fallback.
+            if (isAboutSectionActive(y)) return 'about'
+            if (!pastFirstViewport && (workTop == null || y < workTop - 48)) return 'hero'
+            return 'work'
+        },
+        updateHeroTouchDiskZoneFromScroll() {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            const next = this.computeHeroTouchDiskZone()
+            // Hero drag in progress: still allow leaving hero so the disk can
+            // hard-pin to the work/about corner (avoids a stuck mid-screen park).
+            if (this.heroTouchDiskDragging) {
+                if (next === 'hero' || next === this.heroTouchDiskZone) return
+                this.endHeroTouchDiskDrag()
+                this.heroTouchDiskHasMoved = false
+            }
+            const lock = this.heroTouchDiskZoneLock
+            if (lock) {
+                const lockAlive =
+                    performance.now() < (this.heroTouchDiskZoneLockUntil || 0)
+                if (next === lock || next === 'hero' || !lockAlive) {
+                    // Arrived, left for hero, or lock expired — trust live scroll.
+                    this.heroTouchDiskZoneLock = null
+                    this.heroTouchDiskZoneLockUntil = 0
+                } else {
+                    // Brief optimistic hold while the menu scroll is in flight.
+                    return
+                }
+            }
+            if (next === this.heroTouchDiskZone) return
+            this.heroTouchDiskZone = next
+            this.closeHeroTouchDiskMenu()
+            this.heroTouchDiskHasMoved = false
+            if (next !== 'hero') this.clearHeroTouchDiskMorph()
+            // Entrance arc is hero-only — abort into a corner snap when leaving hero.
+            if (next !== 'hero' && this.heroTouchDiskEntering) {
+                this.cancelHeroTouchDiskEntranceFlight()
+                this.heroTouchDiskEntering = false
+                this.heroTouchDiskEntrance = 1
+                this.heroTouchDiskIdle = false
+                this.heroCursorIntroGlassHandoff = false
+                this.heroCursorRangeMix = 0
+            }
+            this.syncHeroTouchDiskRestPosition()
+        },
+        /** Reset intro-text morph when parking off-hero (touch disk never uses magnifier). */
+        clearHeroTouchDiskMorph() {
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroCursorRangeMix = 0
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorMagnifierLayout = null
+            this.heroCursorMirrorHoverTarget = 0
+            this.heroCursorIntroGlassHandoff = false
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
+            this.clearFooterPointerShift()
+        },
+        /** Work/About lower corners: stay as idle disk until dragged out over a case. */
+        isHeroTouchDiskCornerParked(x, y) {
+            if (!this.isHeroTouchDiskMode() || this.heroTouchDiskZone === 'hero') {
+                return false
+            }
+            if (typeof window === 'undefined') return false
+            const px = x ?? this.heroCursorGlassPos?.x ?? this.heroCursorPos?.x ?? 0
+            const py = y ?? this.heroCursorGlassPos?.y ?? this.heroCursorPos?.y ?? 0
+            return isHeroTouchDiskInLowerCorner(
+                px,
+                py,
+                window.innerWidth,
+                window.innerHeight,
+            )
+        },
+        /**
+         * False once the footer reaches the parked disk (lower-right);
+         * true again after scrolling back up past it.
+         */
+        computeHeroTouchDiskOnStage() {
+            if (typeof window === 'undefined') return true
+            const footer = this.$el?.querySelector('.site-footer')
+            if (!footer) return true
+            const rect = footer.getBoundingClientRect()
+            if (rect.height <= 0) return true
+
+            const vh = window.innerHeight || 0
+            // Top of the idle frost at the work/about rest position.
+            const diskTop =
+                vh - HERO_TOUCH_DISK_EDGE_GAP_PX - HERO_CURSOR_GLASS_IDLE_SIZE
+            // Slight hysteresis so the boundary doesn't flicker.
+            const hideLine = diskTop
+            const showLine = diskTop + 18
+            if (!this.heroTouchDiskOnStage) {
+                return rect.top > showLine
+            }
+            return rect.top > hideLine
+        },
+        refreshHeroTouchDiskStage() {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) {
+                this.heroTouchDiskOnStage = false
+                return
+            }
+            // Bottom-edge work jump: stay vanished until scroll lands.
+            if (this.heroTouchDiskWorkJumped) {
+                this.heroTouchDiskOnStage = false
+                return
+            }
+            const next = this.computeHeroTouchDiskOnStage()
+            if (
+                !next &&
+                this.heroTouchDiskOnStage &&
+                (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02)
+            ) {
+                this.closeHeroTouchDiskMenu()
+            }
+            this.heroTouchDiskOnStage = next
+        },
+        syncHeroTouchDiskRestPosition() {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            // Corner zones always win — don't leave a hero-drag mid-screen.
+            if (this.heroTouchDiskDragging && this.heroTouchDiskZone === 'hero') return
+            if (this.heroTouchDiskDragging) {
+                this.endHeroTouchDiskDrag()
+                this.heroTouchDiskHasMoved = false
+            }
+            // Don't yank the glass ball to rest while the hero entrance arc is playing.
+            if (this.heroTouchDiskEntering && this.heroTouchDiskZone === 'hero') return
+            const zoneChanged = this.heroTouchDiskParkZone !== this.heroTouchDiskZone
+            // Free placement only in the hero zone; work/about stay locked to the corner.
+            if (
+                this.heroTouchDiskZone === 'hero' &&
+                this.heroTouchDiskHasMoved &&
+                !zoneChanged
+            ) {
+                return
+            }
+
+            const pos = this.getHeroTouchDiskRestPos()
+            this.heroTouchDiskParkZone = this.heroTouchDiskZone
+            if (this.heroTouchDiskZone !== 'hero') this.clearHeroTouchDiskMorph()
+            this.updateHeroFinePointer(pos.x, pos.y, {
+                introEffects: false,
+                skipHover: true,
+            })
+            // Work / About: hard-pin like the pager pill (no home-glide chase).
+            // Hero: glass can ease toward rest.
+            this.heroCursorGlassPos = { ...pos }
+            if (this.heroTouchDiskZone === 'hero') {
+                this.startHeroCursorGlassFollow()
+            }
+            this.refreshHeroTouchDiskStage()
+        },
+        clampHeroTouchDiskIntoViewport() {
+            if (!this.isHeroTouchDiskMode() || !this.heroCursorActive) return
+            // Horizontal only — never pin the disk to the top when the hero scrolls away.
+            const { minX, maxX } = this.getHeroTouchDiskBounds()
+            const x = Math.min(maxX, Math.max(minX, this.heroCursorPos.x))
+            if (x !== this.heroCursorPos.x) {
+                const y = this.heroCursorPos.y
+                this.updateHeroFinePointer(x, y, {
+                    introEffects:
+                        (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) &&
+                        this.touchDiskTextEffectsEnabled(),
+                })
+                this.heroCursorGlassPos = { x, y }
+            }
+            this.refreshHeroTouchDiskStage()
+        },
+        /** Right-edge start for the hero entrance arc (mid hero text). */
+        getHeroTouchDiskEntranceStartPos() {
+            const radius = HERO_CURSOR_GLASS_IDLE_SIZE / 2
+            const vw = window.innerWidth
+            let y = window.innerHeight * 0.5
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (intro) {
+                const rect = intro.getBoundingClientRect()
+                if (rect.height > 0) {
+                    y = rect.top + rect.height * 0.5
+                }
+            }
+            return {
+                x: Math.round(vw + Math.max(radius * 2, 56)),
+                y: Math.round(y),
+            }
+        },
+        /** Control point: leftward bow through the hero text toward rest. */
+        getHeroTouchDiskEntranceControlPos(start, end) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            const rect = intro?.getBoundingClientRect()
+            const bulge = Math.min(window.innerWidth * 0.28, 140)
+            const midX = (start.x + end.x) * 0.5
+            let y = (start.y + end.y) * 0.5
+            if (rect && rect.height > 0) {
+                // Keep the apex in the text so glass morph engages mid-flight.
+                y = rect.top + rect.height * 0.52
+            }
+            return {
+                x: Math.round(midX - bulge),
+                y: Math.round(y),
+            }
+        },
+        cancelHeroTouchDiskEntranceFlight() {
+            if (this.heroTouchDiskEntranceRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskEntranceRaf)
+                this.heroTouchDiskEntranceRaf = null
+            }
+            clearTimeout(this.heroTouchDiskEntranceTimer)
+            this.heroTouchDiskEntranceTimer = null
+            this.heroTouchDiskDissipateInstant = false
+        },
+        clearHeroTouchDiskJiggle() {
+            clearTimeout(this.heroTouchDiskBreatheTimer)
+            this.heroTouchDiskBreatheTimer = null
+            if (this.heroTouchDiskJiggleRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskJiggleRaf)
+                this.heroTouchDiskJiggleRaf = null
+            }
+            this.heroTouchDiskBreathe = false
+            this.heroTouchDiskJiggleStartedAt = 0
+            this.heroTouchDiskJiggleNudge = { x: 0, y: 0, scale: 1 }
+        },
+        scheduleHeroTouchDiskJiggle() {
+            this.clearHeroTouchDiskJiggle()
+            if (
+                !this.heroTouchDiskSettled ||
+                !this.heroTouchDiskIdle ||
+                !this.isHeroTouchDiskMode() ||
+                this.heroTouchDiskZone !== 'hero' ||
+                this.heroTouchDiskEntering ||
+                prefersReducedMotion()
+            ) {
+                return
+            }
+            this.heroTouchDiskBreatheTimer = setTimeout(() => {
+                this.heroTouchDiskBreatheTimer = null
+                if (
+                    this.heroTouchDiskSettled &&
+                    this.heroTouchDiskIdle &&
+                    this.isHeroTouchDiskMode() &&
+                    this.heroTouchDiskZone === 'hero' &&
+                    !this.heroTouchDiskEntering &&
+                    !this.heroTouchDiskDragging &&
+                    !this.heroTouchDiskHasMoved
+                ) {
+                    this.heroTouchDiskBreathe = true
+                    this.startHeroTouchDiskJiggleLoop()
+                }
+            }, HERO_TOUCH_DISK_JIGGLE_DELAY_MS)
+        },
+        startHeroTouchDiskJiggleLoop() {
+            if (this.heroTouchDiskJiggleRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskJiggleRaf)
+                this.heroTouchDiskJiggleRaf = null
+            }
+            this.heroTouchDiskJiggleStartedAt = performance.now()
+            const tick = (now) => {
+                this.heroTouchDiskJiggleRaf = null
+                // Breathe off → stop. Otherwise keep the loop alive so a one-frame
+                // gate flicker cannot kill the 5s cycle permanently.
+                if (!this.heroTouchDiskBreathe) {
+                    this.heroTouchDiskJiggleNudge = { x: 0, y: 0, scale: 1 }
+                    return
+                }
+                if (this.heroTouchDiskJiggleActive) {
+                    this.heroTouchDiskJiggleNudge = heroTouchDiskJiggleSample(
+                        now - this.heroTouchDiskJiggleStartedAt,
+                    )
+                } else {
+                    this.heroTouchDiskJiggleNudge = { x: 0, y: 0, scale: 1 }
+                }
+                this.heroTouchDiskJiggleRaf = requestAnimationFrame(tick)
+            }
+            this.heroTouchDiskJiggleRaf = requestAnimationFrame(tick)
+        },
+        finishHeroTouchDiskEntrance(endPos) {
+            this.cancelHeroTouchDiskEntranceFlight()
+            this.heroTouchDiskEntering = false
+            this.heroTouchDiskEntrance = 1
+            if (endPos) {
+                this.heroCursorPos = { ...endPos }
+                this.heroCursorGlassPos = { ...endPos }
+                this.updateHeroFinePointer(endPos.x, endPos.y, {
+                    introEffects: this.touchDiskTextEffectsEnabled(),
+                    skipHover: true,
+                })
+            }
+            // Latter stage after the fly-in — jiggle schedules from here, settle visuals unchanged.
+            this.heroTouchDiskSettled = true
+            this.scheduleHeroTouchDiskJiggle()
+        },
+        primeHeroTouchDisk() {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            this.heroTouchDiskZoneLock = null
+            this.heroTouchDiskZoneLockUntil = 0
+            this.heroTouchDiskZone = this.computeHeroTouchDiskZone()
+            this.heroTouchDiskParkZone = this.heroTouchDiskZone
+            this.closeHeroTouchDiskMenu()
+            this.heroTouchDiskDragging = false
+            this.heroTouchDiskHasMoved = false
+            this.heroTouchDiskPointerId = null
+            this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskWorkJumped = false
+            this.heroTouchDiskDissipateInstant = false
+            this.heroCursorActive = true
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroCursorRangeMix = 0
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorIntroGlassHandoff = false
+            this.heroTouchDiskOnStage = true
+            // Stay invisible until beginHeroTouchDiskEntrance places the glass start pose.
+            this.heroTouchDiskEntrance = 0
+            this.heroTouchDiskEntering = false
+            this.heroTouchDiskSettled = false
+            this.heroTouchDiskIdle = true
+            this.clearHeroTouchDiskJiggle()
+            this.syncHeroCursorDocumentClass()
+            this.startHeroCursorGlassFollow()
+            this.refreshHeroTouchDiskStage()
+            this.beginHeroTouchDiskEntrance()
+        },
+        beginHeroTouchDiskEntrance() {
+            this.cancelHeroTouchDiskEntranceFlight()
+            // Don't restart idle motion once the disk has been used.
+            if (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging) {
+                this.heroTouchDiskEntrance = 1
+                this.heroTouchDiskEntering = false
+                this.heroTouchDiskSettled = true
+                this.heroTouchDiskIdle = false
+                this.clearHeroTouchDiskJiggle()
+                return
+            }
+
+            this.heroTouchDiskIdle = true
+            this.heroTouchDiskSettled = false
+            this.clearHeroTouchDiskJiggle()
+            const end = this.getHeroTouchDiskRestPos()
+            // Arc fly-in is a hero-first-appear motion; other zones snap in place.
+            const canFly =
+                this.heroTouchDiskZone === 'hero' &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined'
+
+            if (!canFly) {
+                this.heroCursorPos = { ...end }
+                this.heroCursorGlassPos = { ...end }
+                this.heroCursorIntroGlassHandoff = false
+                this.heroCursorRangeMix = 0
+                this.updateHeroFinePointer(end.x, end.y, { introEffects: false })
+                this.finishHeroTouchDiskEntrance(end)
+                return
+            }
+
+            const start = this.getHeroTouchDiskEntranceStartPos()
+            const ctrl = this.getHeroTouchDiskEntranceControlPos(start, end)
+            // Pose as glass off-screen first; stay opacity-0 until the first flight frame
+            // so sync/layout cannot flash a glass ball at rest.
+            this.heroTouchDiskEntering = true
+            this.heroTouchDiskSettled = false
+            this.heroTouchDiskEntrance = 0
+            this.heroCursorIntroGlassHandoff = true
+            this.heroCursorRangeMix = 0.85
+            this.heroCursorPos = { ...start }
+            this.heroCursorGlassPos = { ...start }
+            this.updateHeroFinePointer(start.x, start.y, {
+                introEffects: this.canHeroIntroPointerPlay(),
+                skipHover: true,
+            })
+
+            const duration = HERO_TOUCH_DISK_ENTRANCE_MS
+            let revealed = false
+            const t0 = performance.now()
+
+            const tick = (now) => {
+                this.heroTouchDiskEntranceRaf = null
+                if (
+                    !this.isHeroTouchDiskMode() ||
+                    !this.heroTouchDiskEntering ||
+                    this.heroTouchDiskDragging ||
+                    this.heroTouchDiskHasMoved
+                ) {
+                    this.heroTouchDiskEntering = false
+                    return
+                }
+
+                // Left the hero mid-flight — snap to the corner, no entrance there.
+                if (this.heroTouchDiskZone !== 'hero') {
+                    const park = this.getHeroTouchDiskRestPos()
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorRangeMix = 0
+                    this.heroCursorPos = { ...park }
+                    this.heroCursorGlassPos = { ...park }
+                    this.updateHeroFinePointer(park.x, park.y, {
+                        introEffects: false,
+                        skipHover: true,
+                    })
+                    // Corner park: settled but no hero jiggle.
+                    this.heroTouchDiskEntering = false
+                    this.heroTouchDiskEntrance = 1
+                    this.heroTouchDiskSettled = true
+                    this.clearHeroTouchDiskJiggle()
+                    return
+                }
+
+                if (!revealed) {
+                    revealed = true
+                    this.heroTouchDiskDissipateInstant = true
+                    // Opacity reveal only — not "settled" for jiggle gating.
+                    this.heroTouchDiskEntrance = 1
+                    this.$nextTick(() => {
+                        requestAnimationFrame(() => {
+                            this.heroTouchDiskDissipateInstant = false
+                        })
+                    })
+                }
+
+                const raw = Math.min(1, (now - t0) / duration)
+                // Ease-out cubic — moderate cruise, soft settle.
+                const t = 1 - (1 - raw) ** 3
+                const x = heroTouchDiskQuadPoint(t, start.x, ctrl.x, end.x)
+                const y = heroTouchDiskQuadPoint(t, start.y, ctrl.y, end.y)
+                this.heroCursorPos = { x, y }
+                this.heroCursorGlassPos = { x, y }
+                this.updateHeroFinePointer(x, y, {
+                    introEffects: this.canHeroIntroPointerPlay(),
+                    skipHover: true,
+                })
+
+                if (raw < 1) {
+                    this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
+                    return
+                }
+
+                this.finishHeroTouchDiskEntrance(end)
+            }
+
+            this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
+        },
+        markHeroTouchDiskInteracted() {
+            if (
+                !this.heroTouchDiskIdle &&
+                !this.heroTouchDiskBreathe &&
+                !this.heroTouchDiskBreatheTimer &&
+                !this.heroTouchDiskEntering
+            ) {
+                return
+            }
+            this.cancelHeroTouchDiskEntranceFlight()
+            this.heroTouchDiskIdle = false
+            this.heroTouchDiskEntering = false
+            this.heroTouchDiskSettled = true
+            this.clearHeroTouchDiskJiggle()
+            if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
+        },
+        stopHeroTouchDisk() {
+            this.cancelHeroTouchDiskEntranceFlight()
+            clearTimeout(this.heroTouchDiskPopTimer)
+            this.heroTouchDiskPopTimer = null
+            if (this.heroTouchDiskPopRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskPopRaf)
+                this.heroTouchDiskPopRaf = null
+            }
+            this.closeHeroTouchDiskMenu()
+            this.unbindHeroTouchDiskOutsideClose()
+            this.heroTouchDiskDragging = false
+            this.heroTouchDiskHasMoved = false
+            this.heroTouchDiskPointerId = null
+            this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.heroTouchDiskWorkJumped = false
+            this.heroTouchDiskDissipateInstant = false
+            this.heroTouchDiskOnStage = false
+            this.heroTouchDiskEntrance = 0
+            this.heroTouchDiskEntering = false
+            this.heroTouchDiskSettled = false
+            this.heroTouchDiskIdle = true
+            this.clearHeroTouchDiskJiggle()
+            this.heroTouchDiskPopping = false
+            this.heroTouchDiskSinkScale = 1
+            this.heroTouchDiskExpand = 0
+            this.heroTouchDiskZone = 'hero'
+            this.heroTouchDiskParkZone = 'hero'
+        },
+        onHeroCursorPointerModeChange() {
+            if (this.isHeroIntroFinePointer()) {
+                this.stopHeroTouchDisk()
+                if (this.heroIntroLetterMode) {
+                    this.primeHeroCursor()
+                }
+                return
+            }
+            this.onHeroPointerEndHandlerImpl({ preserveTouchDisk: false })
+            if (this.pageEntranceDone && this.heroIntroLetterMode) {
+                this.$nextTick(() => this.primeHeroTouchDisk())
+            }
+        },
+        endHeroTouchDiskDrag() {
+            this.heroTouchDiskDragging = false
+            this.heroTouchDiskPointerId = null
+            this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+            this.refreshHeroTouchDiskStage()
+        },
+        /** Drag the disk to the hero viewport floor → park in work + scroll. */
+        triggerHeroTouchDiskWorkJump() {
+            if (this.heroTouchDiskWorkJumped) return
+            this.heroTouchDiskWorkJumped = true
+            this.endHeroTouchDiskDrag()
+            // Snap shut before scroll — animated close lags behind the redirect.
+            this.closeHeroTouchDiskMenu({ instant: true })
+            // Vanish in place — never glide/snap visibly back to a park.
+            this.heroTouchDiskDissipateInstant = true
+            this.heroTouchDiskOnStage = false
+            this.heroTouchDiskZoneLock = 'work'
+            this.heroTouchDiskZoneLockUntil =
+                performance.now() +
+                Math.max(HERO_TOUCH_DISK_ZONE_LOCK_MS, HERO_TOUCH_DISK_WORK_SNAP_MS)
+            this.heroTouchDiskZone = 'work'
+            this.heroTouchDiskHasMoved = false
+            this.clearHeroTouchDiskMorph()
+            // Pin the work corner while hidden so reveal doesn't travel.
+            this.syncHeroTouchDiskRestPosition()
+            scrollToWork({
+                duration: HERO_TOUCH_DISK_WORK_SNAP_MS,
+                onComplete: () => {
+                    this.heroTouchDiskZoneLock = null
+                    this.heroTouchDiskZoneLockUntil = 0
+                    this.heroTouchDiskWorkJumped = false
+                    this.heroTouchDiskDissipateInstant = false
+                    this.updateHeroTouchDiskZoneFromScroll()
+                    this.syncHeroTouchDiskRestPosition()
+                },
+            })
+            this.$router.replace({ hash: '#work' }).catch(() => {})
+        },
+        closeHeroTouchDiskMenu(options = {}) {
+            this.unbindHeroTouchDiskOutsideClose()
+            if (this.heroTouchDiskExpand <= 0.02 && !this.heroTouchDiskMenuOpen) return
+            if (options.instant || prefersReducedMotion()) {
+                if (this.heroTouchDiskPopRaf != null) {
+                    cancelAnimationFrame(this.heroTouchDiskPopRaf)
+                    this.heroTouchDiskPopRaf = null
+                }
+                this.heroTouchDiskExpand = 0
+                this.heroTouchDiskExpandLinear = 0
+                this.heroTouchDiskExpandOpening = false
+                this.heroTouchDiskMenuOpen = false
+                this.heroTouchDiskPopping = false
+                this.heroTouchDiskSinkScale = 1
+                this.heroTouchDiskMenuFromSize = null
+                this.heroTouchDiskMenuFrostLiveL = 0
+                this.heroTouchDiskMenuFrostLiveR = 0
+                this.heroTouchDiskMenuFrostLiveH = 0
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                this.restoreHeroTouchDiskGlassTextMorph()
+                return
+            }
+            this.animateHeroTouchDiskExpand(0)
+        },
+        /** Current frost / glass diameter — used as expand origin. */
+        getHeroTouchDiskVisualSize() {
+            if (this.heroCursorIntroGlassHandoff) {
+                return heroCursorIntroBallSize(
+                    0,
+                    this.heroCursorRangeMix,
+                )
+            }
+            return heroCursorDotDiskSize(0)
+        },
+        openHeroTouchDiskMenu() {
+            if (!this.canOpenHeroTouchDiskMenu()) return
+            // Always trust live scroll for the label — drop any stale nav lock.
+            this.heroTouchDiskZoneLock = null
+            this.heroTouchDiskZoneLockUntil = 0
+            const zone = this.computeHeroTouchDiskZone()
+            if (zone !== this.heroTouchDiskZone) {
+                this.heroTouchDiskZone = zone
+                this.heroTouchDiskParkZone = zone
+                if (zone !== 'hero') this.clearHeroTouchDiskMorph()
+            }
+            // Capture size before clearing morph so glass → frost doesn't snap.
+            this.heroTouchDiskMenuFromSize = this.getHeroTouchDiskVisualSize()
+            this.heroCursorMagnifierLayout = null
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorMirrorHoverTarget = 0
+            this.heroCursorRangeMix = 0
+            this.heroCursorIntroGlassHandoff = false
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
+            this.clearFooterPointerShift()
+            this.refreshHeroTouchDiskMenuMetrics()
+            this.heroTouchDiskMenuFrostLiveL = this.heroTouchDiskMenuFrostLeft
+            this.heroTouchDiskMenuFrostLiveR = this.heroTouchDiskMenuFrostRight
+            this.heroTouchDiskMenuFrostLiveH = this.heroTouchDiskMenuFrostHeight
+            this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+            this.heroTouchDiskMenuOpen = true
+            this.heroTouchDiskOutsideCloseUntil =
+                performance.now() + HERO_TOUCH_DISK_OUTSIDE_CLOSE_GUARD_MS
+            this.bindHeroTouchDiskOutsideClose()
+            this.animateHeroTouchDiskExpand(1)
+            // Edge collision: spring the disk inward as frost + labels need room.
+            this.startHeroCursorGlassFollow()
+        },
+        /** Keep live frost size stable while the menu is up. */
+        syncHeroTouchDiskMenuFrostLive() {
+            if (!(this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)) {
+                this.heroTouchDiskMenuFrostLiveL = 0
+                this.heroTouchDiskMenuFrostLiveR = 0
+                this.heroTouchDiskMenuFrostLiveH = 0
+                return
+            }
+            const targetL = this.heroTouchDiskMenuFrostLeft
+            const targetR = this.heroTouchDiskMenuFrostRight
+            const targetH = this.heroTouchDiskMenuFrostHeight
+            const expandT = this.heroTouchDiskExpand
+            if (this.heroTouchDiskMenuFrostLiveL <= 0) {
+                this.heroTouchDiskMenuFrostLiveL = targetL
+                this.heroTouchDiskMenuFrostLiveR = targetR
+                this.heroTouchDiskMenuFrostLiveH = targetH
+                return
+            }
+            // During open/close expand, track the target directly — style lerps from→open.
+            if (expandT < 0.98 && this.heroTouchDiskPopping) {
+                this.heroTouchDiskMenuFrostLiveL = targetL
+                this.heroTouchDiskMenuFrostLiveR = targetR
+                this.heroTouchDiskMenuFrostLiveH = targetH
+                return
+            }
+            this.heroTouchDiskMenuFrostLiveL +=
+                (targetL - this.heroTouchDiskMenuFrostLiveL) * 0.22
+            this.heroTouchDiskMenuFrostLiveR +=
+                (targetR - this.heroTouchDiskMenuFrostLiveR) * 0.22
+            this.heroTouchDiskMenuFrostLiveH +=
+                (targetH - this.heroTouchDiskMenuFrostLiveH) * 0.22
+            if (Math.abs(targetL - this.heroTouchDiskMenuFrostLiveL) < 0.5) {
+                this.heroTouchDiskMenuFrostLiveL = targetL
+            }
+            if (Math.abs(targetR - this.heroTouchDiskMenuFrostLiveR) < 0.5) {
+                this.heroTouchDiskMenuFrostLiveR = targetR
+            }
+            if (Math.abs(targetH - this.heroTouchDiskMenuFrostLiveH) < 0.5) {
+                this.heroTouchDiskMenuFrostLiveH = targetH
+            }
+        },
+        /** Menu from blue-dot or glass — available across the hero viewport. */
+        canOpenHeroTouchDiskMenu() {
+            if (!this.heroTouchDiskMode || !this.heroCursorVisible) return false
+            if (!this.heroTouchDiskOnStage) return false
+            if (this.heroTouchDiskZone !== 'hero') return true
+            // Letter dissipate / reconsolidate still use the magnifier window, not the disk hit.
+            if (this.heroIntroDissipated || this.heroIntroReconsolidating) return false
+            return true
+        },
+        refreshHeroTouchDiskMenuMetrics() {
+            measureHeroTouchDiskMenuLabelWidths()
+            this.heroTouchDiskMenuMetricsRev += 1
+            // Remeasure once Work Sans is actually available.
+            if (typeof document !== 'undefined' && document.fonts?.ready) {
+                document.fonts.ready.then(() => {
+                    if (!this.heroTouchDiskMode) return
+                    measureHeroTouchDiskMenuLabelWidths()
+                    this.heroTouchDiskMenuMetricsRev += 1
+                })
+            }
+        },
+        /** Live label widths via offsetWidth (pre-transform — not AABB). */
+        syncHeroTouchDiskMenuMetricsFromDom() {
+            const nodes = document.querySelectorAll('.hero-touch-disk-menu__item')
+            if (!nodes.length) return
+            let max = 0
+            nodes.forEach((node) => {
+                const label = (node.textContent || '').trim()
+                const w = node.offsetWidth
+                if (label && w > 0) heroTouchDiskMenuLabelWidths[label] = w
+                max = Math.max(max, w)
+            })
+            if (max > 0) {
+                heroTouchDiskMenuLabelMaxWidthPx = max
+                this.heroTouchDiskMenuMetricsRev += 1
+            }
+        },
+        toggleHeroTouchDiskMenu() {
+            if (this.heroTouchDiskExpand > 0.5 || this.heroTouchDiskMenuOpen) {
+                this.closeHeroTouchDiskMenu()
+            } else if (this.canOpenHeroTouchDiskMenu()) {
+                this.openHeroTouchDiskMenu()
+            }
+        },
+        bindHeroTouchDiskOutsideClose() {
+            if (this.heroTouchDiskOutsideCloseBound) return
+            this.heroTouchDiskOutsideCloseBound = true
+            // Next tick so the opening tap does not immediately dismiss.
+            this.$nextTick(() => {
+                if (this.heroTouchDiskExpand < 0.2 && !this.heroTouchDiskMenuOpen) return
+                document.addEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
+            })
+        },
+        unbindHeroTouchDiskOutsideClose() {
+            if (!this.heroTouchDiskOutsideCloseBound) return
+            this.heroTouchDiskOutsideCloseBound = false
+            document.removeEventListener('pointerdown', this.onHeroTouchDiskOutsidePointerDown, true)
+        },
+        onHeroTouchDiskOutsidePointerDown(event) {
+            if (performance.now() < this.heroTouchDiskOutsideCloseUntil) return
+            if (this.heroTouchDiskExpand < 0.2) return
+            const t = event.target
+            if (!(t instanceof Element)) {
+                this.closeHeroTouchDiskMenu()
+                return
+            }
+            if (
+                t.closest('.hero-touch-disk-menu') ||
+                t.closest('.hero-intro-cursor-drag-hit')
+            ) {
+                return
+            }
+            this.closeHeroTouchDiskMenu()
+        },
+        animateHeroTouchDiskExpand(target) {
+            const to = target <= 0 ? 0 : 1
+            if (this.heroTouchDiskPopRaf != null) {
+                cancelAnimationFrame(this.heroTouchDiskPopRaf)
+                this.heroTouchDiskPopRaf = null
+            }
+            clearTimeout(this.heroTouchDiskPopTimer)
+            this.heroTouchDiskPopTimer = null
+
+            if (prefersReducedMotion()) {
+                this.heroTouchDiskExpand = to
+                this.heroTouchDiskExpandLinear = to
+                this.heroTouchDiskExpandOpening = false
+                this.heroTouchDiskSinkScale = 1
+                this.heroTouchDiskPopping = false
+                this.heroTouchDiskMenuOpen = to > 0.5
+                if (to < 0.5) {
+                    this.unbindHeroTouchDiskOutsideClose()
+                    this.heroTouchDiskMenuFromSize = null
+                    this.heroTouchDiskMenuFrostLiveL = 0
+                    this.heroTouchDiskMenuFrostLiveR = 0
+                    this.heroTouchDiskMenuFrostLiveH = 0
+                    this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                    this.restoreHeroTouchDiskGlassTextMorph()
+                } else {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                    this.stepHeroTouchDiskEdgeSpring()
+                    this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                    this.syncHeroTouchDiskMenuTextMorph()
+                }
+                return
+            }
+
+            this.markHeroTouchDiskInteracted()
+            this.heroCursorGlassPos = { ...this.heroCursorPos }
+            this.heroTouchDiskPopping = true
+            this.heroTouchDiskExpandOpening = to > 0.5
+            this.heroTouchDiskSinkScale = 1
+
+            const from = this.heroTouchDiskExpand
+            const duration = HERO_TOUCH_DISK_EXPAND_MS
+            const start = performance.now()
+            // Closing: lerp frost back to idle (not to the glass origin).
+            if (to < 0.5) {
+                this.heroTouchDiskMenuFromSize = HERO_CURSOR_GLASS_IDLE_SIZE
+            }
+
+            const tick = (now) => {
+                const t = Math.min(1, (now - start) / duration)
+                const opening = to > 0.5
+                this.heroTouchDiskExpandLinear = t
+                const e = heroTouchDiskExpandEase(t, opening)
+                this.heroTouchDiskExpand = from + (to - from) * e
+                this.syncHeroTouchDiskMenuFrostLive()
+                this.stepHeroTouchDiskEdgeSpring()
+                this.syncHeroTouchDiskMenuTextMorph()
+                if (t < 1) {
+                    this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
+                    return
+                }
+                this.heroTouchDiskPopRaf = null
+                this.heroTouchDiskExpand = to
+                this.heroTouchDiskExpandLinear = to
+                this.heroTouchDiskExpandOpening = false
+                this.heroTouchDiskPopping = false
+                this.heroTouchDiskMenuOpen = to > 0.5
+                if (to < 0.5) {
+                    this.unbindHeroTouchDiskOutsideClose()
+                    this.heroTouchDiskMenuFromSize = null
+                    this.heroTouchDiskMenuFrostLiveL = 0
+                    this.heroTouchDiskMenuFrostLiveR = 0
+                    this.heroTouchDiskMenuFrostLiveH = 0
+                    this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                    this.restoreHeroTouchDiskGlassTextMorph()
+                } else {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                    this.stepHeroTouchDiskEdgeSpring()
+                    this.$nextTick(() => this.syncHeroTouchDiskMenuMetricsFromDom())
+                    this.syncHeroTouchDiskMenuTextMorph()
+                }
+            }
+            this.heroTouchDiskPopRaf = requestAnimationFrame(tick)
+        },
+        playHeroTouchDiskPop() {
+            // Kept as a no-op alias — expand animation carries the tap feedback.
+        },
+        onHeroTouchDiskMenuItemClick(item, event) {
+            if (item.external) {
+                this.closeHeroTouchDiskMenu()
+                return
+            }
+            event.preventDefault()
+            // Snap shut before scroll — animated close lags behind the redirect.
+            this.closeHeroTouchDiskMenu({ instant: true })
+            if (item.action === 'work') {
+                this.heroTouchDiskZoneLock = 'work'
+                this.heroTouchDiskZoneLockUntil =
+                    performance.now() + HERO_TOUCH_DISK_ZONE_LOCK_MS
+                this.heroTouchDiskZone = 'work'
+                this.heroTouchDiskHasMoved = false
+                this.clearHeroTouchDiskMorph()
+                this.syncHeroTouchDiskRestPosition()
+                scrollToWork({
+                    onComplete: () => {
+                        this.heroTouchDiskZoneLock = null
+                        this.heroTouchDiskZoneLockUntil = 0
+                        this.updateHeroTouchDiskZoneFromScroll()
+                    },
+                })
+                return
+            }
+            if (item.action === 'about') {
+                this.heroTouchDiskZoneLock = 'about'
+                this.heroTouchDiskZoneLockUntil =
+                    performance.now() + HERO_TOUCH_DISK_ZONE_LOCK_MS
+                this.heroTouchDiskZone = 'about'
+                this.heroTouchDiskHasMoved = false
+                this.clearHeroTouchDiskMorph()
+                this.syncHeroTouchDiskRestPosition()
+                scrollToAbout({
+                    onComplete: () => {
+                        this.heroTouchDiskZoneLock = null
+                        this.heroTouchDiskZoneLockUntil = 0
+                        this.updateHeroTouchDiskZoneFromScroll()
+                    },
+                })
+            }
+        },
+        moveHeroTouchDiskTo(clientX, clientY) {
+            // Work / About: corner-fixed — only the hero zone is freely movable.
+            if (this.heroTouchDiskZone !== 'hero') return
+            const rawX = clientX + this.heroTouchDiskGrabOffset.x
+            const rawY = clientY + this.heroTouchDiskGrabOffset.y
+            const menuOpen =
+                this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            const { radius } = this.getHeroTouchDiskBounds()
+            const { x, y } = menuOpen
+                ? this.clampHeroTouchDiskToMenuSafe(rawX, rawY, { rubber: true })
+                : (() => {
+                      const { minX, maxX, minY, maxY } = this.getHeroTouchDiskBounds()
+                      return {
+                          x: Math.min(maxX, Math.max(minX, rawX)),
+                          y: Math.min(maxY, Math.max(minY, rawY)),
+                      }
+                  })()
+            // Pill dragged into hero text collapses to the glass ball.
+            this.yieldHeroTouchDiskMenuToGlassIfNeeded(x, y)
+            this.updateHeroFinePointer(x, y, {
+                introEffects: this.touchDiskTextEffectsEnabled(),
+            })
+            this.heroCursorGlassPos = { x, y }
+            this.refreshHeroTouchDiskStage()
+
+            // During drag on hero: viewport-bottom contact → park + scroll to work.
+            if (
+                this.heroTouchDiskDragging &&
+                !this.heroTouchDiskWorkJumped &&
+                y >= window.innerHeight - radius - 1
+            ) {
+                this.triggerHeroTouchDiskWorkJump()
+            }
+        },
+        onHeroTouchDiskPointerDown(event) {
+            if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
+            if (
+                this.heroTouchDiskZone === 'hero' &&
+                (this.heroIntroDissipated || this.heroIntroReconsolidating)
+            ) {
+                return
+            }
+            if (event.pointerType === 'mouse' && event.button !== 0) return
+
+            event.preventDefault()
+            event.stopPropagation()
+
+            // Don't kill idle / morph until the gesture is a real drag or tap.
+            // Interrupt entrance flight so the grab starts from the live position.
+            if (this.heroTouchDiskEntering) {
+                this.cancelHeroTouchDiskEntranceFlight()
+                this.heroTouchDiskEntering = false
+            }
+
+            const { x, y } = this.heroCursorGlassPos
+            this.heroTouchDiskDragging = true
+            this.heroTouchDiskWorkJumped = false
+            this.heroTouchDiskHasMoved = false
+            this.heroTouchDiskPointerId = event.pointerId
+            this.heroTouchDiskPointerStart = { x: event.clientX, y: event.clientY }
+            this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+            this.heroTouchDiskGrabOffset = {
+                x: x - event.clientX,
+                y: y - event.clientY,
+            }
+            try {
+                event.currentTarget?.setPointerCapture?.(event.pointerId)
+            } catch {
+                /* ignore */
+            }
+            this.startHeroCursorGlassFollow()
+        },
+        onHeroTouchDiskPointerMove(event) {
+            if (!this.heroTouchDiskDragging) return
+            if (event.pointerId !== this.heroTouchDiskPointerId) return
+
+            // Work / About stay corner-fixed — never turn finger jitter into a
+            // cancelled tap (disk cannot drag here).
+            if (this.heroTouchDiskZone !== 'hero') return
+
+            const dx = event.clientX - this.heroTouchDiskPointerStart.x
+            const dy = event.clientY - this.heroTouchDiskPointerStart.y
+            const slop = HERO_TOUCH_DISK_TAP_SLOP_PX
+            if (!this.heroTouchDiskHasMoved) {
+                if (dx * dx + dy * dy < slop * slop) return
+                this.heroTouchDiskHasMoved = true
+                this.markHeroTouchDiskInteracted()
+                // Keep an open menu open while dragging; tap the center to close.
+            }
+
+            event.preventDefault()
+            this.moveHeroTouchDiskTo(event.clientX, event.clientY)
+        },
+        onHeroTouchDiskPointerUp(event) {
+            if (event.pointerId !== this.heroTouchDiskPointerId) return
+
+            const wasTap =
+                this.heroTouchDiskDragging &&
+                !this.heroTouchDiskHasMoved &&
+                !this.heroTouchDiskWorkJumped
+
+            if (
+                this.heroTouchDiskDragging &&
+                this.heroTouchDiskHasMoved &&
+                this.heroTouchDiskZone === 'hero' &&
+                !this.heroTouchDiskWorkJumped
+            ) {
+                this.moveHeroTouchDiskTo(event.clientX, event.clientY)
+            }
+            try {
+                event.currentTarget?.releasePointerCapture?.(event.pointerId)
+            } catch {
+                /* ignore */
+            }
+            this.endHeroTouchDiskDrag()
+            // Corner zones: clear any ignored-drag flag so park sync stays honest.
+            if (this.heroTouchDiskZone !== 'hero') {
+                this.heroTouchDiskHasMoved = false
+            }
+            // After a rubber-band drag with the menu open, spring back in-view.
+            if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
+                this.heroTouchDiskEdgeVel = { x: 0, y: 0 }
+                this.startHeroCursorGlassFollow()
+            }
+
+            if (wasTap) {
+                this.toggleHeroTouchDiskMenu()
+            }
+        },
+        isHeroIntroMobileTouch() {
+            return this.heroIntroLetterMq?.matches ?? false
+        },
+        getHeroCursorZonePad(intro, introStyles) {
+            const normalPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-default', 80)
+            const tightPad = parseCssPx(introStyles, '--hero-cursor-zone-pad-tight', 4)
+            const proximity = parseCssPx(introStyles, '--hero-cursor-nav-proximity', 80)
+
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                return normalPad
+            }
+
+            const introRect = intro.getBoundingClientRect()
+            const navLinks = document.querySelectorAll('.nav-link--work, .nav-link--about')
+
+            for (const nav of navLinks) {
+                const navRect = nav.getBoundingClientRect()
+                if (navRect.height === 0) continue
+                if (introRect.top - navRect.bottom < proximity) {
+                    return tightPad
+                }
+            }
+
+            return normalPad
+        },
+        getHeroCursorPushTargets() {
+            const targets = []
+            const intro = this.$el?.querySelector('.hero-intro')
+            const footer = this.$el?.querySelector('.footer-contact-title--push')
+            if (intro) targets.push(intro)
+            if (footer) targets.push(footer)
+            return targets
+        },
+        getPushTargetRangePads(el) {
+            const styles = getComputedStyle(el)
+            if (el.classList.contains('footer-contact-title--push')) {
+                // Match a hero-like glass field (footer's own 4px pad is mouse-hit only).
+                return {
+                    outerPad: Math.max(
+                        72,
+                        parseCssPx(styles, '--push-char-hover-radius', 160) * 0.55,
+                    ),
+                    innerPad: 20,
+                }
+            }
+            return {
+                outerPad: parseCssPx(styles, '--hero-cursor-zone-pad-default', 80),
+                innerPad: parseCssPx(styles, '--hero-cursor-zone-pad-tight', 4),
+            }
+        },
+        getPushTargetZonePad(el) {
+            if (el.classList.contains('footer-contact-title--push')) {
+                return this.getPushTargetRangePads(el).outerPad
+            }
+            return this.getHeroCursorZonePad(el, getComputedStyle(el))
+        },
+        getHeroIntroRangeProximityMix(x, y) {
+            let maxMix = this.getFooterRangeProximityMix(x, y)
+
+            for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
+                const { outerPad, innerPad } = this.getPushTargetRangePads(el)
+                const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
+
+                if (distance >= outerPad) continue
+                if (distance <= innerPad) return 1
+
+                const linear = (outerPad - distance) / (outerPad - innerPad)
+                maxMix = Math.max(maxMix, heroCursorRangeSmoothstep(linear))
+            }
+
+            return maxMix
+        },
+        isHeroIntroPointerTight(x, y) {
+            if (this.getFooterRangeProximityMix(x, y) >= 0.85) return true
+            for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
+                const { innerPad } = this.getPushTargetRangePads(el)
+                const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
+                if (distance <= innerPad) return true
+            }
+            return false
+        },
+        isHeroIntroPointerNear(x, y) {
+            if (this.isNearFooterPush(x, y)) return true
+            for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
+                const zonePad = this.getPushTargetZonePad(el)
+                const rect = el.getBoundingClientRect()
+                if (
+                    x >= rect.left - zonePad &&
+                    x <= rect.right + zonePad &&
+                    y >= rect.top - zonePad &&
+                    y <= rect.bottom + zonePad
+                ) {
+                    return true
+                }
+            }
+            return false
+        },
+        /** Hero intro only (no footer) — used for menu ↔ glass handoff. */
+        getHeroIntroTextProximityMix(x, y) {
+            let maxMix = 0
+            for (const el of this.getHeroCursorPushTargets()) {
+                if (el.classList.contains('footer-contact-title--push')) continue
+                const { outerPad, innerPad } = this.getPushTargetRangePads(el)
+                const distance = heroCursorDistanceToRect(x, y, el.getBoundingClientRect())
+                if (distance >= outerPad) continue
+                if (distance <= innerPad) return 1
+                const linear = (outerPad - distance) / (outerPad - innerPad)
+                maxMix = Math.max(maxMix, heroCursorRangeSmoothstep(linear))
+            }
+            return maxMix
+        },
+        /**
+         * Open menu pill dragged into hero text → collapse to glass ball.
+         * Tap-open from glass is allowed; only a drag into text triggers this.
+         */
+        yieldHeroTouchDiskMenuToGlassIfNeeded(x, y) {
+            if (!this.heroTouchDiskDragging && !this.heroTouchDiskHasMoved) return false
+            const menuOpen =
+                this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen
+            if (!menuOpen) return false
+            // Don't gate on touchDiskTextEffectsEnabled() — that blocks letter push
+            // while the dual Work/About pill is open, which would also kill this handoff.
+            if (!this.isHeroTouchDiskMode() || this.heroTouchDiskZone !== 'hero') {
+                return false
+            }
+            if (!this.canHeroIntroPointerPlay()) return false
+            if (this.getHeroIntroTextProximityMix(x, y) < HERO_CURSOR_INTRO_GLASS_ON) {
+                return false
+            }
+            // Already collapsing toward idle — don't restart the expand raf.
+            if (this.heroTouchDiskPopping && !this.heroTouchDiskExpandOpening) {
+                return true
+            }
+            // Free the disk so glass handoff can engage after the pill closes.
+            this.heroTouchDiskHasMoved = true
+            this.markHeroTouchDiskInteracted()
+            this.closeHeroTouchDiskMenu()
+            return true
+        },
+        classifyHeroIntroTouchGesture(event) {
+            const start = this.heroIntroTouchStart
+            if (!start) return 'stroke'
+            if (event.pointerType === 'pen') return 'stroke'
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const styles = intro ? getComputedStyle(intro) : null
+            const swipeMinTravel = styles
+                ? parseCssPx(styles, '--hero-intro-swipe-min-travel', 22)
+                : 22
+            const swipeVerticalMin = styles
+                ? parseCssPx(styles, '--hero-intro-swipe-vertical-min', 30)
+                : 30
+            const swipeRatio = styles ? parseCssPx(styles, '--hero-intro-swipe-ratio', 1.65) : 1.65
+
+            const dx = event.clientX - start.x
+            const dy = event.clientY - start.y
+            const absDx = Math.abs(dx)
+            const absDy = Math.abs(dy)
+            const travel = Math.hypot(dx, dy)
+
+            if (travel < swipeMinTravel) return 'stroke'
+            if (absDy > absDx * swipeRatio && absDy > swipeVerticalMin) return 'swipe'
+            if (absDx >= absDy * 0.7) return 'stroke'
+
+            return 'swipe'
+        },
+        setHeroIntroStrokeActive(active) {
+            // Finger-stroke only — never disable desktop glass letter transitions.
+            if (active && (this.isHeroIntroFinePointer() || this.isHeroTouchDiskMode())) {
+                return
+            }
+            this.$el
+                ?.querySelector('.hero-intro.hero-intro--chars')
+                ?.classList.toggle('hero-intro--stroke-active', active)
+        },
+        enterHeroIntroSwipeMode(pointerId) {
+            this.heroIntroTouchMode = 'swipe'
+            this.disableHeroIntroTouchGuard()
+            this.releaseHeroIntroPointerCapture(pointerId)
+            this.setHeroIntroStrokeActive(false)
+            this.heroIntroPointer = null
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.clearHeroIntroPointerShift()
+        },
+        enableHeroIntroTouchGuard() {
+            if (this.heroIntroTouchGuardActive) return
+            this.heroIntroTouchGuardActive = true
+            window.addEventListener('touchmove', this.onHeroTouchMove, { passive: false })
+        },
+        disableHeroIntroTouchGuard() {
+            if (!this.heroIntroTouchGuardActive) return
+            this.heroIntroTouchGuardActive = false
+            window.removeEventListener('touchmove', this.onHeroTouchMove)
+        },
+        onHeroTouchMoveHandler(event) {
+            if (this.heroIntroActivePointerId == null) return
+            if (this.heroIntroTouchMode === 'swipe') return
+
+            const touch = [...event.changedTouches].find(
+                (t) => t.identifier === this.heroIntroActivePointerId
+            ) ?? [...event.touches].find(
+                (t) => t.identifier === this.heroIntroActivePointerId
+            )
+            if (!touch) return
+
+            const probe = {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                pointerType: 'touch',
+            }
+
+            if (this.classifyHeroIntroTouchGesture(probe) === 'swipe') {
+                this.enterHeroIntroSwipeMode(this.heroIntroActivePointerId)
+                return
+            }
+
+            const start = this.heroIntroTouchStart
+            if (start) {
+                const absDx = Math.abs(touch.clientX - start.x)
+                const absDy = Math.abs(touch.clientY - start.y)
+                // Vertical drift → let the browser scroll; keep push via pointermove
+                if (absDy > absDx * 1.05 && absDy > 10) return
+            }
+
+            if (this.isHeroIntroPointerNear(touch.clientX, touch.clientY)) {
+                event.preventDefault()
+            }
+        },
+        captureHeroIntroPointer(event) {
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro?.setPointerCapture || intro.hasPointerCapture?.(event.pointerId)) return
+            try {
+                intro.setPointerCapture(event.pointerId)
+            } catch {
+                /* pointer may already be captured elsewhere */
+            }
+        },
+        releaseHeroIntroPointerCapture(pointerId) {
+            if (pointerId == null) return
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro?.releasePointerCapture || !intro.hasPointerCapture?.(pointerId)) return
+            try {
+                intro.releasePointerCapture(pointerId)
+            } catch {
+                /* ignore */
+            }
+        },
+        isHeroCursorOverHoverTarget(x, y) {
+            return this.getHeroCursorHoverTargetElement(x, y) != null
+        },
+        getHeroCursorHoverTargetElement(x, y) {
+            if (typeof document === 'undefined') return null
+
+            const lock = this.heroCursorHoverLockEl
+            if (lock?.isConnected) {
+                const rect = lock.getBoundingClientRect()
+                const pad = HERO_CURSOR_HOVER_LOCK_PAD
+                if (
+                    x >= rect.left - pad &&
+                    x <= rect.right + pad &&
+                    y >= rect.top - pad &&
+                    y <= rect.bottom + pad
+                ) {
+                    return lock
+                }
+                this.heroCursorHoverLockEl = null
+            }
+
+            const stack =
+                document.elementsFromPoint?.(x, y) ??
+                [document.elementFromPoint(x, y)].filter(Boolean)
+
+            for (const el of stack) {
+                if (!(el instanceof Element)) continue
+                if (el.closest('.hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit')) continue
+
+                const target = el.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)
+                if (target) {
+                    this.heroCursorHoverLockEl = target
+                    return target
+                }
+            }
+
+            return null
+        },
+        getMirrorNodeForLive(liveEl, cloneRoot, sourceRoot) {
+            if (!(liveEl instanceof Element) || !cloneRoot || !sourceRoot) return null
+
+            const path = []
+            let node = liveEl
+            while (node && node !== sourceRoot) {
+                const parent = node.parentElement
+                if (!parent) return null
+                path.unshift(Array.prototype.indexOf.call(parent.children, node))
+                node = parent
+            }
+            if (node !== sourceRoot) return null
+
+            let mirror = cloneRoot
+            for (const index of path) {
+                mirror = mirror.children[index]
+                if (!mirror) break
+            }
+            if (mirror instanceof Element) return mirror
+
+            return this.findMirrorNodeFallback(liveEl, cloneRoot, sourceRoot)
+        },
+        findMirrorNodeFallback(liveEl, cloneRoot, sourceRoot) {
+            if (!(liveEl instanceof Element) || !cloneRoot || !sourceRoot) return null
+
+            if (liveEl.id) {
+                const byId = cloneRoot.querySelector(`#${CSS.escape(liveEl.id)}`)
+                if (byId instanceof Element) return byId
+            }
+
+            if (liveEl instanceof HTMLAnchorElement) {
+                const href = liveEl.getAttribute('href')
+                if (href) {
+                    const matches = [...cloneRoot.querySelectorAll(`a[href="${CSS.escape(href)}"]`)]
+                    if (matches.length === 1) return matches[0]
+                    const label = liveEl.textContent?.trim()
+                    if (label) {
+                        const labeled = matches.find((node) => node.textContent?.trim() === label)
+                        if (labeled) return labeled
+                    }
+                }
+            }
+
+            const tag = liveEl.tagName.toLowerCase()
+            const classSelector = [...liveEl.classList]
+                .map((className) => `.${CSS.escape(className)}`)
+                .join('')
+            const candidates = cloneRoot.querySelectorAll(`${tag}${classSelector}`)
+            for (const candidate of candidates) {
+                if (
+                    Math.abs(candidate.offsetTop - liveEl.offsetTop) <= 1 &&
+                    Math.abs(candidate.offsetLeft - liveEl.offsetLeft) <= 1
+                ) {
+                    return candidate
+                }
+            }
+
+            return null
+        },
+        clearHeroCursorMirrorHoverState() {
+            for (const root of [this.heroCursorMirrorClone, this.heroCursorMirrorTopBarClone]) {
+                root?.querySelectorAll(
+                    '.hero-cursor-mirror-hover, .hero-cursor-mirror-active'
+                ).forEach((el) => {
+                    el.classList.remove('hero-cursor-mirror-hover', 'hero-cursor-mirror-active')
+                })
+            }
+            // Touch disk paints live hover on the page (no real :hover).
+            const liveRoot = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            liveRoot
+                ?.querySelectorAll('.hero-cursor-mirror-hover, .hero-cursor-mirror-active')
+                .forEach((el) => {
+                    el.classList.remove('hero-cursor-mirror-hover', 'hero-cursor-mirror-active')
+                })
+        },
+        isHeroCursorPressRelated(liveNode) {
+            const press = this.heroCursorPressTarget
+            if (!press?.isConnected || !(liveNode instanceof Element)) return false
+            return liveNode === press || liveNode.contains(press) || press.contains(liveNode)
+        },
+        /** Live nodes that should morph under the touch disk (not only in the clone). */
+        shouldHeroTouchDiskPaintLiveHover(liveNode) {
+            if (!(liveNode instanceof Element)) return false
+            return (
+                liveNode.matches('.project:not(.project--upcoming)') ||
+                liveNode.matches('.about-action-btn')
+            )
+        },
+        clearHeroCursorPressTarget() {
+            if (!this.heroCursorPressTarget) return
+            this.heroCursorPressTarget = null
+            if (this.heroCursorActive) {
+                this.syncHeroCursorMirrorHoverState(
+                    this.heroCursorGlassPos.x,
+                    this.heroCursorGlassPos.y
+                )
+            } else {
+                this.clearHeroCursorMirrorHoverState()
+            }
+        },
+        syncHeroCursorMirrorHoverState(x, y) {
+            const clone = this.heroCursorMirrorClone
+            const chrome = this.heroCursorMirrorTopBarClone
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            const paintLive = this.isHeroTouchDiskMode()
+            // Touch disk has no magnifier clone — still paint live curve / CTA blue.
+            if (!source || (!clone && !paintLive)) {
+                this.clearHeroCursorMirrorHoverState()
+                return
+            }
+
+            this.clearHeroCursorMirrorHoverState()
+
+            const liveTarget = this.getHeroCursorHoverTargetElement(x, y)
+            if (!liveTarget) return
+
+            const liveNodes = [liveTarget]
+            for (const selector of HERO_CURSOR_MIRROR_HOVER_ANCESTORS) {
+                const ancestor = liveTarget.closest(selector)
+                if (ancestor) liveNodes.push(ancestor)
+            }
+
+            for (const liveNode of liveNodes) {
+                if (clone) {
+                    let mirrorNode = this.getMirrorNodeForLive(liveNode, clone, source)
+                    if (
+                        !mirrorNode &&
+                        chrome &&
+                        liveNode.closest('.portfolio-top-bar, .top-bar, .nav-link')
+                    ) {
+                        mirrorNode = this.findMirrorNodeFallback(liveNode, chrome, source)
+                    }
+                    if (mirrorNode) {
+                        mirrorNode.classList.add('hero-cursor-mirror-hover')
+                        if (this.isHeroCursorPressRelated(liveNode)) {
+                            mirrorNode.classList.add('hero-cursor-mirror-active')
+                        }
+                    }
+                }
+                // Case study curve + About CTA blue on the page under the disk.
+                if (paintLive && this.shouldHeroTouchDiskPaintLiveHover(liveNode)) {
+                    liveNode.classList.add('hero-cursor-mirror-hover')
+                }
+            }
+        },
+        syncHeroCursorDocumentClass() {
+            if (this.heroCursorHideNative) {
+                document.documentElement.classList.add('portfolio-hero-cursor')
+            } else {
+                document.documentElement.classList.remove('portfolio-hero-cursor')
+            }
+        },
+        primeHeroCursor() {
+            if (!this.heroIntroLetterMode || !this.isHeroIntroFinePointer()) return
+            this.heroCursorActive = true
+            this.syncHeroCursorDocumentClass()
+            this.startHeroCursorGlassFollow()
+        },
+        updateHeroFinePointer(x, y, { introEffects = true, skipHover = false } = {}) {
+            // Hero letter push is gated by introEffects (off while dissipated).
+            // Footer stays interactive for the fine-pointer glass cursor too —
+            // except near the email, where the magnifier takes priority.
+            const preferEmailMag = this.isPreferFooterEmailMagnifier(x, y)
+            const nearFooter =
+                !preferEmailMag && this.canFooterPushPlay() && this.isNearFooterPush(x, y)
+            const inRange = preferEmailMag
+                ? false
+                : (introEffects && this.isHeroIntroPointerNear(x, y)) || nearFooter
+            const wasActive = this.heroCursorActive
+
+            this.heroCursorPos = { x, y }
+            this.heroCursorActive = true
+            this.syncHeroCursorDocumentClass()
+            this.heroCursorInRange = inRange
+            this.heroCursorRangeTight =
+                inRange &&
+                (nearFooter
+                    ? this.getFooterRangeProximityMix(x, y) >= 0.85
+                    : this.isHeroIntroPointerTight(x, y))
+
+            // Drop title glass immediately so the email magnifier can morph in.
+            if (preferEmailMag && this.heroCursorIntroGlassHandoff) {
+                this.heroCursorRangeMix = 0
+                this.heroCursorIntroGlassHandoff = false
+                this.clearFooterPointerShift()
+            }
+
+            const touchDisk = this.isHeroTouchDiskMode()
+            const cornerDisk = this.isHeroTouchDiskCornerParked(x, y)
+            // Touch disk: never enter link/project magnifier — stay disk or text glass.
+            if (skipHover || cornerDisk || touchDisk) {
+                this.heroCursorOverHover = false
+                if (cornerDisk || touchDisk) {
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorHoverLockEl = null
+                    this.heroCursorMagnifierLayout = null
+                    this.heroCursorMirrorHoverTarget = 0
+                }
+            } else {
+                this.heroCursorOverHover = !inRange && this.isHeroCursorOverHoverTarget(x, y)
+            }
+            const magnifierVisible =
+                !touchDisk &&
+                !inRange &&
+                !cornerDisk &&
+                (this.heroCursorOverHover || this.heroCursorHoverMix > 0.02)
+
+            if (!wasActive || magnifierVisible) {
+                this.heroCursorGlassPos = { x, y }
+            }
+
+            this.startHeroCursorGlassFollow()
+
+            if (inRange) {
+                this.heroIntroPointer = { x, y }
+                if (this.heroIntroPointerRaf != null) return
+                this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                    this.heroIntroPointerRaf = null
+                    this.applyHeroIntroPointerShift()
+                })
+                return
+            }
+
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
+        },
+        startHeroCursorGlassFollow() {
+            if (this.heroCursorGlassRaf != null) return
+
+            const tick = () => {
+                this.heroCursorGlassRaf = null
+                if (!this.heroCursorActive) return
+
+                const { x: tx, y: ty } = this.heroCursorPos
+                const touchDisk = this.isHeroTouchDiskMode()
+                const sectionNav = touchDisk && this.heroTouchDiskZone !== 'hero'
+                // Work / About: stay pinned in the lower-right corner (mirror of the
+                // pager pill). Left-pill menu grows from that fixed center.
+                if (sectionNav && !this.heroTouchDiskDragging) {
+                    const rest = this.getHeroTouchDiskRestPos()
+                    if (
+                        this.heroCursorPos.x !== rest.x ||
+                        this.heroCursorPos.y !== rest.y
+                    ) {
+                        this.heroCursorPos = { x: rest.x, y: rest.y }
+                    }
+                    this.heroCursorGlassPos = { x: rest.x, y: rest.y }
+                    this.heroCursorRangeMix = 0
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorInRange = false
+                    this.heroCursorRangeTight = false
+                    if (this.heroIntroPointer) {
+                        this.heroIntroPointer = null
+                        this.clearFooterPointerShift()
+                    }
+                    this.heroCursorOverHover = false
+                    if (this.heroCursorHoverMix > 0) {
+                        this.heroCursorHoverMix = 0
+                        this.heroCursorHoverLockEl = null
+                        this.heroCursorMagnifierLayout = null
+                        this.heroCursorMirrorHoverTarget = 0
+                    }
+                    if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
+                        this.syncHeroTouchDiskMenuFrostLive()
+                    }
+                    this.heroCursorGlassRaf = requestAnimationFrame(tick)
+                    return
+                }
+                const footerFree =
+                    touchDisk &&
+                    this.canFooterPushPlay() &&
+                    (this.heroTouchDiskHasMoved || this.heroTouchDiskDragging)
+                const footerMix = footerFree ? this.getFooterRangeProximityMix(tx, ty) : 0
+                const footerField = footerFree && footerMix > HERO_CURSOR_INTRO_GLASS_OFF
+                const menuOpen =
+                    touchDisk &&
+                    (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen)
+                // Off-hero: freeze intro-text glass morph (no project magnifier on touch disk).
+                // Exception: footer title uses the same in-text glass + letter push as the hero.
+                if (sectionNav && !footerField) {
+                    this.heroCursorRangeMix = 0
+                    this.heroCursorIntroGlassHandoff = false
+                    this.heroCursorInRange = false
+                    this.heroCursorRangeTight = false
+                    if (this.heroIntroPointer) {
+                        this.heroIntroPointer = null
+                        this.clearFooterPointerShift()
+                    }
+                }
+                const allowIntroGlass =
+                    !menuOpen &&
+                    (!touchDisk ||
+                        footerField ||
+                        (!sectionNav &&
+                            (this.heroTouchDiskHasMoved ||
+                                this.heroTouchDiskDragging ||
+                                this.heroTouchDiskEntering)))
+                // Freeze only applies in the hero zone during dissipate — never while
+                // the disk is interacting with the footer (hero is already gone there).
+                const freezeIntroGlass =
+                    touchDisk &&
+                    !sectionNav &&
+                    this.heroCursorIntroGlassHandoff &&
+                    this.heroTouchDiskOnStage &&
+                    (this.heroIntroDissipated || this.heroIntroReconsolidating)
+                // Touch-disk only: keep in-text glass while letters fan out / snap back.
+                // Off-hero: same path when the disk is in the footer title field.
+                if ((!sectionNav || footerField) && !freezeIntroGlass) {
+                    const proximityTarget = footerField
+                        ? footerMix
+                        : allowIntroGlass
+                          ? this.getHeroIntroRangeProximityMix(tx, ty)
+                          : 0
+                    if (touchDisk && this.heroTouchDiskEntering) {
+                        // Fly-in stays glass the whole way; deepen when crossing text.
+                        this.heroCursorIntroGlassHandoff = true
+                        const glassTarget = Math.max(0.85, proximityTarget)
+                        this.heroCursorRangeMix +=
+                            (glassTarget - this.heroCursorRangeMix) * 0.45
+                    } else if (proximityTarget <= HERO_CURSOR_INTRO_GLASS_OFF) {
+                        // Ease out of glass form — avoid a hard cut when leaving the field
+                        // or when the disk glides home after a work jump.
+                        const exitLerp = touchDisk ? 0.07 : 0.14
+                        this.heroCursorRangeMix +=
+                            (0 - this.heroCursorRangeMix) * exitLerp
+                        if (this.heroCursorRangeMix < 0.012) {
+                            this.heroCursorRangeMix = 0
+                            this.heroCursorIntroGlassHandoff = false
+                        }
+                    } else {
+                        // Footer: snap into glass a bit faster so the morph reads on a short pass.
+                        const rangeLerp = footerField
+                            ? proximityTarget >= this.heroCursorRangeMix
+                                ? 0.22
+                                : 0.16
+                            : touchDisk
+                              ? proximityTarget >= this.heroCursorRangeMix
+                                  ? 0.09
+                                  : 0.11
+                              : proximityTarget >= this.heroCursorRangeMix
+                                ? 0.14
+                                : 0.2
+                        this.heroCursorRangeMix +=
+                            (proximityTarget - this.heroCursorRangeMix) * rangeLerp
+                        if (
+                            !this.heroCursorIntroGlassHandoff &&
+                            proximityTarget >= HERO_CURSOR_INTRO_GLASS_ON
+                        ) {
+                            this.heroCursorIntroGlassHandoff = true
+                            this.closeHeroTouchDiskMenu({ instant: true })
+                        }
+                    }
+                    if (footerField) {
+                        this.heroCursorInRange = true
+                        this.heroCursorRangeTight =
+                            footerMix >= 0.85 || this.isNearFooterPush(tx, ty)
+                    }
+                }
+
+                const scrollHoverSuppressed =
+                    typeof performance !== 'undefined' &&
+                    performance.now() < this.heroCursorScrollHoverSuppressUntil
+                // Prefer the visible glass position so park detection matches what you see.
+                const cornerDisk =
+                    sectionNav &&
+                    this.isHeroTouchDiskCornerParked(
+                        this.heroCursorGlassPos?.x ?? tx,
+                        this.heroCursorGlassPos?.y ?? ty,
+                    )
+                // Touch disk never morphs into the link magnifier.
+                const hoverTarget =
+                    touchDisk ||
+                    menuOpen ||
+                    scrollHoverSuppressed ||
+                    this.heroCursorInRange ||
+                    cornerDisk
+                        ? 0
+                        : this.isHeroCursorOverHoverTarget(tx, ty)
+                          ? 1
+                          : 0
+                if ((touchDisk || cornerDisk) && this.heroCursorHoverMix > 0) {
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorHoverLockEl = null
+                    this.heroCursorMagnifierLayout = null
+                    this.heroCursorMirrorHoverTarget = 0
+                }
+                const magnifierVisible =
+                    !touchDisk &&
+                    !this.heroCursorInRange &&
+                    !cornerDisk &&
+                    (hoverTarget === 1 || this.heroCursorHoverMix > 0.02)
+                const { x: gx, y: gy } = this.heroCursorGlassPos
+                const transitionBoost =
+                    this.heroCursorRangeMix * (1 - this.heroCursorRangeMix) * 4
+                // Touch-disk home glide: slower chase so the return reads soft.
+                const returningHome =
+                    touchDisk &&
+                    !this.heroTouchDiskDragging &&
+                    !this.heroTouchDiskHasMoved &&
+                    (Math.hypot(tx - gx, ty - gy) > 1 || this.heroCursorRangeMix > 0.01)
+                const follow = returningHome
+                    ? 0.055
+                    : this.heroCursorInRange
+                      ? 0.27 + transitionBoost * 0.46
+                      : 0.10 + this.heroCursorRangeMix * 0.18 + transitionBoost * 0.28
+                const nx = gx + (tx - gx) * follow
+                const ny = gy + (ty - gy) * follow
+
+                // Keep the hover magnifier and its ring on one layer — no trailing ghost.
+                // Touch-disk drag / entrance fly tracks 1:1 so the disk reads as one solid body.
+                if (
+                    magnifierVisible ||
+                    (touchDisk && (this.heroTouchDiskDragging || this.heroTouchDiskEntering))
+                ) {
+                    this.heroCursorGlassPos = { x: tx, y: ty }
+                } else if (
+                    !returningHome &&
+                    this.heroCursorInRange &&
+                    Math.hypot(tx - nx, ty - ny) < 0.4
+                ) {
+                    this.heroCursorGlassPos = { x: tx, y: ty }
+                } else {
+                    this.heroCursorGlassPos = { x: nx, y: ny }
+                }
+
+                this.heroCursorOverHover = hoverTarget === 1
+                const hoverLerp =
+                    hoverTarget === 1
+                        ? this.heroCursorInRange
+                            ? 0.3
+                            : HERO_CURSOR_HOVER_LERP
+                        : 0.45
+                this.heroCursorHoverMix += (hoverTarget - this.heroCursorHoverMix) * hoverLerp
+                if (hoverTarget === 0 && this.heroCursorHoverMix < 0.04) {
+                    this.heroCursorHoverMix = 0
+                    this.heroCursorHoverLockEl = null
+                }
+                this.heroCursorRangeTight =
+                    (this.heroCursorInRange ||
+                        (touchDisk && this.heroCursorIntroGlassHandoff)) &&
+                    this.isHeroIntroPointerTight(tx, ty)
+
+                if (hoverTarget === 1 && this.heroCursorMirrorHoverTarget !== 1) {
+                    // Only blank when there is no clone yet — in-place refresh
+                    // avoids flashing sharp page / top-bar backdrop rebuild.
+                    const needsBlockingRefresh = !this.heroCursorMirrorClone
+                    if (needsBlockingRefresh) {
+                        this.heroCursorMirrorAwaitingRefresh = true
+                    }
+                    requestAnimationFrame(() => {
+                        if (this.heroCursorMirrorHoverTarget !== 1) {
+                            this.heroCursorMirrorAwaitingRefresh = false
+                            return
+                        }
+                        this.refreshHeroCursorMirror()
+                        this.heroCursorMirrorAwaitingRefresh = false
+                        this.updateHeroCursorMagnifierLayout()
+                    })
+                }
+                this.heroCursorMirrorHoverTarget = hoverTarget
+                this.updateHeroCursorMagnifierLayout()
+
+                if (menuOpen || this.heroTouchDiskExpand > 0.02) {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                    this.stepHeroTouchDiskEdgeSpring()
+                    this.syncHeroTouchDiskMenuTextMorph()
+                } else if (
+                    touchDisk &&
+                    this.heroCursorIntroGlassHandoff &&
+                    this.touchDiskTextEffectsEnabled() &&
+                    !this.heroIntroDissipated
+                ) {
+                    // Keep the letter hole locked to the visible glass center.
+                    const { x: gx, y: gy } = this.heroCursorGlassPos
+                    if (this.isHeroIntroPointerNear(gx, gy)) {
+                        this.heroIntroPointer = { x: gx, y: gy }
+                        this.applyHeroIntroPointerShift()
+                    }
+                }
+
+                this.heroCursorGlassRaf = requestAnimationFrame(tick)
+            }
+
+            this.heroCursorGlassRaf = requestAnimationFrame(tick)
+        },
+        stopHeroCursorGlassFollow() {
+            if (this.heroCursorGlassRaf == null) return
+            cancelAnimationFrame(this.heroCursorGlassRaf)
+            this.heroCursorGlassRaf = null
+            this.destroyHeroCursorMirror()
+        },
+        refreshHeroCursorMirror() {
+            const root = this.$refs.heroCursorMirrorRoot
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            if (!root || !source) return
+
+            this.clearHeroCursorMirrorHoverState()
+            const clone = source.cloneNode(true)
+            clone.setAttribute('aria-hidden', 'true')
+            clone.classList.add('hero-intro-cursor-mirror-clone')
+            // Snap to settled poses — inserting a fresh clone would otherwise
+            // restart about/hero fly-ins (visible when hovering About CTAs).
+            clone.classList.add('portfolio-page--reveal', 'portfolio-page--settled')
+            const aboutClone = clone.querySelector('#about')
+            if (aboutClone) {
+                aboutClone.classList.add('about--reveal', 'about--settled')
+            }
+            clone.querySelectorAll(
+                '.hero-intro-cursor-ball, .hero-intro-cursor-magnifier, .hero-intro-cursor-drag-hit',
+            ).forEach((el) => el.remove())
+            // Mobile home uses an in-flow top bar. Removing it without a spacer
+            // collapses that space and shifts every mirrored section up (~86px).
+            const mirrorTopBar = clone.querySelector('.portfolio-top-bar')
+            const liveInFlowTopBar = source.querySelector(
+                '.portfolio-top-bar .top-bar.top-bar--in-flow',
+            )
+            if (mirrorTopBar && liveInFlowTopBar) {
+                const spacer = document.createElement('div')
+                spacer.className = 'hero-intro-cursor-mirror-top-bar-spacer'
+                spacer.setAttribute('aria-hidden', 'true')
+                spacer.style.cssText = `height:${liveInFlowTopBar.getBoundingClientRect().height}px;width:100%;flex-shrink:0;pointer-events:none;visibility:hidden`
+                mirrorTopBar.replaceWith(spacer)
+            } else {
+                mirrorTopBar?.remove()
+            }
+            root.replaceChildren(clone)
+            this.heroCursorMirrorClone = clone
+            this.refreshHeroCursorMirrorFrostBlurClone(clone)
+
+            const topBarRoot = this.$refs.heroCursorMirrorTopBarRoot
+            const topBarSource = source.querySelector('.portfolio-top-bar')
+            if (topBarRoot) {
+                if (topBarSource) {
+                    const topBarClone = topBarSource.cloneNode(true)
+                    topBarClone.setAttribute('aria-hidden', 'true')
+                    topBarClone.querySelector('.logo-block')?.remove()
+                    topBarRoot.replaceChildren(topBarClone)
+                    this.heroCursorMirrorTopBarClone = topBarClone
+                } else {
+                    topBarRoot.replaceChildren()
+                    this.heroCursorMirrorTopBarClone = null
+                }
+            }
+
+            this.syncHeroCursorMirrorClone()
+            this.syncHeroCursorMirrorTopBarChrome()
+            if (this.heroCursorMagnifierLayout) {
+                this.syncHeroCursorMagnifierTopBarFrostEl(this.heroCursorMagnifierLayout)
+            }
+        },
+        refreshHeroCursorMirrorFrostBlurClone(sourceClone) {
+            const frostRoot = this.$refs.heroCursorMirrorFrostBlurRoot
+            if (!frostRoot || !(sourceClone instanceof Element)) {
+                this.heroCursorMirrorFrostBlurClone = null
+                return
+            }
+            const frostClone = sourceClone.cloneNode(true)
+            frostRoot.replaceChildren(frostClone)
+            this.heroCursorMirrorFrostBlurClone = frostClone
+            this.syncHeroCursorMirrorFrostBlurClone()
+        },
+        syncHeroCursorMirrorFrostBlurClone() {
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            const clone = this.heroCursorMirrorFrostBlurClone
+            if (!source || !clone) return
+
+            const sourceRect = source.getBoundingClientRect()
+            clone.style.position = 'absolute'
+            clone.style.left = `${sourceRect.left}px`
+            clone.style.top = `${sourceRect.top}px`
+            clone.style.width = `${source.offsetWidth}px`
+            clone.style.minHeight = `${source.offsetHeight}px`
+        },
+        syncHeroCursorMagnifierTopBarFrostEl(layout) {
+            const el = this.$refs.heroCursorMagnifierTopBarFrost
+            const frost = layout?.topBarFrost
+            const liveTopBar = this.$el?.querySelector('.portfolio-top-bar .top-bar')
+
+            if (!(el instanceof Element)) {
+                this.syncHeroCursorMagnifierLogoEl(layout)
+                return
+            }
+
+            if (!frost?.visible || !liveTopBar || !layout) {
+                el.style.opacity = '0'
+                el.style.visibility = 'visible'
+                this.syncHeroCursorMagnifierLogoEl(layout)
+                return
+            }
+
+            const topBarClasses = [...liveTopBar.classList]
+                .filter((cls) => cls.startsWith('top-bar--'))
+                .join(' ')
+            const nextClass = `hero-intro-cursor-magnifier__top-bar-frost${
+                topBarClasses ? ` ${topBarClasses}` : ''
+            }`
+            if (el.className !== nextClass) el.className = nextClass
+
+            const transparent =
+                liveTopBar.classList.contains('top-bar--transparent') &&
+                !liveTopBar.classList.contains('top-bar--glass')
+
+            el.style.visibility = 'visible'
+            el.style.opacity = '1'
+            el.style.left = `${frost.left}px`
+            el.style.top = `${frost.top}px`
+            el.style.width = `${frost.width}px`
+            el.style.height = `${frost.height}px`
+            el.style.background = 'transparent'
+            el.style.backdropFilter = 'none'
+            el.style.webkitBackdropFilter = 'none'
+            if (transparent) {
+                el.style.boxShadow = 'none'
+            } else {
+                el.style.removeProperty('box-shadow')
+            }
+
+            const tint = el.querySelector('.hero-intro-cursor-magnifier__top-bar-frost-tint')
+            if (tint instanceof Element) {
+                tint.style.opacity = transparent ? '0' : '1'
+            }
+
+            const blurHost = this.$refs.heroCursorMagnifierTopBarFrostBlurHost
+            const blurScaled = this.$refs.heroCursorMagnifierTopBarFrostBlurScaled
+            if (blurHost instanceof Element && blurScaled instanceof Element) {
+                if (transparent) {
+                    blurHost.style.visibility = 'hidden'
+                } else {
+                    const combinedScale = layout.scale * layout.forwardScale
+                    const blurPad = 28
+                    blurHost.style.visibility = 'visible'
+                    blurHost.style.left = `${-frost.left - blurPad}px`
+                    blurHost.style.top = `${-frost.top - blurPad}px`
+                    blurHost.style.width = `${layout.size + blurPad * 2}px`
+                    blurHost.style.height = `${layout.size + blurPad * 2}px`
+                    blurHost.style.filter = 'blur(28px) saturate(2)'
+
+                    blurScaled.style.left = `${layout.half - layout.cx + blurPad}px`
+                    blurScaled.style.top = `${layout.half - layout.cy + blurPad}px`
+                    blurScaled.style.width = `${window.innerWidth}px`
+                    blurScaled.style.height = `${window.innerHeight}px`
+                    blurScaled.style.transform = `scale(${combinedScale})`
+                    blurScaled.style.transformOrigin = `${layout.cx}px ${layout.cy}px`
+                }
+            }
+
+            this.syncHeroCursorMirrorFrostBlurClone()
+            this.syncHeroCursorMagnifierLogoEl(layout)
+        },
+        syncHeroCursorMagnifierLogoEl(layout) {
+            const logoEl = this.$refs.heroCursorMagnifierLogo
+            if (!(logoEl instanceof HTMLImageElement)) return
+
+            if (!layout) {
+                logoEl.style.visibility = 'hidden'
+                return
+            }
+
+            const liveLogo = this.$el?.querySelector('.portfolio-top-bar .logo')
+            const liveLogoBlock = this.$el?.querySelector('.portfolio-top-bar .logo-block')
+            if (!liveLogo || !liveLogoBlock) {
+                logoEl.style.visibility = 'hidden'
+                return
+            }
+
+            const logoRect = liveLogo.getBoundingClientRect()
+            const blockRect = liveLogoBlock.getBoundingClientRect()
+            if (logoRect.width <= 0 || logoRect.height <= 0) {
+                logoEl.style.visibility = 'hidden'
+                return
+            }
+
+            if (!magnifierIntersectsLayout(layout, blockRect)) {
+                logoEl.style.visibility = 'hidden'
+                return
+            }
+
+            const logoStage = magnifierStageRectFromViewportRect(layout, logoRect)
+            const src = liveLogo.currentSrc || liveLogo.getAttribute('src')
+            if (src && logoEl.src !== src) {
+                logoEl.src = src
+            }
+
+            logoEl.style.visibility = 'visible'
+            logoEl.style.left = `${logoStage.left}px`
+            logoEl.style.top = `${logoStage.top}px`
+            logoEl.style.width = `${logoStage.width}px`
+            logoEl.style.height = `${logoStage.height}px`
+        },
+        syncHeroCursorMirrorTopBarChrome() {
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            const chromeRoot = this.heroCursorMirrorTopBarClone
+            const live = source?.querySelector('.top-bar')
+            const mirrored = chromeRoot?.querySelector('.top-bar')
+            if (!live || !mirrored) return
+
+            mirrored.className = live.className
+
+            const liveRect = live.getBoundingClientRect()
+            mirrored.style.position = 'absolute'
+            mirrored.style.left = `${liveRect.left}px`
+            mirrored.style.top = `${liveRect.top}px`
+            mirrored.style.width = `${liveRect.width}px`
+            mirrored.style.height = `${liveRect.height}px`
+            mirrored.style.right = 'auto'
+            mirrored.style.bottom = 'auto'
+            mirrored.style.zIndex = '100'
+            mirrored.style.background = 'transparent'
+            mirrored.style.backdropFilter = 'none'
+            mirrored.style.webkitBackdropFilter = 'none'
+            mirrored.style.boxShadow = 'none'
+            mirrored.style.transition = 'none'
+
+            const liveNav = live.querySelector('.nav')
+            const mirrorNav = mirrored.querySelector('.nav')
+            if (liveNav && mirrorNav) {
+                mirrorNav.className = liveNav.className
+            }
+
+            const liveWork = live.querySelector('.nav-link--work')
+            const mirrorWork = mirrored.querySelector('.nav-link--work')
+            if (liveWork && mirrorWork) {
+                mirrorWork.className = liveWork.className
+                for (const prop of ['--nav-work-line-clip-left', '--nav-work-line-clip-right']) {
+                    const value = liveWork.style.getPropertyValue(prop)
+                    if (value) mirrorWork.style.setProperty(prop, value)
+                    else mirrorWork.style.removeProperty(prop)
+                }
+            }
+
+            const liveRoot = live.closest('.portfolio-top-bar')
+            const mirrorRoot = mirrored.closest('.portfolio-top-bar')
+            if (liveRoot && mirrorRoot) {
+                const navCenter = liveRoot.style.getPropertyValue('--nav-work-w-center')
+                if (navCenter) mirrorRoot.style.setProperty('--nav-work-w-center', navCenter)
+                else mirrorRoot.style.removeProperty('--nav-work-w-center')
+            }
+
+            if (mirrorRoot && source) {
+                const pageStyles = getComputedStyle(source)
+                mirrorRoot.style.setProperty(
+                    '--portfolio-decor-line-x',
+                    pageStyles.getPropertyValue('--portfolio-decor-line-x').trim()
+                )
+                mirrorRoot.style.position = 'absolute'
+                mirrorRoot.style.left = '0'
+                mirrorRoot.style.top = '0'
+                mirrorRoot.style.width = `${window.innerWidth}px`
+                mirrorRoot.style.height = '0'
+                mirrorRoot.style.pointerEvents = 'none'
+            }
+        },
+        syncHeroCursorMirrorClone() {
+            const source = this.$el?.classList?.contains('portfolio-page') ? this.$el : null
+            const clone = this.heroCursorMirrorClone
+            if (!source || !clone) return null
+
+            const sourceRect = source.getBoundingClientRect()
+            clone.style.position = 'absolute'
+            clone.style.left = `${sourceRect.left}px`
+            clone.style.top = `${sourceRect.top}px`
+            clone.style.width = `${source.offsetWidth}px`
+            clone.style.minHeight = `${source.offsetHeight}px`
+
+            this.syncHeroCursorMirrorFrostBlurClone()
+
+            const cloneHost = this.$refs.heroCursorMirrorRoot
+            if (cloneHost instanceof Element && this.heroCursorMagnifierLayout) {
+                cloneHost.style.opacity = String(this.heroCursorMagnifierLayout.opacity)
+            } else if (cloneHost instanceof Element) {
+                cloneHost.style.removeProperty('opacity')
+            }
+
+            return sourceRect
+        },
+        updateHeroCursorMagnifierLayout() {
+            // Touch disk never uses the link/project magnifier — but still paints
+            // live hover (case-study curve + About CTA blue) under the disk.
+            if (this.isHeroTouchDiskMode()) {
+                if (this.heroCursorMagnifierLayout) {
+                    this.heroCursorMagnifierLayout = null
+                    this.syncHeroCursorMagnifierTopBarFrostEl(null)
+                }
+                if (this.isHeroTouchDiskCornerParked()) {
+                    this.clearHeroCursorMirrorHoverState()
+                    return
+                }
+                this.syncHeroCursorMirrorHoverState(
+                    this.heroCursorGlassPos.x,
+                    this.heroCursorGlassPos.y
+                )
+                return
+            }
+            const rangeMix = this.heroCursorRangeMix
+            const cornerParked = this.isHeroTouchDiskCornerParked()
+            const hoverMix =
+                this.heroCursorInRange || cornerParked ? 0 : this.heroCursorHoverMix
+            const { expand } = heroCursorHoverMorph(hoverMix)
+            if (
+                expand <= 0.02 ||
+                cornerParked ||
+                !this.heroCursorMirrorClone ||
+                this.heroCursorMirrorAwaitingRefresh
+            ) {
+                this.heroCursorMagnifierLayout = null
+                this.syncHeroCursorMagnifierTopBarFrostEl(null)
+                this.clearHeroCursorMirrorHoverState()
+                return
+            }
+
+            const magnifyScale = 1 + HERO_CURSOR_MAGNIFY_BOOST * expand
+            const forwardScale = 1 + heroCursorHoverDiskForward(hoverMix)
+            const combinedScale = magnifyScale * forwardScale
+            const { x, y } = this.heroCursorGlassPos
+            const size = heroCursorDotDiskSize(hoverMix)
+            const half = size / 2
+
+            this.syncHeroCursorMirrorClone()
+            this.syncHeroCursorMirrorTopBarChrome()
+            this.syncHeroCursorMirrorHoverState(
+                this.heroCursorGlassPos.x,
+                this.heroCursorGlassPos.y
+            )
+
+            const liveTopBar = this.$el?.querySelector('.portfolio-top-bar .top-bar')
+            let topBarFrost = null
+            if (liveTopBar && !liveTopBar.classList.contains('top-bar--hidden')) {
+                const barRect = liveTopBar.getBoundingClientRect()
+                const frostLeft = half + (barRect.left - x) * combinedScale
+                const frostTop = half + (barRect.top - y) * combinedScale
+                const frostWidth = barRect.width * combinedScale
+                const frostHeight = barRect.height * combinedScale
+                const classes = {}
+                for (const cls of liveTopBar.classList) {
+                    if (cls.startsWith('top-bar--')) {
+                        classes[cls] = true
+                    }
+                }
+                topBarFrost = {
+                    left: frostLeft,
+                    top: frostTop,
+                    width: frostWidth,
+                    height: frostHeight,
+                    visible:
+                        frostLeft < size &&
+                        frostTop < size &&
+                        frostLeft + frostWidth > 0 &&
+                        frostTop + frostHeight > 0,
+                    classes,
+                }
+            }
+
+            this.heroCursorMagnifierLayout = {
+                windowLeft: x - half,
+                windowTop: y - half,
+                size,
+                half,
+                scale: magnifyScale,
+                forwardScale,
+                cx: x,
+                cy: y,
+                opacity: expand * (1 - rangeMix),
+                topBarFrost,
+            }
+            this.syncHeroCursorMagnifierTopBarFrostEl(this.heroCursorMagnifierLayout)
+        },
+        destroyHeroCursorMirror() {
+            this.clearHeroCursorMirrorHoverState()
+            this.heroCursorMirrorAwaitingRefresh = false
+            this.syncHeroCursorMagnifierTopBarFrostEl(null)
+            const root = this.$refs.heroCursorMirrorRoot
+            if (root) root.innerHTML = ''
+            const frostBlurRoot = this.$refs.heroCursorMirrorFrostBlurRoot
+            if (frostBlurRoot) frostBlurRoot.innerHTML = ''
+            const topBarRoot = this.$refs.heroCursorMirrorTopBarRoot
+            if (topBarRoot) topBarRoot.innerHTML = ''
+            this.heroCursorMirrorClone = null
+            this.heroCursorMirrorFrostBlurClone = null
+            this.heroCursorMirrorTopBarClone = null
+            this.heroCursorMagnifierLayout = null
+            this.heroCursorMirrorHoverTarget = 0
+        },
+        setHeroIntroPointer(x, y, { showBall = false, immediate = false } = {}) {
+            if (showBall) {
+                this.heroCursorPos = { x, y }
+                this.heroCursorActive = true
+            }
+            this.heroIntroPointer = { x, y }
+
+            if (this.isHeroIntroMobileTouch()) {
+                if (immediate) {
+                    if (this.heroIntroPointerRaf != null) {
+                        cancelAnimationFrame(this.heroIntroPointerRaf)
+                        this.heroIntroPointerRaf = null
+                    }
+                    this.applyHeroIntroPointerShift()
+                    return
+                }
+                if (this.heroIntroPointerRaf != null) return
+                this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                    this.heroIntroPointerRaf = null
+                    this.applyHeroIntroPointerShift()
+                })
+                return
+            }
+
+            if (this.heroIntroPointerRaf != null) return
+            this.heroIntroPointerRaf = requestAnimationFrame(() => {
+                this.heroIntroPointerRaf = null
+                this.applyHeroIntroPointerShift()
+            })
+        },
+        clearHeroIntroTapLinger() {
+            clearTimeout(this.heroIntroTapLingerTimer)
+            this.heroIntroTapLingerTimer = null
+        },
+        releaseHeroIntroMobileTouch({ linger = false, pointerId = null } = {}) {
+            this.disableHeroIntroTouchGuard()
+            this.releaseHeroIntroPointerCapture(pointerId ?? this.heroIntroActivePointerId)
+            this.heroIntroTouchStart = null
+            this.heroIntroTouchMode = null
+            this.heroIntroActivePointerId = null
+            this.setHeroIntroStrokeActive(false)
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+
+            if (!linger || !this.heroIntroPointer) {
+                this.clearHeroIntroTapLinger()
+                this.heroIntroPointer = null
+                this.clearHeroIntroPointerShift()
+                return
+            }
+
+            this.applyHeroIntroPointerShift()
+            this.clearHeroIntroTapLinger()
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const lingerMs = intro
+                ? parseCssPx(getComputedStyle(intro), '--hero-intro-tap-linger', 260)
+                : 260
+            this.heroIntroTapLingerTimer = setTimeout(() => {
+                this.heroIntroTapLingerTimer = null
+                this.heroIntroPointer = null
+                this.setHeroIntroStrokeActive(false)
+                this.clearHeroIntroPointerShift()
+            }, lingerMs)
+        },
+        onHeroPointerEndHandlerImpl({ preserveTouchDisk = true } = {}) {
+            if (this.heroCursorBootLocked) return
+            if (preserveTouchDisk && this.isHeroTouchDiskMode()) return
+
+            this.disableHeroIntroTouchGuard()
+            this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
+            this.heroIntroTouchStart = null
+            this.heroIntroTouchMode = null
+            this.setHeroIntroStrokeActive(false)
+            this.clearHeroIntroTapLinger()
+            this.heroIntroActivePointerId = null
+            this.heroCursorActive = false
+            this.heroCursorInRange = false
+            this.heroCursorRangeTight = false
+            this.heroCursorRangeMix = 0
+            this.heroCursorHoverMix = 0
+            this.heroCursorOverHover = false
+            this.heroCursorHoverLockEl = null
+            this.heroCursorPressTarget = null
+            this.heroCursorIntroGlassHandoff = false
+            this.stopHeroTouchDisk()
+            this.syncHeroCursorDocumentClass()
+            this.stopHeroCursorGlassFollow()
+            if (this.heroIntroPointerRaf != null) {
+                cancelAnimationFrame(this.heroIntroPointerRaf)
+                this.heroIntroPointerRaf = null
+            }
+            this.heroIntroPointer = null
+            this.clearHeroIntroPointerShift()
+        },
+        onHeroPointerDownHandler(event) {
+            // Magnifier clone cannot use :active — mirror press on About/CTA targets.
+            if (
+                this.isHeroIntroFinePointer() &&
+                this.heroIntroLetterMode &&
+                event.pointerType === 'mouse' &&
+                event.button === 0 &&
+                event.target instanceof Element
+            ) {
+                const target = event.target.closest(HERO_CURSOR_HOVER_TARGET_SELECTOR)
+                if (target && this.$el?.contains(target)) {
+                    this.heroCursorPressTarget = target
+                    this.syncHeroCursorMirrorHoverState(
+                        this.heroCursorGlassPos.x,
+                        this.heroCursorGlassPos.y
+                    )
+                }
+            }
+
+            if (this.heroTouchDiskDragging) return
+            // Coarse pointers: letter push only via the touch disk — not finger-on-text.
+            if (this.isHeroTouchDiskMode()) return
+
+            if (!this.canHeroIntroPointerPlay()) return
+            if (!this.isHeroIntroMobileTouch()) return
+            if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return
+            if (!this.isHeroIntroPointerNear(event.clientX, event.clientY)) return
+
+            this.clearHeroIntroTapLinger()
+            this.heroIntroActivePointerId = event.pointerId
+            this.heroIntroTouchStart = { x: event.clientX, y: event.clientY }
+            this.heroIntroTouchMode = 'stroke'
+            this.setHeroIntroStrokeActive(true)
+            this.captureHeroIntroPointer(event)
+            if (event.pointerType === 'touch') {
+                this.enableHeroIntroTouchGuard()
+            }
+            this.setHeroIntroPointer(event.clientX, event.clientY, { immediate: true })
+        },
+        onHeroPointerUpHandler(event) {
+            if (
+                this.heroCursorPressTarget &&
+                (event.type === 'pointercancel' ||
+                    event.pointerType !== 'mouse' ||
+                    event.button === 0)
+            ) {
+                this.clearHeroCursorPressTarget()
+            }
+
+            if (this.heroIntroActivePointerId !== event.pointerId) return
+            if (this.isHeroIntroMobileTouch()) {
+                const wasStroke = this.heroIntroTouchMode === 'stroke'
+                this.releaseHeroIntroMobileTouch({
+                    linger: wasStroke && event.type !== 'pointercancel',
+                    pointerId: event.pointerId,
+                })
+                return
+            }
+            this.onHeroPointerEndHandlerImpl()
+        },
+        onHeroPointerMoveHandler(event) {
+            if (this.isHeroIntroFinePointer() && event.pointerType === 'mouse' && this.heroIntroLetterMode) {
+                this.updateHeroFinePointer(event.clientX, event.clientY, {
+                    introEffects: this.canHeroIntroPointerPlay(),
+                })
+                return
+            }
+
+            if (this.isHeroTouchDiskMode()) return
+
+            if (!this.canHeroIntroPointerPlay()) return
+
+            if (
+                this.isHeroIntroMobileTouch() &&
+                this.heroIntroActivePointerId === event.pointerId
+            ) {
+                if (this.heroIntroTouchMode === 'swipe') return
+
+                const gesture = this.classifyHeroIntroTouchGesture(event)
+                if (gesture === 'swipe') {
+                    this.enterHeroIntroSwipeMode(event.pointerId)
+                    return
+                }
+
+                this.heroIntroTouchMode = 'stroke'
+                this.setHeroIntroStrokeActive(true)
+                this.setHeroIntroPointer(event.clientX, event.clientY)
+            }
+        },
+        onHeroPointerScrollHandler() {
+            if (!this.canHeroIntroPointerPlay() && !this.isHeroTouchDiskMode()) return
+            if (this.isHeroIntroFinePointer()) {
+                if (!this.heroCursorActive) return
+
+                // Scrolling moves content under a stationary cursor — not intentional hover.
+                this.heroCursorScrollHoverSuppressUntil = performance.now() + 140
+                this.heroCursorHoverLockEl = null
+                this.heroCursorOverHover = false
+                this.heroCursorHoverMix *= 0.45
+
+                if (this.heroCursorMirrorHoverTarget === 1) {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            if (this.heroCursorMirrorHoverTarget !== 1) return
+                            this.refreshHeroCursorMirror()
+                            this.updateHeroCursorMagnifierLayout()
+                        })
+                    })
+                }
+
+                if (this.heroIntroScrollRaf != null) return
+                this.heroIntroScrollRaf = requestAnimationFrame(() => {
+                    this.heroIntroScrollRaf = null
+
+                    if (!this.heroCursorActive) return
+
+                    const { x, y } = this.heroCursorPos
+                    this.updateHeroFinePointer(x, y, { skipHover: true })
+                })
+                return
+            }
+
+            if (!this.isHeroTouchDiskMode() || !this.heroCursorActive) return
+
+            this.heroCursorScrollHoverSuppressUntil = performance.now() + 140
+            this.heroCursorHoverLockEl = null
+            this.heroCursorOverHover = false
+            this.heroCursorHoverMix *= 0.45
+
+            if (this.heroIntroScrollRaf != null) return
+            this.heroIntroScrollRaf = requestAnimationFrame(() => {
+                this.heroIntroScrollRaf = null
+                if (!this.heroCursorActive || !this.isHeroTouchDiskMode()) return
+
+                this.updateHeroTouchDiskZoneFromScroll()
+
+                // Outside hero: pin the disk in the lower-right corner (fixed, like the pill).
+                if (this.heroTouchDiskZone !== 'hero') {
+                    if (this.heroTouchDiskDragging) {
+                        this.endHeroTouchDiskDrag()
+                    }
+                    if (
+                        this.heroTouchDiskMenuOpen ||
+                        this.heroTouchDiskExpand > 0.02
+                    ) {
+                        this.closeHeroTouchDiskMenu()
+                    }
+                    this.heroTouchDiskHasMoved = false
+                    this.heroTouchDiskParkZone = this.heroTouchDiskZone
+                    this.clearHeroTouchDiskMorph()
+                    const pos = this.getHeroTouchDiskRestPos()
+                    this.heroCursorPos = { ...pos }
+                    this.heroCursorGlassPos = { ...pos }
+                    this.updateHeroFinePointer(pos.x, pos.y, {
+                        introEffects: false,
+                        skipHover: true,
+                    })
+                    // Re-assert after updateHeroFinePointer (it may start a soft chase).
+                    this.heroCursorGlassPos = { ...pos }
+                    this.refreshHeroTouchDiskStage()
+                    return
+                }
+
+                // Still on hero and finger-down — don't fight the drag.
+                if (this.heroTouchDiskDragging) return
+
+                if (!this.heroTouchDiskHasMoved) {
+                    this.syncHeroTouchDiskRestPosition()
+                    return
+                }
+
+                this.refreshHeroTouchDiskStage()
+                if (!this.heroTouchDiskOnStage) return
+
+                const { x, y } = this.heroCursorPos
+                this.updateHeroFinePointer(x, y, {
+                    introEffects: this.touchDiskTextEffectsEnabled(),
+                    skipHover: true,
+                })
+                if (this.heroTouchDiskMenuOpen || this.heroTouchDiskExpand > 0.02) {
+                    this.syncHeroTouchDiskMenuFrostLive()
+                }
+            })
+        },
+        applyHeroIntroPointerShift() {
+            const pointer = this.heroIntroPointer
+            if (!pointer) return
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (intro && this.canHeroIntroPointerPlay()) {
+                const introStyles = getComputedStyle(intro)
+                const radius = parseCssPx(introStyles, '--hero-intro-hover-radius', 120)
+                const maxShift = parseCssPx(introStyles, '--hero-intro-hover-shift', 84)
+                const maxLift = parseCssPx(introStyles, '--hero-intro-hover-lift', 32)
+                const forceExp = parseCssPx(introStyles, '--hero-intro-hover-force-exp', 2.65)
+                const liftExp = parseCssPx(introStyles, '--hero-intro-hover-lift-exp', 2.2)
+                const minForce = parseCssPx(introStyles, '--hero-intro-hover-min-force', 0)
+                const radiusExitMult = parseCssPx(introStyles, '--hero-intro-hover-radius-exit-mult', 1)
+                // Touch-disk glass: field center = visible ball (not a lagged cursor target).
+                // Also drop the upward lift so the hole stays centered on the ball.
+                const touchGlass =
+                    this.isHeroTouchDiskMode() &&
+                    (this.heroCursorIntroGlassHandoff || this.heroCursorInRange)
+                const x = touchGlass
+                    ? this.heroCursorGlassPos?.x ?? pointer.x
+                    : pointer.x
+                const y = touchGlass
+                    ? this.heroCursorGlassPos?.y ?? pointer.y
+                    : pointer.y
+                const menuMorph =
+                    this.isHeroTouchDiskMode() &&
+                    !this.heroTouchDiskMenuFrostDual &&
+                    (this.heroTouchDiskExpand > 0.02 || this.heroTouchDiskMenuOpen) &&
+                    // Among hero text the pill yields to glass — keep the circular field.
+                    this.getHeroIntroTextProximityMix(x, y) < HERO_CURSOR_INTRO_GLASS_ON
+                const frost = menuMorph ? this.getHeroTouchDiskMenuLiveFrostExtents() : null
+                // Same reach / knock as the glass ball, shaped to the pill outline.
+                const softPad = frost
+                    ? Math.max(24, radius - HERO_CURSOR_GLASS_IDLE_SIZE / 2)
+                    : 0
+                const fieldSpan = frost ? softPad + frost.halfH : 0
+                const morphShift = maxShift
+                // Radial-only for touch glass so the void rings the ball; pill keeps a little lift.
+                const morphLift = frost ? maxLift * 0.35 : touchGlass ? 0 : maxLift
+                const morphForceExp = forceExp
+                const morphLiftExp = liftExp
+
+                const chars = [...intro.querySelectorAll('.hero-intro-char')]
+                const layout = this.heroIntroRestLayout
+                const introRect = intro.getBoundingClientRect()
+                // Prefer frozen rest centers when available — live rects mid-transition
+                // feed back into the force field and vibrate. Drop the cache if the
+                // intro reflowed (resize) so we never push against stale locals.
+                const useRest =
+                    layout &&
+                    Array.isArray(layout.chars) &&
+                    layout.chars.length === chars.length &&
+                    Math.abs(layout.introW - introRect.width) < 1.5 &&
+                    Math.abs(layout.introH - introRect.height) < 1.5
+
+                // Prefer frozen rest centers (one intro rect) over 156× getBoundingClientRect/frame.
+                let samples
+                if (useRest) {
+                    samples = chars.map((el, i) => {
+                        const local = layout.chars[i]
+                        return {
+                            el,
+                            skip: false,
+                            cx: introRect.left + local.x,
+                            cy: introRect.top + local.y,
+                            wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                        }
+                    })
+                } else {
+                    samples = []
+                    for (const el of chars) {
+                        const rect = el.getBoundingClientRect()
+                        if (rect.width <= 0 || rect.height <= 0) {
+                            samples.push({ el, skip: true })
+                            continue
+                        }
+                        const pushX = parseFloat(el.style.getPropertyValue('--hero-intro-push-x')) || 0
+                        const pushY = parseFloat(el.style.getPropertyValue('--hero-intro-push-y')) || 0
+                        samples.push({
+                            el,
+                            skip: false,
+                            cx: rect.left + rect.width / 2 - pushX,
+                            cy: rect.top + rect.height / 2 - pushY,
+                            wasPushed: el.classList.contains('hero-intro-char--pushed'),
+                        })
+                    }
+                }
+
+                for (const sample of samples) {
+                    const { el } = sample
+                    if (sample.skip) {
+                        el.classList.remove('hero-intro-char--pushed')
+                        el.style.removeProperty('--hero-intro-push-x')
+                        el.style.removeProperty('--hero-intro-push-y')
+                        continue
+                    }
+
+                    let force = 0
+                    let lift = 0
+                    let nx = 0
+                    let ny = -1
+                    let inside = false
+
+                    if (frost) {
+                        const { sdf, nx: snx, ny: sny } = heroTouchDiskStadiumField(
+                            sample.cx,
+                            sample.cy,
+                            x,
+                            y,
+                            frost.left,
+                            frost.right,
+                            frost.halfH,
+                        )
+                        const effectivePad = sample.wasPushed
+                            ? softPad * radiusExitMult
+                            : softPad
+                        if (sdf < effectivePad && fieldSpan > 0) {
+                            inside = true
+                            const t = Math.max(
+                                0,
+                                Math.min(1, (effectivePad - sdf) / fieldSpan),
+                            )
+                            force = Math.max(t ** morphForceExp, minForce) * morphShift
+                            lift = Math.max(t ** morphLiftExp, minForce) * morphLift
+                            nx = snx
+                            ny = sny
+                        }
+                    } else {
+                        const dx = sample.cx - x
+                        const dy = sample.cy - y
+                        const dist = Math.hypot(dx, dy)
+                        const effectiveRadius = sample.wasPushed
+                            ? radius * radiusExitMult
+                            : radius
+
+                        if (dist < effectiveRadius) {
+                            inside = true
+                            const t = dist <= 0 ? 1 : 1 - dist / radius
+                            force = Math.max(t ** morphForceExp, minForce) * morphShift
+                            lift = Math.max(t ** morphLiftExp, minForce) * morphLift
+                            if (dist <= 0.5) {
+                                nx = 0
+                                ny = -1
+                            } else {
+                                nx = dx / dist
+                                ny = dy / dist
+                            }
+                        }
+                    }
+
+                    if (inside) {
+                        el.classList.add('hero-intro-char--pushed')
+                        el.style.setProperty('--hero-intro-push-x', `${nx * force}px`)
+                        el.style.setProperty('--hero-intro-push-y', `${ny * force - lift}px`)
+                    } else {
+                        el.classList.remove('hero-intro-char--pushed')
+                        el.style.removeProperty('--hero-intro-push-x')
+                        el.style.removeProperty('--hero-intro-push-y')
+                    }
+                }
+            } else if (intro) {
+                for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                    el.classList.remove('hero-intro-char--pushed')
+                    el.style.removeProperty('--hero-intro-push-x')
+                    el.style.removeProperty('--hero-intro-push-y')
+                }
+            }
+
+            this.applyFooterPointerShift()
+        },
+        clearHeroIntroPointerShift() {
+            this.heroIntroPointer = null
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (intro) {
+                for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                    el.classList.remove('hero-intro-char--pushed')
+                    el.style.removeProperty('--hero-intro-push-x')
+                    el.style.removeProperty('--hero-intro-push-y')
+                }
+            }
+            this.clearFooterPointerShift()
+        },
+        onHeroDecorResize() {
+            requestAnimationFrame(() => {
+                const width = window.innerWidth
+                const mobileLocked = this.lockedMobileHeroWidth != null
+                const widthChanged = mobileLocked && this.lockedMobileHeroWidth !== width
+
+                // Height-only resize = URL bar. Touching hero layout or remasuring
+                // glyphs here is what made the intro jump and the anim feel unstable.
+                if (!widthChanged && mobileLocked) {
+                    this.updateHeroLocationVisibility()
+                    return
+                }
+
+                this.lockHeroViewportHeight({ force: widthChanged })
+                this.syncDecorLineX()
+                this.syncWorkGridSlots()
+                this.syncHeroDecorHeight()
+                this.syncProjectCaptionLineOffset()
+                this.syncAboutLocationTextClip()
+                if (!this.pageRevealed) {
+                    this.syncHeroIntroCharColumns()
+                }
+                this.updateHeroLocationVisibility()
+
+                // Glass↔letter push is keyed off frozen glyph locals. Any real
+                // layout resize (desktop width/height, mobile width) must reset
+                // the field and remasure — otherwise letters part around a ghost.
+                // Mid-dissipate/reconsolidate: snap clear, remasure parked layout,
+                // then re-apply from scroll (instant) so return-to-top still works.
+                const wasInFlight =
+                    this.heroIntroDissipated || this.heroIntroReconsolidating
+                this.clearHeroIntroPointerShift()
+                this.invalidateHeroIntroRestLayout()
+                if (wasInFlight) {
+                    this.clearHeroIntroDissipate()
+                }
+                this.captureHeroIntroRestLayout()
+                this.updateHeroIntroDissipateFromScroll({
+                    forcePrepare: true,
+                    instant: wasInFlight,
+                })
+
+                // Re-seat the field from the current cursor/disk once layout is fresh.
+                if (this.heroCursorActive) {
+                    if (this.isHeroTouchDiskMode()) {
+                        if (!this.heroTouchDiskHasMoved) {
+                            this.syncHeroTouchDiskRestPosition()
+                        } else {
+                            this.clampHeroTouchDiskIntoViewport()
+                            this.syncHeroTouchDiskIntroRepel()
+                        }
+                    } else if (this.isHeroIntroFinePointer()) {
+                        const { x, y } = this.heroCursorPos
+                        this.updateHeroFinePointer(x, y, {
+                            introEffects: this.canHeroIntroPointerPlay(),
+                            skipHover: true,
+                        })
+                    }
+                }
+            })
+        },
+        canHeroIntroDissipate() {
+            return (
+                this.heroIntroLetterMode &&
+                this.pageEntranceDone &&
+                !prefersReducedMotion() &&
+                typeof window !== 'undefined' &&
+                (this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            )
+        },
+        onHeroIntroDissipateScrollHandler() {
+            this.updateDesktopDecorLineGrowFromScroll()
+
+            if (
+                !this.heroIntroLetterMode ||
+                !this.pageRevealed ||
+                prefersReducedMotion() ||
+                typeof window === 'undefined' ||
+                !(this.heroIntroLetterMq?.matches ?? window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            ) {
+                return
+            }
+
+            // Scroll away before the from-right cascade finishes: abort cascade
+            // (--settled) and let dissipate take priority.
+            if (!this.pageEntranceDone) {
+                const y = Math.max(
+                    0,
+                    window.scrollY || document.documentElement.scrollTop || 0
+                )
+                if (y <= 8) return
+                this.markPageEntranceDone({ prioritizeDissipate: true })
+                return
+            }
+
+            if (this.heroIntroDissipateRaf != null) return
+            this.heroIntroDissipateRaf = requestAnimationFrame(() => {
+                this.heroIntroDissipateRaf = null
+                this.updateHeroIntroDissipateFromScroll()
+                this.updateTabletDecorLineGrowFromScroll()
+            })
+        },
+        /**
+         * Snapshot the intro’s resting box + each glyph’s center (intro-local).
+         * Prefer calling with preAnimation:true before the cascade starts so dissipate
+         * always references the true parked layout — not mid-flight cascade poses.
+         */
+        captureHeroIntroRestLayout({ preAnimation = false } = {}) {
+            if (!this.heroIntroLetterMode || prefersReducedMotion()) {
+                if (!preAnimation) this.heroIntroRestLayout = null
+                return false
+            }
+            if (!preAnimation) {
+                if (this.heroIntroDissipated || this.heroIntroReconsolidating) {
+                    return false
+                }
+                // Already have the pre-cascade snapshot — keep it.
+                if (this.heroIntroRestLayout) return true
+            }
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro) {
+                this.heroIntroRestLayout = null
+                return false
+            }
+
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            if (!chars.length) {
+                this.heroIntroRestLayout = null
+                return false
+            }
+
+            // Always pin glyphs to rest for the read — cascade / dissipate / push
+            // transforms would otherwise skew centers.
+            intro.classList.add('hero-intro--dissipate-measure')
+            void intro.offsetWidth
+
+            const introRect = intro.getBoundingClientRect()
+            if (introRect.width < 1 || introRect.height < 1) {
+                intro.classList.remove('hero-intro--dissipate-measure')
+                this.heroIntroRestLayout = null
+                return false
+            }
+
+            const pageStyles = getComputedStyle(this.$el)
+            const topBarHeight = parseCssPx(pageStyles, '--top-bar-height', 86)
+            const lockedH = parseFloat(
+                this.$el?.style.getPropertyValue('--mobile-hero-height') || ''
+            )
+            const vh = Number.isFinite(lockedH) && lockedH > 0
+                ? Math.round(lockedH + topBarHeight)
+                : this.measureSmallViewportHeight()
+
+            this.heroIntroRestLayout = {
+                introW: introRect.width,
+                introH: introRect.height,
+                // Document origin ≡ viewport at scroll 0 — travel math stays stable
+                // even if we ever capture while slightly scrolled.
+                introLeft: introRect.left + (window.scrollX || 0),
+                introTop: introRect.top + (window.scrollY || 0),
+                vw: window.innerWidth,
+                vh,
+                chars: chars.map((el) => {
+                    const r = el.getBoundingClientRect()
+                    return {
+                        x: r.left + r.width / 2 - introRect.left,
+                        y: r.top + r.height / 2 - introRect.top,
+                    }
+                }),
+            }
+
+            intro.classList.remove('hero-intro--dissipate-measure')
+            return true
+        },
+        /**
+         * Radial fly-out targets from the frozen rest layout only (upper half-circle
+         * on the text-box bottom diameter). Never reads live transformed rects.
+         */
+        prepareHeroIntroDissipateTargets() {
+            if (!this.heroIntroRestLayout) {
+                if (!this.captureHeroIntroRestLayout()) {
+                    this.heroIntroDissipatePrepared = false
+                    return false
+                }
+            }
+
+            const layout = this.heroIntroRestLayout
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro || !layout) {
+                this.heroIntroDissipatePrepared = false
+                return false
+            }
+
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            if (chars.length !== layout.chars.length) {
+                // DOM changed — recapture at rest only.
+                this.heroIntroRestLayout = null
+                if (this.heroIntroDissipated || this.heroIntroReconsolidating) {
+                    this.heroIntroDissipatePrepared = false
+                    return false
+                }
+                if (!this.captureHeroIntroRestLayout()) {
+                    this.heroIntroDissipatePrepared = false
+                    return false
+                }
+                return this.prepareHeroIntroDissipateTargets()
+            }
+
+            const cx = layout.introW / 2
+            const cy = layout.introH
+            const halfW = layout.introW / 2
+            const maxRadial = Math.hypot(halfW, layout.introH) || 1
+            const vw = layout.vw
+            const vh = layout.vh
+            const margin = 48
+            let maxDelay = 0
+
+            const introStyles = getComputedStyle(intro)
+            const duration = parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
+            const stagger = parseCssTimeSec(introStyles, '--hero-intro-dissipate-stagger', 0.42)
+
+            for (let i = 0; i < chars.length; i++) {
+                const el = chars[i]
+                const { x: localX, y: localY } = layout.chars[i]
+                const px = layout.introLeft + localX
+                const py = layout.introTop + localY
+                let dx = localX - cx
+                let dy = localY - cy
+                // Keep motion in the upper semicircle (diameter = text bottom).
+                if (dy > -0.5) dy = -0.5
+
+                const len = Math.hypot(dx, dy) || 1
+                const nx = dx / len
+                const ny = dy / len
+
+                let travel = Infinity
+                if (ny < -1e-6) travel = Math.min(travel, (-margin - py) / ny)
+                if (nx > 1e-6) travel = Math.min(travel, (vw + margin - px) / nx)
+                if (nx < -1e-6) travel = Math.min(travel, (-margin - px) / nx)
+                if (!Number.isFinite(travel) || travel < 0) {
+                    travel = Math.max(vh, vw) * 0.85
+                }
+                travel *= 1.12
+
+                const existingLeave = el.style.getPropertyValue('--hero-intro-dissipate-leave-delay').trim()
+                let leaveDelay = existingLeave ? parseFloat(existingLeave) : NaN
+                if (!Number.isFinite(leaveDelay)) {
+                    const radialT = Math.min(1, len / maxRadial)
+                    // Near-center leaves first; edges lag with light jitter for async feel.
+                    leaveDelay = radialT * stagger * 0.55 + Math.random() * stagger * 0.45
+                }
+                maxDelay = Math.max(maxDelay, leaveDelay)
+
+                el.style.setProperty('--hero-intro-dissipate-x', `${(nx * travel).toFixed(1)}px`)
+                el.style.setProperty('--hero-intro-dissipate-y', `${(ny * travel).toFixed(1)}px`)
+                el.style.setProperty('--hero-intro-dissipate-leave-delay', `${leaveDelay.toFixed(3)}s`)
+                el.style.setProperty('--hero-intro-dissipate-duration', `${duration}s`)
+            }
+
+            this.heroIntroDissipateMaxDelay = maxDelay
+            this.heroIntroDissipatePrepared = true
+            if (this.heroIntroDissipated) {
+                this.applyHeroIntroDissipateDelays(true)
+            } else if (this.heroIntroReconsolidating) {
+                this.applyHeroIntroDissipateDelays(false)
+            } else {
+                for (const el of chars) {
+                    el.style.setProperty('--hero-intro-dissipate-delay', '0s')
+                }
+            }
+            return true
+        },
+        applyHeroIntroDissipateDelays(dissipating) {
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            if (!intro) return
+            const maxDelay = this.heroIntroDissipateMaxDelay
+            for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                const leave =
+                    parseFloat(el.style.getPropertyValue('--hero-intro-dissipate-leave-delay')) || 0
+                const delay = dissipating ? leave : Math.max(0, maxDelay - leave)
+                el.style.setProperty('--hero-intro-dissipate-delay', `${delay.toFixed(3)}s`)
+            }
+        },
+        setHeroIntroDissipated(active, { instant = false } = {}) {
+            if (this.heroIntroDissipated === active && !instant) return
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+
+            // Delays must be set before the class flips, or the first frame runs at 0s delay.
+            this.applyHeroIntroDissipateDelays(active)
+
+            if (instant) {
+                this.heroTouchDiskDissipateInstant = true
+            }
+            if (intro && instant) {
+                intro.classList.add('hero-intro--dissipate-instant')
+            }
+
+            if (active) {
+                // Sync class before Vue flush. Clearing push first used to start a
+                // return-to-rest transition for a frame, then fly-out — stuttery on mobile.
+                intro?.classList.add('hero-intro--dissipated')
+                intro?.classList.remove('hero-intro--reconsolidating', 'hero-intro--stroke-active')
+                this.clearHeroIntroPointerShift()
+                this.disableHeroIntroTouchGuard()
+                this.releaseHeroIntroPointerCapture(this.heroIntroActivePointerId)
+                this.heroIntroActivePointerId = null
+                this.heroIntroTouchStart = null
+                this.heroIntroTouchMode = null
+                this.heroIntroPointer = null
+                if (this.heroIntroPointerRaf != null) {
+                    cancelAnimationFrame(this.heroIntroPointerRaf)
+                    this.heroIntroPointerRaf = null
+                }
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                this.heroIntroReconsolidateTimer = null
+                this.heroIntroReconsolidating = false
+                this.closeHeroTouchDiskMenu({ instant: true })
+                if (this.heroTouchDiskDragging) {
+                    this.heroTouchDiskDragging = false
+                    this.heroTouchDiskPointerId = null
+                    this.heroTouchDiskGrabOffset = { x: 0, y: 0 }
+                }
+            } else if (intro) {
+                intro.classList.remove('hero-intro--dissipated')
+                if (!instant) intro.classList.add('hero-intro--reconsolidating')
+                else intro.classList.remove('hero-intro--reconsolidating')
+            }
+
+            this.heroIntroDissipated = active
+
+            if (!active && !instant) {
+                this.heroIntroReconsolidating = true
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                const introStyles = intro ? getComputedStyle(intro) : null
+                const duration = introStyles
+                    ? parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
+                    : 0.9
+                const waitMs = Math.ceil((this.heroIntroDissipateMaxDelay + duration) * 1000) + 40
+                // Hide tablet line as soon as letters start coming back.
+                this.hideTabletWorkDecorLine()
+                // Settle letters around the glass if it stayed among the text.
+                this.syncHeroTouchDiskIntroRepel()
+                this.heroIntroReconsolidateTimer = setTimeout(() => {
+                    this.heroIntroReconsolidateTimer = null
+                    this.heroIntroReconsolidating = false
+                    intro?.classList.remove('hero-intro--reconsolidating')
+                    this.applyHeroIntroDissipateDelays(false)
+                    // Zero delays so touch-push stays snappy after reconsolidate.
+                    const settled = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+                    if (settled) {
+                        for (const el of settled.querySelectorAll('.hero-intro-char')) {
+                            el.style.setProperty('--hero-intro-dissipate-delay', '0s')
+                        }
+                    }
+                    this.syncHeroTouchDiskIntroRepel()
+                }, waitMs)
+            } else if (!active && instant) {
+                this.heroIntroReconsolidating = false
+                clearTimeout(this.heroIntroReconsolidateTimer)
+                this.heroIntroReconsolidateTimer = null
+                this.hideTabletWorkDecorLine()
+                this.syncHeroTouchDiskIntroRepel()
+            } else {
+                // Dissipate on: reveal tablet line only after the fly-out finishes.
+                this.scheduleTabletWorkDecorReveal({ instant })
+            }
+
+            if (instant) {
+                void this.$el?.offsetWidth
+                requestAnimationFrame(() => {
+                    intro?.classList.remove('hero-intro--dissipate-instant')
+                    this.heroTouchDiskDissipateInstant = false
+                })
+            }
+        },
+        updateHeroIntroDissipateFromScroll({ instant = false, forcePrepare = false } = {}) {
+            if (!this.canHeroIntroDissipate()) {
+                // Don't wipe the pre-cascade snapshot while entrance is still playing.
+                const keepingPremeasure =
+                    this.pageRevealed &&
+                    !this.pageEntranceDone &&
+                    this.heroIntroRestLayout
+                if (
+                    !keepingPremeasure &&
+                    (this.heroIntroDissipated || this.heroIntroDissipatePrepared)
+                ) {
+                    this.clearHeroIntroDissipate()
+                }
+                return
+            }
+
+            // Apply frozen rest-layout targets only. Never remasure from live rects
+            // mid-flight (that snapped solid glyphs + unstable rays on phones).
+            const inFlight = this.heroIntroDissipated || this.heroIntroReconsolidating
+            if (!this.heroIntroDissipatePrepared || (forcePrepare && !inFlight)) {
+                if (!this.prepareHeroIntroDissipateTargets()) return
+            }
+
+            // Intro is bottom-parked in normal document flow, so scrollY is the lift
+            // off that floor. Do not key off getBoundingClientRect — a bad resting Y
+            // (or refreshing it while scrolled) made leave/return look mid-viewport.
+            const y = Math.max(
+                0,
+                window.scrollY || document.documentElement.scrollTop || 0
+            )
+            const prevY = this.heroIntroDissipateScrollY
+            this.heroIntroDissipateScrollY = y
+
+            // Direction-aware hysteresis: leave early on the way down, reconsolidate
+            // once within RETURN_PX of the top on the way up (without re-fanning while
+            // paused in the leave/return band).
+            let shouldDissipate = this.heroIntroDissipated
+            if (prevY == null) {
+                shouldDissipate = y > HERO_INTRO_DISSIPATE_LEAVE_PX
+            } else if (y > prevY) {
+                if (y > HERO_INTRO_DISSIPATE_LEAVE_PX) shouldDissipate = true
+            } else if (y < prevY) {
+                if (y <= HERO_INTRO_DISSIPATE_RETURN_PX) shouldDissipate = false
+            }
+
+            this.setHeroIntroDissipated(shouldDissipate, { instant })
+        },
+        clearHeroIntroDissipate() {
+            clearTimeout(this.heroIntroReconsolidateTimer)
+            this.heroIntroReconsolidateTimer = null
+            this.heroIntroDissipated = false
+            this.heroIntroReconsolidating = false
+            this.heroIntroDissipatePrepared = false
+            this.heroIntroDissipateMaxDelay = 0
+            this.heroIntroDissipateScrollY = null
+            this.heroTouchDiskDissipateInstant = false
+            // Keep heroIntroRestLayout — premeasured parked geometry for this viewport.
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (intro) {
+                intro.classList.remove(
+                    'hero-intro--dissipated',
+                    'hero-intro--reconsolidating',
+                    'hero-intro--dissipate-instant',
+                )
+                for (const el of intro.querySelectorAll('.hero-intro-char')) {
+                    el.style.removeProperty('--hero-intro-dissipate-x')
+                    el.style.removeProperty('--hero-intro-dissipate-y')
+                    el.style.removeProperty('--hero-intro-dissipate-delay')
+                    el.style.removeProperty('--hero-intro-dissipate-leave-delay')
+                    el.style.removeProperty('--hero-intro-dissipate-duration')
+                }
+            }
+            this.syncHeroTouchDiskIntroRepel()
+            this.hideTabletWorkDecorLine()
+        },
+        getHeroIntroDissipateWaitMs(intro, progress = 1) {
+            const introStyles = intro ? getComputedStyle(intro) : null
+            const duration = introStyles
+                ? parseCssTimeSec(introStyles, '--hero-intro-dissipate-duration', 0.9)
+                : 0.9
+            const p = Math.max(0, Math.min(1, progress))
+            return Math.ceil((this.heroIntroDissipateMaxDelay + duration) * p * 1000) + 40
+        },
+        clearTabletWorkDecorRevealTimer() {
+            clearTimeout(this.tabletWorkDecorRevealTimer)
+            this.tabletWorkDecorRevealTimer = null
+        },
+        /** Hero + bridge + about line segments that form the continuous stroke. */
+        getTabletDecorLineSegments() {
+            const root = this.$el
+            if (!root) return []
+            return ['.hero-decor', '.about-line-bridge', '.about-line']
+                .map((sel) => root.querySelector(sel))
+                .filter((el) => el && getComputedStyle(el).display !== 'none')
+        },
+        setTabletDecorSegmentReveal(el, shownPx, heightPx = 0) {
+            // Clear stylesheet clip; mask does the top→bottom wipe.
+            el.style.clipPath = 'none'
+            el.style.webkitClipPath = 'none'
+            if (shownPx <= 0.5) {
+                el.style.maskImage = 'linear-gradient(#0000 0 0)'
+                el.style.webkitMaskImage = 'linear-gradient(#0000 0 0)'
+                return
+            }
+            if (heightPx > 0 && shownPx >= heightPx - 0.5) {
+                el.style.maskImage = 'none'
+                el.style.webkitMaskImage = 'none'
+                return
+            }
+            const mask = `linear-gradient(to bottom, #000 0, #000 ${shownPx.toFixed(1)}px, #0000 ${shownPx.toFixed(1)}px)`
+            el.style.maskImage = mask
+            el.style.webkitMaskImage = mask
+        },
+        clearTabletDecorLineGrowClips() {
+            for (const el of this.getTabletDecorLineSegments()) {
+                el.style.removeProperty('clip-path')
+                el.style.removeProperty('-webkit-clip-path')
+                el.style.removeProperty('mask-image')
+                el.style.removeProperty('-webkit-mask-image')
+            }
+        },
+        /**
+         * Shared metrics for scroll/entrance grow along the hero→about stroke.
+         * Progress 0 = decor top; 1 = about-line bottom.
+         */
+        getDecorLineSpanMetrics() {
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor || window.getComputedStyle(decor).display === 'none') {
+                return null
+            }
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const intro = this.$el?.querySelector('.hero-intro')
+            const decorTop = decor.getBoundingClientRect().top
+            const endEl =
+                aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                    ? aboutLine
+                    : decor
+            const endBottom = endEl.getBoundingClientRect().bottom
+            const span = Math.max(1, endBottom - decorTop)
+            const introBottom = intro?.getBoundingClientRect().bottom ?? decorTop
+            // First-screen floor — grow at least this far during desktop entrance.
+            const heroViewportBottom = window.innerHeight
+            return {
+                decorTop,
+                span,
+                cascadeProgress: Math.min(
+                    1,
+                    Math.max(0, (introBottom - decorTop) / span),
+                ),
+                heroViewportProgress: Math.min(
+                    1,
+                    Math.max(0, (heroViewportBottom - decorTop) / span),
+                ),
+            }
+        },
+        /**
+         * Scroll-linked grow: tip tracks a point in the viewport along the
+         * hero→about stroke. Returns 0..1 (not ratcheted).
+         */
+        getTabletDecorLineScrollProgress() {
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor || window.getComputedStyle(decor).display === 'none') return 0
+
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const scrollY = Math.max(
+                0,
+                window.scrollY || document.documentElement.scrollTop || 0,
+            )
+            const decorTopDoc = decor.getBoundingClientRect().top + scrollY
+            const endEl =
+                aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                    ? aboutLine
+                    : decor
+            const aboutBottomDoc = endEl.getBoundingClientRect().bottom + scrollY
+            const span = Math.max(1, aboutBottomDoc - decorTopDoc)
+            const tipDoc = scrollY + window.innerHeight * TABLET_DECOR_GROW_TIP_VIEWPORT
+            return Math.min(1, Math.max(0, (tipDoc - decorTopDoc) / span))
+        },
+        /**
+         * Clip hero/bridge/about as one stroke: progress 0 hides all, 1 reveals
+         * through the about-line endpoint. Wipe is always top → bottom.
+         */
+        applyTabletDecorLineGrowProgress(progress) {
+            const segments = this.getTabletDecorLineSegments()
+            const decor = this.$el?.querySelector('.hero-decor')
+            if (!decor || window.getComputedStyle(decor).display === 'none') return
+
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const start = decor.getBoundingClientRect().top
+            const endRect =
+                aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                    ? aboutLine.getBoundingClientRect()
+                    : decor.getBoundingClientRect()
+            const end = Math.max(start + 1, endRect.bottom)
+            const t = Math.min(1, Math.max(0, progress))
+            const revealBottom = start + (end - start) * t
+            this.tabletDecorLineGrowProgress = t
+
+            for (const el of segments) {
+                const rect = el.getBoundingClientRect()
+                if (rect.height <= 0) {
+                    this.setTabletDecorSegmentReveal(el, 0)
+                    continue
+                }
+                const shown = Math.min(rect.height, Math.max(0, revealBottom - rect.top))
+                this.setTabletDecorSegmentReveal(el, shown, rect.height)
+            }
+            this.syncProjectCaptionLineOffset()
+        },
+        cancelDesktopDecorLineEntrance() {
+            if (this.desktopDecorEntranceRaf != null) {
+                cancelAnimationFrame(this.desktopDecorEntranceRaf)
+                this.desktopDecorEntranceRaf = null
+            }
+        },
+        unlockHeroIntroCascade() {
+            if (this.heroIntroCascadeReady) return
+            this.syncHeroIntroCharColumns()
+            this.heroIntroCascadeReady = true
+        },
+        /**
+         * Desktop: grow the line from its tip down to the hero viewport bottom.
+         * Unlock the letter cascade as soon as the stroke covers the intro text.
+         * After the hero phase, further length comes from scroll (ratcheted).
+         */
+        startDesktopDecorLineEntrance() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+
+            this.cancelDesktopDecorLineEntrance()
+            this.desktopDecorHeroGrowDone = false
+            this.heroIntroCascadeReady = false
+            this.tabletDecorCaptionsPreclear = true
+            this.syncAboutLineBridge()
+            this.syncHeroDecorHeight()
+            this.applyTabletDecorLineGrowProgress(0)
+            this.syncProjectCaptionLineOffset()
+
+            const metrics = this.getDecorLineSpanMetrics()
+            if (!metrics) {
+                this.unlockHeroIntroCascade()
+                this.desktopDecorHeroGrowDone = true
+                this.schedulePageEntranceSettle()
+                return
+            }
+
+            const target = Math.max(metrics.heroViewportProgress, metrics.cascadeProgress)
+            const cascadeAt = metrics.cascadeProgress
+
+            if (prefersReducedMotion()) {
+                this.applyTabletDecorLineGrowProgress(
+                    Math.max(target, this.getTabletDecorLineScrollProgress()),
+                )
+                this.unlockHeroIntroCascade()
+                this.desktopDecorHeroGrowDone = true
+                this.schedulePageEntranceSettle()
+                this.updateDesktopDecorLineGrowFromScroll()
+                return
+            }
+
+            const durationMs = DESKTOP_DECOR_HERO_GROW_MS
+            const startTs = performance.now()
+            let cascadeUnlocked = false
+
+            const tick = (now) => {
+                if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                    this.desktopDecorEntranceRaf = null
+                    return
+                }
+                const u = Math.min(1, (now - startTs) / durationMs)
+                // Mild ease-out so the tip is readable without feeling sluggish.
+                const eased = 1 - (1 - u) ** 2
+                const p = target * eased
+                this.applyTabletDecorLineGrowProgress(
+                    Math.max(this.tabletDecorLineGrowProgress, p),
+                )
+
+                if (!cascadeUnlocked && p >= cascadeAt - 0.002) {
+                    cascadeUnlocked = true
+                    this.unlockHeroIntroCascade()
+                    this.schedulePageEntranceSettle()
+                }
+
+                if (u < 1) {
+                    this.desktopDecorEntranceRaf = requestAnimationFrame(tick)
+                    return
+                }
+
+                this.desktopDecorEntranceRaf = null
+                this.applyTabletDecorLineGrowProgress(
+                    Math.max(this.tabletDecorLineGrowProgress, target),
+                )
+                if (!cascadeUnlocked) {
+                    this.unlockHeroIntroCascade()
+                    this.schedulePageEntranceSettle()
+                }
+                this.desktopDecorHeroGrowDone = true
+                this.syncProjectCaptionLineOffset()
+                this.updateDesktopDecorLineGrowFromScroll()
+            }
+            this.desktopDecorEntranceRaf = requestAnimationFrame(tick)
+        },
+        /**
+         * Desktop scroll grow after the hero-viewport entrance phase.
+         * Progress only increases; no retract on scroll-up.
+         */
+        updateDesktopDecorLineGrowFromScroll() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+            if (!this.pageRevealed || !this.desktopDecorHeroGrowDone) return
+            if (this.tabletDecorLineGrowProgress >= 1) return
+
+            this.syncAboutLineBridge()
+            const next = Math.max(
+                this.tabletDecorLineGrowProgress,
+                this.getTabletDecorLineScrollProgress(),
+            )
+            if (next <= this.tabletDecorLineGrowProgress) return
+            this.applyTabletDecorLineGrowProgress(next)
+        },
+        /**
+         * Advance the tablet decor grow from scroll. Progress only increases
+         * (no retract on scroll-up); reconsolidate resets via hide.
+         */
+        updateTabletDecorLineGrowFromScroll() {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) return
+            if (!this.tabletWorkDecorReady) return
+            if (this.tabletDecorLineGrowProgress >= 1) return
+
+            this.syncAboutLineBridge()
+            const next = Math.max(
+                this.tabletDecorLineGrowProgress,
+                this.getTabletDecorLineScrollProgress(),
+            )
+            if (next <= this.tabletDecorLineGrowProgress) return
+            this.applyTabletDecorLineGrowProgress(next)
+        },
+        /**
+         * Show: sync to scroll (ratchet). Hide / instant: snap. Retract only on hide
+         * (reconsolidate) — never from scrolling up.
+         */
+        syncTabletDecorLineGrow({ show, instant = false } = {}) {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                // Desktop owns its grow masks — don't clear them from tablet sync.
+                return
+            }
+
+            this.syncAboutLineBridge()
+
+            if (!show) {
+                this.applyTabletDecorLineGrowProgress(0)
+                this.syncProjectCaptionLineOffset()
+                return
+            }
+
+            if (instant || prefersReducedMotion()) {
+                const p = Math.max(
+                    this.tabletDecorLineGrowProgress,
+                    this.getTabletDecorLineScrollProgress(),
+                    prefersReducedMotion() ? 1 : 0,
+                )
+                this.applyTabletDecorLineGrowProgress(p)
+                this.syncProjectCaptionLineOffset()
+                return
+            }
+
+            this.updateTabletDecorLineGrowFromScroll()
+            // If still at 0 (scrolled very little), paint the empty mask so CSS
+            // default isn't fighting a missing inline style.
+            if (this.tabletDecorLineGrowProgress <= 0) {
+                this.applyTabletDecorLineGrowProgress(0)
+            }
+            this.syncProjectCaptionLineOffset()
+        },
+        /** Re-clip / hide the full tablet line (reconsolidate start / clear). */
+        hideTabletWorkDecorLine() {
+            this.clearTabletWorkDecorRevealTimer()
+            this.tabletWorkDecorReady = false
+            this.tabletDecorCaptionsPreclear = false
+            this.syncTabletWorkDecorVisibility({ instant: true })
+        },
+        /**
+         * After dissipate is partly clear, unlock scroll-linked grow from the hero
+         * top through about. Instant dissipate snaps to the current scroll progress.
+         */
+        scheduleTabletWorkDecorReveal({ instant = false } = {}) {
+            this.clearTabletWorkDecorRevealTimer()
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) return
+
+            if (instant) {
+                this.tabletDecorCaptionsPreclear = true
+                this.tabletWorkDecorReady = true
+                this.syncTabletWorkDecorVisibility({ instant: true })
+                return
+            }
+
+            // Keep the stroke clipped, but start shifting captions immediately so
+            // padding has already moved by the time the grow tip reaches work.
+            this.tabletWorkDecorReady = false
+            this.tabletDecorCaptionsPreclear = true
+            this.syncTabletWorkDecorVisibility({ instant: true })
+            this.$nextTick(() => this.syncProjectCaptionLineOffset())
+
+            const intro = this.$el?.querySelector('.hero-intro.hero-intro--chars')
+            const waitMs = this.getHeroIntroDissipateWaitMs(intro, 0.12)
+            this.tabletWorkDecorRevealTimer = setTimeout(() => {
+                this.tabletWorkDecorRevealTimer = null
+                if (!this.heroIntroDissipated || this.heroIntroReconsolidating) return
+                this.tabletWorkDecorReady = true
+                this.syncTabletWorkDecorVisibility({ instant: false })
+            }, waitMs)
+        },
+        /**
+         * Tablet-mobile (501–799): no static work run. The full hero→about stroke
+         * stays clipped until dissipate, then grows with scroll (ratchet; retract
+         * only on reconsolidate).
+         */
+        syncTabletWorkDecorVisibility({ instant = false } = {}) {
+            if (typeof window === 'undefined') return
+            if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                // Desktop grow is independent — don't wipe its masks here.
+                return
+            }
+
+            const canDissipate =
+                this.heroIntroLetterMode &&
+                !prefersReducedMotion() &&
+                this.pageEntranceDone
+
+            // Element stays measurable once the page is up; grow clip gates paint.
+            this.heroDecorHidden = !(this.pageRevealed || this.pageEntranceDone)
+            const showLine = canDissipate ? this.tabletWorkDecorReady : this.pageEntranceDone
+            if (!canDissipate) {
+                this.tabletDecorCaptionsPreclear = showLine
+            }
+
+            this.$nextTick(() => {
+                this.syncHeroDecorHeight()
+                this.syncAboutLineBridge()
+                this.syncTabletDecorLineGrow({ show: showLine, instant })
+                this.syncProjectCaptionLineOffset()
+                if (!this.heroDecorHidden) this.publishDecorLineAlign()
+            })
+        },
+        /**
+         * Left-biased stagger with per-letter random jitter. Delays are scaled
+         * so the last letter finishes with the CTA button fly-in.
+         */
+        syncHeroIntroCharColumns() {
+            if (!this.heroIntroLetterMode) return
+
+            const intro = this.$el?.querySelector('.hero-intro')
+            if (!intro) return
+
+            const chars = [...intro.querySelectorAll('.hero-intro-char')]
+            if (!chars.length) return
+
+            const afterthoughtChars = chars.filter((el) =>
+                el.classList.contains('hero-intro-char--afterthought')
+            )
+            // Mobile + touch-disk: ":)" is just another cascade glyph.
+            // Everywhere else: cascade the body first, then afterthought with its beat.
+            const isMobileTouchDisk =
+                isHeroTouchDiskEnvironment() &&
+                (this.heroIntroLetterMq?.matches ??
+                    window.matchMedia(MOBILE_MEDIA_QUERY).matches)
+            const cascadeChars = isMobileTouchDisk
+                ? chars
+                : chars.filter(
+                      (el) => !el.classList.contains('hero-intro-char--afterthought'),
+                  )
+
+            const pageStyles = getComputedStyle(this.$el)
+            const introStyles = getComputedStyle(intro)
+            const ctaDelay = parseCssTimeSec(pageStyles, '--cta-fly-delay', 0.08)
+            const ctaDuration =
+                parseCssTimeSec(pageStyles, '--cta-fly-duration', 0) ||
+                parseCssTimeSec(pageStyles, '--fly-duration', 1.25)
+            const ctaEnd = ctaDelay + ctaDuration
+            const lineFlyDurationRaw = pageStyles.getPropertyValue('--hero-line-fly-duration').trim()
+            const lineFlyDelay = parseCssTimeSec(pageStyles, '--hero-line-fly-delay', 0.08)
+            const lineFlyDuration = lineFlyDurationRaw ? parseFloat(lineFlyDurationRaw) : 0
+            const cascadeStart = parseCssTimeSec(
+                introStyles,
+                '--hero-intro-cascade-start',
+                lineFlyDurationRaw ? lineFlyDelay + lineFlyDuration + 0.14 : 0.04
+            )
+            const cascadeEnd = parseCssTimeSec(introStyles, '--hero-intro-cascade-end', ctaEnd)
+            const charDuration = parseCssTimeSec(introStyles, '--hero-intro-char-duration', 0.85)
+            const minDelay = cascadeStart
+            const slowestLineMult = 1.1
+            const maxDelay = Math.max(
+                minDelay,
+                cascadeEnd - charDuration * slowestLineMult
+            )
+
+            const introRect = intro.getBoundingClientRect()
+            const measure = (el) => {
+                const rect = el.getBoundingClientRect()
+                return {
+                    x: rect.left - introRect.left,
+                    y: rect.top - introRect.top,
+                }
+            }
+
+            let colW = 0
+            for (const el of cascadeChars) {
+                const w = el.getBoundingClientRect().width
+                if (w > 0) {
+                    colW = w
+                    break
+                }
+            }
+            if (colW <= 0) colW = 10
+
+            const lineH =
+                parseFloat(introStyles.lineHeight) || Math.max(colW * 1.5, 20)
+
+            const lineDuration = (lineIndex, lineCount) => {
+                if (lineCount <= 1) return charDuration
+                const t = lineIndex / (lineCount - 1)
+                // First line quickest; later lines only slightly slower
+                const mult = 0.86 + t * (slowestLineMult - 0.86)
+                return charDuration * mult
+            }
+
+            if (cascadeChars.length) {
+                const positions = cascadeChars.map(measure)
+                const minX = Math.min(...positions.map((p) => p.x))
+                const minY = Math.min(...positions.map((p) => p.y))
+                const lineIndices = positions.map((p) =>
+                    Math.max(0, Math.round((p.y - minY) / lineH))
+                )
+                const lineCount = Math.max(...lineIndices) + 1
+
+                const scores = positions.map((pos, idx) => {
+                    const col = Math.max(0, (pos.x - minX) / colW)
+                    const line = lineIndices[idx]
+                    // Soft left bias + scatter; lower lines start earlier in the window
+                    return col * 0.9 + line * 0.45 + Math.random() * 5.5
+                })
+                const minScore = Math.min(...scores)
+                const maxScore = Math.max(...scores)
+                const scoreRange = maxScore - minScore || 1
+
+                cascadeChars.forEach((el, idx) => {
+                    const t = (scores[idx] - minScore) / scoreRange
+                    const shaped = 1 - (1 - t) ** 1.55
+                    const delay = minDelay + shaped * (maxDelay - minDelay)
+                    const duration = lineDuration(lineIndices[idx], lineCount)
+                    el.style.setProperty('--hero-intro-char-duration', `${duration.toFixed(3)}s`)
+                    el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
+                })
+            }
+
+            // Non–touch-disk: keep ":)" as a delayed afterthought after the cascade.
+            if (!isMobileTouchDisk && afterthoughtChars.length) {
+                const afterthoughtBase =
+                    Math.max(cascadeEnd, maxDelay + charDuration * slowestLineMult) + 0.22
+                afterthoughtChars.forEach((el, idx) => {
+                    const delay = afterthoughtBase + idx * 0.1 + Math.random() * 0.05
+                    el.style.removeProperty('--hero-intro-char-duration')
+                    el.style.setProperty('--hero-intro-char-delay', `${delay.toFixed(3)}s`)
+                })
+            }
+        },
+        readElementTranslateX(el) {
+            const t = getComputedStyle(el).transform
+            if (!t || t === 'none') return 0
+            try {
+                return new DOMMatrixReadOnly(t).m41
+            } catch {
+                return 0
+            }
+        },
+        /** First char index whose horizontal center is at/after x (viewport coords). */
+        findCharIndexAtX(textNode, x) {
+            const label = textNode?.textContent || ''
+            if (!label.length) return 0
+            let lo = 0
+            let hi = label.length - 1
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1
+                const range = document.createRange()
+                range.setStart(textNode, mid)
+                range.setEnd(textNode, mid + 1)
+                const rect = range.getBoundingClientRect()
+                range.detach?.()
+                if (rect.left + rect.width / 2 < x) lo = mid + 1
+                else hi = mid
+            }
+            // Past the last glyph's center, lo can become label.length — clamp.
+            return Math.min(lo, label.length - 1)
+        },
+        syncAboutLocationTextClip() {
+            const meta = this.$el?.querySelector('.about-meta')
+            const locationWrap = this.$el?.querySelector('.about-location-text-wrap')
+            const locationText = locationWrap?.querySelector(
+                '.about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white)'
+            )
+            const roleWrap = this.$el?.querySelector('.about-role-text-wrap')
+            const roleText = roleWrap?.querySelector(
+                '.about-role-text:not(.about-role-text--glow):not(.about-role-text--soft):not(.about-role-text--white)'
+            )
+            const photo = this.$el?.querySelector('.about-photo-column')
+            if (!meta || !locationWrap || !locationText || !photo) return
+
+            const clearSplit = (wrap) => {
+                wrap?.style.removeProperty('--about-location-split')
+                wrap?.style.removeProperty('--about-location-split-px')
+                wrap?.style.removeProperty('--about-location-white-align')
+            }
+
+            if (!window.matchMedia(MOBILE_ABOUT_MEDIA_QUERY).matches) {
+                clearSplit(locationWrap)
+                clearSplit(roleWrap)
+                meta.style.removeProperty('--about-location-overlap-nudge')
+                return
+            }
+
+            const locationRect = locationText.getBoundingClientRect()
+            const photoRect = photo.getBoundingClientRect()
+            if (locationRect.width <= 0) return
+
+            const currentNudge =
+                parseFloat(getComputedStyle(meta).getPropertyValue('--about-location-overlap-nudge')) || 0
+            // Strip fly-in translates so nudge targets the resting layout, not mid-animation poses
+            const metaTx = this.readElementTranslateX(meta)
+            const photoTx = this.readElementTranslateX(photo)
+
+            let nudge = 0
+            // Shift meta right when needed so overlap reaches at least mid-"o" in Barcelona
+            const label = locationText.textContent || ''
+            const oIndex = label.indexOf('Barcelona') + 6
+            const textNode = locationText.firstChild
+            if (textNode && textNode.nodeType === Node.TEXT_NODE && oIndex >= 6 && oIndex < label.length) {
+                const range = document.createRange()
+                range.setStart(textNode, oIndex)
+                range.setEnd(textNode, oIndex + 1)
+                const oRect = range.getBoundingClientRect()
+                range.detach?.()
+                if (oRect.width > 0) {
+                    const midOResting = oRect.left + oRect.width / 2 - metaTx - currentNudge
+                    const photoLeftResting = photoRect.left - photoTx
+                    if (photoLeftResting > midOResting) {
+                        nudge = photoLeftResting - midOResting
+                    }
+                }
+            }
+
+            if (nudge > 0) {
+                meta.style.setProperty('--about-location-overlap-nudge', `${nudge}px`)
+            } else {
+                meta.style.removeProperty('--about-location-overlap-nudge')
+            }
+
+            const applySplit = (wrap, textEl, whiteSel) => {
+                if (!wrap || !textEl) return
+                const textRect = textEl.getBoundingClientRect()
+                if (textRect.width <= 0) {
+                    clearSplit(wrap)
+                    return
+                }
+                // Photo starts at/after text end → no overlap; hide white stack entirely.
+                // (Rounding rawSplit to textWidth used to still look "inside" and the
+                // last-letter snap then painted a stray white "n" on Kin.)
+                const photoEdge = photoRect.left - textRect.left
+                if (photoEdge >= textRect.width - 0.5) {
+                    clearSplit(wrap)
+                    return
+                }
+
+                // Color split follows the live (possibly mid-flight) overlap.
+                const rawSplit = Math.min(textRect.width, Math.max(0, photoEdge))
+                let splitPx = Math.round(rawSplit)
+                const splitPct = (splitPx / textRect.width) * 100
+                wrap.style.setProperty('--about-location-split', `${splitPct}%`)
+                wrap.style.setProperty('--about-location-split-px', `${splitPx}px`)
+
+                // 300 vs 400 glyph advances differ — shift the white string so the
+                // character at the photo edge shares the same X as the colored text.
+                let align = 0
+                const baseNode = textEl.firstChild
+                const whiteEl = wrap.querySelector(whiteSel)
+                const whiteNode = whiteEl?.firstChild
+                if (
+                    baseNode &&
+                    baseNode.nodeType === Node.TEXT_NODE &&
+                    whiteNode &&
+                    whiteNode.nodeType === Node.TEXT_NODE &&
+                    splitPx > 0 &&
+                    rawSplit < textRect.width
+                ) {
+                    const idx = this.findCharIndexAtX(baseNode, textRect.left + rawSplit)
+                    const labelLen = baseNode.textContent?.length || 0
+                    if (idx >= 0 && idx < labelLen && idx < (whiteNode.textContent?.length || 0)) {
+                        const r300 = document.createRange()
+                        r300.setStart(baseNode, idx)
+                        r300.setEnd(baseNode, idx + 1)
+                        const left300 = r300.getBoundingClientRect().left - textRect.left
+                        r300.detach?.()
+
+                        const r400 = document.createRange()
+                        r400.setStart(whiteNode, idx)
+                        r400.setEnd(whiteNode, idx + 1)
+                        const whiteBox = whiteEl.getBoundingClientRect()
+                        const left400 = r400.getBoundingClientRect().left - whiteBox.left
+                        r400.detach?.()
+
+                        align = Math.round(left300 - left400)
+                    }
+                }
+                wrap.style.setProperty('--about-location-white-align', `${align}px`)
+            }
+
+            applySplit(locationWrap, locationText, '.about-location-text--white')
+            applySplit(roleWrap, roleText, '.about-role-text--white')
+        },
+        pollAboutLocationTextClip() {
+            this.stopAboutLocationTextClipPoll()
+            const tick = () => {
+                this.syncAboutLocationTextClip()
+                if (this.aboutRevealed && !this.aboutEntranceDone) {
+                    this.aboutLocationClipRaf = requestAnimationFrame(tick)
+                } else {
+                    this.aboutLocationClipRaf = null
+                }
+            }
+            tick()
+        },
+        stopAboutLocationTextClipPoll() {
+            if (this.aboutLocationClipRaf != null) {
+                cancelAnimationFrame(this.aboutLocationClipRaf)
+                this.aboutLocationClipRaf = null
+            }
+        },
+        syncWorkGridSlots() {
+            const work = this.$el?.querySelector('.work')
+            if (!work) return
+
+            // Drop locked px sizes first so projects can grow again on widen
+            // (otherwise max-width:100% stays capped by the previous narrow slot).
+            work.style.removeProperty('--work-slot-w')
+            work.style.removeProperty('--work-slot-h')
+            void work.offsetHeight
+
+            // Project boxes keep natural size; slots around them share the largest W×H.
+            let maxW = 0
+            let maxH = 0
+            for (const project of work.querySelectorAll(':scope > .work-slot > .project')) {
+                const rect = project.getBoundingClientRect()
+                maxW = Math.max(maxW, Math.ceil(rect.width))
+                maxH = Math.max(maxH, Math.ceil(rect.height))
+            }
+
+            if (maxW > 0) work.style.setProperty('--work-slot-w', `${maxW}px`)
+            if (maxH > 0) work.style.setProperty('--work-slot-h', `${maxH}px`)
+        },
+        syncHeroDecorHeight() {
+            const decor = this.$el?.querySelector('.hero-decor')
+            const heroIntro = this.$el?.querySelector('.hero-intro')
+            const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
+            const hasDecorLine = window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches
+            // Work-slot lock + decor line from ≥501; skip the forced reflow on small mobile.
+            if (hasDecorLine) {
+                this.syncWorkGridSlots()
+            }
+            if (!decor || !heroIntro || !workLastAnchor) {
+                return
+            }
+
+            if (!hasDecorLine || window.getComputedStyle(decor).display === 'none') {
+                return
+            }
+
+            const wrap = decor.parentElement
+            const imageTop = workLastAnchor.getBoundingClientRect().top
+            const offset =
+                parseFloat(getComputedStyle(decor).getPropertyValue('--hero-decor-bottom-offset')) || 0
+
+            const introRect = heroIntro.getBoundingClientRect()
+            const wrapTop = wrap.getBoundingClientRect().top
+            const decorStyles = getComputedStyle(decor)
+            const topOffset =
+                parseFloat(decorStyles.getPropertyValue('--hero-decor-top-offset')) || 0
+            const belowIntroGap =
+                parseFloat(decorStyles.getPropertyValue('--hero-decor-below-intro-gap')) || 0
+            // Desktop + tablet-mobile: line begins at the hero intro height.
+            const clipTop =
+                belowIntroGap > 0 ? introRect.bottom + belowIntroGap : introRect.top + topOffset
+            decor.style.top = `${Math.round(clipTop - wrapTop)}px`
+
+            const height = Math.round(imageTop - clipTop) + offset
+
+            if (height > 0) {
+                decor.style.setProperty('--hero-decor-height', `${height}px`)
+            }
+
+            this.syncAboutLineBridge()
+            this.syncProjectCaptionLineOffset()
+
+            // Keep decor grow clip accurate after layout changes (tablet + desktop).
+            if (window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) {
+                this.applyTabletDecorLineGrowProgress(this.tabletDecorLineGrowProgress)
+                if (this.tabletWorkDecorReady && this.tabletDecorLineGrowProgress < 1) {
+                    this.updateTabletDecorLineGrowFromScroll()
+                }
+            } else if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+                this.applyTabletDecorLineGrowProgress(this.tabletDecorLineGrowProgress)
+                if (this.desktopDecorHeroGrowDone && this.tabletDecorLineGrowProgress < 1) {
+                    this.updateDesktopDecorLineGrowFromScroll()
+                }
+            } else if (this.tabletDecorLineGrowProgress > 0) {
+                this.clearTabletDecorLineGrowClips()
+                this.tabletDecorLineGrowProgress = 0
+            }
+        },
+        onHeroDecorFlyEnd(event) {
+            if (!String(event.animationName).includes('portfolio-fly-from-right')) return
+            this.publishDecorLineAlign()
+        },
+        syncDecorLineX() {
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) return
+
+            const anchor = this.$el?.querySelector('.hero-decor-anchor')
+            if (!anchor || window.getComputedStyle(anchor).display === 'none') return
+
+            const pageLeft = this.$el.getBoundingClientRect().left
+            const strokeX = parseCssPx(getComputedStyle(this.$el), '--hero-decor-line-stroke-x', 34)
+            const anchorRect = anchor.getBoundingClientRect()
+            this.$el.style.setProperty(
+                '--portfolio-decor-line-x',
+                `${Math.round(anchorRect.left - pageLeft + strokeX)}px`,
+            )
+        },
+        publishDecorLineAlign() {
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) return
+            if (this.heroDecorHidden) return
+
+            const anchor = this.$el?.querySelector('.hero-decor-anchor')
+            if (!anchor || window.getComputedStyle(anchor).display === 'none') return
+
+            this.syncDecorLineX()
+            this.syncHeroDecorHeight()
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event(PORTFOLIO_DECOR_LINE_SYNCED_EVENT))
+            })
+        },
+        syncAboutLineBridge() {
+            const bridge = this.$el?.querySelector('.about-line-bridge')
+            const about = this.$el?.querySelector('.about')
+            const aboutLine = this.$el?.querySelector('.about-line')
+            const decor = this.$el?.querySelector('.hero-decor')
+            const workLastAnchor = this.$el?.querySelector('#work-last .project-image-wrap')
+
+            if (!bridge || !about || !decor || !workLastAnchor) return
+            if (window.getComputedStyle(decor).display === 'none') return
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
+                bridge.style.height = '0px'
+                return
+            }
+
+            const pageTop = this.$el.getBoundingClientRect().top
+            this.syncDecorLineX()
+
+            const workLastBottom = workLastAnchor.getBoundingClientRect().bottom
+            const aboutLineTop = (aboutLine ?? about).getBoundingClientRect().top - pageTop
+            const bridgeOverlap = 2
+            const bridgeTop = Math.floor(workLastBottom - pageTop)
+            const bridgeBottom = Math.ceil(aboutLineTop) + bridgeOverlap
+            const bridgeHeight = Math.max(0, bridgeBottom - bridgeTop)
+
+            bridge.style.setProperty('--bridge-bottom', `${bridgeBottom}px`)
+            bridge.style.setProperty('--bridge-h', `${bridgeHeight}px`)
+        },
+        syncProjectCaptionLineOffset() {
+            const root = this.$el
+            if (!root) return
+
+            const captions = root.querySelectorAll('.work .project-caption')
+            if (!captions.length) return
+
+            const clearBlock = (block) => {
+                block.style.removeProperty('--project-caption-line-offset')
+                block.style.removeProperty('--project-caption-shift-delay')
+                block.style.removeProperty('transition')
+            }
+
+            if (!window.matchMedia(WORK_DECOR_LINE_MEDIA_QUERY).matches) {
+                for (const caption of captions) {
+                    for (const block of caption.querySelectorAll('.project-caption-shift')) {
+                        clearBlock(block)
+                    }
+                }
+                return
+            }
+
+            const pageStyles = getComputedStyle(root)
+            const lineWidth = parseCssPx(pageStyles, '--hero-decor-line-width', 2)
+            this.syncDecorLineX()
+            const pageLeft = root.getBoundingClientRect().left
+            const lineLeft =
+                pageLeft + parseCssPx(getComputedStyle(root), '--portfolio-decor-line-x', 0)
+            const lineRight = lineLeft + lineWidth
+            const isTabletMobile = window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches
+            const isDesktop = window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+            const growViewport = isTabletMobile || isDesktop
+
+            const decor = root.querySelector('.hero-decor')
+            const decorVisible =
+                decor &&
+                getComputedStyle(decor).display !== 'none' &&
+                !this.heroDecorHidden
+
+            // Tip of the growing stroke (viewport Y). Non-grow layouts treat the
+            // stroke as fully present.
+            let tipY = Number.POSITIVE_INFINITY
+            if (growViewport && decorVisible) {
+                const aboutLine = root.querySelector('.about-line')
+                const start = decor.getBoundingClientRect().top
+                const endEl =
+                    aboutLine && getComputedStyle(aboutLine).display !== 'none'
+                        ? aboutLine
+                        : decor
+                const end = Math.max(start + 1, endEl.getBoundingClientRect().bottom)
+                tipY = start + (end - start) * this.tabletDecorLineGrowProgress
+            }
+
+            // About-like stagger: title → description → year (matches meta/bio/actions gaps).
+            const shiftDelaysSec = [0, 0.12, 0.2]
+
+            for (const caption of captions) {
+                const blocks = [...caption.querySelectorAll('.project-caption-shift')]
+                if (!blocks.length) continue
+
+                const title =
+                    caption.querySelector('.project-caption-header.project-caption-shift') ||
+                    blocks[0]
+                const titleRect = title.getBoundingClientRect()
+                const approaching =
+                    !growViewport ||
+                    tipY >= titleRect.top - PROJECT_CAPTION_LINE_APPROACH_LEAD_PX
+
+                let offset = 0
+                if (approaching && lineLeft < titleRect.right) {
+                    // padding-left does not move the border-box left, so this
+                    // resting edge stays stable across frames.
+                    const clearance = titleRect.left - lineRight
+                    if (clearance < PROJECT_CAPTION_LINE_GAP) {
+                        offset = Math.max(
+                            0,
+                            Math.ceil(lineRight + PROJECT_CAPTION_LINE_GAP - titleRect.left),
+                        )
+                    }
+                }
+
+                blocks.forEach((block, index) => {
+                    if (offset > 0) {
+                        block.style.setProperty(
+                            '--project-caption-shift-delay',
+                            `${shiftDelaysSec[index] ?? shiftDelaysSec[shiftDelaysSec.length - 1]}s`,
+                        )
+                        block.style.setProperty('--project-caption-line-offset', `${offset}px`)
+                    } else {
+                        clearBlock(block)
+                    }
+                })
+            }
+        },
+    },
+}
+</script>
+
+<style scoped>
+.portfolio-page {
+    --brand: #000aaa;
+    --brand-hover: #1a2bff;
+    --brand-active: #000444;
+    --font-weight-scale: 0.98;
+    --text: #2c2c2c;
+    --muted: #757575;
+    --title: #4d4d4d;
+    --about-muted: #928a81;
+    --about-location-color: #8a8279;
+    --about-location-icon-fill: var(--about-location-color);
+    --about-bg: #f4f2f1;
+    --page-max: 1454px;
+    /* Cap pad at 100px; only drop toward 39px once content is 939px (offset slide exhausted) */
+    --page-pad: max(39px, min(100px, calc((100vw - 939px) / 2)));
+    --project-w: min(939px, 100%);
+    --project-w-wide: min(1060px, 100%);
+    /* 150px @ ≥1454px → 100px @ ≤800px, linear in between */
+    --project-stack-gap: clamp(
+        100px,
+        calc(150px + (100vw - 1454px) * 50 / 654),
+        150px
+    );
+    --top-bar-height: 120px;
+    --top-bar-logo-height: 52px;
+    --top-bar-nav-height: 30px;
+    --top-bar-edge-pad-right: calc((var(--top-bar-height) - var(--top-bar-nav-height)) / 2);
+    --top-bar-logo-inset: calc((var(--top-bar-height) - var(--top-bar-logo-height)) / 2);
+    --hero-logo-gap: 150px;
+    --hero-squiggle-left: clamp(
+        120px,
+        calc(120px + (100vw - 997px) * 1 / 457),
+        121px
+    );
+    --hero-squiggle-width: 56px;
+    /* SVG stroke is centered on x=35; match the 2px border-left left edge at x=34 */
+    --hero-decor-line-stroke-x: 34px;
+    --hero-decor-line-width: 2px;
+    --hero-decor-line-natural-height: 3200px;
+    --portfolio-main-inset-left: max(0px, (100vw - var(--page-max)) / 2);
+    --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
+    --portfolio-decor-line-x: calc(
+        var(--portfolio-main-inset-left) + var(--page-pad) + var(--hero-squiggle-left) +
+            var(--hero-decor-line-stroke-x)
+    );
+    --fly-distance: min(42vw, 360px);
+    --fly-duration: 1.25s;
+    --fly-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --cta-fly-delay: 0.08s;
+    --cta-fly-duration: var(--fly-duration);
+    --project-thumb-shadow: 0 3px 20px rgba(0, 0, 0, 0.06);
+    /* Resting shadow: on with no deco line (≤500); off when deco line is present (≥501). */
+    --project-thumb-shadow-rest: var(--project-thumb-shadow);
+
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+    background: #fff;
+    color: var(--text);
+    overflow-x: hidden;
+    overflow-x: clip;
+}
+
+.portfolio-fly {
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+.portfolio-fly--from-right {
+    transform: translate3d(var(--fly-distance), 0, 0);
+}
+
+.portfolio-fly--from-left {
+    transform: translate3d(calc(-1 * var(--fly-distance)), 0, 0);
+}
+
+/* Decor line present (≥501): thumbnails are already there — no entrance fly/fade.
+   ≤500 uses .project--scroll-fade instead (opacity transition on scroll). */
+.portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade) {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+/* Decor line: no horizontal fly-in — length grows top→bottom (desktop entrance + scroll). */
+.portfolio-page--reveal .hero-decor.portfolio-fly--from-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+}
+
+.portfolio-page--reveal .hero-intro.portfolio-fly--from-right:not(.hero-intro--chars) {
+    animation: portfolio-fly-from-right 1.55s var(--fly-ease) 0.08s both;
+}
+
+/* Lock hero/work fly-ins after first play — resize must not restart them */
+.portfolio-page--settled .portfolio-main .portfolio-fly:not(.project) {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+.portfolio-page--settled .portfolio-main .project.portfolio-fly {
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+.portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade),
+.portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade.project--in-view {
+    opacity: 1;
+}
+
+/* Mobile: off-screen case studies fade in on scroll; desktop shows all immediately */
+.portfolio-page--reveal .project.portfolio-fly.project--scroll-fade,
+.portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade {
+    opacity: 0;
+    transform: none;
+    animation: none !important;
+    transition: opacity 0.55s ease-out;
+    will-change: opacity;
+}
+
+.portfolio-page--reveal .project.portfolio-fly.project--scroll-fade.project--in-view,
+.portfolio-page--settled .portfolio-main .project.portfolio-fly.project--scroll-fade.project--in-view {
+    opacity: 1;
+    will-change: auto;
+}
+
+.portfolio-page--settled .hero-intro--chars .hero-intro-char {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .hero-intro.hero-intro--chars {
+        --hero-cursor-zone-pad-default: 80px;
+        --hero-cursor-zone-pad-tight: 4px;
+        --hero-cursor-nav-proximity: 80px;
+        --hero-intro-hover-radius: 120px;
+        --hero-intro-hover-shift: 84px;
+        --hero-intro-hover-lift: 32px;
+        --hero-intro-hover-force-exp: 2.65;
+        --hero-intro-hover-lift-exp: 2.2;
+        --hero-intro-hover-knock-mult: 0.55;
+    }
+
+    /* Float back at cascade pace when leaving the glass field */
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char {
+        transform: translate3d(0, 0, 0);
+        transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
+        will-change: transform;
+    }
+
+    /* Knock outward in slow motion, same easing as the cascade fly-in */
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
+        transform: translate3d(
+            var(--hero-intro-push-x, 0),
+            var(--hero-intro-push-y, 0),
+            0
+        );
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
+            var(--fly-ease);
+    }
+}
+
+@media (width < 800px) {
+    .hero-intro.hero-intro--chars {
+        --hero-intro-tap-linger: 280ms;
+        --hero-intro-swipe-min-travel: 20px;
+        --hero-intro-swipe-vertical-min: 36px;
+        --hero-intro-swipe-ratio: 1.7;
+        /* Touch-disk glass field (finger stroke is replaced by the disk on mobile). */
+        --hero-cursor-zone-pad-default: 80px;
+        --hero-cursor-zone-pad-tight: 4px;
+        --hero-cursor-nav-proximity: 80px;
+        --hero-intro-hover-radius: 120px;
+        --hero-intro-hover-shift: 84px;
+        --hero-intro-hover-lift: 32px;
+        --hero-intro-hover-force-exp: 2.65;
+        --hero-intro-hover-lift-exp: 2.2;
+        --hero-intro-hover-min-force: 0;
+        --hero-intro-hover-radius-exit-mult: 1;
+        --hero-intro-hover-knock-mult: 0.55;
+        --hero-intro-dissipate-duration: 0.9s;
+        --hero-intro-dissipate-stagger: 0.42s;
+        touch-action: pan-y;
+    }
+
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char {
+        transform: translate3d(0, 0, 0);
+        transition: transform var(--hero-intro-char-duration, 0.85s) var(--fly-ease);
+    }
+
+    /* Knock outward — same as desktop; rest-layout centers avoid vibrate feedback. */
+    .portfolio-page--settled .hero-intro--chars .hero-intro-char.hero-intro-char--pushed {
+        transform: translate3d(
+            var(--hero-intro-push-x, 0),
+            var(--hero-intro-push-y, 0),
+            0
+        );
+        transition: transform
+            calc(var(--hero-intro-char-duration, 0.85s) * var(--hero-intro-hover-knock-mult, 0.42))
+            var(--fly-ease);
+    }
+
+    /* Legacy stroke class (unused while touch disk owns mobile) — keep inert. */
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--stroke-active .hero-intro-char.hero-intro-char--pushed {
+        transition: none;
+    }
+
+    /* Scroll dissipate: fan up along rays from the text-box bottom diameter (half-circle).
+       Independent of the entrance cascade (settled kills cascade; early scroll settles early). */
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char.hero-intro-char--pushed {
+        transform: translate3d(
+            var(--hero-intro-dissipate-x, 0),
+            var(--hero-intro-dissipate-y, 0),
+            0
+        );
+        opacity: 0;
+        pointer-events: none;
+        transition:
+            transform var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s),
+            opacity var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s);
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--reconsolidating .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--reconsolidating .hero-intro-char.hero-intro-char--pushed {
+        transition:
+            transform var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s),
+            opacity var(--hero-intro-dissipate-duration, 0.9s) var(--fly-ease)
+                var(--hero-intro-dissipate-delay, 0s);
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipate-instant .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipate-instant .hero-intro-char.hero-intro-char--pushed {
+        transition: none !important;
+    }
+}
+
+/* Pin glyphs to rest for measuring — used on desktop and mobile. */
+.hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char,
+.hero-intro--chars.hero-intro--dissipate-measure .hero-intro-char.hero-intro-char--pushed {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+}
+
+.hero-intro-cursor-ball {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    border-radius: 50%;
+    box-sizing: border-box;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    will-change: transform;
+}
+
+.hero-intro-cursor-drag-hit {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10003;
+    border-radius: 50%;
+    touch-action: none;
+    cursor: grab;
+    -webkit-user-select: none;
+    user-select: none;
+    background: transparent;
+}
+
+.hero-intro-cursor-drag-hit:active {
+    cursor: grabbing;
+}
+
+/* Ball only — do not put this on the magnifier. After dissipate the
+   --touch class stays on, and an opacity transition would slow every
+   project-hover clone fade-in by ~1s. */
+.hero-intro-cursor-ball--touch-fade {
+    transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
+}
+
+/* Work/About corner park: match carousel pill fade.
+   Only opacity / visibility / translate — never `transform`, or corner
+   snaps would ease across the whole screen. */
+.hero-intro-cursor-ball--stage-chrome {
+    transition:
+        opacity 0.32s ease,
+        visibility 0.32s ease,
+        translate 0.32s ease;
+}
+
+.hero-intro-cursor-ball--touch-instant {
+    transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-intro-cursor-ball--touch-fade,
+    .hero-intro-cursor-ball--stage-chrome,
+    .hero-intro-cursor-dot-disk.hero-intro-cursor-ball--stage-chrome,
+    .hero-intro-cursor-dot-disk.hero-intro-cursor-ball--touch-fade {
+        transition: none;
+    }
+}
+
+.hero-touch-disk-menu {
+    --brand: #000aaa;
+    --brand-active: #000444;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10004;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+.hero-touch-disk-menu__item {
+    position: absolute;
+    /* left/top = label center on the ray from the blue disk (set inline). */
+    display: block;
+    width: max-content;
+    min-height: 44px;
+    margin: 0;
+    padding: 7px 0;
+    box-sizing: border-box;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 30px;
+    color: var(--brand);
+    text-decoration: none;
+    white-space: nowrap;
+    pointer-events: auto;
+    /* Opacity / scale driven every frame by expand — no CSS lag on collapse. */
+    opacity: 0;
+    will-change: transform, opacity;
+    transition: none;
+}
+
+.hero-touch-disk-menu__item:active {
+    color: var(--brand-active);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-touch-disk-menu__item {
+        transition: none;
+    }
+}
+
+.hero-intro-cursor-dot-disk {
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    background: transparent;
+    transform-origin: center center;
+    /* Size is driven every frame by expand — avoid a second CSS transition lag.
+       Opacity still fades via --touch-fade / --stage-chrome (later rules). */
+    transition: none;
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
+        color-mix(
+            in srgb,
+            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-expand, 0)) * 100%),
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-expand, 0) * 100%)
+        );
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(2px + 3px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(3px + 4px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(5px + 5px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-expand, 0)));
+    z-index: 10002;
+    isolation: isolate;
+}
+
+.hero-intro-cursor-dot-disk::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.28);
+    -webkit-backdrop-filter: blur(2.5px) saturate(1.35);
+    backdrop-filter: blur(2.5px) saturate(1.35);
+    opacity: calc(1 - var(--hero-cursor-hover-expand, 0));
+    pointer-events: none;
+}
+
+/* Work / About corner park: slightly stronger frost (matched by the pager pill). */
+.hero-intro-cursor-dot-disk--section-frost::before {
+    background: rgba(255, 255, 255, 0.32);
+    -webkit-backdrop-filter: blur(3.5px) saturate(1.4);
+    backdrop-filter: blur(3.5px) saturate(1.4);
+}
+
+/* Restore stage fade after `.hero-intro-cursor-dot-disk { transition: none }`. */
+.hero-intro-cursor-dot-disk.hero-intro-cursor-ball--stage-chrome {
+    transition:
+        opacity 0.32s ease,
+        visibility 0.32s ease,
+        translate 0.32s ease;
+}
+
+.hero-intro-cursor-dot-disk.hero-intro-cursor-ball--touch-fade:not(
+        .hero-intro-cursor-ball--stage-chrome
+    ):not(.hero-intro-cursor-ball--touch-instant) {
+    transition: opacity 0.9s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1)) 0.12s;
+}
+
+/* Work / About: slightly stronger outer glow (matched by the pager pill). */
+.hero-intro-cursor-dot-disk--section-frost:not(.hero-intro-cursor-dot-disk--menu-frost) {
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 5px rgba(0, 10, 170, 0.16),
+        0 0 10px rgba(0, 10, 170, 0.095),
+        0 0 16px rgba(0, 10, 170, 0.05),
+        0 0 22px rgba(0, 10, 170, 0.028);
+}
+
+/* Menu expand: keep full frost glass (don't fade ::before via hover-expand).
+   Also skip touch-fade opacity — glass→frost among hero text must blur instantly. */
+.hero-intro-cursor-dot-disk--menu-frost {
+    transition: none !important;
+}
+.hero-intro-cursor-dot-disk--menu-frost::before {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.34);
+    -webkit-backdrop-filter: blur(5px) saturate(1.45);
+    backdrop-filter: blur(5px) saturate(1.45);
+}
+
+/* Dual Work+About: stadium pill that hugs both labels. */
+.hero-intro-cursor-dot-disk--menu-pill {
+    border-radius: 9999px;
+}
+
+.hero-intro-cursor-glass-ball {
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    z-index: 10002;
+    isolation: isolate;
+}
+
+/* Early intro approach: same look as the dot disk while the ring resizes outward */
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--from-disk {
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-mix, 0)) solid
+        color-mix(
+            in srgb,
+            rgba(255, 255, 255, 0.8) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-mix, 0) * 100%)
+        );
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-mix, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(2px + 3px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(3px + 4px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
+            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
+}
+
+.hero-intro-cursor-glass-ball::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--in-range {
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 2px rgba(0, 10, 170, 0.2),
+        0 0 4px rgba(0, 10, 170, 0.15),
+        0 0 7px rgba(0, 10, 170, 0.11),
+        0 0 11px rgba(0, 10, 170, 0.078),
+        0 0 16px rgba(0, 10, 170, 0.052),
+        0 0 23px rgba(0, 10, 170, 0.032),
+        0 0 32px rgba(0, 10, 170, 0.018),
+        0 0 44px rgba(0, 10, 170, 0.008);
+}
+
+.hero-intro-cursor-glass-ball.hero-intro-cursor-glass-ball--in-range.hero-intro-cursor-glass-ball--in-range-tight {
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+        0 0 3px rgba(0, 10, 170, 0.35),
+        0 0 6px rgba(0, 10, 170, 0.26),
+        0 0 10px rgba(0, 10, 170, 0.19),
+        0 0 16px rgba(0, 10, 170, 0.13),
+        0 0 24px rgba(0, 10, 170, 0.085),
+        0 0 34px rgba(0, 10, 170, 0.055),
+        0 0 48px rgba(0, 10, 170, 0.032),
+        0 0 64px rgba(0, 10, 170, 0.016);
+}
+
+.hero-intro-cursor-ball--dot {
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    background: #000aaa;
+    transform-origin: center center;
+    z-index: 10003;
+}
+
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--hover-expand {
+    isolation: isolate;
+    border: calc(1px - 0.5px * var(--hero-cursor-hover-expand, 0)) solid
+        color-mix(
+            in srgb,
+            rgba(255, 255, 255, 0.85) calc((1 - var(--hero-cursor-hover-expand, 0)) * 100%),
+            rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-expand, 0) * 100%)
+        );
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-expand, 0)));
+}
+
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--hover-expand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    isolation: isolate;
+}
+
+.hero-intro-cursor-magnifier__scaled {
+    z-index: 0;
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost {
+    position: absolute;
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+    visibility: visible;
+    opacity: 0;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transition: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-blur-host {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+    will-change: filter;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-blur {
+    position: absolute;
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-frost-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: rgba(255, 255, 255, 0.12);
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAAAAeCAYAAAC8Pq85AAAk4UlEQVR42pWdubJlS6ps82uRQ0ZHQ4z/jVf2rKpsFWcMZl4h7TS592pmNIDj7vx5791//8l//Tn/+lP/+tP/+hP//vf//N1//n//++fuv/9f/vx8/7xejJ+pf//ef97n/Pzu7z/r533j573u+J36+bser/n7fjH+/fy8V/z8Tvx8v/p5vzve6/58z/lc/vPZ4+fvf59l/Pz8+Xnedzz3+HmN3zW543POz9s/3+f+fJ4e71M/PxM//5zPJ3/et8f6Frzm71rH+F6/z67G+9b43A3v+/sc6+e51M8zKfh/92ft6Wfi57Xn+t5xPubnj/E+Ca/zuxd/36fHf//uo/zZbwfOSMJ73fEzAc/+99kdeD3aSw2v+bvOCWf6jmcQY1/EWIe5d3/vmBh7/473ibFX8uc17zi/NfbWPHPn5zudcdbm+t/xjHu8T45zH+M5/j6PHP/9+xlyPMO5Hg13U49nUOP9z9g/8wz1WLv4ef95r8TYP/PM1XjdHHsoxlr+vsfc2/NerbHuZ3zmHp83Rqz7jStnfNaCe/6Mtb9wr51xPhrOZo0zMGPNvId+41eO3yn40+P+iBF7f2PfgfN9x8/l2H9nxIa5J+ZanLHPznh+MeLA7/sXrOMZ+/w3Lyl4vxg/87ufzzj7M0YciKMN9+tcR7vjf/fbGbnAhXVtuE+u3CUJ54We7X+fw59xuc5Ep+BBFwScGgtJycJvkAgJfke+3EwkL2wOSlLoM+S4POdlPi+d+eB6uawokZyJaIxFLUjKDlyqDcEo5AKel+xM2AMSyJlgNXy+uSEvBJkDCVNAgdCjcPh9njledx7mHBt7Jok53v/ImiYkISX7N8bFRoVJjjUOCNY5Lo2ERKThErtLsTQTn5lozoT0QoEREtx67F86LzPhL9iXCQnGhUR/Bp0e+3UGsx6Xasv7z311IBGZiSKtW8Pnoj0Y8LpU3CQUCT2SjZksNvzzSKF1oXCkBIOKrII9O88BFbw9ztv8/YBzUHD/3vHacz8fKKRnYVJyhhOKu7kPZ6APeGYzFiUUx5SsFBQ0AQn4BC/uOMOUEB0pShqSdHr2PQCY+ZnmniIQpAF8iXFXXilAE/ZFQ5HcAMLccUfleL8LyWKPpDQBlLhQhLUAIfO+mPGl5C4oWJsD6zTvwZZn3rKf/rtuf8ZhouyeAsuBqrI+kKJ5cGbiQ8llLQhajkOekLgWHNaChKkA7aKLqAClOpIQN6BDd1yeDc/rSuUYY+M2PMeCZ3WhwiTEsmCtZmChZxRj30wUpaViv4Ayt1TBNd5rBtWQ5KLG619B5xKKj5a/u1AdUnJ0JXlvqPCOBI8LKNeF5LekMJgXcgNycUfhceDvCy4nCgy0p1r2cC/VfcprTkSSkp+Qy3giwnRvBAQlCk4FiGjDPXAHqk5JCCFrMQrKhKSe0BYKvjNZmAk6JeIz4NUHOpbL55j3NCVDMb7bgfsllyLyLPdbAqjQkvBc6TpQEdTj/FPgDfhstaBDtSRXF57lTD4uJEIFSWABCnyl2L8QgyeydMf3NoAmBdU6UKAmPOMLXbOAHIbylYbuzddeb7mDG4p2SrRKuoYUqy4gxBfyo4KklrpldA7+gUz/kYqmR4vuQtuipQ0QEISvtDEDkpYrEHrAwswFIPSH/n6iTSEIRkAibFVcjGdEGy7lQk642A5UaVcOVEgFduWzX3m/bQ/M3zvQmipAVVqoAVcS2gMttwOVUUiALDkU1gJqgO6pLT/RoAvP6Uoy01CRniUg0EXQkNCUoD0zuBz4LA3tvw3dbQj2tB8vtKtoTS8kzpQ0hxSYOZ7DRHvOcrnOhHki8ClBOaX9T8VzQyJAhQcVaJYoU1FnLa6CAF0fQfBKQriteUmCdOCuvkA3mUlMjjsxFzSxYG9QIDbg4UrSHEtHwFqPVygtBUjUkfU9gPJdObNnnLMARJjQKGpbU0v5QHw6gszlQGMv0A0KEk9C7BoSuwSkLuGzlZy/lDwiAVEOoVPNODQpMiGF/uwY5ZKUN7SwCfmzQulA8msA1/9/vT+wyPQLs5KYVTRB52dcfiXITEP2PflJ1loKqdxqQdcCqvGSQ1aSeIS0RBs2YHxwtmIkUwUJLEHBAchaQZv4QBuakJaQQ5uAVBm8PxPqFr5ELMhVQ5vIIO0DnKuWwxILF6kW1PdCe6sWqgHxrqy91EAjmOjdEZ5uyeXYcMFRK4VazAnn1xI24qTRHgkpAi8kxi0tKOKwUqHYgpg28G8T+Hf23eb5SUDyL3COKUFvuDMJDQ0I0oQ8znvpwDO0uyKlDVzC+aI1OJDYb8lRS9F7gP+8FVgX+NqU+M2k8Qzul1GBUgpWKvJDWtPWBZhcuITCsxZqUwnidqEgzoXaEkL7aaF5XCgoKXcoKDqNXnCEB9hC8bnS5g4ongqeUQCIkUJ9OxAvzkKRmWs686kEIKDhXBqgU3C/xJIXHEFC7y8CSBD2kT52Cy/tCuk8oTXTS3Zb0EYI4O4dWfiENpC11g78DiEpCYc+BClpWbhe0NArUG1BYjYPQMqldwDZOIBelPCvKNmnSjOW71yCeAXwc1oqrAL4PJYWeEvBYK1hQgxL0OOC55kghKolwWtoXQckrwVBJ+Qc9cLhCuB+lFTZIQKQIxyYI2hKSivmwPdL4Aef0SYtaXFMcnt9nKsWZLYXdP2L1L2R+48kOAXIMwkyriAO1PK6kkhfKC4O7PMUqk8BelRCMWnZI8TrtiBFrS1L7GNplQYUU1dELC1csl46WiG0ipIkLoBOQIK9A+ehFjR+iy0FIEDKWUkQHV2hSExAI6G1W8ItJT5e/sVe3u7EFhESdXEK9j0lkykgSkmcI8FqSCcyZP3O+L2AXOYuIkfqBuYijju/HMCCdloK6XVeviG8tpDKjdqBvaAwG38phaNypbVDhywl4Tjj4R9ohR5oW56lOqNL5EKr7i4KYDrAsSiirvCpUgQWJWtOQTgh4Sg5BPeD93egLd9y8A8kw1cSODrYxg1paB2GkPFLoH1CgI8EbVPWz/03LwV6X2sNlbxuQzAihX+KotqQkFza/yVq6gOo0AHVZUjyuSUKvYg+Lgi1rE0dIrBq4IKGJON0jg4IFxJQCEO47XvXY2eChu9PJPFchHUNhPIrd0XCHW/dF1LCG58xIH5cuI9TimYSilwg2Cegf3dJpu7CvS3hJV5RNRfsxwREyTpcBfdcgoAq3j+dKUKEFwmc5RYKQQvitQlSNu4iAQpXUPMQQZB12g4ktAnFfYG45kq38AK1pEAUdqEIaqF+0Z0cS5s+FzCv/iwB09oBVxSpF9Q9B1As45qUEC1N5HCFW7IhOLFclgcQqfoggh7hodEBoRZZQzIawHFKCK6xcGLiuaWPJaEJicZdEqsrlXBCsn6E90kB5iwtxisk37tcnhQ0ziKYaWn5XNjDtSCFsQhsvr7LXYQipEAmWkGJqKOgtZcSkI+0U+/ClzWLiBYxQwOKP4NXLu22FB7YWdrxLShTSJfjLEj/kSS+ZD0bisReuLoX6Bj1F8UF2TclvNZmrzGT5QQ0IZei1NrWVqBN+ofZL5lobrvHiYZCCFtCspMisDBhC4kNL4AntRTfuVA4euH/FsQqauHfv+AfFyRtJfxKAyTIEu58FG7kDHAhYaTcIyUJLSmUifd9REhHn9HQuiMc91w+Vyxqf3uuVIyVqJj/off4A7wIQkNMJUv2CikHhDzaiF82fZRiCajE7fkbJJESjfpQXaZUgEcuPFKuEu9gQsghHKeChDKgxUi2JHbQJ/+hltffVKkF1UkugTGFS3iWpG4mpQf2ypWLgpDPXLgfd0GXziK8CEkajS9zhYh+5QLZqsh6bK9EgTSkNUrJEwkNqKokIVeJ2rjgc8xzFpJcnOf+fgVK2yutI+MahahmLVlLCFYlQooDnELzrTuyd4gSEXIf0p66QnJPCVgXOEcNRcTWruylUCcbnhQV75FnS9ytFoSHfBKvoDx05jc7nSuc8xQV6CZ6aihcZ0fpSxkd0oK/S2fpiNjrLgU5WZYRH5LQ8QtK5Fk45WPHhZC2Z8r9uOUwDQrnXM7WeW47c6WTcB57SwZQQOKDM9+P7ZcMOTzUav8jveh67JFEVhkN5OoG2JMC6ZGEgzy5bAMeyYiPVIfngyNA7YqUg31FVWqvQxyu/AulFqFnvVRhpJw0nzBqtxYguVcqigPJJ3HHznLR3vd33kpbAVLQOoiFj9miTG2ovEisYWrJ+qjeyQQ5gbNDpO8LCmxKfkLQgADhQsEeI47hEV5jAFLUwjFtCcC093JJZgzFCRF99GOLH0Oo6CLPt3uTxiIkqKX7YecgRSC0JRZboWyFm7UkzWYp5XMWdDcMNbZCxO5HE2DR3rtCZzC3glhoRsarJaTqwJkwnnhC0Wb2LWTcfZeil0zj67mVU8AaGmhgyD6pYk2oY+1rK44IUDHxoyXpLZxjQk5NgBKyRwruQaM89JIwF1AViENIjgOzAxML2vg/d8ofSfruY4fq/EDYpuq0JIE7IsxIIffPaueAZH0zEKaWQUmbtSAgk1G1EV2PkFGptUnTJw7wFVoCw3nuHE/t2njsmWZO9PH+aWNhVSu160gMZKouajtfOUBXWhgpbXILhiEo4CZ4Srn0SwqTFiFJSeVIgh8jCackPrkoSK1oILPS89GGDDhzZHh+F2W6cXb7o/BLEWmVXMq9JFktwrEre8Y6ClOcFkvSE/BMj5D5Lfm7wtFqQa0OIEpkcBzSTUi4JwKQTGuBTRumFPEQtTOJ/lOSsBUgqeS2UFBAptB+SE16pCtwhCPc0uLb7uXNo+9IWzeFI9yPfXC3JKHluacgr/e5x21KG7ue+5qSify8+4687hE6m/nkbglaSAfMwBNSYG8CuyvdmP7g5hIn/4o4bp6X+rOQTEuQoyMXhsHvBHNeWdheSN4HEBJT/dqopyvV5jaxgIIgBfGWVpv55YXI1O+HqrUe27RcSTAn7yiEc2cGkhToictlSTO1H0ydFrL5r4hwUg46iRFSDlsv/NYZQGgiRUk1mIu4qp5bLKQo+WivtKjdTS1GSnFKKkjdl1DFUvCJ596VdDYJ9bF2PP3/EJUbIefWniMOaDw3iibUjabvnMdm0qaYTGkjTnFZCzoToF5u6dSUKHVjCfolXMj8uC8IkQlpbX1x/FpUkWdBinoJ2ITC0jSKgOc9Y0gIop6ColHwTkhuTEQSzydi5WPfWeK1WrzbPF7vgn62dEJoMpiJQ/4GhSaeG6GNV7QFNhXF7uS7qPOnIPZ8FKKx8IATOqiWbBqfsAVc+J+4/eexMTNxRO7bbTcIuSMlYwqMS3J8gttpfijN1+0lgdzIp2RjYYayLa1LGgtmh+NKq2wj7RZUjxc4dEd4cFdQ2n4+4zElqTOz5K0VbgrlA61kaos0XG5mNlsgULCRf/T8CY5v4Ma2IJEpqni7HGIhdvfzebdkVHuEyE1JbIpoxS5AQqsTUKZZFMbSzj9vN7/thX8cUixZO/TKM2lRSIfwhBOEIHYXtBTAd1F4mzcp8TuvcGLruQ9dwr3Zy+/S+CmaAlLPLUWs7U2I9HlucF8LR9J4hykdBeJe2fQaEt8VdB/IgPsuKJlNorCkpCG+Xold9XabspZYYALRqZy3mdok+KOC8crnNy7vXdb6vH+6eNRHC5vW6EAHw+zvauEy2sx1mrZWwnWMx1ZpLd2/AF7jP4Zl/BEUZTp2n0Vosc2+y8cDl4/AyDRD1cZjHSCNH0FWYmyKbW5jLYnZXZLC+uAfFbR7zKyWpmNQu5iShslrInPlkPbXXdofxj06EGyvJPAHEnLiT258vFiSghDRASUdBYpDku/TxBeylUlIwMlCIh6PNCRz6iMtImoBt1S65HBPFfOVdpsZw15pW1LlSuKyWALTXfZ6L+sUi5CN1PrG9f0i+ZvtFM1rJhoEqa57CXKx3GukUiTBzmy/tqDoX6T3fOzRGFKIGEebRF207ynh2sxtKQbEB8f4vH+ao9/n0zRS9l49n59u60i+s7T+57HHq1n50P1r4+M2a6qJUMZzw+xt1rwp5I2HaTZ0IepqA6loOtiVxCsWCtB9PO2HaDpb98XES/H2UXj53NaH0GWLY/+T3/2BIHRlIx9ZvFwkygkVBTmHx6LCIjWUqa0OqHJb1I3EbeqFtEy+SPF89A6Nwarl92KR+hP8n88nClzhdh1A/eiSr+UZkO1IPnZUt/b+XQQoxJuahzmem3DXc9uM89womOaOXlFThlSxc+0TLtf6aIlO8Q2pu2nKhj1z49YlcNdskLp93lpQNDNKvkubn5JSErfQuMReLneyqSp4LWqx20jFFJQ24TOfhWsZH2h0/UVL0pwHjAfUH2hCLZ2IbU/ngub1x74iWoYVWIY2nudzxzfFfUOxRXPmzaw74c5oUKIGBPcNmY8lieqFt2b3G1FHAgQYNurNuNtHPs+FmJzAabbJNfXY93Vyds9CXyBXCRsPaf69LUm+3XmGzh35u4RuSv8fNRJU3MYH4nv+iHqEZtxdQf/O+/s5jcR3uNLiMwNlcxi/75+D1m1M0DZJgbL9lE21Dcsmn6BeDsqVdu6RisL84WppBfUHL+0IopDPXcXtIIQEAJr5S5+f3NjJDmK2I0MqpxI+CiFoZFNgohfy/+uPgGothb9FaM/zyRRkfhzCebOCwGZn2uSF+3wubwgXpwT9qUVRb36MFwK02TUYZ+18KHgp6SKB1TbmLT/adBMdzaWA3LzXcik0SIRCCUA89urcgoyZ99P9cABVsqBJiUw895k8C6JMwf0AR3pOo0noCJzHrhXxfNoHdSrqo6VNvrq1UAZChDpHaA4ldIuEZxZL4RfPLd8KeHLWUt14izbNg4oqymWu5A4Nd6utkQlizIR8E6EaqnnlO5jnZMG6n/dPF4//yW/+iADhSp96G47d0gK9cnFsaB0lMAeSPEuwUlpdBcF7c7qn9mSJ2tcMpA11JBNIUuRtho79do824qCQSvYIX6CWRNrUYGR62x+qrQC+FHlnWeuDqiKb7XqlorqLapxEHyXS/BYVXy/k+guFS0DSPr2xjJScctmSv2cvYoZ+PlrwigDnyn1wPzhXNDjdOFZ3aaucJeE1xDekIDE0jM7HNlu8Ye1snm5IR4SoAsRDKkF153kPadFeoQAQOT2F303Tc+bc17NwniYSt/G1EuguCQjJEbQyoHtDjhezMEvZAylc74CzbcrfEr51QhuPhEz5UWQ33MlmNt2PbaJKOi+EjNLnJfV9SMJ84buRaby5MVwRCJV0d64IInsRi7RwOOuxGTtZWyXEc0M2U/KIFvEZWt38ARXTgYNs472MpGpO32Ry2o9tDYxPkc9n0R5JDnLJzM9zU94NwfpKjMkSwgjNxNObjuUHNsnmj/fFU+jn0xVo4HZDZWyD54+gonR52mSUWlpcJZxUM3IN+GcKSZxaMQlt8BQYvqTCp2kEdLbIWJxU62TBEIJcXghuF9BnmrqQkvCEXKrn8Viq/gvVLdEmrFVvbfYrPMUL3NuG1yDUbX42c/3Px/ZXXxN2yNqpFl6YeSrO4jagc5CP7TZS+MklCE3DuT6i6D3ASzuPZ5WncM7u8p7UOkwocMjKxfjJIZSleDzP+0C7kjoeB9rZNJnJ5pVT3Nmm4FwoPvqxX2pIq/g+dr0o4CiXUJzuY2/VXFCtllwioBAMSXKJapFQLBJ3uiQeUnFEHNJ6PBzAjPHNjud+8I7nuMhahGp3qoALssqWbPtIkD3S00/YmFt7NqW9TFXPeT4mhzJmI3sfqIrNg+rI5WizN2tB6mzAewnyYz5SNh4phWA7q4wS1IYS3QstZ/MUK3kuNMuxoXoroR/Ugvi2qDUP7GMSlCQERZoBWQsN4UiLMR6P5DqLoIKEU5bsbN5VKWfLLHVqUc2GdAvO2w2ej6heyT/QjKtbkmFSWdOEF2pbmheniVsoeeznYypblIS1FJjUEmxRqZPlCKH7V86Eqe9tTql5ldp0mI3Oc+B7hvCtW1r4CYWIGdVvAw+Mx92Q3FM7forajqiVNxpUC11l48oeKBzP4znJNEKwRWRJPGRq69J+iseztTdD+FwU0tSungK3EuX7gW5evN0H1Vq35JO6xc+Q7uddwIDNsslQ2COUp9mxnAVo/BG4mQi/pE7Mt3vV2SW4OdFbv5sEHSVqo1pUpPXYt4gEDC2w+hUeQDyfkEEk2/6oyEMOCLUhLdmwGc352J4j5CKafJlp+ZGiuqJEdSbc5pROFiP3+TDzFlSpQd16RP0YS7A5gPKQwpOqzIZ2sU1NuQuHiVrKlpieReWcz+12rvDcUqrWaQJ+PviO1CKyBCeFanGe26yQXUvAdzhABbHW5PyOCYioDYzP575/BWrffDwVhdCaFnTG5qi28OTy7XOce0n2WwqkFHSJZqemnFEby3mfm/yaQfsRfvIR+kc9dwMwhXqLcGETUaXcwwXt8oQOhPFVrUAKSYJM0T3vyxIRY36o/3NJtGaxH8IFt2li8dwwO4GKEEJxuYuCnEQl20SSrxzGxFdkGUexheZdk0L9mqDtjwQy4sSYqeRUTRE0+YUclIhLzPuPKgLyuympXOdhOYAIphyCEAVmCKnZUIJ47nRP1c4MprHw36jFQRcBcSUb2l7xfNKDDUvfpoP8X9SPm3l4Ac9j+h0d2W+58Dzq+XDx+9irMh4P9A4gd5/H3nkFAo2AYE1FUEl1SsjBkZZmfZCPD3C7QrgpZJZsyMRd1meb720GryUdCZvJnVLAhPB3DLk+UJjF87FjlDzY6xMx30a7necj6Fo4sOf900mBkK6WFvwUAZFi8jwfKUY874a9cKBDQLPlE5AumqHcCxf4yl4mBDcfm4ffRbhEFlcmAiuhY7SINM9SrOUHMEOFuHmdhhT7tYhdevn+Rj2o9+3bSBO36vm0rZRun50viuMEHFHLvN5u3UXcXxv3aYVxSkF/gNtavwkgKWAOXF4T1jS7kBaFWDz2YErhrDS0nkwtQyKRv+EVEMfQxvDct8+4JZPUs1z41OI23kU9ng14hegZS0KTQqDtRYJPFQaRaVM4fRcUhvYZe1FYJSA3hg4GqFQJWTT123zWBQrNI6KJfDwb+0BgI5TyAlfKbJqsNRqivqdW6zyjpIokJDWgYIv3d1M8vtrm5/moMuNblXDUGsjiFwQZhPKnqGfrgxQfgOoR7+lrRmqKWrEee07220dMtXCcE1C0Ft6sWVvRtIpe0OkryJNNPMoFNZn3QAIXitrbB+hOpsol/za6wwOSX0JgY6zlWYqHXJ7tEfoRxaMYZ8jcMb7QV5vtXktRSB2GeO5mELIfiN9vwiniGFseQjY+1K24kuBdEbeVFKxEZ7qAgpfcjyYqCRHn/M8e+fPcp8bsDKzX3kvGHaKSzUU0QaNXChAM894JUZBd+awpG4b4S0RGv283GKW25RkbzBKDfN/jkc5j7zBKhDYuDhmjprRK4vH85BTuwn278fdZUMKQ/WAzMe+iqJ4tjbtUTqbKO4AUWUtszki1+a5mNGxTFagCtmk6NgWjln1DY7ZmoK3HHojULpnEeeIU0f1iY6RMWReLMKsW5CMeT3iZSW5Jy6ZkbUn4FM/N1i/QBL5a6leS9G3awKZ0TrnHQ96LCj7yX2tplxO/KxeEOmFfn+eTokI6SRc4jAnnOz5a/zYzmFCyeLv7w13Ai5C2XwmX/m/mYRNiRvvN9j+hpOdDvNKgDL/Cn6eiOheuekucpPg518VmE+f79vhruaMJOCrhA5o3pI3stOk5c353wF3231nAZMVgrbeABSckhMiiZ7l87mN39V7IknSpFVy2dGEZBGxtKCKRWpA6wnsjd/sShGZLkAmpCmkHXmnplHByqIII4CEYEkDBmGwttsPUH2T7FDJ2LMTwI4IkM9Q8go7aTFiaSW2zHskMe6I/KUFk83FsUQB+JQMpaNI2N9gCjglyzAstnvsdxtu902q5m7Ykv5azc5eCrqFFekGxf+X3rlTzZuUzqQRnEZHc5xN6aO74FoTM3PYKz5bAADOZJu54SMFkBPmAwmMWkgEBcaLbZmmVIHBsQYst+bU2cUuyFcJbIyW9eVoSf/m83TuXunexdKjyscVPwX1LRbkVIESViUWEcQDdvUDBCkDaiHJ0Bb0mNXcuMfwKH9JUu1fuklrUwRc6YCFdgF7unPgjvX864NQ6ISHC5AXGwikgsvWRRMWsFRKInNv8XUI2bGNdQVkuoDopAYNmBE5PvIRWtrX98u2zG8mTbU7qoBancflmG+wsyEY/njhiASSh0qNnQeT8WngnJdUZIW5HKttZPV1RkJ9FSNVycdn6bB5uR8QGJQlXSzFRUlDlh6rdiP+zFUkWT2bPQcWcJbBzP+SCwlF7jFpY57GDwZGgl4+tY2zqUAsKnvJ8yYMsgU9qyC8FRRohSG4JRwjy/YG8TQ7UGW3GC4VMP7bUONJeP6JSP4KK2vxsUoVfELMZR8+GB0w+pCVOxvE0upJZkZQkcEaHKCgGzWqMqBnGXU5JwGx8KdEyWgQPZJ9C7d2zCOQ2r9D+AJViQRIJBd1U6w3qa+IG2vSzlKL1LChgL4Daf/etcQDJ4DBESUY8g/vc2bsFkSAe0xHOFHma0cioADFCiSzbErx5aacQTXvhnBB/0fzrzPah5HKz9gCNk9l4MUeEAFcQBaqIDrQnY0EkStoJ8XarixkEzvN5iC37zvg5RxTaDQixFSHks2hTVMhDz1ADmoN9Ye3MI47UpFsQ2cbX0XoVENbvcsfQBKKEttqVC/A+nt1NCSYh/zO4HRG/kX9hPbawIrHWgTuEAo55k7a0qYiXZlNPzLA6JEAe+M73LxDCFM4mjT8LUUKbywMhOCU0h001HnBvtHCTqaDbinwSV4TwYBMSMrPySkhoziJI7Od2bIS216KQp+5APLZaIh4oWZ3VIhC0ARQhbeRNtEZ0sK85vVfoCKYgDhGQEY9vxsJcUNsNNDjPrddmsRzC1b5/JFgRHE/k+3nJNSRd8fYZkVfg8wtKKPPZqYVDtA1Nb3nPv7V5uRIYDEmND5GDIYg2W/lK8klWLuR9l3DZHKj+zqJGS1BIz6r/yGdKec4z8B4Istt4JbJ/IS5lPjbQtCTIAuEFNSIJguqjrZLSbjqyX+mCCSlWqJgIoReUtFJ6QTCtDXqejwUzT8Tz3NR8M6iNx56aNMP5AIJvyQ4JYqi9m89nHscHUn9FlGJK7kniD1EgB1AdiD9qwriApO4COn3hzBEtqBfxX4uKMh7PWD9LVyMhwSPFd7zdcsMsY8yKyZL3+9gf70CSZKP7qEg1KxMSU1z52YB9d4F7R04dJFDsRfVNxfoRuooJNUuEhgl0po1yRmt34H4l3+B4bMPzN++TUIDUUgAQuEZ5Q4iwqySO9Z/Hc/ZoDu2VqsGyy+0w9GM7gcmxuRAE7SEfqYpnW8hsCPKxOTNB+CmE4oBLOoVE3Y9nfoYorKmlmaI+u8vnP5BU2TSC+wFr05xcmiVaf8n9qw9Im6aSENq3KS0b2rq9tLxobUv+nQQxNEqOrD9opmN/CChaWtf92EaCPNeI+0uVObXmr4h0zDbFLI0S9hKJDO4i/iopmi6sf4yWl/kWliBO+ReXvhmZkyVVLJ0LEjoZut9yJ5Xsa+JvGrLzNyjJXbigm9l/fYj+rOVIlilkRTTv3ASuLxlaG0f9ABIUQtu4izCnIaHtx+Me7yIssyQ7RFxjBuIXin4aL3me28JdWed8u8sCGXsngBMHcoEEYd7WtidT/YBCkzi6NC/auJUFz8+meJg7QQKdbpsU1UtLfJ6r+PP+aU+Rjz1lzHoipFJsSCp6gVa/PABDJP8N6q0G2L+k4tq4hv3RTrTW2F0qgVxQwgubPqSfT4bV5mBOnDUbIJ5QBZNlw31uazKDSYm6itSaR2B5G/k0UTBy4Cfn9JY9RdVkPx/EHouq9EoSTYrmFtT6fiBEAYpqEhac5yPs7tuNde9zO4fN/4rsEswjsEGw1NBqaWkrXTkj5A1awgcMaYe3JPrb9ycU8khLl9DBWgpBoqmY0fO2548UG/V83KChxfeDGpAfynMSbdRjj0Rq+5u/obXlE7oVNj2GLGhKFL/1eMTdBmIcUIaTgpaK9isdrfxY083OpIRH2EvBm4CGk1PFXcQh57mjRwuH3kCffN/eoQG5zBW+Lc1ePgsdLYRCZ76E94MDWh/0kwMxkgZB/E9e8kcUqi3tClKCEhHRvqyZ1pKZZkDAj+eGwtOI+QgP8QrXhxJT8js6C5JJc2OtLUv+Qwc4D+djca+0ccgO4ICog7y8NtJrL5UeocMFl9MVpW49nx+akACYPxMF7Xo8reN8oFLkx0iXwNxbNA1hBgPiZJFCkVz3SZyRkuCRKvMu7RkqrohEnlAdpyQQ97mlChk/X+A/ttwzNF/TPMdKFOnEvf0ybY4lYaYEkVpeIW3RbQqA+YIlkM0TEg+aWb2Nb5sczQakYrPcIEQ0pBNEBP8WsQ0hi1PBeoQzSKhjCJBQQl8w7hsVAluyv03dyedWY3QuTfi4jeQjf9wjyuSS+H4fW+GQp2+LkpVEEPV8dKP5DBr6TGbZLfzIhNgaC2+cZpk3nNl67gdJ+VXLeuZjB4UGcCGe2Pv8P4yDf7AjSc8xAAAAAElFTkSuQmCC");
+    background-size: auto 100%;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.hero-intro-cursor-magnifier__top-bar-chrome {
+    z-index: 2;
+    pointer-events: none;
+}
+
+.hero-intro-cursor-magnifier__top-bar-chrome .hero-intro-cursor-magnifier__clone-host {
+    position: absolute;
+    inset: 0;
+}
+
+.hero-intro-cursor-magnifier__logo {
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+    visibility: hidden;
+    object-fit: contain;
+    object-position: left top;
+}
+
+.hero-intro-cursor-magnifier__clone-host,
+.hero-intro-cursor-mirror-clone,
+.hero-intro-cursor-mirror-clone * {
+    /* Descendants that set pointer-events:auto must not steal live :hover. */
+    pointer-events: none !important;
+}
+
+.hero-intro-cursor-ball--visible {
+    visibility: visible;
+}
+
+.hero-intro-cursor-dot-disk.hero-intro-cursor-ball--visible,
+.hero-intro-cursor-glass-ball.hero-intro-cursor-ball--visible {
+    opacity: 1;
+}
+
+.hero-intro-cursor-ball--dot.hero-intro-cursor-ball--visible {
+    opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    :global(html.portfolio-hero-cursor),
+    :global(html.portfolio-hero-cursor body),
+    :global(html.portfolio-hero-cursor) *,
+    .portfolio-page--hero-cursor,
+    .portfolio-page--hero-cursor * {
+        cursor: none !important;
+    }
+}
+
+.about-heading.portfolio-fly--from-left {
+    --fly-distance: min(56vw, 480px);
+}
+
+.about--reveal .about-heading.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left 0.95s var(--fly-ease) -0.12s both;
+}
+
+.about--reveal .about-meta.portfolio-fly--from-right {
+    animation: portfolio-fly-from-right var(--fly-duration) var(--fly-ease) 0.12s both;
+}
+
+.about--reveal .about-bio.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.16s both;
+}
+
+.about--reveal .about-actions.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.2s both;
+}
+
+.about--reveal .about-photo-column.portfolio-fly--from-left {
+    animation: portfolio-fly-from-left var(--fly-duration) var(--fly-ease) 0.18s both;
+}
+
+/* Lock final pose so later layout syncs can't replay the entrance */
+.about--settled .portfolio-fly {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portfolio-fly,
+    .portfolio-page--reveal .portfolio-fly,
+    .about--reveal .portfolio-fly,
+    .hero-intro--chars .hero-intro-char,
+    .portfolio-page--reveal .hero-intro--chars .hero-intro-char,
+    .hero-intro-afterthought-char {
+        max-width: none;
+        opacity: 1;
+        transform: none;
+        animation: none;
+        will-change: auto;
+    }
+
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char,
+    .portfolio-page--settled .hero-intro--chars.hero-intro--dissipated .hero-intro-char.hero-intro-char--pushed {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+        transition: none;
+    }
+
+    .hero-intro-afterthought-cursor {
+        display: none;
+    }
+}
+
+@keyframes portfolio-fly-from-right {
+    from {
+        opacity: 0;
+        transform: translate3d(var(--fly-distance, 220px), 0, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes portfolio-fly-from-left {
+    from {
+        opacity: 0;
+        transform: translate3d(calc(-1 * var(--fly-distance, 220px)), 0, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.loading-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    transition: background-color 0.32s ease;
+}
+
+.loading-splash--handoff {
+    background-color: transparent;
+    pointer-events: none;
+}
+
+.loading-splash-frame {
+    width: 84px;
+    height: 84px;
+    display: block;
+    transform-origin: center center;
+}
+
+@media (min-width: 800px) {
+    .loading-splash {
+        display: block;
+    }
+
+    /* Align top half of frame (the mark) with .portfolio-top-bar .logo */
+    .loading-splash-frame {
+        position: fixed;
+        top: var(--top-bar-logo-inset);
+        left: var(--top-bar-logo-inset);
+        width: calc(var(--top-bar-logo-height) * 2);
+        height: calc(var(--top-bar-logo-height) * 2);
+    }
+}
+
+.loading-splash-frame--rotating {
+    transition: transform 800ms linear;
+}
+
+.loading-splash-handoff-logo {
+    position: fixed;
+    z-index: 10001;
+    display: block;
+    transform-origin: top left;
+    will-change: transform;
+    pointer-events: none;
+}
+
+.portfolio-content--logo-handoff :deep(.logo) {
+    opacity: 0;
+}
+
+:global(html.portfolio-booting),
+:global(html.portfolio-booting body) {
+    overflow: hidden;
+}
+
+.portfolio-main {
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    width: 100%;
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--top-bar-height) var(--page-pad) 0;
+    box-sizing: border-box;
+}
+
+.about-line-bridge {
+    --bridge-bottom: 0px;
+    --bridge-h: 0px;
+    position: absolute;
+    left: calc(var(--portfolio-decor-line-x) - var(--hero-decor-line-stroke-x));
+    top: calc(var(--bridge-bottom) - var(--bridge-h));
+    width: var(--hero-squiggle-width);
+    height: var(--bridge-h);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+    display: none;
+}
+
+@media (min-width: 501px) {
+    .about-line-bridge {
+        display: block;
+    }
+}
+
+.hero-role,
+.hero-location {
+    display: none;
+}
+
+.hero {
+    position: relative;
+    z-index: 1;
+    --hero-cta-gap: 110px;
+    --hero-cta-height: 57px;
+    --hero-cta-width: 233px;
+    /* 903px from the left edge of the first project image (content left) */
+    --hero-cta-left: 862px;
+    /* Text bottom → first image (CTA lives in the about section on desktop) */
+    --hero-text-to-image: 437px;
+    margin-bottom: var(--hero-text-to-image);
+    overflow: visible;
+}
+
+.hero-intro-wrap {
+    /*
+     * Right viewport gap = left viewport → text gap, including
+     * main inset + page-pad + (deco line + deco→text spacing).
+     */
+    --hero-intro-right: var(--hero-intro-left);
+    --hero-intro-viewport-inset: calc(
+        var(--portfolio-main-inset-left) + var(--page-pad) + var(--hero-intro-left)
+    );
+    position: relative;
+    max-width: none;
+    width: calc(100vw - 2 * var(--hero-intro-viewport-inset));
+    margin: var(--hero-logo-gap) 0 0 var(--hero-intro-left);
+}
+
+/* Resting decor-line X for nav/header sync — not affected by fly-in transform */
+.hero-decor-anchor {
+    position: absolute;
+    top: 0;
+    left: calc(var(--hero-squiggle-left) - var(--hero-intro-left));
+    width: var(--hero-squiggle-width);
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.hero-decor {
+    --hero-decor-height: 487px;
+    --hero-decor-bottom-offset: 65px;
+    --hero-decor-top-offset: 7px;
+    --hero-decor-below-intro-gap: 0;
+    position: absolute;
+    top: 7px;
+    right: auto;
+    left: calc(var(--hero-squiggle-left) - var(--hero-intro-left));
+    z-index: 0;
+    width: var(--hero-squiggle-width);
+    height: var(--hero-decor-height);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.hero-decor::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: var(--hero-decor-line-stroke-x);
+    z-index: 1;
+    width: var(--hero-decor-line-width);
+    height: var(--hero-decor-line-width);
+    border-radius: 50%;
+    background: var(--brand);
+    pointer-events: none;
+}
+
+.hero-decor picture {
+    display: contents;
+}
+
+.hero-decor-line,
+.portfolio-decor-line-img {
+    position: absolute;
+    left: 0;
+    display: block;
+    width: var(--hero-squiggle-width);
+    min-width: var(--hero-squiggle-width);
+    max-width: var(--hero-squiggle-width);
+    height: var(--hero-decor-line-natural-height);
+    min-height: var(--hero-decor-line-natural-height);
+    object-fit: none;
+}
+
+.hero-decor-line {
+    bottom: 0;
+    object-position: left bottom;
+}
+
+.portfolio-decor-line-img {
+    top: 0;
+    object-position: left top;
+}
+
+.about-line {
+    position: absolute;
+    left: calc(var(--portfolio-decor-line-x) - var(--hero-decor-line-stroke-x));
+    top: calc(140px - var(--about-gap));
+    z-index: 2;
+    width: var(--hero-squiggle-width);
+    height: calc(var(--about-photo-h) - 40px);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Mobile / breakpoint handoff: invisible but still layout-measurable */
+.hero-decor.hero-decor--hidden {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.hero-intro {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 26px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 1.45;
+    letter-spacing: 0;
+    color: #616161;
+    font-synthesis: none;
+}
+
+.hero-intro-chars {
+    display: inline;
+}
+
+.hero-intro-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.hero-intro-nobreak {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.hero-intro-char {
+    display: inline-block;
+}
+
+/*
+ * Letter cascade: wide stagger so glyphs trickle in like an assemble,
+ * last letter still landing with the CTA.
+ */
+.hero-intro.hero-intro--chars.portfolio-fly {
+    --hero-intro-char-duration: 0.85s;
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+}
+
+.portfolio-page--reveal .hero-intro.hero-intro--chars.portfolio-fly--from-right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+}
+
+.hero-intro--chars .hero-intro-char {
+    --hero-intro-char-delay: 0.04s;
+    opacity: 0;
+    transform: translate3d(var(--fly-distance), 0, 0);
+    /* No permanent will-change — ~150 promoted layers stutter mobile GPUs during cascade */
+}
+
+.portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro--chars .hero-intro-char {
+    animation: portfolio-fly-from-right var(--hero-intro-char-duration, 0.85s) var(--fly-ease)
+        var(--hero-intro-char-delay) both;
+}
+
+.hero-intro-word-space {
+    white-space: pre;
+}
+
+.hero-intro-em {
+    color: var(--brand);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.hero-intro-em--keep {
+    white-space: nowrap;
+}
+
+.hero-intro-afterthought {
+    display: inline;
+    color: var(--brand);
+    font-weight: 500;
+}
+
+.hero-intro-afterthought-char {
+    display: inline;
+}
+
+.hero-intro-char--afterthought {
+    color: var(--brand);
+    font-weight: 500;
+}
+
+.hero-intro-afterthought-cursor {
+    display: none;
+}
+
+/* Desktop: type ":)" after the block fly-in — cursor first, then one char at a time */
+@media (min-width: 800px) {
+    .hero-intro {
+        /* Afterthought follows the letter cascade (unlocked when the line is long enough). */
+        --hero-intro-afterthought-beat: 0.06s;
+        --hero-intro-afterthought-start: calc(2.39s + var(--hero-intro-afterthought-beat));
+        --hero-intro-type-cursor-lead: 0.18s;
+        --hero-intro-type-char-2-gap: 0.38s; /* brief beat between : and ) */
+        --hero-intro-type-char-1-at: var(--hero-intro-type-cursor-lead);
+        --hero-intro-type-char-2-at: calc(
+            var(--hero-intro-type-cursor-lead) + var(--hero-intro-type-char-2-gap)
+        );
+        --hero-intro-type-cursor-post-blink: 1.06s;
+        --hero-intro-type-end: calc(
+            var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at) +
+                var(--hero-intro-type-cursor-post-blink)
+        );
+    }
+
+    .hero-intro-afterthought-char {
+        display: inline-block;
+        max-width: 0;
+        overflow: hidden;
+        vertical-align: bottom;
+        opacity: 0;
+    }
+
+    .hero-intro-afterthought-cursor {
+        display: inline-block;
+        width: 0.1em;
+        min-width: 2px;
+        height: 0.92em;
+        margin-left: 0.04em;
+        background: transparent;
+        box-shadow: inset 2px 0 0 0 var(--brand);
+        vertical-align: -0.1em;
+        opacity: 0;
+        overflow: hidden;
+        /* Always occupy the slot — hide visually, never collapse width */
+        visibility: hidden;
+    }
+
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro-afterthought-char:nth-child(1) {
+        animation: hero-intro-char-reveal 0.02s steps(1, end)
+            calc(var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-1-at)) forwards;
+    }
+
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro-afterthought-char:nth-child(2) {
+        animation: hero-intro-char-reveal 0.02s steps(1, end)
+            calc(var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at)) forwards;
+    }
+
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro-afterthought-cursor {
+        visibility: visible;
+        --hero-intro-type-cursor-post-at: calc(
+            var(--hero-intro-afterthought-start) + var(--hero-intro-type-char-2-at)
+        );
+        animation:
+            hero-intro-cursor-on 0.001s linear var(--hero-intro-afterthought-start) forwards,
+            hero-intro-cursor-blink var(--hero-intro-type-char-2-at) step-end
+                var(--hero-intro-afterthought-start) forwards,
+            hero-intro-cursor-post-on 0.001s linear var(--hero-intro-type-cursor-post-at)
+                forwards,
+            hero-intro-cursor-blink var(--hero-intro-type-cursor-post-blink) step-end
+                var(--hero-intro-type-cursor-post-at) 1 forwards,
+            hero-intro-cursor-off 0.001s linear var(--hero-intro-type-end) forwards;
+    }
+
+    .portfolio-page--settled .hero-intro-afterthought-char {
+        max-width: none;
+        opacity: 1;
+        animation: none !important;
+    }
+
+    .portfolio-page--settled .hero-intro-afterthought-cursor {
+        opacity: 0;
+        visibility: hidden;
+        box-shadow: none;
+    }
+}
+
+@keyframes hero-intro-char-reveal {
+    to {
+        opacity: 1;
+        max-width: 1ch;
+    }
+}
+
+@keyframes hero-intro-cursor-on {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes hero-intro-cursor-post-on {
+    to {
+        opacity: 1;
+        box-shadow: inset 2px 0 0 0 var(--brand);
+    }
+}
+
+@keyframes hero-intro-cursor-blink {
+    0%,
+    45% {
+        box-shadow: inset 2px 0 0 0 var(--brand);
+    }
+
+    50%,
+    95% {
+        box-shadow: none;
+    }
+
+    100% {
+        box-shadow: inset 2px 0 0 0 var(--brand);
+    }
+}
+
+@keyframes hero-intro-cursor-off {
+    to {
+        opacity: 0;
+        visibility: hidden;
+        box-shadow: none;
+    }
+}
+
+.hero-intro-lead {
+    display: inline;
+}
+
+.cta-button {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    width: var(--hero-cta-width);
+    max-width: 100%;
+    min-width: 0;
+    height: var(--hero-cta-height);
+    border-radius: 100px;
+    isolation: isolate;
+    background: var(--brand);
+    font-family: 'Fira Code', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 33px;
+    letter-spacing: 0;
+    color: #fff;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition:
+        background 0.2s ease,
+        opacity 0.15s ease;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.18),
+        0 2px 4px rgba(15, 23, 42, 0.1);
+}
+
+/* Glass edge — thinner rim, soft inner glow */
+.cta-button::after,
+.about-action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 0.8px solid rgba(255, 255, 255, 0.65);
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.18) 4%,
+        rgba(255, 255, 255, 0) 9%,
+        rgba(255, 255, 255, 0) 91%,
+        rgba(255, 255, 255, 0.14) 96%,
+        rgba(255, 255, 255, 0.32) 100%
+    );
+    box-shadow:
+        inset 0 0.5px 0 rgba(255, 255, 255, 0.8),
+        inset 0 1.5px 2.5px rgba(255, 255, 255, 0.5),
+        inset 0 -0.5px 0 rgba(255, 255, 255, 0.32),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.32),
+        inset 1px 0 2px rgba(255, 255, 255, 0.28),
+        inset -1px 0 2px rgba(255, 255, 255, 0.28);
+}
+
+/* Hover only on fine pointers — no sticky hover after tap on mobile */
+@media (hover: hover) and (pointer: fine) {
+    .cta-button:hover {
+        background: var(--brand-hover);
+    }
+}
+
+/* Pressed: mute the whole pill (blue + white), not a separate dark fill */
+.cta-button:active {
+    opacity: 0.7;
+    transition: none;
+}
+
+.work {
+    --work-slot-w: var(--project-w-wide);
+    --work-slot-h: auto;
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: var(--work-slot-h);
+    align-items: stretch;
+    justify-items: stretch;
+    width: 100%;
+    row-gap: var(--project-stack-gap);
+}
+
+/* Equal outer rows — slot size = largest thumbnail+caption box */
+.work-slot {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: var(--work-slot-w);
+    max-width: 100%;
+    height: 100%;
+    min-height: 0;
+    justify-self: start;
+}
+
+.work-slot--offset {
+    justify-self: end;
+    align-items: flex-end;
+}
+
+.project {
+    position: relative;
+    z-index: 1;
+    width: var(--project-w);
+    max-width: 100%;
+    min-width: 0;
+}
+
+.project--featured {
+    width: var(--project-w);
+    max-width: 100%;
+    scroll-margin-top: var(--top-bar-height);
+}
+
+/* Soft edge from dashboard hero canvas (#eff3fc → slightly darker, fades inward) */
+.project--featured .project-image-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow:
+        inset 0 0 0 1px rgba(215, 219, 227, 0.08),
+        inset 0 0 10px 2px rgba(215, 219, 227, 0.06);
+}
+
+.project--offset {
+    width: var(--project-w);
+    max-width: 100%;
+    margin-left: 0;
+}
+
+/* Only the last row is wide — :last-child on .project matches every slot child */
+.work > .work-slot:last-child > .project {
+    width: var(--project-w-wide);
+    max-width: 100%;
+}
+
+.project + .project {
+    margin-top: 0;
+}
+
+.project-image-link {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    text-decoration: none;
+    /* Clip the image to this radius — overflow:visible left a square white plate under the curve.
+       Own box-shadow still paints outside; work-strip padding keeps it from being clipped. */
+    overflow: hidden;
+    border-radius: 20px;
+    isolation: isolate;
+    box-shadow: var(--project-thumb-shadow-rest);
+    transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
+}
+
+.project-image-wrap {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 20px;
+    isolation: isolate;
+    box-shadow: var(--project-thumb-shadow-rest);
+    transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
+}
+
+.project-image-link picture {
+    display: block;
+    width: 100%;
+}
+
+.project-image {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    /* Radius comes from the clipping shell — don’t animate a second radius on the img
+       (inherit + transition lagged and showed a non-curving underlayer). */
+    border-radius: 0;
+}
+
+/* Touch: press feedback via JS class only — :active sticks on some mobile browsers. */
+.project:not(.project--upcoming).project--press-expand .project-image-link,
+.project:not(.project--upcoming).project--press-expand .project-image-wrap {
+    border-radius: 700px 700px 20px 20px;
+    box-shadow: var(--project-thumb-shadow);
+}
+
+/* Touch disk: live page curves with the magnifier (no real :hover) */
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap,
+.project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
+.project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
+    border-radius: 700px 700px 20px 20px;
+    box-shadow: var(--project-thumb-shadow);
+}
+
+/* Pointer devices: hover / focus (avoid sticky hover on touch) */
+@media (hover: hover) and (pointer: fine) {
+    .project:not(.project--upcoming):hover .project-image-link,
+    .project:not(.project--upcoming):focus-within .project-image-link,
+    .project:not(.project--upcoming):hover .project-image-wrap,
+    .project:not(.project--upcoming):focus-within .project-image-wrap {
+        border-radius: 700px 700px 20px 20px;
+        box-shadow: var(--project-thumb-shadow);
+    }
+}
+
+.project--upcoming {
+    cursor: default;
+}
+
+.project--upcoming .project-title {
+    color: var(--text);
+}
+
+.project-caption {
+    position: relative;
+    margin-top: 30px;
+}
+
+@media (min-width: 501px) {
+    .project-caption-shift {
+        /* Triggered from the title; description/year follow with staggered delay. */
+        padding-left: var(--project-caption-line-offset, 0px);
+        transition: padding-left 0.6s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1))
+            var(--project-caption-shift-delay, 0s);
+    }
+}
+
+.project-caption-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding-top: 2px;
+}
+
+.project-title {
+    flex: 0 1 629px;
+    min-width: 0;
+    margin: 0;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 33px;
+    color: var(--text);
+    transition: color 0.25s ease;
+}
+
+.project-caption-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Touch disk: only title (and the separate thumbnail link) navigate — not
+   description / company text, so reading and scrolling stay easy. */
+.portfolio-page--touch-disk .project-caption-link {
+    pointer-events: none;
+}
+
+.portfolio-page--touch-disk .project-caption-link .project-title {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.project-caption-link .project-title {
+    /* Match thumbnail border-radius timing */
+    transition: color 0.18s ease-out;
+}
+
+/* Touch / press: blue while held, eases back on release (same as thumbnail) */
+.project:not(.project--upcoming).project--press-expand .project-caption-link .project-title {
+    color: var(--brand);
+}
+
+/* Touch disk: title follows the live hover paint */
+.portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title,
+.project:not(.project--upcoming).hero-cursor-mirror-hover .project-caption-link .project-title {
+    color: var(--brand);
+}
+
+/* Pointer devices: hover / focus */
+@media (hover: hover) and (pointer: fine) {
+    .project:hover .project-caption-link .project-title,
+    .project:focus-within .project-caption-link .project-title {
+        color: var(--brand);
+    }
+}
+
+.project-description {
+    margin: 16px 0 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 25px;
+    letter-spacing: 0;
+    color: var(--muted);
+}
+
+@media (min-width: 800px) {
+    .project-caption {
+        min-height: 95px;
+    }
+}
+
+.project-year {
+    display: block;
+    margin: 16px 0 0;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 25px;
+    letter-spacing: -0.02em;
+    color: var(--title);
+}
+
+.project-year-sep {
+    /* ~2× word-space on each side (plain "  " collapses in HTML). */
+    margin: 0 0.5em;
+}
+
+.about {
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    --about-gap: 340px;
+    --about-text-gap: 39px;
+    --about-bio-cta-gap: calc(var(--about-text-gap) * 1.5);
+    --about-extra-bio-cta-gap: calc(var(--about-bio-cta-gap) - var(--about-text-gap));
+    --about-bottom-pad-base: clamp(180px, calc(180px + (100vw - 997px) * 100 / 457), 280px);
+    --about-bottom-pad: calc(var(--about-bottom-pad-base) - var(--about-extra-bio-cta-gap));
+    --about-image-text-gap: clamp(32px, calc(32px + (100vw - 997px) * 32 / 457), 64px);
+    --about-photo-w: clamp(281px, calc(281px + (100vw - 997px) * 12 / 457), 293px);
+    --about-photo-h: clamp(402px, calc(402px + (100vw - 997px) * 18 / 457), 420px);
+    --about-photo-col-w: calc(2 * var(--about-image-text-gap) + var(--about-photo-w));
+    --about-inner-max-w: clamp(800px, calc(800px + (100vw - 997px) * 187 / 457), 987px);
+    --about-top-pad: 80px;
+    --about-bio-indent: 24px;
+    margin-top: var(--about-gap);
+    padding: var(--about-top-pad) 0 var(--about-bottom-pad);
+    background: var(--about-bg);
+    box-sizing: border-box;
+    overflow: visible;
+    scroll-margin-top: var(--top-bar-height);
+}
+
+#about-bio {
+    scroll-margin-top: var(--top-bar-height);
+}
+
+.about-inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: var(--about-photo-col-w) 1fr;
+    gap: 0;
+    max-width: var(--about-inner-max-w);
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+    align-items: start;
+}
+
+.about-photo-column {
+    display: flex;
+    flex-direction: column;
+    padding-left: var(--about-image-text-gap);
+    box-sizing: border-box;
+}
+
+.about-photo {
+    position: relative;
+    z-index: 1;
+    width: var(--about-photo-w);
+    height: var(--about-photo-h);
+    border-radius: 20px;
+    object-fit: cover;
+    display: block;
+}
+
+.about-photo--placeholder {
+    background: #e8e4e1;
+}
+
+.about-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: auto;
+    margin: 0 0 var(--about-text-gap) 20px;
+    padding: 0;
+    box-sizing: border-box;
+    flex: none;
+    color: var(--about-location-color);
+}
+
+.about-location,
+.about-role {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    flex: none;
+    color: inherit;
+}
+
+.about-location-icon-wrap,
+.about-role-icon-wrap {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 27px;
+    height: 27px;
+    flex: none;
+    color: inherit;
+}
+
+.about-location-icon-wrap :deep(svg) {
+    display: block;
+    width: 27px;
+    height: 27px;
+    flex: none;
+}
+
+.about-role-icon-wrap :deep(svg) {
+    display: block;
+    width: 12px;
+    height: 17px;
+    flex: none;
+}
+
+.about-location-icon-wrap :deep(path),
+.about-role-icon-wrap :deep(path) {
+    fill: currentColor;
+}
+
+.about-location-text-wrap,
+.about-role-text-wrap {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+}
+
+.about-location-text,
+.about-role-text {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 27px;
+    color: inherit;
+    flex: none;
+}
+
+.about-location-text-white-stack,
+.about-location-text--glow,
+.about-location-text--soft,
+.about-location-text--white,
+.about-role-text-white-stack,
+.about-role-text--glow,
+.about-role-text--soft,
+.about-role-text--white {
+    display: none;
+}
+
+.about-text-column {
+    padding-top: 100px;
+}
+
+.about-intro {
+    display: contents;
+}
+
+.about-heading {
+    margin: 0 0 var(--about-text-gap);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 27px;
+    letter-spacing: -0.02em;
+    color: #928a81;
+}
+
+.about-bio {
+    margin: 0 0 0 var(--about-bio-indent);
+    max-width: clamp(455px, calc(455px + (100vw - 997px) * 37 / 457), 492px);
+    font-family: 'Fira Code', monospace;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 26px;
+    letter-spacing: 0;
+    color: var(--text);
+}
+
+.about-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 0.8px;
+    text-underline-offset: 3px;
+}
+
+.about-link:hover {
+    color: inherit;
+}
+
+.about-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: var(--about-bio-cta-gap);
+    padding: 0;
+}
+
+.about-actions-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.about-action-btn {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 54px;
+    padding: 12px 24px;
+    border-radius: 60px;
+    isolation: isolate;
+    background: var(--brand);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 20px;
+    font-weight: calc(500 * var(--font-weight-scale));
+    line-height: 30px;
+    white-space: nowrap;
+    color: #fff;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition:
+        background 0.2s ease,
+        opacity 0.15s ease;
+    box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.18),
+        0 2px 4px rgba(15, 23, 42, 0.1);
+}
+
+/* Hover only on fine pointers — no sticky hover after tap on mobile */
+@media (hover: hover) and (pointer: fine) {
+    .about-action-btn:hover {
+        background: var(--brand-hover);
+    }
+}
+
+/* Touch disk: About CTAs go hover-blue under the glass */
+.about-action-btn.hero-cursor-mirror-hover {
+    background: var(--brand-hover);
+}
+
+/* Pressed: mute the whole pill (blue + white), not a separate dark fill */
+.about-action-btn:active {
+    opacity: 0.7;
+    transition: none;
+}
+
+/* ≥1454px: Final content artboard spacing */
+@media (min-width: 1454px) {
+    .hero-decor {
+        top: 7px;
+    }
+
+    .portfolio-page {
+        --project-w: 939px;
+        --project-w-wide: 1060px;
+    }
+
+    .project + .project {
+        margin-top: 0;
+    }
+
+    .project-description {
+        margin-top: 16px;
+    }
+
+    .about {
+        --about-gap: 340px;
+        --about-bottom-pad-base: 280px;
+        margin-top: 340px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
+    }
+
+    .about-inner {
+        grid-template-columns: 421px 1fr;
+        max-width: 987px;
+    }
+
+    .about-photo-column {
+        padding-left: var(--about-image-text-gap);
+        box-sizing: border-box;
+    }
+
+    .about-photo,
+    .about-photo--placeholder {
+        width: 293px;
+        height: 420px;
+    }
+
+    .about-text-column {
+        padding-top: 100px;
+    }
+
+    .about-heading {
+        margin: 0 0 58px;
+    }
+
+    .about-bio {
+        max-width: 492px;
+    }
+
+    .about-meta {
+        margin: 0 0 var(--about-text-gap) 20px;
+    }
+}
+
+/* Desktop: centre hero intro on the viewport Y axis; line + work follow via layout + JS */
+@media (min-width: 800px) {
+    .hero-role,
+    .hero-location {
+        position: fixed;
+        right: var(--top-bar-edge-pad-right);
+        z-index: 99;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        pointer-events: none;
+        color: var(--muted);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity 0.3s ease,
+            visibility 0.3s ease;
+    }
+
+    .hero-role {
+        top: calc(var(--top-bar-edge-pad-right) + 19px);
+    }
+
+    .hero-location {
+        bottom: var(--top-bar-edge-pad-right);
+    }
+
+    .hero-role--visible,
+    .hero-location--visible {
+        opacity: 0.6;
+        visibility: visible;
+    }
+
+    .hero-role-icon-wrap,
+    .hero-location-icon-wrap {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        width: 30px;
+        height: 30px;
+        flex: none;
+        color: inherit;
+    }
+
+    .hero-role-icon-wrap :deep(svg) {
+        display: block;
+        width: 13px;
+        height: 19px;
+        flex: none;
+    }
+
+    .hero-location-icon-wrap :deep(svg) {
+        display: block;
+        width: 30px;
+        height: 30px;
+        flex: none;
+    }
+
+    .hero-role-icon-wrap :deep(path),
+    .hero-location-icon-wrap :deep(path) {
+        fill: currentColor;
+    }
+
+    .hero-role-text,
+    .hero-location-text {
+        font-family: 'Work Sans', sans-serif;
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 30px;
+        color: inherit;
+        flex: none;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+    }
+
+    /* First-page exit: fade with location / company / top bar (0.3s). */
+    .hero-intro {
+        transition:
+            opacity 0.3s ease,
+            visibility 0.3s ease;
+    }
+
+    .portfolio-page--settled .portfolio-main .hero-intro.portfolio-fly.hero-intro--first-page-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    /* Scroll-back: replay letter cascade (no fade-in — fly in instead). */
+    .portfolio-page--settled .portfolio-main .hero-intro.portfolio-fly.hero-intro--scroll-replay {
+        transition: none;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+        animation: none !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay
+        .hero-intro-char,
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay
+        .hero-intro-char.hero-intro-char--pushed {
+        opacity: 0;
+        transform: translate3d(var(--fly-distance), 0, 0);
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
+        .hero-intro-char,
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
+        .hero-intro-char.hero-intro-char--pushed {
+        animation: portfolio-fly-from-right var(--hero-intro-char-duration, 1.15s) var(--fly-ease)
+            var(--hero-intro-char-delay) both !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro.portfolio-fly.hero-intro--scroll-replay:not(.hero-intro--chars) {
+        opacity: 0;
+        transform: translate3d(var(--fly-distance), 0, 0);
+        animation: none !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro.portfolio-fly.hero-intro--scroll-replay.hero-intro--scroll-replay-run:not(
+            .hero-intro--chars
+        ) {
+        animation: portfolio-fly-from-right 1.55s var(--fly-ease) both !important;
+    }
+
+    .portfolio-page {
+        /* Cascade starts when the growing line covers the intro (JS unlocks). */
+        --hero-intro-cascade-start: 0.04s;
+        --hero-intro-cascade-end: 2.39s;
+    }
+
+    .hero-intro.hero-intro--chars.portfolio-fly {
+        --hero-intro-char-duration: 1.15s;
+    }
+
+    .hero {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        /* Lock to innerHeight after load so work stays below the fold (100svh can be shorter) */
+        min-height: var(--desktop-hero-min-height, 100svh);
+        margin-top: calc(-1 * var(--top-bar-height));
+        margin-bottom: 100px;
+        box-sizing: border-box;
+    }
+
+    .hero-intro-wrap {
+        margin-top: 0;
+        /* Horizontal size comes from left/right insets on the base rule */
+    }
+
+    .about-meta {
+        display: none;
+    }
+
+    .about {
+        --about-bio-cta-gap: 58px;
+        --about-bottom-pad-base: clamp(239px, calc(239px + (100vw - 997px) * 100 / 457), 280px);
+    }
+
+    .about-heading {
+        margin-bottom: 58px;
+    }
+}
+
+/* 800–1084px: intro ⅓ down viewport (logo↔location edges); deco line stacks below */
+@media (min-width: 800px) and (max-width: 1084px) {
+    .hero {
+        justify-content: flex-start;
+        padding-top: 33.333vh;
+    }
+
+    .hero-intro-wrap {
+        --hero-logo-work-gap: 80px;
+        --hero-decor-left: calc(
+            var(--top-bar-logo-inset) + 104px + var(--hero-logo-work-gap) -
+                var(--portfolio-main-inset-left) - var(--hero-decor-line-stroke-x)
+        );
+        width: calc(100% + 2 * var(--page-pad));
+        max-width: none;
+        margin-left: calc(-1 * var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        padding-left: var(--top-bar-logo-inset);
+        padding-right: var(--top-bar-edge-pad-right);
+        box-sizing: border-box;
+    }
+
+    .hero-decor {
+        --hero-decor-below-intro-gap: 80px;
+        left: var(--hero-decor-left);
+    }
+
+    .hero-decor-anchor {
+        left: var(--hero-decor-left);
+    }
+}
+
+@media (min-width: 1085px) and (min-height: 800px) {
+    .hero-intro-wrap {
+        transform: translateY(-2vh);
+    }
+}
+
+@media (width < 800px) {
+    .portfolio-page {
+        --page-pad: 20px;
+        --top-bar-height: 86px;
+        --hero-logo-gap: 74px;
+        /* Logo top 20px + 50.4px tall (20% bigger) in the 86px bar */
+        --top-bar-logo-inset: 20px;
+        --mobile-block-gap: calc(2 * 84px - 25px - 20px - 15px);
+        /* Longer CTA window so letter assemble has room and still lands together */
+        --cta-fly-delay: 0.1s;
+        --cta-fly-duration: 2.05s;
+        --hero-intro-cascade-start: 0.04s;
+        --hero-intro-cascade-end: 2.15s;
+    }
+
+    .portfolio-content {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .portfolio-main {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .hero {
+        margin-bottom: 100px;
+    }
+
+    .portfolio-main {
+        padding: 0 var(--page-pad) 0;
+        box-sizing: border-box;
+    }
+
+    .project--featured {
+        scroll-margin-top: 0;
+    }
+
+    .hero-intro-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        /* Before load: fill small viewport; after load: lock px so URL-bar show/hide
+           cannot grow the wrap (flex-end would shove the intro down). */
+        min-height: var(--mobile-hero-height, calc(100svh - var(--top-bar-height)));
+        height: var(--mobile-hero-height, auto);
+        max-height: var(--mobile-hero-height, none);
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+        padding-bottom: var(--page-pad);
+        box-sizing: border-box;
+    }
+
+    .hero-intro-wrap:has(.hero-intro--chars) {
+        width: calc(100% + 2 * var(--page-pad));
+        max-width: none;
+        margin-left: calc(-1 * var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        padding-left: var(--page-pad);
+        padding-right: var(--page-pad);
+        overflow: visible;
+    }
+
+    .hero-decor {
+        display: none;
+    }
+
+    .about-line-bridge {
+        display: none;
+    }
+
+    .about-line {
+        display: none;
+    }
+}
+
+/* ≤500px: swipe work strip — portrait thumbs, 20px gap, 20px next-card peek */
+@media (max-width: 500px) {
+    .portfolio-page {
+        --work-swipe-gap: 20px;
+        --work-swipe-peek: 20px;
+        /* Slightly shorter than About photo (201/288) so landscape heroes crop a bit less tight */
+        --work-thumb-aspect: 201 / 270;
+        --project-w: calc(
+            100vw - var(--page-pad) - var(--work-swipe-gap) - var(--work-swipe-peek)
+        );
+        --project-w-wide: var(--project-w);
+    }
+
+    .work {
+        /* Room inside the scrollport for thumb shadow (overflow clips otherwise). */
+        --work-thumb-shadow-pad-y: 20px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        gap: var(--work-swipe-gap);
+        row-gap: 0;
+        grid-auto-rows: auto;
+        width: calc(100% + 2 * var(--page-pad));
+        max-width: none;
+        min-width: 0;
+        margin-left: calc(-1 * var(--page-pad));
+        margin-right: calc(-1 * var(--page-pad));
+        /* Negative Y margin cancels the shadow pad so section spacing stays put. */
+        margin-top: calc(-1 * var(--work-thumb-shadow-pad-y));
+        margin-bottom: calc(-1 * var(--work-thumb-shadow-pad-y));
+        padding-left: var(--page-pad);
+        padding-right: var(--page-pad);
+        padding-top: var(--work-thumb-shadow-pad-y);
+        padding-bottom: var(--work-thumb-shadow-pad-y);
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: var(--page-pad);
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        touch-action: pan-x pan-y;
+    }
+
+    .work::-webkit-scrollbar {
+        display: none;
+    }
+
+    .work-slot,
+    .work-slot--offset {
+        flex: 0 0 var(--project-w);
+        width: var(--project-w);
+        max-width: var(--project-w);
+        height: auto;
+        justify-self: start;
+        align-items: flex-start;
+        scroll-snap-align: start;
+    }
+
+    /* Mobile: no fly-in */
+    .portfolio-page--reveal .project.portfolio-fly:not(.project--scroll-fade),
+    .portfolio-page--settled .portfolio-main .project.portfolio-fly:not(.project--scroll-fade) {
+        opacity: 1;
+        transform: none;
+        animation: none !important;
+        will-change: auto;
+    }
+
+    .project,
+    .project--featured,
+    .project--offset,
+    .work > .work-slot:last-child > .project {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        margin-top: 0;
+        margin-left: 0;
+    }
+
+    .project + .project {
+        margin-top: 0;
+    }
+
+    .project-image-link,
+    .project-image-wrap {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: var(--work-thumb-aspect);
+        overflow: hidden;
+        border-radius: 20px;
+        box-shadow: var(--project-thumb-shadow-rest);
+        transition: border-radius 0.18s ease-out, box-shadow 0.18s ease-out;
+    }
+
+    .project--press-expand .project-image-link,
+    .project--press-expand .project-image-wrap {
+        border-radius: 700px 700px 20px 20px;
+        box-shadow: var(--project-thumb-shadow);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .project:not(.project--upcoming):hover .project-image-link,
+        .project:not(.project--upcoming):hover .project-image-wrap,
+        .project:not(.project--upcoming):focus-within .project-image-link,
+        .project:not(.project--upcoming):focus-within .project-image-wrap {
+            border-radius: 700px 700px 20px 20px;
+            box-shadow: var(--project-thumb-shadow);
+        }
+    }
+
+    .project-image {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+    }
+
+    /* Case study crops: bias right so subjects sit better in the tall frame */
+    .project--featured .project-image {
+        object-position: calc(50% + 35px) center;
+    }
+
+    .project--offset .project-image {
+        object-position: calc(50% + 60px + var(--tilt-x, 0px))
+            calc(50% + var(--tilt-y, 0px));
+    }
+
+    .project-caption {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .project-caption-header {
+        padding-top: 0;
+        gap: 0;
+        width: 100%;
+    }
+
+    /* Match desktop Fira Code weights — plain integers avoid scale snapping to lighter faces */
+    .cta-button {
+        font-weight: 500;
+    }
+
+    .project-description {
+        font-weight: 400;
+    }
+
+    .project-year {
+        font-weight: 400;
+    }
+}
+
+/* Deco line present: no resting thumb shadow; softer hover/press shadow on desktop. */
+@media (min-width: 501px) {
+    .portfolio-page {
+        --project-thumb-shadow-rest: none;
+        --project-thumb-shadow: 0 3px 20px rgba(0, 0, 0, 0.035);
+    }
+}
+
+/* 501–600: square thumbnails only; keep tablet work layout / line / captions */
+@media (min-width: 501px) and (max-width: 600px) {
+    .project-image-link,
+    .project-image-wrap {
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        box-shadow: var(--project-thumb-shadow-rest);
+    }
+
+    .project-image {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+    }
+
+    .project--featured .project-image {
+        object-position: calc(50% + 35px) center;
+    }
+
+    .project--offset .project-image {
+        object-position: calc(50% + 60px + var(--tilt-x, 0px))
+            calc(50% + var(--tilt-y, 0px));
+    }
+}
+
+/* 501px–<800px: mobile hero + desktop work layout; line grows after dissipate */
+@media (min-width: 501px) and (width < 800px) {
+    .hero {
+        margin-bottom: 100px;
+    }
+
+    .hero-intro-wrap {
+        --hero-decor-left: 72px;
+        overflow: visible;
+    }
+
+    .hero-intro-wrap:has(.hero-intro--chars) {
+        --hero-decor-left: calc(var(--page-pad) + 72px);
+    }
+
+    .hero-decor {
+        display: block;
+        left: var(--hero-decor-left);
+        /* Height filled by JS; fully clipped until post-dissipate grow. */
+        --hero-decor-height: 0px;
+        top: 0;
+    }
+
+    .hero-decor-anchor {
+        left: var(--hero-decor-left);
+    }
+
+    .about-line-bridge,
+    .about-line {
+        display: block;
+    }
+
+    /* No static work/about stroke — JS mask-wipes top → bottom (entrance + scroll). */
+    .hero-decor,
+    .about-line-bridge,
+    .about-line {
+        -webkit-mask-image: linear-gradient(#0000 0 0);
+        mask-image: linear-gradient(#0000 0 0);
+    }
+}
+
+/* Desktop: same grow mask default (entrance then scroll-linked). */
+@media (min-width: 800px) {
+    .hero-decor,
+    .about-line-bridge,
+    .about-line {
+        -webkit-mask-image: linear-gradient(#0000 0 0);
+        mask-image: linear-gradient(#0000 0 0);
+    }
+}
+
+/* 700px–<800px: side-by-side about on mobile chrome */
+@media (min-width: 700px) and (width < 800px) {
+    .about {
+        --about-gap: 340px;
+        --about-bottom-pad-base: 180px;
+        margin-top: 340px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
+    }
+
+    .about-inner {
+        grid-template-columns: 345px 1fr;
+        max-width: 800px;
+        padding: 0;
+    }
+
+    .about-photo-column {
+        padding-left: var(--about-image-text-gap);
+    }
+
+    .about-photo,
+    .about-photo--placeholder {
+        width: 281px;
+        height: 402px;
+    }
+
+    .about-text-column {
+        padding-top: 100px;
+        padding-right: var(--about-image-text-gap);
+    }
+
+    .about-heading {
+        margin: 0 0 32px;
+    }
+
+    .about-bio {
+        max-width: 455px;
+        line-height: 25px;
+    }
+}
+
+/* 501px–<800px: mobile layout with desktop text sizes */
+@media (min-width: 501px) and (width < 800px) {
+    .hero-intro {
+        font-size: 26px;
+        line-height: 1.45;
+    }
+
+    .project-description {
+        margin: 16px 0 0;
+        line-height: 25px;
+    }
+}
+
+/* 501–799: case study captions use ≤500 (mobile) type whether or not the
+   work decor line is showing — keeps captions with mobile hero scale. */
+@media (min-width: 501px) and (width < 800px) {
+    .project-caption {
+        margin-top: 28px;
+    }
+
+    .project-title {
+        flex: 1 1 auto;
+        max-width: none;
+        font-size: 20px;
+        line-height: 33px;
+        color: #2c2c2c;
+    }
+
+    .project-description {
+        margin-top: 20px;
+        max-width: 100%;
+        font-size: 16px;
+        line-height: 25px;
+        color: #757575;
+    }
+
+    .project-year {
+        margin-top: 20px;
+        font-size: 16px;
+        line-height: 25px;
+    }
+}
+
+/* 501–799 landscape: short viewport — use ≤500 hero type (captions already mobile above) */
+@media (min-width: 501px) and (width < 800px) and (orientation: landscape) {
+    .hero-intro {
+        font-size: 22px;
+        line-height: 1.45;
+    }
+}
+
+/* ≤699px: stacked mobile about layout (same format as former ≤500 about) */
+@media (max-width: 699px) {
+    #about {
+        scroll-margin-top: 0;
+    }
+
+    .about {
+        margin-top: calc(2 * var(--mobile-block-gap));
+        /* Match last-case-study → about gap */
+        --about-bottom-pad: calc(2 * var(--mobile-block-gap));
+        --about-photo-h: 288px;
+        --about-stack-gap: 50px;
+        --about-heading-location-gap: 32px;
+        --about-content-shift: 50px;
+        padding: var(--about-top-pad) 0 var(--about-bottom-pad);
+    }
+
+    .about-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        position: relative;
+        --about-side-pad: var(--page-pad);
+        padding: 0 var(--about-side-pad);
+    }
+
+    /* Photo: right-aligned, behind heading/location */
+    .about-photo-column {
+        display: block;
+        position: absolute;
+        top: var(--about-content-shift);
+        right: var(--about-side-pad);
+        z-index: 0;
+        width: 201px;
+        height: var(--about-photo-h);
+        margin: 0;
+        padding: 0;
+    }
+
+    .about-photo,
+    .about-photo--placeholder {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .about-text-column {
+        display: block;
+        position: relative;
+        z-index: 1;
+        padding-top: 0;
+    }
+
+    /* Heading + location/role overlay the photo; bio stays below it */
+    .about-intro {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+        max-width: calc(100% - 100px);
+    }
+
+    .about-heading {
+        margin: 0 0 var(--about-heading-location-gap);
+        max-width: 100%;
+    }
+
+    .about-meta {
+        box-sizing: border-box;
+        width: auto;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        top: 10px;
+        left: calc(5px + var(--about-location-overlap-nudge, 0px));
+        position: relative;
+    }
+
+    .about-location-text:not(.about-location-text--glow):not(.about-location-text--soft):not(.about-location-text--white),
+    .about-role-text:not(.about-role-text--glow):not(.about-role-text--soft):not(.about-role-text--white) {
+        position: relative;
+        z-index: 1;
+        font-weight: 300;
+        background-image: linear-gradient(
+            to right,
+            var(--about-location-color) 0,
+            var(--about-location-color) var(--about-location-split, 100%),
+            transparent var(--about-location-split, 100%),
+            transparent 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+
+    .about-location-text-white-stack,
+    .about-role-text-white-stack {
+        --about-location-glow-pad: 12px;
+        display: block;
+        position: absolute;
+        /* Same origin as the 300 base text; weight 400 may differ in width —
+           clip-path keeps paint exclusive so layers never double up. */
+        left: 0;
+        top: calc(-1 * var(--about-location-glow-pad));
+        z-index: 2;
+        padding: var(--about-location-glow-pad) var(--about-location-glow-pad) var(--about-location-glow-pad) 0;
+        box-sizing: content-box;
+        pointer-events: none;
+        user-select: none;
+        clip-path: inset(0 0 0 var(--about-location-split-px, 100%));
+    }
+
+    .about-location-text-white-inner,
+    .about-role-text-white-inner {
+        display: block;
+        position: relative;
+        /* Pull/push 400-weight string so the seam character lines up with 300. */
+        margin-left: var(--about-location-white-align, 0px);
+    }
+
+    .about-location-text--glow,
+    .about-location-text--soft,
+    .about-location-text--white,
+    .about-role-text--glow,
+    .about-role-text--soft,
+    .about-role-text--white {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        white-space: nowrap;
+        font-weight: 400;
+    }
+
+    .about-location-text--glow,
+    .about-role-text--glow {
+        z-index: 0;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        text-shadow:
+            0 0 0.5px rgba(130, 122, 114, 0.95),
+            0 0 1.25px rgba(148, 140, 132, 0.8),
+            0 0 2.5px rgba(163, 156, 148, 0.6),
+            0 0 4px rgba(205, 198, 190, 0.45),
+            0 0 7px rgba(205, 198, 190, 0.28),
+            0 0 11px rgba(205, 198, 190, 0.14);
+    }
+
+    .about-location-text--soft,
+    .about-role-text--soft {
+        z-index: 1;
+        color: #fffef2;
+        -webkit-text-fill-color: #fffef2;
+        filter: blur(0.28px);
+        text-shadow:
+            0 0 0.2px rgba(255, 254, 242, 1),
+            0 0 0.45px rgba(255, 254, 242, 0.65),
+            0 0 0.7px rgba(255, 254, 242, 0.15);
+    }
+
+    .about-location-text--white,
+    .about-role-text--white {
+        z-index: 2;
+        position: relative;
+        color: #fff;
+        -webkit-text-fill-color: #fff;
+    }
+
+    .about-location-icon-wrap :deep(path),
+    .about-role-icon-wrap :deep(path) {
+        fill: currentColor;
+    }
+
+    .about-bio {
+        margin: calc(var(--about-content-shift) + var(--about-photo-h) + var(--about-stack-gap)) 0 0;
+        max-width: 100%;
+        font-size: 16px;
+        line-height: 25px;
+        font-weight: 400;
+    }
+
+    .about-actions {
+        margin-top: 96px;
+    }
+}
+
+/* ≤500px: smaller type for hero + work captions */
+@media (max-width: 500px) {
+    .hero-intro {
+        max-width: 100%;
+        font-size: 22px;
+        line-height: 1.45;
+    }
+
+    .project-caption {
+        margin-top: 28px;
+    }
+
+    .project-title {
+        flex: 1 1 auto;
+        max-width: none;
+        font-family: 'Work Sans', sans-serif;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 33px;
+        color: #2c2c2c;
+    }
+
+    .project-description {
+        margin-top: 20px;
+        max-width: 100%;
+        font-family: 'Fira Code', monospace;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 25px;
+        letter-spacing: 0;
+        color: #757575;
+    }
+
+    .project-year {
+        margin-top: 20px;
+        font-family: 'Work Sans', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 25px;
+        letter-spacing: -0.02em;
+        color: #4d4d4d;
+    }
+}
+</style>
+
+<style>
+/* Magnifier clone: never replay entrance fly-ins under the glass. */
+.hero-intro-cursor-mirror-clone .portfolio-fly,
+.hero-intro-cursor-mirror-clone .about--reveal .portfolio-fly {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    will-change: auto;
+}
+
+.hero-intro-cursor-mirror-clone .hero-intro-afterthought-char {
+    opacity: 1 !important;
+    max-width: none !important;
+    animation: none !important;
+}
+
+/* Magnifier clone: mirror interactive hover/press (clone cannot use :hover/:active). */
+.hero-intro-cursor-mirror-clone .about-link,
+.hero-intro-cursor-mirror-clone .footer-email {
+    text-decoration-thickness: calc(0.8px / var(--hero-cursor-magnifier-scale, 1));
+    text-underline-offset: calc(3px / var(--hero-cursor-magnifier-scale, 1));
+}
+
+.hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover,
+.hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-hover {
+    background: var(--brand-hover) !important;
+}
+
+.hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-active,
+.hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-active {
+    opacity: 0.7 !important;
+    transition: none !important;
+}
+
+.hero-intro-cursor-mirror-clone .footer-email.hero-cursor-mirror-hover {
+    color: var(--brand) !important;
+}
+
+.hero-intro-cursor-mirror-clone .project-caption-link .project-title {
+    /* Snap — live page keeps 0.18s ease-out to match thumbnail morph */
+    transition: none !important;
+}
+
+.hero-intro-cursor-mirror-clone .project.hero-cursor-mirror-hover .project-caption-link .project-title {
+    color: var(--brand) !important;
+}
+
+.hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
+.hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
+    border-radius: 700px 700px 20px 20px;
+    box-shadow: var(--project-thumb-shadow);
+}
+</style>

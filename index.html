@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/tab-logo.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tim Justina</title>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@300;400;500;600&family=Maven+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      @media (hover: hover) and (pointer: fine) {
+        html.portfolio-hero-cursor,
+        html.portfolio-hero-cursor body,
+        html.portfolio-hero-cursor * {
+          cursor: none !important;
+        }
+      }
+    </style>
+    <script>
+      (function () {
+        var path = location.pathname
+        if (path !== '/' && path !== '') return
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+        document.documentElement.classList.add('portfolio-hero-cursor')
+      })()
+    </script>
+  </head>
+
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
