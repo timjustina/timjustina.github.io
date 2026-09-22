@@ -3150,6 +3150,12 @@ export default {
                             this.heroIntroScrollReplaying = false
                             this.heroIntroScrollReplayArmed = false
                             this.heroIntroScrollReplayTimer = null
+                            if (this.heroCursorActive && this.isHeroIntroFinePointer()) {
+                                const { x, y } = this.heroCursorPos
+                                this.updateHeroFinePointer(x, y, {
+                                    introEffects: this.canHeroIntroPointerPlay(),
+                                })
+                            }
                         }, waitMs)
                     })
                 })
@@ -3322,6 +3328,9 @@ export default {
             return (
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
+                // Scroll-back cascade matches the first fly-in: glass can show,
+                // letters don't get pushed until the cascade has settled.
+                !this.heroIntroScrollReplaying &&
                 !this.heroIntroDissipated &&
                 // Desktop / fine-pointer: never play during reconsolidate.
                 // Touch-disk only: may keep repelling while letters snap back.
@@ -5225,15 +5234,17 @@ export default {
             this.startHeroCursorGlassFollow()
         },
         updateHeroFinePointer(x, y, { introEffects = true, skipHover = false } = {}) {
-            // Hero letter push is gated by introEffects (off while dissipated).
+            // Hero letter push is gated by introEffects (off while dissipated or
+            // while the scroll-back cascade is still playing).
             // Footer stays interactive for the fine-pointer glass cursor too —
             // except near the email, where the magnifier takes priority.
+            const introPlay = introEffects && this.canHeroIntroPointerPlay()
             const preferEmailMag = this.isPreferFooterEmailMagnifier(x, y)
             const nearFooter =
                 !preferEmailMag && this.canFooterPushPlay() && this.isNearFooterPush(x, y)
             const inRange = preferEmailMag
                 ? false
-                : (introEffects && this.isHeroIntroPointerNear(x, y)) || nearFooter
+                : (introPlay && this.isHeroIntroPointerNear(x, y)) || nearFooter
             const wasActive = this.heroCursorActive
 
             this.heroCursorPos = { x, y }
@@ -7806,7 +7817,7 @@ export default {
     /* SVG stroke is centered on x=35; match the 2px border-left left edge at x=34 */
     --hero-decor-line-stroke-x: 34px;
     --hero-decor-line-width: 2px;
-    --hero-decor-line-natural-height: 3200px;
+    --hero-decor-line-natural-height: 8000px;
     --portfolio-main-inset-left: max(0px, (100vw - var(--page-max)) / 2);
     --hero-intro-left: calc(var(--hero-squiggle-left) + var(--hero-squiggle-width) + 23px);
     --portfolio-decor-line-x: calc(
