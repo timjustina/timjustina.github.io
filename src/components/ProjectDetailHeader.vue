@@ -123,7 +123,8 @@ export default {
             })
         },
         getFluidTargetWidth() {
-            return Math.max(0, document.documentElement.clientWidth - FLUID_SIDE_MARGIN * 2)
+            // Left gutter only (no matching right gap) — preview asymmetric width
+            return Math.max(0, document.documentElement.clientWidth - FLUID_SIDE_MARGIN)
         },
         async measureLineWidth(lineText) {
             const probe = this.$refs.measureProbe

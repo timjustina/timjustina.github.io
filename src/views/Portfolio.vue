@@ -293,7 +293,7 @@
                             </span>
                         </template>
                         <template v-else>
-                            <span class="hero-intro-lead">I'm Tim Justina Yeung, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and academic research.
+                            <span class="hero-intro-lead">I'm Tim Justina, a </span><strong class="hero-intro-em hero-intro-em--keep">Product Designer</strong> with a background in Neuroscience and academic research.
                             <span class="hero-intro-nobreak">I deeply</span> enjoy understanding complex problems and providing creative solutions
                             <strong class="hero-intro-em hero-intro-em--keep">for people <span class="hero-intro-afterthought"><span class="hero-intro-afterthought-char">:</span><span class="hero-intro-afterthought-char">)</span><span class="hero-intro-afterthought-cursor" aria-hidden="true"></span></span></strong>
                         </template>
@@ -1092,7 +1092,7 @@ const TABLET_DECOR_GROW_TIP_VIEWPORT = 0.7
 const DESKTOP_DECOR_HERO_GROW_MS = 780
 
 const HERO_INTRO_PARTS = [
-    { text: "I'm Tim Justina Yeung, a ", em: false },
+    { text: "I'm Tim Justina, a ", em: false },
     { text: 'Product Designer', em: true, keep: true },
     {
         text: ' with a background in Neuroscience and academic research. I deeply enjoy understanding complex problems and providing creative solutions ',

@@ -608,8 +608,10 @@ export default {
 
 @media (min-width: 800px) {
   .pageOverlayTopBar :global(.project-hero + .project-header) {
-    width: calc(100vw - 78px);
-    max-width: calc(100vw - 78px);
+    width: calc(100vw - 39px);
+    max-width: calc(100vw - 39px);
+    margin-left: 39px;
+    margin-right: 0;
   }
 
   .pageOverlayTopBar :global(.project-hero + .project-header .project-header-title) {
