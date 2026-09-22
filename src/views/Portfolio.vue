@@ -484,21 +484,61 @@
                         (research paper).
                     </p>
                     <div class="about-actions portfolio-fly portfolio-fly--from-left">
-                        <div class="about-actions-row">
-                            <a
-                                href="https://www.linkedin.com/in/timjustina"
-                                class="about-action-btn"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >Linkedin</a>
+                        <div
+                            ref="aboutActionsRow"
+                            class="about-actions-row"
+                            @pointerover="onAboutActionBubbleOver"
+                            @pointermove="onAboutActionBubbleMove"
+                            @pointerout="onAboutActionBubbleOut"
+                            @focusin="onAboutActionBubbleFocus"
+                            @focusout="onAboutActionBubbleBlur"
+                        >
                             <a
                                 :href="cvUrl"
                                 class="about-action-btn"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                            >CV</a>
+                                aria-label="Resume"
+                            >
+                                <span class="about-action-icon" aria-hidden="true" v-html="resumeIconSvg" />
+                            </a>
+                            <a
+                                href="https://www.linkedin.com/in/timjustina"
+                                class="about-action-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Linkedin"
+                            >
+                                <span class="about-action-icon" aria-hidden="true" v-html="linkedinIconSvg" />
+                            </a>
+                            <a
+                                v-if="githubUrl"
+                                :href="githubUrl"
+                                class="about-action-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="GitHub"
+                            >
+                                <span class="about-action-icon" aria-hidden="true" v-html="githubIconSvg" />
+                            </a>
+                            <span
+                                v-else
+                                class="about-action-btn about-action-btn--pending"
+                                role="img"
+                                aria-label="GitHub"
+                            >
+                                <span class="about-action-icon" aria-hidden="true" v-html="githubIconSvg" />
+                            </span>
                         </div>
                     </div>
+                    <Teleport to="body">
+                        <span
+                            ref="aboutActionBubble"
+                            class="about-action-bubble"
+                            :class="{ 'about-action-bubble--visible': aboutActionBubbleVisible }"
+                            aria-hidden="true"
+                        >{{ aboutActionBubbleLabel }}</span>
+                    </Teleport>
                 </div>
             </div>
         </section>
@@ -519,6 +559,9 @@ import loadingFolded from '../assets/loading/loading_folded.svg'
 import menuLogo from '../assets/TjyCutoutLogo.svg'
 import locationIconSvg from '../assets/location.svg?raw'
 import officeIconSvg from '../assets/1_dashboard/office.svg?raw'
+import resumeIconSvg from '../assets/1_dashboard/resume.svg?raw'
+import linkedinIconSvg from '../assets/1_dashboard/linkedin.svg?raw'
+import githubIconSvg from '../assets/1_dashboard/github.svg?raw'
 import cvUrl from '../assets/Tim Justina Yeung CV-2.pdf'
 import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
@@ -572,6 +615,14 @@ const HERO_CURSOR_HOVER_LOCK_PAD = 8
 const HERO_CURSOR_DOT_SIZE = 8
 const HERO_CURSOR_GLASS_IDLE_SIZE = 48
 const HERO_CURSOR_GLASS_HOVER_EXTRA = 18
+/** About-icon chip: ease toward the pointer so it trails instead of sticking. */
+const ABOUT_ACTION_BUBBLE_LAG_MS = 240
+/**
+ * Bottom of the chip sits this far above the pointer, clearing the hover
+ * magnifier (66px disk, radius 33) with a small gap.
+ */
+const ABOUT_ACTION_BUBBLE_GAP_PX =
+    (HERO_CURSOR_GLASS_IDLE_SIZE + HERO_CURSOR_GLASS_HOVER_EXTRA) / 2 + 12
 const HERO_CURSOR_HOLLOW_END = 0.28
 const HERO_CURSOR_HOVER_LERP = 0.3
 const HERO_CURSOR_HOVER_DISK_EXPAND_IN = 0.1
@@ -911,7 +962,7 @@ const HERO_CURSOR_HOVER_TARGET_SELECTOR = [
     '.nav-link',
     '.project-image-link',
     '.project-caption-link',
-    '.about-action-btn',
+    '.about-action-btn:not(.about-action-btn--pending)',
     '.footer-email',
     '.project-tldr-trigger',
 ].join(', ')
@@ -1179,7 +1230,13 @@ export default {
             menuLogo,
             locationIconSvg,
             officeIconSvg,
+            resumeIconSvg,
+            linkedinIconSvg,
+            githubIconSvg,
             cvUrl,
+            githubUrl: '',
+            aboutActionBubbleLabel: '',
+            aboutActionBubbleVisible: false,
             showLoadingSplash: true,
             logoHandoff: false,
             logoHandoffStyle: null,
@@ -2170,6 +2227,7 @@ export default {
         if (this.heroIntroScrollRaf != null) cancelAnimationFrame(this.heroIntroScrollRaf)
         if (this.heroIntroDissipateRaf != null) cancelAnimationFrame(this.heroIntroDissipateRaf)
         this.stopHeroCursorGlassFollow()
+        this.stopAboutActionBubbleLoop()
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
         clearTimeout(this.heroIntroScrollReplayTimer)
@@ -2211,6 +2269,100 @@ export default {
         }
     },
     methods: {
+        isAboutActionBubbleFinePointer(event) {
+            if (typeof window === 'undefined') return false
+            if (event?.pointerType && event.pointerType !== 'mouse' && event.pointerType !== 'pen') {
+                return false
+            }
+            return window.matchMedia(HERO_CURSOR_FINE_POINTER_MQ).matches
+        },
+        aboutActionBubbleButton(event) {
+            const btn = event.target?.closest?.('.about-action-btn')
+            if (!btn || !this.$refs.aboutActionsRow?.contains(btn)) return null
+            return btn
+        },
+        showAboutActionBubble(label, clientX, clientY) {
+            if (!label) return
+            const appear = !this.aboutActionBubbleVisible
+            this.aboutActionBubbleLabel = label
+            this.aboutActionBubbleVisible = true
+            this.aboutActionBubbleTargetX = clientX
+            this.aboutActionBubbleTargetY = clientY
+            if (appear || this.aboutActionBubbleX == null) {
+                this.aboutActionBubbleX = clientX
+                this.aboutActionBubbleY = clientY
+                this.paintAboutActionBubble()
+            }
+            this.ensureAboutActionBubbleLoop()
+        },
+        paintAboutActionBubble() {
+            const el = this.$refs.aboutActionBubble
+            if (!el || this.aboutActionBubbleX == null) return
+            el.style.transform = `translate3d(${this.aboutActionBubbleX}px, ${this.aboutActionBubbleY}px, 0) translate(-50%, calc(-100% - ${ABOUT_ACTION_BUBBLE_GAP_PX}px))`
+        },
+        ensureAboutActionBubbleLoop() {
+            if (this.aboutActionBubbleRaf != null) return
+            let last = performance.now()
+            const step = (now) => {
+                const dt = Math.min(48, now - last)
+                last = now
+                const reduce =
+                    typeof window !== 'undefined' &&
+                    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                const t = reduce ? 1 : 1 - Math.exp(-dt / ABOUT_ACTION_BUBBLE_LAG_MS)
+                const dx = this.aboutActionBubbleTargetX - this.aboutActionBubbleX
+                const dy = this.aboutActionBubbleTargetY - this.aboutActionBubbleY
+                this.aboutActionBubbleX += dx * t
+                this.aboutActionBubbleY += dy * t
+                this.paintAboutActionBubble()
+                if (!this.aboutActionBubbleVisible && Math.hypot(dx, dy) < 0.4) {
+                    this.aboutActionBubbleRaf = null
+                    return
+                }
+                this.aboutActionBubbleRaf = requestAnimationFrame(step)
+            }
+            this.aboutActionBubbleRaf = requestAnimationFrame(step)
+        },
+        stopAboutActionBubbleLoop() {
+            if (this.aboutActionBubbleRaf != null) {
+                cancelAnimationFrame(this.aboutActionBubbleRaf)
+                this.aboutActionBubbleRaf = null
+            }
+        },
+        onAboutActionBubbleOver(event) {
+            if (!this.isAboutActionBubbleFinePointer(event)) return
+            const btn = this.aboutActionBubbleButton(event)
+            if (!btn) return
+            this.showAboutActionBubble(btn.getAttribute('aria-label'), event.clientX, event.clientY)
+        },
+        onAboutActionBubbleMove(event) {
+            if (!this.aboutActionBubbleVisible || !this.isAboutActionBubbleFinePointer(event)) return
+            if (!this.$refs.aboutActionsRow?.contains(event.target)) return
+            this.aboutActionBubbleTargetX = event.clientX
+            this.aboutActionBubbleTargetY = event.clientY
+            this.ensureAboutActionBubbleLoop()
+        },
+        onAboutActionBubbleOut(event) {
+            const next = event.relatedTarget
+            if (next && this.$refs.aboutActionsRow?.contains(next)) return
+            this.aboutActionBubbleVisible = false
+        },
+        onAboutActionBubbleFocus(event) {
+            if (!this.isAboutActionBubbleFinePointer()) return
+            const btn = this.aboutActionBubbleButton(event)
+            if (!btn) return
+            const rect = btn.getBoundingClientRect()
+            this.showAboutActionBubble(
+                btn.getAttribute('aria-label'),
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2
+            )
+        },
+        onAboutActionBubbleBlur(event) {
+            const next = event.relatedTarget
+            if (next && this.$refs.aboutActionsRow?.contains(next)) return
+            this.aboutActionBubbleVisible = false
+        },
         /**
          * Labels compress into the blue center with expand — no CSS opacity lag.
          * Scale/opacity track the frost so collapse matches the disk speed.
@@ -5160,7 +5312,7 @@ export default {
             if (!(liveNode instanceof Element)) return false
             return (
                 liveNode.matches('.project:not(.project--upcoming)') ||
-                liveNode.matches('.about-action-btn')
+                liveNode.matches('.about-action-btn:not(.about-action-btn--pending)')
             )
         },
         clearHeroCursorPressTarget() {
@@ -9011,8 +9163,7 @@ export default {
 }
 
 /* Glass edge — thinner rim, soft inner glow */
-.cta-button::after,
-.about-action-btn::after {
+.cta-button::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -9304,9 +9455,9 @@ export default {
     display: block;
     margin: 16px 0 0;
     font-family: 'Work Sans', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
-    line-height: 25px;
+    line-height: 22px;
     letter-spacing: -0.02em;
     color: var(--title);
 }
@@ -9524,7 +9675,7 @@ export default {
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 20px;
+    gap: 12px;
 }
 
 .about-action-btn {
@@ -9534,41 +9685,115 @@ export default {
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    height: 54px;
-    padding: 12px 24px;
-    border-radius: 60px;
-    isolation: isolate;
-    background: var(--brand);
-    font-family: 'Work Sans', sans-serif;
-    font-size: 20px;
-    font-weight: calc(500 * var(--font-weight-scale));
-    line-height: 30px;
-    white-space: nowrap;
-    color: #fff;
+    width: 48px;
+    height: 48px;
+    padding: 8px;
+    color: var(--brand);
     text-decoration: none;
     box-sizing: border-box;
     transition:
-        background 0.2s ease,
+        color 0.2s ease,
         opacity 0.15s ease;
+}
+
+.about-action-icon {
+    display: flex;
+    width: 32px;
+    height: 32px;
+}
+
+.about-action-icon :deep(svg) {
+    display: block;
+    width: 32px;
+    height: 32px;
+}
+
+.about-action-btn :deep(path) {
+    fill: currentColor;
+}
+
+.about-action-btn--pending {
+    cursor: default;
+}
+
+/* Trails the pointer, centered above it. Glow matches the glass ball. */
+.about-action-bubble {
+    position: fixed;
+    left: 0;
+    top: 0;
+    /* Above magnifier (10001), glass (10002), pointer dot (10003), and touch menu (10006). */
+    z-index: 10010;
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: max-content;
+    height: 28px;
+    margin: 0;
+    padding: 0 12px;
+    box-sizing: border-box;
+    background: #000444;
+    border-radius: 999px;
+    --hero-cursor-hover-expand: 1;
     box-shadow:
-        0 1px 2px rgba(15, 23, 42, 0.18),
-        0 2px 4px rgba(15, 23, 42, 0.1);
+        inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-expand, 0)))),
+        0 0 calc(2px - 1px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(1px + 2px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(2px + 3px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(3px + 4px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(5px + 5px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-expand, 0))),
+        0 0 calc(7px + 6px * var(--hero-cursor-hover-expand, 0))
+            rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-expand, 0)));
+    font-family: 'Fira Code', monospace;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-align: center;
+    text-box: trim-both cap alphabetic;
+    color: #fff;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    will-change: transform;
+    transition:
+        opacity 0.18s ease,
+        visibility 0.18s ease;
+}
+
+.about-action-bubble--visible {
+    opacity: 1;
+    visibility: visible;
+    transition:
+        opacity 0.18s ease,
+        visibility 0s;
 }
 
 /* Hover only on fine pointers — no sticky hover after tap on mobile */
 @media (hover: hover) and (pointer: fine) {
-    .about-action-btn:hover {
-        background: var(--brand-hover);
+    .about-action-btn:not(.about-action-btn--pending):hover {
+        color: var(--brand-hover);
     }
 }
 
-/* Touch disk: About CTAs go hover-blue under the glass */
+/* Touch disk: About icons go hover-blue under the glass */
 .about-action-btn.hero-cursor-mirror-hover {
-    background: var(--brand-hover);
+    color: var(--brand-hover);
 }
 
-/* Pressed: mute the whole pill (blue + white), not a separate dark fill */
-.about-action-btn:active {
+.about-action-btn:not(.about-action-btn--pending):active {
     opacity: 0.7;
     transition: none;
 }
@@ -10253,8 +10478,8 @@ export default {
 
     .project-year {
         margin-top: 20px;
-        font-size: 16px;
-        line-height: 25px;
+        font-size: 14px;
+        line-height: 22px;
     }
 }
 
@@ -10491,9 +10716,9 @@ export default {
     .project-year {
         margin-top: 20px;
         font-family: 'Work Sans', sans-serif;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 400;
-        line-height: 25px;
+        line-height: 22px;
         letter-spacing: -0.02em;
         color: #4d4d4d;
     }
@@ -10523,7 +10748,10 @@ export default {
     text-underline-offset: calc(3px / var(--hero-cursor-magnifier-scale, 1));
 }
 
-.hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover,
+.hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover {
+    color: var(--brand-hover) !important;
+}
+
 .hero-intro-cursor-mirror-clone .cta-button.hero-cursor-mirror-hover {
     background: var(--brand-hover) !important;
 }
