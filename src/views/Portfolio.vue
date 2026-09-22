@@ -1234,7 +1234,7 @@ export default {
             linkedinIconSvg,
             githubIconSvg,
             cvUrl,
-            githubUrl: '',
+            githubUrl: 'https://github.com/timjustina',
             aboutActionBubbleLabel: '',
             aboutActionBubbleVisible: false,
             showLoadingSplash: true,
