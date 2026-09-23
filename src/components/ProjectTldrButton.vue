@@ -424,8 +424,8 @@ export default {
   font-family: 'Fira Code', monospace;
   font-style: normal;
   font-weight: 500;
-  font-size: 22px;
-  line-height: 33px;
+  font-size: 18px;
+  line-height: 30px;
   letter-spacing: 0;
   color: #000aaa;
   vertical-align: middle;
@@ -566,8 +566,8 @@ export default {
   }
 
   .project-tldr-heading {
-    font-size: 24px;
-    line-height: 36px;
+    font-size: 20px;
+    line-height: 30px;
   }
 
   .project-tldr-list {
