@@ -607,10 +607,20 @@ export default {
 }
 
 @media (min-width: 800px) {
+  .pageOverlayTopBar {
+    /* Header box the top glass is centered on */
+    --project-hero-glass-anchor-left: 39px;
+    --project-hero-glass-anchor-width: calc(100vw - 39px);
+    --project-hero-glass-left: calc(
+      var(--project-hero-glass-anchor-left) +
+        (var(--project-hero-glass-anchor-width) - var(--project-hero-glass-width)) / 2
+    );
+  }
+
   .pageOverlayTopBar :global(.project-hero + .project-header) {
-    width: calc(100vw - 39px);
-    max-width: calc(100vw - 39px);
-    margin-left: 39px;
+    width: var(--project-hero-glass-anchor-width);
+    max-width: var(--project-hero-glass-anchor-width);
+    margin-left: var(--project-hero-glass-anchor-left);
     margin-right: 0;
   }
 
@@ -635,6 +645,30 @@ export default {
 
   .main :global(.project-body .project-tldr-copy) {
     margin-left: var(--project-title-offset, 0px);
+  }
+
+  /* TL;DR panel shares the top glass width and horizontal position.
+     Horizontal padding keeps headings on the h2 line and the summary
+     column on the body text. */
+  .pageOverlayTopBar :global(.project-body .project-tldr-panel-slot) {
+    width: var(--project-hero-glass-width);
+    max-width: none;
+    margin-left: calc(var(--project-hero-glass-left) - var(--project-body-left));
+  }
+
+  .pageOverlayTopBar :global(.project-body .project-tldr-panel) {
+    padding-left: calc(
+      var(--project-body-left) - var(--project-title-offset, 0px) -
+        var(--project-hero-glass-left)
+    );
+    padding-right: calc(
+      var(--project-hero-glass-left) + var(--project-hero-glass-width) -
+        var(--project-body-left) -
+        min(
+          var(--project-content-w),
+          100vw - var(--project-body-left) - var(--project-edge-pad)
+        )
+    );
   }
 }
 

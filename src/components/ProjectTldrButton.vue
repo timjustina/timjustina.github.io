@@ -250,6 +250,8 @@ export default {
   --project-tldr-trigger-height: 36px;
   --project-tldr-panel-nudge: 10px;
   --project-tldr-chevron-size: 36px;
+  /* Visible gap from the TL;DR control to “In summary” — also the CTA → panel bottom gap */
+  --project-tldr-summary-gap: 80px;
   position: relative;
   display: block;
   width: 100%;
@@ -375,9 +377,10 @@ export default {
   width: 100%;
   max-width: none;
   padding: calc(
-      var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 80px
+      var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) +
+        var(--project-tldr-summary-gap)
     )
-    var(--project-body-left) 52px var(--project-body-left);
+    var(--project-body-left) var(--project-tldr-summary-gap) var(--project-body-left);
   box-sizing: border-box;
   border-radius: 0;
   background: linear-gradient(
@@ -592,6 +595,7 @@ export default {
   .project-tldr {
     --project-tldr-trigger-height: 44px;
     --project-tldr-chevron-size: 44px;
+    --project-tldr-summary-gap: 100px;
     width: 100%;
     margin: 0 0 120px;
   }
@@ -611,9 +615,11 @@ export default {
 
   .project-tldr-panel {
     padding: calc(
-        var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) + 100px
+        var(--project-tldr-trigger-height) + var(--project-tldr-panel-nudge) +
+          var(--project-tldr-summary-gap)
       )
-      var(--project-title-offset, 0px) 64px var(--project-title-offset, 0px);
+      var(--project-title-offset, 0px) var(--project-tldr-summary-gap)
+      var(--project-title-offset, 0px);
     border-radius: 0 0 40px 40px;
   }
 
