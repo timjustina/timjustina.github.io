@@ -661,11 +661,13 @@ export default {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  width: min(304px, calc(100vw - 40px));
+  width: max-content;
+  max-width: calc(100vw - 40px);
   height: 54px;
   padding: 12px 24px;
   gap: 10px;
   box-sizing: border-box;
+  white-space: nowrap;
   background: rgba(26, 26, 26, 0.9);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.25);
   border-radius: 8px;
