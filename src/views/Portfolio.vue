@@ -1141,6 +1141,44 @@ const PROJECT_CAPTION_LINE_APPROACH_LEAD_PX = 10
 const TABLET_DECOR_GROW_TIP_VIEWPORT = 0.7
 /** Desktop entrance: grow from tip to hero-viewport bottom (ms). */
 const DESKTOP_DECOR_HERO_GROW_MS = 780
+/**
+ * Scroll grow chases where the tip was this long ago, so it stays a little
+ * behind the live scroll position.
+ */
+const DECOR_LINE_SCROLL_LAG_MS = 80
+/** Time to go from "noticed" to full catch-up speed. */
+const DECOR_LINE_REACT_MS = 320
+/**
+ * Catch-up curve: slow to notice the lead, then rush and settle on the tip.
+ * cubic-bezier(0.55, 0, 0.15, 1)
+ */
+const decorLineCatchEase = createCubicBezierEase(0.55, 0, 0.15, 1)
+
+function createCubicBezierEase(x1, y1, x2, y2) {
+    const cx = 3 * x1
+    const bx = 3 * (x2 - x1) - cx
+    const ax = 1 - cx - bx
+    const cy = 3 * y1
+    const by = 3 * (y2 - y1) - cy
+    const ay = 1 - cy - by
+    const sampleX = (t) => ((ax * t + bx) * t + cx) * t
+    const sampleY = (t) => ((ay * t + by) * t + cy) * t
+    const sampleDX = (t) => (3 * ax * t + 2 * bx) * t + cx
+
+    return (x) => {
+        if (x <= 0) return 0
+        if (x >= 1) return 1
+        let t = x
+        for (let i = 0; i < 8; i++) {
+            const err = sampleX(t) - x
+            if (Math.abs(err) < 1e-5) break
+            const slope = sampleDX(t)
+            if (Math.abs(slope) < 1e-6) break
+            t = Math.min(1, Math.max(0, t - err / slope))
+        }
+        return sampleY(t)
+    }
+}
 
 const HERO_INTRO_PARTS = [
     { text: "I'm Tim Justina, a ", em: false },
@@ -2233,6 +2271,7 @@ export default {
         clearTimeout(this.heroIntroScrollReplayTimer)
         clearTimeout(this.tabletWorkDecorRevealTimer)
         this.cancelDesktopDecorLineEntrance()
+        this.cancelDecorLineGrowChase()
         clearTimeout(this.heroTouchDiskEntranceTimer)
         clearTimeout(this.heroTouchDiskBreatheTimer)
         if (this.heroTouchDiskJiggleRaf != null) {
@@ -3171,6 +3210,7 @@ export default {
                             this.getTabletDecorLineScrollProgress(),
                             metrics?.heroViewportProgress ?? 0,
                         )
+                        this.cancelDecorLineGrowChase()
                         this.applyTabletDecorLineGrowProgress(p)
                         this.syncProjectCaptionLineOffset()
                     }
@@ -7169,6 +7209,113 @@ export default {
                 this.desktopDecorEntranceRaf = null
             }
         },
+        cancelDecorLineGrowChase() {
+            const chase = this._decorLineChase
+            if (chase?.raf != null) cancelAnimationFrame(chase.raf)
+            this._decorLineChase = null
+        },
+        /**
+         * Scroll position the stroke is allowed to chase: the ratcheted target
+         * as it stood DECOR_LINE_SCROLL_LAG_MS ago. Newer samples stay ahead
+         * so the tip is always a little late.
+         */
+        laggedDecorLineTarget(chase, now) {
+            const want = now - DECOR_LINE_SCROLL_LAG_MS
+            let lagged = chase.baseline
+            for (let i = 0; i < chase.samples.length; i++) {
+                if (chase.samples[i].t <= want) lagged = chase.samples[i].p
+                else break
+            }
+            return Math.min(chase.target, Math.max(0, lagged))
+        },
+        /**
+         * Raise the scroll-grow target. The painted tip trails that mark and
+         * eases along the catch-up bezier instead of jumping with the scroll.
+         */
+        queueDecorLineGrowFromScroll(progress) {
+            const painted = this.tabletDecorLineGrowProgress
+            const clamped = Math.min(1, Math.max(0, progress))
+            const chase = this._decorLineChase
+            const prevTarget = chase?.target ?? painted
+            const target = Math.max(prevTarget, painted, clamped)
+            if (target <= prevTarget + 0.0004) return
+
+            if (prefersReducedMotion()) {
+                this.cancelDecorLineGrowChase()
+                this.applyTabletDecorLineGrowProgress(target)
+                return
+            }
+
+            const now = performance.now()
+            if (!this._decorLineChase) {
+                this._decorLineChase = {
+                    raf: null,
+                    ticking: false,
+                    target,
+                    baseline: painted,
+                    samples: [],
+                    react: 0,
+                    prevGap: 0,
+                    lastTs: now,
+                }
+            }
+            const state = this._decorLineChase
+            state.target = target
+            state.samples.push({ t: now, p: target })
+            const cutoff = now - 800
+            while (state.samples.length > 2 && state.samples[0].t < cutoff) {
+                state.baseline = state.samples.shift().p
+            }
+            if (state.raf == null && !state.ticking) {
+                state.raf = requestAnimationFrame((ts) => {
+                    if (this._decorLineChase !== state) return
+                    this.tickDecorLineGrowChase(ts)
+                })
+            }
+        },
+        tickDecorLineGrowChase(now) {
+            const chase = this._decorLineChase
+            if (!chase) return
+            chase.ticking = true
+            chase.raf = null
+
+            const dt = Math.min(0.05, Math.max(0, (now - chase.lastTs) / 1000))
+            chase.lastTs = now
+
+            const lagged = this.laggedDecorLineTarget(chase, now)
+            const live = this.tabletDecorLineGrowProgress
+            const follow = Math.max(lagged, live)
+            const gap = follow - live
+
+            // A fresh lead drops back into the slow part of the curve so the
+            // tip visibly notices, then rushes to catch the lagged position.
+            if (gap > chase.prevGap + 0.025) chase.react *= 0.45
+
+            if (gap > 0.0005) {
+                chase.react = Math.min(1, chase.react + dt / (DECOR_LINE_REACT_MS / 1000))
+                const surge = decorLineCatchEase(chase.react)
+                const tau = Math.max(0.05, 0.5 - surge * 0.43)
+                const next = Math.min(follow, live + gap * (1 - Math.exp(-dt / tau)))
+                if (next > live + 0.0002) this.applyTabletDecorLineGrowProgress(next)
+            }
+
+            chase.prevGap = Math.max(0, follow - this.tabletDecorLineGrowProgress)
+            chase.ticking = false
+            if (this._decorLineChase !== chase) return
+
+            const behind = this.tabletDecorLineGrowProgress < chase.target - 0.0008
+            if (!behind) {
+                if (chase.target > this.tabletDecorLineGrowProgress) {
+                    this.applyTabletDecorLineGrowProgress(chase.target)
+                }
+                this._decorLineChase = null
+                return
+            }
+            chase.raf = requestAnimationFrame((ts) => {
+                if (this._decorLineChase !== chase) return
+                this.tickDecorLineGrowChase(ts)
+            })
+        },
         unlockHeroIntroCascade() {
             if (this.heroIntroCascadeReady) return
             this.syncHeroIntroCharColumns()
@@ -7184,6 +7331,7 @@ export default {
             if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
 
             this.cancelDesktopDecorLineEntrance()
+            this.cancelDecorLineGrowChase()
             this.desktopDecorHeroGrowDone = false
             this.heroIntroCascadeReady = false
             this.tabletDecorCaptionsPreclear = true
@@ -7258,39 +7406,29 @@ export default {
         },
         /**
          * Desktop scroll grow after the hero-viewport entrance phase.
-         * Progress only increases; no retract on scroll-up.
+         * The tip trails scroll, then catches up; it never retracts on scroll-up.
          */
         updateDesktopDecorLineGrowFromScroll() {
             if (typeof window === 'undefined') return
             if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
             if (!this.pageRevealed || !this.desktopDecorHeroGrowDone) return
-            if (this.tabletDecorLineGrowProgress >= 1) return
+            if (this.tabletDecorLineGrowProgress >= 1 && !this._decorLineChase) return
 
             this.syncAboutLineBridge()
-            const next = Math.max(
-                this.tabletDecorLineGrowProgress,
-                this.getTabletDecorLineScrollProgress(),
-            )
-            if (next <= this.tabletDecorLineGrowProgress) return
-            this.applyTabletDecorLineGrowProgress(next)
+            this.queueDecorLineGrowFromScroll(this.getTabletDecorLineScrollProgress())
         },
         /**
-         * Advance the tablet decor grow from scroll. Progress only increases
-         * (no retract on scroll-up); reconsolidate resets via hide.
+         * Advance the tablet decor grow from scroll. The tip trails, then
+         * catches up. No retract on scroll-up; reconsolidate resets via hide.
          */
         updateTabletDecorLineGrowFromScroll() {
             if (typeof window === 'undefined') return
             if (!window.matchMedia(TABLET_MOBILE_MEDIA_QUERY).matches) return
             if (!this.tabletWorkDecorReady) return
-            if (this.tabletDecorLineGrowProgress >= 1) return
+            if (this.tabletDecorLineGrowProgress >= 1 && !this._decorLineChase) return
 
             this.syncAboutLineBridge()
-            const next = Math.max(
-                this.tabletDecorLineGrowProgress,
-                this.getTabletDecorLineScrollProgress(),
-            )
-            if (next <= this.tabletDecorLineGrowProgress) return
-            this.applyTabletDecorLineGrowProgress(next)
+            this.queueDecorLineGrowFromScroll(this.getTabletDecorLineScrollProgress())
         },
         /**
          * Show: sync to scroll (ratchet). Hide / instant: snap. Retract only on hide
@@ -7306,6 +7444,7 @@ export default {
             this.syncAboutLineBridge()
 
             if (!show) {
+                this.cancelDecorLineGrowChase()
                 this.applyTabletDecorLineGrowProgress(0)
                 this.syncProjectCaptionLineOffset()
                 return
@@ -7317,6 +7456,7 @@ export default {
                     this.getTabletDecorLineScrollProgress(),
                     prefersReducedMotion() ? 1 : 0,
                 )
+                this.cancelDecorLineGrowChase()
                 this.applyTabletDecorLineGrowProgress(p)
                 this.syncProjectCaptionLineOffset()
                 return
@@ -7769,7 +7909,8 @@ export default {
                 if (this.desktopDecorHeroGrowDone && this.tabletDecorLineGrowProgress < 1) {
                     this.updateDesktopDecorLineGrowFromScroll()
                 }
-            } else if (this.tabletDecorLineGrowProgress > 0) {
+            } else if (this.tabletDecorLineGrowProgress > 0 || this._decorLineChase) {
+                this.cancelDecorLineGrowChase()
                 this.clearTabletDecorLineGrowClips()
                 this.tabletDecorLineGrowProgress = 0
             }
@@ -9667,6 +9808,8 @@ export default {
     align-items: flex-start;
     gap: 20px;
     margin-top: var(--about-bio-cta-gap);
+    /* Button padding is hit area; the glyph itself lines up with the bio. */
+    margin-left: calc(var(--about-bio-indent) - 8px);
     padding: 0;
 }
 
@@ -10677,6 +10820,8 @@ export default {
 
     .about-actions {
         margin-top: 96px;
+        /* Bio indent is cleared in this layout; keep the glyph flush with it. */
+        margin-left: -8px;
     }
 }
 
