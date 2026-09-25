@@ -387,42 +387,26 @@
 
             <section>
                 <h2>Reflection</h2>
-                <p>This 0‑to‑1 initiative delivered polished, high‑fidelity prototypes that piqued investor interest
-                    and demonstrated product viability. Looking back, there are a few things I would
-                    <strong>approach differently</strong>. Although it was essential to produce some visually polished
-                    prototypes as quickly as possible for demo purposes in pitches, I would have taken more time to
-                    <strong>better define the interaction logic</strong> of the modules at the
-                    <strong>low‑fidelity stage</strong>. This would have allowed for <strong>faster iteration</strong>
-                    on interaction without being bogged down by pixels. While a comprehensive
-                    suite would not be feasible at this 0‑to‑1 stage, <strong>lean documentation</strong> capturing
-                    key design decisions, such as data considerations, accessibility, UI states, and interaction
-                    specs, would provide a clearer <strong>foundation for the next phase</strong> of development.
+                <p>The 0-to-1 initiative was successful at delivering a prototype that piqued investors' interest
+                    and demonstrated product viability. However, that was not the whole story. The dashboard design
+                    presented is but one solution to the complex caregiving context. The <strong>hero use case</strong> provided a
+                    <strong>proof-of-concept</strong> suited to the purpose of the project. Nonetheless, during the design process, I
+                    came to realise that the <strong>mode of usage</strong> of the IoT product is an important factor in determining the
+                    suitable data visualisation for the dashboard. For instance, in scenarios where the clients have
+                    regimens that are mainly <strong>PRN/as needed</strong>, the caregivers would benefit from having a dashboard that is
+                    <strong>medication-centric</strong> — grouping data such as quantity, time, frequency and adherence by medications.
+                    PRN often faces the challenge of under- or overuse, incorrect timing and lack of documentation. Such
+                    a layout has the advantage of <strong>highlighting crucial information</strong> that caregivers should know when assisting
+                    their clients with the medication via the platform. This finding means a <strong>restructuring of
+                        information architecture</strong> rather than an extension, making it a <strong>roadmap candidate</strong> rather than part of
+                    the current scope.
                 </p>
 
-                <p>For future development, <strong>customisation</strong> and <strong>personalisation</strong> could
-                    bring value to the product:</p>
-
-                <ul>
-                    <li>
-                        <em>Usability testing for enterprise customisation</em>
-                        <p>The feedback session validated the core design, but <strong>structured usability
-                                testing</strong>
-                            is crucial for the next phase. A reality check would allow us to evaluate how well the
-                            dashboard fits with the workflows of the caregiving enterprise, and thus helps determine
-                            the requirements of subsequent iterations depending on the customers' needs.</p>
-                    </li>
-
-                    <li>
-                        <em>Data-driven personalisation</em>
-                        <p>Pushing the UX boundaries, an <strong>adaptive UI</strong> can be implemented in future
-                            iterations; automatically reconfigure the dashboard based on <strong>tracked engagement
-                                data</strong>, surface high engagement widgets, and deprioritise those with lower
-                            engagement. The <strong>feedback loop</strong> between behavioural data and interface design
-                            allows the dashboard to become more <strong>personalised</strong>, giving the product a
-                            <strong>competitive edge</strong>.
-                        </p>
-                    </li>
-                </ul>
+                <p>The process of designing a new feature is often an opportunity for <strong>product discovery</strong>. In fact, this
+                    design has helped us realise various functionalities of other features of the application that can be
+                    tightened to improve the <strong>security</strong> of the platform, especially to think more carefully about the
+                    <strong>transparency</strong> needed for a <strong>multi-touchpoint pill dispenser</strong>.
+                </p>
             </section>
         </div>
     </ProjectDetail>
