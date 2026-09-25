@@ -35,7 +35,7 @@
                 <h3>Identify the scope of content</h3>
                 <p>The caregiver user base here and their business context provided an important
                     <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
-                        consumer dashboard</strong>. Taking a holistic approach, I summarised the <strong>user research</strong> findings in a
+                        consumer dashboard</strong>. For this 0-to-1, the design was scoped to a <strong>hero use case</strong>: adherence for clients on <strong>scheduled medication regimens</strong>. Taking a holistic approach, I summarised the <strong>user research</strong> findings in a
                     <strong>hybrid
                         affinity-interrelationship diagram</strong> by synthesising <strong>user interview</strong>
                     and <strong>user observation</strong> insights with <strong>product features</strong>.
@@ -381,9 +381,8 @@
                         requirements and hardware constraints</strong>.
                 </p>
 
-                <p>Overall, the project succeeded in achieving its <strong>0‑to‑1 objectives</strong>, considered
-                    both <strong>business and user needs</strong>, and laid the groundwork for <strong>subsequent
-                        design and development initiatives</strong>.</p>
+                <p>Overall, the project succeeded in achieving its <strong>0‑to‑1 objectives</strong> and laid the
+                    groundwork for <strong>subsequent design and development initiatives</strong>.</p>
             </section>
 
             <section>

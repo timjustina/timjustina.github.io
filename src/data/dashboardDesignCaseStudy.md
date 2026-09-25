@@ -22,7 +22,7 @@ Sole designer on this project. Reported directly to the head of product.
 
 ### 1. Identify the scope of content
 
-The caregiver user base here and their business context provided an important **constraint** on the type of dashboard to aim for – a **slightly data-rich consumer dashboard**. Taking a holistic approach, I summarised the **user research** findings in a **hybrid affinity-interrelationship diagram** by synthesising **user interview insights** with **product features**. It encompasses details on functionality, primary user datasets, metrics, and end user needs. This helped us to identify dashboard contents that are most relevant to our users
+The caregiver user base here and their business context provided an important **constraint** on the type of dashboard to aim for – a **slightly data-rich consumer dashboard**. For this 0-to-1, the design was scoped to a **hero use case**: adherence for clients on **scheduled medication regimens**. Taking a holistic approach, I summarised the **user research** findings in a **hybrid affinity-interrelationship diagram** by synthesising **user interview insights** with **product features**. It encompasses details on functionality, primary user datasets, metrics, and end user needs. This helped us to identify dashboard contents that are most relevant to our users
 
 Although the project was set out to mainly show **simple adherence-related analytics** for caregivers, the **analysis** revealed **two main expectations** on the **purpose** of the dashboard:
 
@@ -115,11 +115,11 @@ I also took care to keep the sidebar content **concise**, showing only important
 
 The dashboard design was a **crucial part of the company's investor pitch**, demonstrating how IoT data could be translated into easily digestible and actionable insights for caregivers. It was **well received by investors**, who noted clear consideration of the specific **context of the healthcare sector** and attention to the target **user's needs.**
 
-In an **interview feedback session** with a small group of caregivers all participants **responded positively** to the design. The **clarity of the data presentation** was specifically highlighted. Most found the layout **easy to comprehend and navigate**. A few noted that a simple product tour could be beneficial given the number of widgets present. The design was also successful in highlighting features that contribute to the IoT product's **value proposition**, in particular the **remote dispense function**, which caregivers are primary users. In general, the caregivers felt that the product feature would help **improve the quality of care** that they can deliver by **lowering the effort** required for monitoring and understanding their clients' behaviours.
+In an **interview feedback session** with caregivers (n=6), **100% responded positively** to the design. The **clarity of the data presentation** was specifically highlighted. Most found the layout **easy to comprehend and navigate**. One user noted that a simple product tour could be beneficial given the number of widgets present. In general, they felt that the product feature would help **improve the quality of care** that they can deliver by **lowering the effort** required for monitoring and understanding their clients' behaviours. The design was also successful in highlighting features that contribute to the IoT product's **value proposition**, in particular the **remote dispense function**, for which caregivers are the primary users.
 
 From an **engineering perspective**, the prototypes established a clear path for **backend data structure and integration with the hardware solution**. This was made possible by the attention not only to visual aspects, but to the **user lifecycle, data requirements and hardware constraints**.
 
-Overall, the project succeeded in achieving its **0‑to‑1 objectives**, considered both **business and user needs**, and laid the groundwork for **subsequent design and development initiatives**.
+Overall, the project succeeded in achieving its **0‑to‑1 objectives** and laid the groundwork for **subsequent design and development initiatives**.
 
 ## Reflection
 
