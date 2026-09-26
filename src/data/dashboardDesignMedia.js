@@ -2,7 +2,9 @@ import dashboardHero from '../assets/1_dashboard/0_dashboard_hero_detail-2400.jp
 import svg1Cover from '../assets/1_dashboard/1_affinity_interrelation_diagram_cover.svg'
 import svg1 from '../assets/1_dashboard/1_affinity_interrelation_large_margin.svg'
 import img2 from '../assets/1_dashboard/2_primary_user_vs_caregiver_dashboard.jpg'
+import img2Mobile from '../assets/1_dashboard/2_primary_user_vs_caregiver_dashboard_mobile.jpg'
 import img3 from '../assets/1_dashboard/3_colour_system_portfolio.jpg'
+import img3Mobile from '../assets/1_dashboard/3_colour_system_portfolio_mobile.jpg'
 import img4 from '../assets/1_dashboard/4 dispense summary portfolio.svg'
 import vid5 from '../assets/1_dashboard/5_adherence_trend_width.mov'
 import vid6 from '../assets/1_dashboard/6_missed_dose_insights_width.mov'
@@ -13,19 +15,27 @@ export {
     svg1Cover,
     svg1,
     img2,
+    img2Mobile,
     img3,
+    img3Mobile,
     img4,
     vid5,
     vid6,
     vid7,
 }
 
+/** Share of each full image that is artwork, excluding the white margin. */
+export const img2ContentWidthRatio = 2179 / 3014
+export const img3ContentWidthRatio = 2518 / 2882
+
 export const dashboardDesignMediaUrls = [
     dashboardHero,
     svg1Cover,
     svg1,
     img2,
+    img2Mobile,
     img3,
+    img3Mobile,
     img4,
     vid5,
     vid6,

@@ -7,7 +7,7 @@
       :aria-label="`View full size: ${alt}`"
       @click="open($event)"
     >
-      <img ref="preview" :src="src" :alt="alt" class="preview" />
+      <img ref="preview" :src="displaySrc" :alt="alt" class="preview" />
     </button>
     <p v-if="caption" class="caption">{{ caption }}</p>
 
@@ -22,7 +22,7 @@
       >
         <button type="button" class="lightbox-close" aria-label="Close" @click.stop="close">×</button>
         <div class="lightbox-stage" @click="close">
-          <img :src="zoomSrc || src" :alt="alt" class="lightbox-img" @load="onLightboxLoad" />
+          <img :src="lightboxSrc" :alt="alt" class="lightbox-img" @load="onLightboxLoad" />
         </div>
       </div>
     </Teleport>
@@ -30,10 +30,16 @@
 </template>
 
 <script>
+/** Crop once the artwork is within this many px of the text block width. */
+const TEXT_BLOCK_SLACK_PX = 40
+
 export default {
   name: 'ZoomableImage',
   props: {
     src: { type: String, required: true },
+    tightSrc: { type: String, default: '' },
+    /** Fraction of the full image width that is artwork, excluding white margin. */
+    contentWidthRatio: { type: Number, default: 1 },
     zoomSrc: { type: String, default: '' },
     alt: { type: String, required: true },
     caption: { type: String, default: '' },
@@ -43,13 +49,27 @@ export default {
       isOpen: false,
       savedScroll: 0,
       pendingScroll: null,
+      lightboxSrc: '',
+      useTight: false,
     }
+  },
+  computed: {
+    displaySrc() {
+      return this.useTight && this.tightSrc ? this.tightSrc : this.src
+    },
+  },
+  created() {
+    this.useTight = this.estimateUseTight()
   },
   mounted() {
     window.addEventListener('keydown', this.onKeydown)
+    this.resizeObserver = new ResizeObserver(() => this.syncTightCrop())
+    this.resizeObserver.observe(this.$el)
+    this.syncTightCrop()
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.onKeydown)
+    this.resizeObserver?.disconnect()
     this.unlockScroll()
   },
   methods: {
@@ -64,6 +84,7 @@ export default {
       const viewY = event.clientY
 
       this.savedScroll = window.scrollY
+      this.lightboxSrc = this.resolveLightboxSrc()
       this.isOpen = true
       document.body.style.overflow = 'hidden'
 
@@ -101,6 +122,61 @@ export default {
     },
     clamp(value, min, max) {
       return Math.max(min, Math.min(value, max))
+    },
+    resolveLightboxSrc() {
+      if (this.zoomSrc) return this.zoomSrc
+      return this.displaySrc
+    },
+    canTighten() {
+      return Boolean(this.tightSrc) && this.contentWidthRatio > 0 && this.contentWidthRatio < 1
+    },
+    measureTextBlockWidth() {
+      const body = this.$el?.closest('.project-body')
+      const title = body?.querySelector('section > h2')
+      const paragraph = body?.querySelector('section > p:not(.caption)')
+      if (!title || !paragraph) return 0
+      const titleRect = title.getBoundingClientRect()
+      const textRect = paragraph.getBoundingClientRect()
+      const rule = parseFloat(getComputedStyle(body).getPropertyValue('--project-rule-offset')) || 0
+      const lineLeft = textRect.left - rule
+      const left = Math.min(titleRect.left, lineLeft)
+      return Math.max(0, textRect.right - left)
+    },
+    estimateTextBlockWidth(vw) {
+      const mobile = vw < 800
+      if (mobile) {
+        const edge = 40
+        const rule = 12
+        return vw - edge * 2 + rule
+      }
+      const edge = 20
+      const rule = 24
+      const contentW = 668
+      const bodyLeft = Math.max(edge + rule, vw / 2 - contentW / 2 + 22.5)
+      const text = Math.min(contentW, vw - bodyLeft - edge)
+      const spaceLeft = Math.max(0, bodyLeft - edge)
+      const titleOffset = Math.min(52, Math.max(rule, spaceLeft))
+      return text + Math.max(titleOffset, rule)
+    },
+    estimateUseTight() {
+      if (!this.canTighten() || typeof window === 'undefined') return false
+      const vw = window.innerWidth
+      const pixelWidth = Math.max(0, vw - 40) * this.contentWidthRatio
+      return pixelWidth <= this.estimateTextBlockWidth(vw) + TEXT_BLOCK_SLACK_PX
+    },
+    syncTightCrop() {
+      if (!this.canTighten()) {
+        this.useTight = false
+        return
+      }
+      const textWidth = this.measureTextBlockWidth()
+      const imageWidth = this.$refs.preview?.getBoundingClientRect().width || 0
+      if (!textWidth || !imageWidth) {
+        this.useTight = this.estimateUseTight()
+        return
+      }
+      const pixelWidth = imageWidth * this.contentWidthRatio
+      this.useTight = pixelWidth <= textWidth + TEXT_BLOCK_SLACK_PX
     },
     close() {
       const scrollY = this.savedScroll

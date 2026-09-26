@@ -132,6 +132,8 @@
 
                 <ZoomableImage
                     :src="img2"
+                    :tight-src="img2Mobile"
+                    :content-width-ratio="img2ContentWidthRatio"
                     alt="Mockups"
                     caption="Wireframes for the caregiver-facing dashboard's widgets juxtaposed with mockups of the primary user's mobile dashboard"
                 />
@@ -165,6 +167,8 @@
 
                 <ZoomableImage
                     :src="img3"
+                    :tight-src="img3Mobile"
+                    :content-width-ratio="img3ContentWidthRatio"
                     alt="Colour system"
                     caption="Colour palettes for the dashboard design with colour contrast audit for WCAG compliance"
                 />
@@ -425,7 +429,11 @@ import {
     svg1Cover,
     svg1,
     img2,
+    img2Mobile,
+    img2ContentWidthRatio,
     img3,
+    img3Mobile,
+    img3ContentWidthRatio,
     img4,
     vid5,
     vid6,
@@ -469,7 +477,11 @@ export default {
             svg1Cover,
             svg1,
             img2,
+            img2Mobile,
+            img2ContentWidthRatio,
             img3,
+            img3Mobile,
+            img3ContentWidthRatio,
             img4,
             vid5,
             vid6,
