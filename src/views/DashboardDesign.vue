@@ -396,9 +396,9 @@
                     regimens that are mainly <strong>PRN/as needed</strong>, the caregivers would benefit from having a dashboard that is
                     <strong>medication-centric</strong> — grouping data such as quantity, time, frequency and adherence by medications.
                     PRN often faces the challenge of under- or overuse, incorrect timing and lack of documentation. Such
-                    a layout has the advantage of <strong>highlighting crucial information</strong> that caregivers should know when assisting
-                    their clients with the medication via the platform. This finding means a <strong>restructuring of
-                        information architecture</strong> rather than an extension, making it a <strong>roadmap candidate</strong> rather than part of
+                    a layout has the advantage of <strong>highlighting crucial information</strong> about the medications that caregivers should know when assisting
+                    their clients via the platform. This finding means a <strong>restructuring of
+                        information architecture</strong>, making it a <strong>roadmap candidate</strong> rather than part of
                     the current scope.
                 </p>
 
