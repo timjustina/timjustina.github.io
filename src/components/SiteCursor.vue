@@ -1508,12 +1508,9 @@ export default {
 }
 
 /* Magnifier clone: case-study interactive hover mirrors */
-.hero-intro-cursor-mirror-clone .footer-email {
-  text-decoration-thickness: calc(0.8px / var(--hero-cursor-magnifier-scale, 1));
-  text-underline-offset: calc(3px / var(--hero-cursor-magnifier-scale, 1));
-}
-
-.hero-intro-cursor-mirror-clone .footer-email.hero-cursor-mirror-hover {
+.hero-intro-cursor-mirror-clone .footer-email.hero-cursor-mirror-hover,
+.hero-intro-cursor-mirror-clone .project-header-meta-link.hero-cursor-mirror-hover,
+.hero-intro-cursor-mirror-clone .project-header-meta-link.hero-cursor-mirror-active {
   color: var(--brand, #000aaa) !important;
 }
 

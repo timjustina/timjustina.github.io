@@ -1,4 +1,3 @@
 # IoT Home Medication Solution
 
-**Client:** Kin  
-**Period:** 2024
+**Client:** Kin

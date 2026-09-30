@@ -29,7 +29,19 @@
             <template v-else>{{ title }}</template>
         </h1>
         <span v-if="client || period" class="project-header-meta">
-            <template v-if="client">{{ client }}</template><span
+            <a
+                v-if="client && clientHref"
+                class="project-header-meta-link"
+                :href="clientHref"
+                target="_blank"
+                rel="noopener noreferrer"
+            >{{ client }}<svg
+                class="project-header-meta-link-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+                focusable="false"
+            ><path d="M3.25 3.25H12.75V12.75M12.75 3.25L3.92 12.08" /></svg></a><template v-else-if="client">{{ client }}</template><span
                 v-if="client && period"
                 class="project-header-meta-sep"
             >/ /</span><template v-if="period">{{ period }}</template>
@@ -50,6 +62,10 @@ export default {
             required: true,
         },
         client: {
+            type: String,
+            default: '',
+        },
+        clientHref: {
             type: String,
             default: '',
         },
@@ -261,6 +277,34 @@ export default {
     line-height: 34px;
     letter-spacing: 0;
     color: #757575;
+}
+
+.project-header-meta-link {
+    display: inline-flex;
+    align-items: baseline;
+    /* One Work Sans space between the letter and the icon. */
+    gap: 0.089em;
+    line-height: 1;
+    color: inherit;
+    text-decoration: none;
+}
+
+.project-header-meta-link-icon {
+    align-self: flex-end;
+    width: 0.85em;
+    height: 0.85em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: #000aaa;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.project-header-meta-link:hover,
+.project-header-meta-link:active,
+.project-header-meta-link:focus-visible {
+    color: #000aaa;
 }
 
 .project-header-meta-sep {

@@ -5,7 +5,12 @@
                 fetchpriority="high" />
         </div>
 
-        <ProjectDetailHeader :title="dashboardTitle" client="Kin" period="2026" fluid-lines />
+        <ProjectDetailHeader
+            :title="dashboardTitle"
+            client="Kin"
+            client-href="https://www.kintechnology.io/"
+            fluid-lines
+        />
 
         <div class="project-body">
             <ProjectTldrButton :summary-items="tldrSummaryItems" :markdown="tldrMarkdown" />

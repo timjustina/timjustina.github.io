@@ -3,7 +3,7 @@
         <ProjectDetailHeader
             title="IoT Home Medication Solution"
             client="Kin"
-            period="2024"
+            client-href="https://www.kintechnology.io/"
         />
 
         <div class="project-body">

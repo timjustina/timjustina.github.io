@@ -18,7 +18,7 @@
                     </span>
                     <template v-else>{{ titleText }}</template>
                 </strong>
-                <a href="mailto:design@timjustina.com" class="footer-email">design@timjustina.com</a>
+                <a href="mailto:design@timjustina.com" class="footer-email">design@timjustina.com<svg class="footer-email-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.25 3.25H12.75V12.75M12.75 3.25L3.92 12.08" /></svg></a>
             </div>
             <span class="footer-copy" aria-label="© 2026 Tim Justina Yeung">
                 <span class="footer-copy-full">© 2026 Tim Justina Yeung</span>
@@ -278,12 +278,29 @@ export default {
 }
 
 .footer-email {
-    text-decoration: underline;
-    text-decoration-thickness: 0.8px;
-    text-underline-offset: 3px;
+    display: inline-flex;
+    align-items: baseline;
+    /* One Work Sans space between the address and the icon. */
+    gap: 0.089em;
+    line-height: 1;
+    text-decoration: none;
 }
 
-.footer-email:hover {
+.footer-email-icon {
+    align-self: flex-end;
+    width: 0.85em;
+    height: 0.85em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.footer-email:hover,
+.footer-email:active,
+.footer-email:focus-visible {
     color: var(--brand);
 }
 

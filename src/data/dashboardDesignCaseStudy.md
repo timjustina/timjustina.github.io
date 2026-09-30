@@ -1,7 +1,6 @@
 # IoT Adherence Analytics
 
-**Client:** Kin  
-**Period:** 2026
+**Client:** Kin
 
 ## Summary
 

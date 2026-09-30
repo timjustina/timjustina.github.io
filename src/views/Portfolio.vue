@@ -342,7 +342,6 @@
                                 <p class="project-description project-caption-shift">
                                     0‑to‑1 design of a caregiver-facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
                                 </p>
-                                <span class="project-year project-caption-shift">Kin<span class="project-year-sep">/ /</span>2026</span>
                             </router-link>
                         </div>
                     </article>
@@ -369,7 +368,6 @@
                             <p class="project-description project-caption-shift">
                                 End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence
                             </p>
-                            <span class="project-year project-caption-shift">Kin<span class="project-year-sep">/ /</span>2024</span>
                         </div>
                     </article>
                 </div>
@@ -395,7 +393,6 @@
                             <p class="project-description project-caption-shift">
                                 0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
                             </p>
-                            <span class="project-year project-caption-shift">PONS<span class="project-year-sep">/ /</span>2019</span>
                         </div>
                     </article>
                 </div>
@@ -479,7 +476,7 @@
                         Like to work out in free time - old books and films for the brain,
                         gym and swim for the rest. Drink wild beers on cheat days. Love a good conversation.
                         <br><br>
-                        For the nerds: a <a href="https://journals.biologists.com/dev/article/151/24/dev204256/363461/Short-range-Fgf-signalling-patterns-hindbrain" class="about-link">link</a> to my past life in
+                        For the nerds: a <a href="https://journals.biologists.com/dev/article/151/24/dev204256/363461/Short-range-Fgf-signalling-patterns-hindbrain" class="about-link" target="_blank" rel="noopener noreferrer">link<svg class="about-link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.25 3.25H12.75V12.75M12.75 3.25L3.92 12.08" /></svg></a> to my past life in
                         developmental neurobiology
                         (research paper).
                     </p>
@@ -9509,7 +9506,7 @@ export default {
 
 @media (min-width: 501px) {
     .project-caption-shift {
-        /* Triggered from the title; description/year follow with staggered delay. */
+        /* Triggered from the title; the description follows with a staggered delay. */
         padding-left: var(--project-caption-line-offset, 0px);
         transition: padding-left 0.6s var(--fly-ease, cubic-bezier(0.22, 1, 0.36, 1))
             var(--project-caption-shift-delay, 0s);
@@ -9542,7 +9539,7 @@ export default {
 }
 
 /* Touch disk: only title (and the separate thumbnail link) navigate — not
-   description / company text, so reading and scrolling stay easy. */
+   the description, so reading and scrolling stay easy. */
 .portfolio-page--touch-disk .project-caption-link {
     pointer-events: none;
 }
@@ -9590,22 +9587,6 @@ export default {
     .project-caption {
         min-height: 95px;
     }
-}
-
-.project-year {
-    display: block;
-    margin: 16px 0 0;
-    font-family: 'Work Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 22px;
-    letter-spacing: -0.02em;
-    color: var(--title);
-}
-
-.project-year-sep {
-    /* ~2× word-space on each side (plain "  " collapses in HTML). */
-    margin: 0 0.5em;
 }
 
 .about {
@@ -9792,14 +9773,32 @@ export default {
 }
 
 .about-link {
+    display: inline-flex;
+    align-items: baseline;
+    /* One Work Sans space between the letter and the icon. */
+    gap: 0.168em;
+    line-height: 1;
     color: inherit;
-    text-decoration: underline;
-    text-decoration-thickness: 0.8px;
-    text-underline-offset: 3px;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
-.about-link:hover {
-    color: inherit;
+.about-link-icon {
+    align-self: flex-end;
+    width: 0.85em;
+    height: 0.85em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.about-link:hover,
+.about-link:active,
+.about-link:focus-visible {
+    color: var(--brand);
 }
 
 .about-actions {
@@ -10451,10 +10450,6 @@ export default {
     .project-description {
         font-weight: 400;
     }
-
-    .project-year {
-        font-weight: 400;
-    }
 }
 
 /* Deco line present: no resting thumb shadow; softer hover/press shadow on desktop. */
@@ -10617,12 +10612,6 @@ export default {
         font-size: 16px;
         line-height: 25px;
         color: #757575;
-    }
-
-    .project-year {
-        margin-top: 20px;
-        font-size: 14px;
-        line-height: 22px;
     }
 }
 
@@ -10857,16 +10846,6 @@ export default {
         letter-spacing: 0;
         color: #757575;
     }
-
-    .project-year {
-        margin-top: 20px;
-        font-family: 'Work Sans', sans-serif;
-        font-size: 14px;
-        font-weight: 400;
-        line-height: 22px;
-        letter-spacing: -0.02em;
-        color: #4d4d4d;
-    }
 }
 </style>
 
@@ -10887,10 +10866,9 @@ export default {
 }
 
 /* Magnifier clone: mirror interactive hover/press (clone cannot use :hover/:active). */
-.hero-intro-cursor-mirror-clone .about-link,
-.hero-intro-cursor-mirror-clone .footer-email {
-    text-decoration-thickness: calc(0.8px / var(--hero-cursor-magnifier-scale, 1));
-    text-underline-offset: calc(3px / var(--hero-cursor-magnifier-scale, 1));
+.hero-intro-cursor-mirror-clone .about-link.hero-cursor-mirror-hover,
+.hero-intro-cursor-mirror-clone .about-link.hero-cursor-mirror-active {
+    color: var(--brand) !important;
 }
 
 .hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover {
