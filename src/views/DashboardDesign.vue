@@ -31,7 +31,7 @@
 
             <section class="project-role">
                 <h2>My Role</h2>
-                <p>Sole designer on this project. Reported directly to the head of product.</p>
+                <p>Sole designer on this project. Reported directly to the head of product. About 6 weeks of focused design effort, part-time over 3 months.</p>
             </section>
 
             <section>

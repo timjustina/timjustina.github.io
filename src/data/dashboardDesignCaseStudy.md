@@ -15,7 +15,7 @@ Kin is a healthcare startup that needed to showcase the full digital experience 
 
 ## My Role
 
-Sole designer on this project. Reported directly to the head of product.
+Sole designer on this project. Reported directly to the head of product. About 6 weeks of focused design effort, part-time over 3 months.
 
 ## Problem Framing
 
