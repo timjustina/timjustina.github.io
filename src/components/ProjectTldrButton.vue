@@ -427,7 +427,7 @@ export default {
   font-size: 18px;
   line-height: 30px;
   letter-spacing: 0;
-  color: #000aaa;
+  color: #757575;
   vertical-align: middle;
 }
 
