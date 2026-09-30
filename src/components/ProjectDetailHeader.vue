@@ -290,7 +290,6 @@ export default {
 }
 
 .project-header-meta-link-icon {
-    align-self: flex-end;
     width: 0.85em;
     height: 0.85em;
     flex-shrink: 0;

@@ -197,7 +197,7 @@
             aria-label="Designing at Kin"
         >
             <span class="hero-role-icon-wrap" aria-hidden="true" v-html="officeIconSvg" />
-            <span class="hero-role-text">Designing @ Kin</span>
+            <span class="hero-role-text"><span class="hero-role-lead">Designing @&#160;</span><a class="hero-role-link" href="https://www.kintechnology.io/" target="_blank" rel="noopener noreferrer"><span class="hero-role-link-label">Kin</span><svg class="hero-role-link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.25 3.25H12.75V12.75M12.75 3.25L3.92 12.08" /></svg></a></span>
         </p>
 
         <p
@@ -9784,7 +9784,6 @@ export default {
 }
 
 .about-link-icon {
-    align-self: flex-end;
     width: 0.85em;
     height: 0.85em;
     flex-shrink: 0;
@@ -10023,6 +10022,46 @@ export default {
 
     .hero-role {
         top: calc(var(--top-bar-edge-pad-right) + 19px);
+        z-index: 101;
+    }
+
+    .hero-role-lead {
+        flex: none;
+        white-space: pre;
+    }
+
+    .hero-role-link {
+        display: inline-flex;
+        align-items: baseline;
+        /* One Work Sans space between the letter and the icon. */
+        gap: 0.089em;
+        line-height: 1;
+        color: inherit;
+        text-decoration: none;
+        white-space: nowrap;
+        pointer-events: auto;
+    }
+
+    .hero-role-link-label {
+        opacity: 0.6;
+    }
+
+    .hero-role-link-icon {
+        width: 0.85em;
+        height: 0.85em;
+        flex-shrink: 0;
+        fill: none;
+        stroke: #000aaa;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .hero-role-link:hover .hero-role-link-label,
+    .hero-role-link:active .hero-role-link-label,
+    .hero-role-link:focus-visible .hero-role-link-label {
+        opacity: 1;
+        color: #000aaa;
     }
 
     .hero-location {
@@ -10033,6 +10072,16 @@ export default {
     .hero-location--visible {
         opacity: 0.6;
         visibility: visible;
+    }
+
+    /* Keep “Designing @” faded; Kin’s arrow stays solid blue above that fade. */
+    .hero-role--visible {
+        opacity: 1;
+    }
+
+    .hero-role--visible .hero-role-icon-wrap,
+    .hero-role--visible .hero-role-lead {
+        opacity: 0.6;
     }
 
     .hero-role-icon-wrap,
@@ -10869,6 +10918,12 @@ export default {
 .hero-intro-cursor-mirror-clone .about-link.hero-cursor-mirror-hover,
 .hero-intro-cursor-mirror-clone .about-link.hero-cursor-mirror-active {
     color: var(--brand) !important;
+}
+
+.hero-intro-cursor-mirror-clone .hero-role-link.hero-cursor-mirror-hover .hero-role-link-label,
+.hero-intro-cursor-mirror-clone .hero-role-link.hero-cursor-mirror-active .hero-role-link-label {
+    opacity: 1 !important;
+    color: #000aaa !important;
 }
 
 .hero-intro-cursor-mirror-clone .about-action-btn.hero-cursor-mirror-hover {

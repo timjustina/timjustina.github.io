@@ -287,7 +287,6 @@ export default {
 }
 
 .footer-email-icon {
-    align-self: flex-end;
     width: 0.85em;
     height: 0.85em;
     flex-shrink: 0;
