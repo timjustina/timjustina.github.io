@@ -10021,7 +10021,7 @@ export default {
     }
 
     .hero-role {
-        top: calc(var(--top-bar-edge-pad-right) + 19px);
+        top: calc(var(--top-bar-edge-pad-right) + 10px);
         z-index: 101;
     }
 
@@ -10065,7 +10065,7 @@ export default {
     }
 
     .hero-location {
-        bottom: var(--top-bar-edge-pad-right);
+        bottom: calc(var(--top-bar-edge-pad-right) + 10px);
     }
 
     .hero-role--visible,

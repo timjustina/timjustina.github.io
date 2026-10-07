@@ -695,7 +695,7 @@ export default {
     .top-bar--nav-hero-align .nav {
         position: absolute;
         left: calc(var(--portfolio-decor-line-x) - var(--nav-work-w-center, 0px));
-        top: calc(var(--top-bar-edge-pad-right) + 19px);
+        top: calc(var(--top-bar-edge-pad-right) + 10px);
         height: var(--top-bar-nav-height);
         opacity: 1;
         transition:
