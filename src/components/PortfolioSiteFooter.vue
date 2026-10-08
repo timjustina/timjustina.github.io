@@ -279,16 +279,16 @@ export default {
 
 .footer-email {
     display: inline-flex;
-    align-items: baseline;
-    /* One Work Sans space between the address and the icon. */
-    gap: 0.089em;
+    align-items: flex-start;
+    /* ~1.5 Work Sans spaces between the address and the icon. */
+    gap: 0.14em;
     line-height: 1;
     text-decoration: none;
 }
 
 .footer-email-icon {
-    width: 0.85em;
-    height: 0.85em;
+    width: 0.72em;
+    height: 0.72em;
     flex-shrink: 0;
     fill: none;
     stroke: var(--brand);

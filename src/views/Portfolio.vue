@@ -9774,9 +9774,9 @@ export default {
 
 .about-link {
     display: inline-flex;
-    align-items: baseline;
-    /* One Work Sans space between the letter and the icon. */
-    gap: 0.168em;
+    align-items: flex-start;
+    /* ~1.5 Work Sans spaces between the letter and the icon. */
+    gap: 0.24em;
     line-height: 1;
     color: inherit;
     text-decoration: none;
@@ -9784,8 +9784,8 @@ export default {
 }
 
 .about-link-icon {
-    width: 0.85em;
-    height: 0.85em;
+    width: 0.72em;
+    height: 0.72em;
     flex-shrink: 0;
     fill: none;
     stroke: var(--brand);
@@ -10032,9 +10032,9 @@ export default {
 
     .hero-role-link {
         display: inline-flex;
-        align-items: baseline;
-        /* One Work Sans space between the letter and the icon. */
-        gap: 0.089em;
+        align-items: flex-start;
+        /* ~1.5 Work Sans spaces between the letter and the icon. */
+        gap: 0.14em;
         line-height: 1;
         color: inherit;
         text-decoration: none;
@@ -10047,8 +10047,8 @@ export default {
     }
 
     .hero-role-link-icon {
-        width: 0.85em;
-        height: 0.85em;
+        width: 0.72em;
+        height: 0.72em;
         flex-shrink: 0;
         fill: none;
         stroke: #000aaa;
