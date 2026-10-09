@@ -9534,7 +9534,7 @@ export default {
 
 .project-company {
     font-family: 'Fira Code', monospace;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--text);
     white-space: nowrap;
 }
