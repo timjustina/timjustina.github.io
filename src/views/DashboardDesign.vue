@@ -414,7 +414,7 @@
                 <p>The process of designing a new feature is often an opportunity for <strong>product discovery</strong>. In fact, this
                     design has helped us realise various functionalities of other features of the application that can be
                     tightened to improve the <strong>security</strong> of the platform, especially to think more carefully about the
-                    <strong>transparency</strong> needed for a <strong>multi-touchpoint pill dispenser</strong>.
+                    <strong>transparency</strong> needed for a <strong>multi-touchpoint medication dispenser</strong>.
                 </p>
             </section>
         </div>

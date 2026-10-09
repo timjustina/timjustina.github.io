@@ -340,7 +340,7 @@
                                     </h2>
                                 </div>
                                 <p class="project-description project-caption-shift">
-                                    0‑to‑1 design of a caregiver-facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs
+                                    0‑to‑1 design of a caregiver-facing dashboard for an IoT medication adherence platform, helping caregivers better understand their client's needs <span class="project-company">@ Kin</span>
                                 </p>
                             </router-link>
                         </div>
@@ -366,7 +366,7 @@
                                 </h2>
                             </div>
                             <p class="project-description project-caption-shift">
-                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence
+                                End-to-end design and redesign of human-machine interface, web and mobile app features of an IoT home medication platform for improving adherence <span class="project-company">@ Kin</span>
                             </p>
                         </div>
                     </article>
@@ -391,7 +391,7 @@
                                 </h2>
                             </div>
                             <p class="project-description project-caption-shift">
-                                0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks
+                                0-to-1 design of a mobile-first peer-to-peer marketplace where users can curate, buy and sell artworks <span class="project-company">@ PONS</span>
                             </p>
                         </div>
                     </article>
@@ -9530,6 +9530,13 @@ export default {
     line-height: 33px;
     color: var(--text);
     transition: color 0.25s ease;
+}
+
+.project-company {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
 }
 
 .project-caption-link {
