@@ -9533,8 +9533,8 @@ export default {
 }
 
 .project-company {
-    font-family: 'Work Sans', sans-serif;
-    font-weight: 400;
+    font-family: 'Fira Code', monospace;
+    font-weight: 500;
     color: var(--text);
     white-space: nowrap;
 }
