@@ -29,7 +29,7 @@
                     class="cs-corner-disk-menu__item"
                     :to="item.to"
                     :style="menuItemStyle(item, index)"
-                    @click="onMenuItemClick"
+                    @click="onMenuItemClick(item, $event)"
                 >{{ item.label }}</router-link>
             </nav>
             <span
@@ -46,6 +46,7 @@
 
 <script>
 import { CASE_STUDY_MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
+import { rememberPortfolioSection } from '../utils/scrollToAbout.js'
 
 const FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 const EDGE_GAP_PX = 20
@@ -214,7 +215,7 @@ export default {
                     {
                         id: 'work',
                         label: 'Work',
-                        to: { path: '/', hash: '#work' },
+                        to: { path: '/' },
                     },
                     'left',
                     180,
@@ -225,7 +226,7 @@ export default {
                     {
                         id: 'about',
                         label: 'About',
-                        to: { path: '/', hash: '#about' },
+                        to: { path: '/' },
                     },
                     'right',
                     0,
@@ -624,9 +625,22 @@ export default {
         onHitPointerCancel() {
             this.pointerId = null
         },
-        onMenuItemClick() {
+        onMenuItemClick(item, event) {
             // Snap shut before router navigation so the pill never travels half-open.
             this.closeMenu({ instant: true })
+            if (
+                event &&
+                (event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey)
+            ) {
+                return
+            }
+            if (item?.id === 'work' || item?.id === 'about') {
+                rememberPortfolioSection(item.id)
+            }
         },
     },
 }

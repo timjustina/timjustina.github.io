@@ -18,20 +18,20 @@
                         <img class="logo" :src="logo" alt="Tim Justina Yeung" />
                     </router-link>
                     <nav ref="nav" class="nav" :class="{ 'nav--hidden': !showNav }">
-                        <router-link
-                            :to="{ path: '/', hash: '#work' }"
+                        <a
+                            :href="homeHref"
                             class="nav-link nav-link--work"
-                            @click="onWorkClick"
+                            @click="onSectionClick('work', $event)"
                         >
                             <span class="nav-link-text"><span ref="workW" class="nav-link-w">W</span>ork</span>
-                        </router-link>
-                        <router-link
-                            :to="{ path: '/', hash: '#about' }"
+                        </a>
+                        <a
+                            :href="homeHref"
                             class="nav-link nav-link--about"
-                            @click="onAboutClick"
+                            @click="onSectionClick('about', $event)"
                         >
                             <span class="nav-link-text">About</span>
-                        </router-link>
+                        </a>
                     </nav>
                 </div>
             </div>
@@ -42,7 +42,22 @@
 <script>
 import logo from '../assets/TjyCutoutLogo.svg'
 import { MOBILE_MEDIA_QUERY } from '../utils/breakpoints.js'
-import { scrollToAbout, scrollToWork } from '../utils/scrollToAbout.js'
+import {
+    peekPortfolioSection,
+    rememberPortfolioSection,
+    scrollToAbout,
+    scrollToWork,
+} from '../utils/scrollToAbout.js'
+
+function isPlainLeftClick(event) {
+    return (
+        event.button === 0 &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey
+    )
+}
 
 function parseCssPx(styles, prop, fallback) {
     const value = parseFloat(styles.getPropertyValue(prop))
@@ -165,6 +180,9 @@ export default {
             if (!this.decorLineSynced) return false
             return this.navWorkWReady
         },
+        homeHref() {
+            return this.$router.resolve({ path: '/' }).href
+        },
     },
     watch: {
         '$route'(to, from) {
@@ -176,7 +194,7 @@ export default {
         this.syncMobileTopBarState()
         this.syncDecorLineSyncState(this.$route)
         // Arrive on Work/About (e.g. from a case study) with the bar already tucked away.
-        if (SECTION_HASHES.has(this.$route.hash) && !this.isInFlowMobileHome) {
+        if (this.isArrivingAtSection() && !this.isInFlowMobileHome) {
             this.topBarHidden = true
             this.wasOnFirstPage = false
         }
@@ -197,7 +215,7 @@ export default {
             this.updateHeroOverlap()
             if (this.useFirstPageFade) {
                 this.wasOnFirstPage = this.isOnFirstPage()
-                if (!this.wasOnFirstPage && !SECTION_HASHES.has(this.$route.hash)) {
+                if (!this.wasOnFirstPage && !this.isArrivingAtSection()) {
                     this.topBarHidden = true
                 }
             }
@@ -243,7 +261,6 @@ export default {
             }
 
             // Only re-gate the nav when arriving on home from another route.
-            // Hash-only changes (/ → /#work) must not hide Work/About.
             if (from && from.path !== '/') {
                 this.decorLineSynced = false
             }
@@ -384,28 +401,28 @@ export default {
                 }
             }
         },
-        onWorkClick(event) {
-            // From a case study, let the router navigate; Portfolio scrolls after ready.
-            if (this.$route.path !== '/') return
-
-            if (this.$route.hash === '#work-first' || this.$route.hash === '#work') {
-                event.preventDefault()
-            }
-
-            this.$nextTick(() => {
-                requestAnimationFrame(() => scrollToWork())
-            })
+        isArrivingAtSection() {
+            return SECTION_HASHES.has(this.$route.hash) || Boolean(peekPortfolioSection())
         },
-        onAboutClick(event) {
-            // From a case study, let the router navigate; Portfolio scrolls after ready.
-            if (this.$route.path !== '/') return
+        clearSectionHash() {
+            if (!SECTION_HASHES.has(this.$route.hash)) return
+            this.$router.replace({ path: '/', hash: '' }).catch(() => {})
+        },
+        onSectionClick(section, event) {
+            if (!isPlainLeftClick(event)) return
+            event.preventDefault()
 
-            if (this.$route.hash === '#about') {
-                event.preventDefault()
+            if (this.$route.path !== '/') {
+                rememberPortfolioSection(section)
+                this.$router.push({ path: '/' }).catch(() => {})
+                return
             }
 
+            // Stay on `/` — scroll in place instead of writing #work / #about.
+            this.clearSectionHash()
+            const scroll = section === 'about' ? scrollToAbout : scrollToWork
             this.$nextTick(() => {
-                requestAnimationFrame(() => scrollToAbout())
+                requestAnimationFrame(() => scroll())
             })
         },
         onDecorLineSynced() {

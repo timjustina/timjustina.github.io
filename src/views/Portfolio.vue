@@ -564,6 +564,7 @@ import PortfolioTopBar from '../components/PortfolioTopBar.vue'
 import PortfolioSiteFooter from '../components/PortfolioSiteFooter.vue'
 import WorkCarouselPager from '../components/WorkCarouselPager.vue'
 import {
+    consumePortfolioSection,
     getWorkScrollTop,
     isAboutSectionActive,
     scrollToAbout,
@@ -1556,8 +1557,8 @@ export default {
             const blueR = HERO_TOUCH_DISK_MENU_DOT_SIZE / 2
             const gap = blueR + HERO_TOUCH_DISK_MENU_LABEL_GAP_PX
 
-            const work = { id: 'work', label: 'Work', action: 'work' }
-            const about = { id: 'about', label: 'About', action: 'about' }
+            const work = { id: 'work', label: 'Work', action: 'work', href: '/' }
+            const about = { id: 'about', label: 'About', action: 'about', href: '/' }
 
             const placeOutward = (base, outwardLeft) =>
                 outwardLeft
@@ -2023,9 +2024,10 @@ export default {
             this.syncHeroCursorDocumentClass()
         }
 
+        const pendingSection = consumePortfolioSection()
         const sectionHash = PORTFOLIO_SECTION_HASHES.has(this.$route.hash)
             ? this.$route.hash
-            : ''
+            : pendingSection
 
         // Arriving from a case study (or deep link) with Work/About: skip splash
         // and jump straight to the section once layout is ready.
@@ -4527,7 +4529,6 @@ export default {
                     this.syncHeroTouchDiskRestPosition()
                 },
             })
-            this.$router.replace({ hash: '#work' }).catch(() => {})
         },
         closeHeroTouchDiskMenu(options = {}) {
             this.unbindHeroTouchDiskOutsideClose()
@@ -10241,11 +10242,11 @@ export default {
     }
 }
 
-/* 800–1084px: intro ⅓ down viewport (logo↔location edges); deco line stacks below */
+/* 800–1084px: intro 38.2% down viewport (logo↔location edges); deco line stacks below */
 @media (min-width: 800px) and (max-width: 1084px) {
     .hero {
         justify-content: flex-start;
-        padding-top: 33.333vh;
+        padding-top: 38.2vh;
     }
 
     .hero-intro-wrap {

@@ -66,6 +66,18 @@ const router = createRouter({
             return savedPosition
         }
 
+        // Dropping a Work/About hash on the home page is in-page scrolling.
+        // Leave the current scroll position alone.
+        const sectionHashes = new Set(['#about', '#work-first', '#work'])
+        if (
+            to.path === '/' &&
+            from.path === '/' &&
+            sectionHashes.has(from.hash) &&
+            !to.hash
+        ) {
+            return false
+        }
+
         // Home hash targets are scrolled by Portfolio after the page is ready
         // (loading splash / layout). Avoid fighting that with an early scroll.
         if (to.path === '/' && (to.hash === '#about' || to.hash === '#work-first' || to.hash === '#work')) {

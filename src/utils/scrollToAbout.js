@@ -196,3 +196,42 @@ export function scrollToPortfolioHash(hash, options = {}) {
     if (hash === '#work-first' || hash === '#work') return scrollToWork(options)
     return false
 }
+
+const SECTION_INTENT_KEY = 'portfolio-section-intent'
+
+function normalizeSectionIntent(value) {
+    if (value === 'about' || value === '#about') return '#about'
+    if (value === 'work' || value === '#work' || value === '#work-first') return '#work'
+    return ''
+}
+
+/** Remember a Work/About landing target without putting it in the URL. */
+export function rememberPortfolioSection(section) {
+    const value = normalizeSectionIntent(section)
+    if (!value) return
+    try {
+        sessionStorage.setItem(SECTION_INTENT_KEY, value)
+    } catch {
+        /* private mode */
+    }
+}
+
+/** Read a pending Work/About landing target without clearing it. */
+export function peekPortfolioSection() {
+    try {
+        return normalizeSectionIntent(sessionStorage.getItem(SECTION_INTENT_KEY))
+    } catch {
+        return ''
+    }
+}
+
+/** Read and clear a pending Work/About landing target. */
+export function consumePortfolioSection() {
+    const value = peekPortfolioSection()
+    try {
+        sessionStorage.removeItem(SECTION_INTENT_KEY)
+    } catch {
+        /* private mode */
+    }
+    return value
+}
