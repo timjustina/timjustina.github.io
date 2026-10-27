@@ -1500,13 +1500,13 @@ export default {
                     ? Math.max(HERO_TOUCH_DISK_HIT_SIZE, dot + 12)
                     : HERO_TOUCH_DISK_HIT_SIZE
             const half = size / 2
-            return {
+            return this.withoutFlightTransform({
                 transform: `translate3d(${x}px, ${y}px, 0)`,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
                 zIndex: expand > 0.02 ? 10006 : 10003,
-            }
+            })
         },
         heroTouchDiskDissipateFade() {
             if (!this.heroTouchDiskMode) return 1
@@ -1640,9 +1640,9 @@ export default {
         },
         heroTouchDiskMenuStyle() {
             const { x, y } = this.heroCursorGlassPos
-            return {
+            return this.withoutFlightTransform({
                 transform: `translate3d(${x}px, ${y}px, 0)`,
-            }
+            })
         },
         heroCursorDotDiskVisible() {
             if (!this.heroCursorVisible) return false
@@ -1810,7 +1810,7 @@ export default {
                 style.border = 'none'
             }
 
-            return style
+            return this.withoutFlightTransform(style)
         },
         heroCursorDotDiskStyle() {
             if (!this.heroCursorDotDiskVisible) {
@@ -1875,7 +1875,7 @@ export default {
                 ? this.heroTouchDiskJiggleNudge
                 : { x: 0, y: 0, scale: 1 }
 
-            return {
+            return this.withoutFlightTransform({
                 transform: `translate3d(${x + jiggle.x}px, ${y + jiggle.y}px, 0) scale(${forwardScale * sink * jiggle.scale})`,
                 // Same 6px rise as the carousel pill; never transition `transform`.
                 translate: stageChrome
@@ -1898,7 +1898,7 @@ export default {
                       : opacity < 0.02
                         ? 'hidden'
                         : 'visible',
-            }
+            })
         },
         heroCursorIntroGlassStyle() {
             if (!this.heroCursorIntroGlassVisible) {
@@ -1928,7 +1928,7 @@ export default {
 
             // Touch-disk entrance gates glass too — otherwise handoff shows a rest/start flash
             // before the fly-in opacity path runs on the idle disk layers.
-            return {
+            return this.withoutFlightTransform({
                 transform: `translate3d(${x}px, ${y}px, 0)`,
                 '--hero-cursor-range-mix': rangeMix,
                 '--hero-cursor-hover-mix': hoverMix,
@@ -1937,7 +1937,7 @@ export default {
                 margin: `${-half}px 0 0 ${-half}px`,
                 opacity,
                 visibility: opacity < 0.02 ? 'hidden' : 'visible',
-            }
+            })
         },
         heroCursorMagnifierWindowStyle() {
             const layout = this.heroCursorMagnifierLayout
@@ -4285,6 +4285,20 @@ export default {
             // Latter stage after the fly-in — jiggle schedules from here, settle visuals unchanged.
             this.heroTouchDiskSettled = true
             this.scheduleHeroTouchDiskJiggle()
+            this.startHeroCursorGlassFollow()
+        },
+        /** Vue owns size and shadow during the flight; position is written on the nodes. */
+        withoutFlightTransform(style) {
+            if (!this.heroTouchDiskEntering) return style
+            const next = { ...style }
+            delete next.transform
+            return next
+        },
+        commitHeroTouchDiskFlightPosition() {
+            const pos = this._heroTouchDiskFlightXY
+            if (!pos) return
+            this.heroCursorPos = { x: pos.x, y: pos.y }
+            this.heroCursorGlassPos = { x: pos.x, y: pos.y }
         },
         primeHeroTouchDisk() {
             if (!this.isHeroTouchDiskMode() || this.heroCursorBootLocked) return
@@ -4367,9 +4381,36 @@ export default {
                 skipHover: true,
             })
 
+            const pick = (selector) =>
+                [...document.querySelectorAll(selector)].find(
+                    (el) => !el.closest('.hero-intro-cursor-mirror-clone'),
+                ) ?? null
+            // Balls are teleported to body, so they are not under $el.
+            const nodes = {
+                glass: pick('.hero-intro-cursor-glass-ball'),
+                dot: pick('.hero-intro-cursor-ball--dot'),
+                disk: pick('.hero-intro-cursor-dot-disk'),
+                hit: pick('.hero-intro-cursor-drag-hit'),
+                menu: pick('.hero-touch-disk-menu'),
+            }
+            const paint = (x, y) => {
+                const translate = `translate3d(${x}px, ${y}px, 0)`
+                const dotScale = heroCursorRangeDotVisual(this.heroCursorRangeMix).scale
+                if (nodes.glass) nodes.glass.style.transform = translate
+                if (nodes.dot) nodes.dot.style.transform = `${translate} scale(${dotScale})`
+                if (nodes.disk) nodes.disk.style.transform = translate
+                if (nodes.hit) nodes.hit.style.transform = translate
+                if (nodes.menu) nodes.menu.style.transform = translate
+                this._heroTouchDiskFlightXY = { x, y }
+            }
+            this._heroTouchDiskFlightXY = { x: start.x, y: start.y }
+
             const duration = HERO_TOUCH_DISK_ENTRANCE_MS
+            // A late frame may advance one step. It must not spend the whole gap on the arc.
+            const maxFrameMs = 32
             let revealed = false
-            const t0 = performance.now()
+            let last = 0
+            let elapsed = 0
 
             const tick = (now) => {
                 this.heroTouchDiskEntranceRaf = null
@@ -4379,7 +4420,11 @@ export default {
                     this.heroTouchDiskDragging ||
                     this.heroTouchDiskHasMoved
                 ) {
-                    this.heroTouchDiskEntering = false
+                    if (this.heroTouchDiskEntering) {
+                        this.commitHeroTouchDiskFlightPosition()
+                        this.heroTouchDiskEntering = false
+                        this.startHeroCursorGlassFollow()
+                    }
                     return
                 }
 
@@ -4399,8 +4444,28 @@ export default {
                     this.heroTouchDiskEntrance = 1
                     this.heroTouchDiskSettled = true
                     this.clearHeroTouchDiskJiggle()
+                    this.startHeroCursorGlassFollow()
                     return
                 }
+
+                if (!last) last = now
+                else {
+                    elapsed = Math.min(duration, elapsed + Math.min(maxFrameMs, now - last))
+                    last = now
+                }
+                const raw = elapsed / duration
+                // Ease-out cubic — moderate cruise, soft settle.
+                const t = 1 - (1 - raw) ** 3
+                const x = heroTouchDiskQuadPoint(t, start.x, ctrl.x, end.x)
+                const y = heroTouchDiskQuadPoint(t, start.y, ctrl.y, end.y)
+                // Position stays on the nodes. Glass follow reads these and pushes the letters.
+                this.heroCursorPos = { x, y }
+                this.heroCursorGlassPos = { x, y }
+                paint(x, y)
+                this.updateHeroFinePointer(x, y, {
+                    introEffects: this.canHeroIntroPointerPlay(),
+                    skipHover: true,
+                })
 
                 if (!revealed) {
                     revealed = true
@@ -4408,23 +4473,12 @@ export default {
                     // Opacity reveal only — not "settled" for jiggle gating.
                     this.heroTouchDiskEntrance = 1
                     this.$nextTick(() => {
+                        paint(x, y)
                         requestAnimationFrame(() => {
                             this.heroTouchDiskDissipateInstant = false
                         })
                     })
                 }
-
-                const raw = Math.min(1, (now - t0) / duration)
-                // Ease-out cubic — moderate cruise, soft settle.
-                const t = 1 - (1 - raw) ** 3
-                const x = heroTouchDiskQuadPoint(t, start.x, ctrl.x, end.x)
-                const y = heroTouchDiskQuadPoint(t, start.y, ctrl.y, end.y)
-                this.heroCursorPos = { x, y }
-                this.heroCursorGlassPos = { x, y }
-                this.updateHeroFinePointer(x, y, {
-                    introEffects: this.canHeroIntroPointerPlay(),
-                    skipHover: true,
-                })
 
                 if (raw < 1) {
                     this.heroTouchDiskEntranceRaf = requestAnimationFrame(tick)
@@ -4446,8 +4500,10 @@ export default {
                 return
             }
             this.cancelHeroTouchDiskEntranceFlight()
+            if (this.heroTouchDiskEntering) this.commitHeroTouchDiskFlightPosition()
             this.heroTouchDiskIdle = false
             this.heroTouchDiskEntering = false
+            this.startHeroCursorGlassFollow()
             this.heroTouchDiskSettled = true
             this.clearHeroTouchDiskJiggle()
             if (this.heroTouchDiskEntrance < 1) this.heroTouchDiskEntrance = 1
@@ -10904,6 +10960,127 @@ export default {
         color: #757575;
     }
 }
+
+/* Coarse pointers: fixed pixel distances so the fly can run on the compositor.
+   Desktop keeps the var(--fly-distance) keyframes. Same nodes, same stagger. */
+@media (pointer: coarse) {
+    .portfolio-page--reveal.portfolio-page--reveal .hero-intro.hero-intro.portfolio-fly--from-right:not(.hero-intro--chars) {
+        animation-name: portfolio-fly-from-right-touch;
+    }
+
+    .portfolio-page--reveal.portfolio-page--hero-cascade .hero-intro--chars .hero-intro-char.hero-intro-char {
+        animation-name: portfolio-fly-from-right-touch;
+    }
+
+    .about--reveal .about-heading.about-heading.portfolio-fly--from-left {
+        animation-name: portfolio-fly-from-left-touch-heading;
+    }
+
+    .about--reveal .about-meta.about-meta.portfolio-fly--from-right {
+        animation-name: portfolio-fly-from-right-touch;
+    }
+
+    .about--reveal .about-bio.about-bio.portfolio-fly--from-left,
+    .about--reveal .about-actions.about-actions.portfolio-fly--from-left,
+    .about--reveal .about-photo-column.about-photo-column.portfolio-fly--from-left {
+        animation-name: portfolio-fly-from-left-touch;
+    }
+}
+
+@media (pointer: coarse) and (width < 800px) {
+    @keyframes portfolio-fly-from-right-touch {
+        from {
+            opacity: 0;
+            transform: translate3d(180px, 0, 0);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes portfolio-fly-from-left-touch {
+        from {
+            opacity: 0;
+            transform: translate3d(-180px, 0, 0);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes portfolio-fly-from-left-touch-heading {
+        from {
+            opacity: 0;
+            transform: translate3d(-240px, 0, 0);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+}
+
+@media (pointer: coarse) and (min-width: 800px) {
+    @keyframes portfolio-fly-from-right-touch {
+        from {
+            opacity: 0;
+            transform: translate3d(360px, 0, 0);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes portfolio-fly-from-left-touch {
+        from {
+            opacity: 0;
+            transform: translate3d(-360px, 0, 0);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    @keyframes portfolio-fly-from-left-touch-heading {
+        from {
+            opacity: 0;
+            transform: translate3d(-480px, 0, 0);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
+        .hero-intro-char.hero-intro-char,
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
+        .hero-intro-char.hero-intro-char.hero-intro-char--pushed {
+        animation-name: portfolio-fly-from-right-touch !important;
+    }
+
+    .portfolio-page--settled
+        .portfolio-main
+        .hero-intro.hero-intro.portfolio-fly.hero-intro--scroll-replay.hero-intro--scroll-replay-run:not(
+            .hero-intro--chars
+        ) {
+        animation-name: portfolio-fly-from-right-touch !important;
+    }
+}
 </style>
 
 <style>
@@ -10966,4 +11143,5 @@ export default {
     border-radius: 700px 700px 20px 20px;
     box-shadow: var(--project-thumb-shadow);
 }
+
 </style>
