@@ -233,8 +233,6 @@
                             'hero-intro--dissipated': heroIntroDissipated,
                             'hero-intro--reconsolidating': heroIntroReconsolidating,
                             'hero-intro--first-page-hidden': heroIntroScrollHidden,
-                            'hero-intro--scroll-replay': heroIntroScrollReplaying,
-                            'hero-intro--scroll-replay-run': heroIntroScrollReplayArmed,
                         }"
                         :aria-label="heroIntroLetterMode ? heroIntroPlain : undefined"
                     >
@@ -1297,10 +1295,6 @@ export default {
             heroLocationScrollTicking: false,
             /** Desktop: hero intro faded off after leaving the first viewport. */
             heroIntroScrollHidden: false,
-            heroIntroHasLeftFirstPage: false,
-            heroIntroScrollReplaying: false,
-            heroIntroScrollReplayArmed: false,
-            heroIntroScrollReplayTimer: null,
             firstProjectPrefetchStarted: false,
             firstProjectPrefetchIdleId: null,
             aboutLocationClipRaf: null,
@@ -2267,7 +2261,6 @@ export default {
         this.stopAboutActionBubbleLoop()
         clearTimeout(this.heroIntroTapLingerTimer)
         clearTimeout(this.heroIntroReconsolidateTimer)
-        clearTimeout(this.heroIntroScrollReplayTimer)
         clearTimeout(this.tabletWorkDecorRevealTimer)
         this.cancelDesktopDecorLineEntrance()
         this.cancelDecorLineGrowChase()
@@ -3257,7 +3250,6 @@ export default {
             if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
                 this.heroLocationVisible = false
                 this.heroIntroScrollHidden = false
-                this.clearHeroIntroScrollReplay()
                 return
             }
 
@@ -3275,7 +3267,6 @@ export default {
 
             if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
                 this.heroIntroScrollHidden = false
-                this.clearHeroIntroScrollReplay()
                 return
             }
 
@@ -3284,73 +3275,14 @@ export default {
                 return
             }
 
+            // Leaving the first page fades the intro out. Coming back shows it
+            // in place — same screen-relative layout, no letter fly-in.
             if (prev && !next) {
-                this.heroIntroHasLeftFirstPage = true
                 this.heroIntroScrollHidden = true
-                this.clearHeroIntroScrollReplay()
                 this.clearHeroIntroPointerShift()
-            } else if (!prev && next && this.heroIntroHasLeftFirstPage) {
-                this.heroIntroScrollHidden = false
-                this.replayHeroIntroFlyInFromScroll()
             } else {
                 this.heroIntroScrollHidden = !next
-                if (!next) this.heroIntroHasLeftFirstPage = true
             }
-        },
-        clearHeroIntroScrollReplay() {
-            clearTimeout(this.heroIntroScrollReplayTimer)
-            this.heroIntroScrollReplayTimer = null
-            this.heroIntroScrollReplaying = false
-            this.heroIntroScrollReplayArmed = false
-        },
-        /** Desktop: replay the letter cascade when scrolling back onto the first page. */
-        replayHeroIntroFlyInFromScroll() {
-            if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
-            if (!this.pageEntranceDone || prefersReducedMotion()) return
-
-            this.clearHeroIntroScrollReplay()
-            this.clearHeroIntroPointerShift()
-            this.heroIntroScrollReplaying = true
-            this.heroIntroScrollReplayArmed = false
-
-            this.$nextTick(() => {
-                if (this.heroIntroLetterMode) {
-                    this.syncHeroIntroCharColumns()
-                }
-                const intro = this.$el?.querySelector('.hero-intro')
-                if (intro) void intro.offsetWidth
-
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        if (!this.heroIntroScrollReplaying) return
-                        this.heroIntroScrollReplayArmed = true
-
-                        const styles = intro ? getComputedStyle(intro) : null
-                        const cascadeEnd = parseCssTimeSec(
-                            styles,
-                            '--hero-intro-cascade-end',
-                            2.39,
-                        )
-                        const charDuration = parseCssTimeSec(
-                            styles,
-                            '--hero-intro-char-duration',
-                            1.15,
-                        )
-                        const waitMs = Math.ceil((cascadeEnd + charDuration + 0.85) * 1000)
-                        this.heroIntroScrollReplayTimer = setTimeout(() => {
-                            this.heroIntroScrollReplaying = false
-                            this.heroIntroScrollReplayArmed = false
-                            this.heroIntroScrollReplayTimer = null
-                            if (this.heroCursorActive && this.isHeroIntroFinePointer()) {
-                                const { x, y } = this.heroCursorPos
-                                this.updateHeroFinePointer(x, y, {
-                                    introEffects: this.canHeroIntroPointerPlay(),
-                                })
-                            }
-                        }, waitMs)
-                    })
-                })
-            })
         },
         onHeroLocationScroll() {
             if (window.matchMedia(MOBILE_MEDIA_QUERY).matches) return
@@ -3519,9 +3451,6 @@ export default {
             return (
                 this.heroIntroLetterMode &&
                 this.pageEntranceDone &&
-                // Scroll-back cascade matches the first fly-in: glass can show,
-                // letters don't get pushed until the cascade has settled.
-                !this.heroIntroScrollReplaying &&
                 !this.heroIntroDissipated &&
                 // Desktop / fine-pointer: never play during reconsolidate.
                 // Touch-disk only: may keep repelling while letters snap back.
@@ -5480,8 +5409,7 @@ export default {
             this.startHeroCursorGlassFollow()
         },
         updateHeroFinePointer(x, y, { introEffects = true, skipHover = false } = {}) {
-            // Hero letter push is gated by introEffects (off while dissipated or
-            // while the scroll-back cascade is still playing).
+            // Hero letter push is gated by introEffects (off while dissipated).
             // Footer stays interactive for the fine-pointer glass cursor too —
             // except near the email, where the magnifier takes priority.
             const introPlay = introEffects && this.canHeroIntroPointerPlay()
@@ -10206,58 +10134,6 @@ export default {
         pointer-events: none;
     }
 
-    /* Scroll-back: replay letter cascade (no fade-in — fly in instead). */
-    .portfolio-page--settled .portfolio-main .hero-intro.portfolio-fly.hero-intro--scroll-replay {
-        transition: none;
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: none;
-        animation: none !important;
-    }
-
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro--chars.hero-intro--scroll-replay
-        .hero-intro-char,
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro--chars.hero-intro--scroll-replay
-        .hero-intro-char.hero-intro-char--pushed {
-        opacity: 0;
-        transform: translate3d(var(--fly-distance), 0, 0);
-        animation: none !important;
-        transition: none !important;
-    }
-
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
-        .hero-intro-char,
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
-        .hero-intro-char.hero-intro-char--pushed {
-        animation: portfolio-fly-from-right var(--hero-intro-char-duration, 1.15s) var(--fly-ease)
-            var(--hero-intro-char-delay) both !important;
-    }
-
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro.portfolio-fly.hero-intro--scroll-replay:not(.hero-intro--chars) {
-        opacity: 0;
-        transform: translate3d(var(--fly-distance), 0, 0);
-        animation: none !important;
-    }
-
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro.portfolio-fly.hero-intro--scroll-replay.hero-intro--scroll-replay-run:not(
-            .hero-intro--chars
-        ) {
-        animation: portfolio-fly-from-right 1.55s var(--fly-ease) both !important;
-    }
-
     .portfolio-page {
         /* Cascade starts when the growing line covers the intro (JS unlocks). */
         --hero-intro-cascade-start: 0.04s;
@@ -11060,25 +10936,6 @@ export default {
             opacity: 1;
             transform: translate3d(0, 0, 0);
         }
-    }
-
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
-        .hero-intro-char.hero-intro-char,
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro--chars.hero-intro--scroll-replay.hero-intro--scroll-replay-run
-        .hero-intro-char.hero-intro-char.hero-intro-char--pushed {
-        animation-name: portfolio-fly-from-right-touch !important;
-    }
-
-    .portfolio-page--settled
-        .portfolio-main
-        .hero-intro.hero-intro.portfolio-fly.hero-intro--scroll-replay.hero-intro--scroll-replay-run:not(
-            .hero-intro--chars
-        ) {
-        animation-name: portfolio-fly-from-right-touch !important;
     }
 }
 </style>
