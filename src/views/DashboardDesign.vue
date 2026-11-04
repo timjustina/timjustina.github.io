@@ -19,13 +19,13 @@
                 <h2>The Challenge</h2>
                 <p>Kin is a healthcare startup that needed to showcase the full digital experience of its product to
                     secure <strong>future
-                        investments and partnerships</strong> in <strong>healthcare sectors</strong>. One
+                        investments and partnerships</strong> in the <strong>healthcare sector</strong>. One
                     thing we wanted to demonstrate is how <strong>user data</strong> collected from our
                     <strong>IoT medication adherence platform</strong> can be transformed into <strong>easy‑to‑digest
-                        insights</strong> for <strong>caregivers</strong> – helping them better understand their clients' behavioural
+                        insights</strong> for <strong>caregivers</strong>, helping them better understand their clients' behavioural
                     patterns and providing <strong>better quality of care with less effort</strong>. The task given
                     was to design a pitch-ready <strong>caregiver‑facing dashboard</strong> for the primary user's account within
-                    the web/desktop app. The goal of the design was to help caregiver better understand and assist their clients.
+                    the web/desktop app. The goal of the design was to help caregivers better understand and assist their clients.
                 </p>
             </section>
 
@@ -38,8 +38,8 @@
                 <h2>Problem Framing&nbsp;&nbsp;1/2</h2>
 
                 <h3>Identify the scope of content</h3>
-                <p>The caregiver user base here and their business context provided an important
-                    <strong>constraint</strong> on the type of dashboard to aim for – a <strong>slightly data-rich
+                <p>The target caregiver user base and their business context provided an important
+                    <strong>constraint</strong> on the type of dashboard to aim for: a <strong>slightly data-rich
                         consumer dashboard</strong>. For this 0-to-1, the design was scoped to a <strong>hero use case</strong>: adherence for clients on <strong>scheduled medication regimens</strong>. Taking a holistic approach, I summarised the <strong>user research</strong> findings in a
                     <strong>hybrid
                         affinity-interrelationship diagram</strong> by synthesising <strong>user interview</strong>
@@ -59,8 +59,8 @@
                         and medication stock.</li>
                 </ul>
 
-                <p> The first point was anticipated. The second point makes sense in hindsight – as the dashboard is the
-                    home screen, users would expect to find <strong>operational information</strong> there also. These
+                <p> The first point was anticipated. The second point makes sense in hindsight, given that the dashboard is the
+                    home screen, users would expect to find <strong>operational information</strong> there. These
                     two expectations
                     became both the <strong>rationale</strong> and the <strong>blueprint</strong> for a layout that
                     <strong>separates components by purpose.</strong>
@@ -80,24 +80,31 @@
                 <p>With the requirements set, I turned to the <strong>narrative</strong>. A strategic narrative not only
                     helps users to <strong>stay focused on the task</strong>, but is also an opportunity to <strong>highlight and
                         reinforce
-                        features</strong> that contribute to the product's value proposition.</p>
-                <p>For example, I have previously designed the primary
-                    user's mobile
-                    dashboard to function as a <strong>progress hub</strong> at the home screen.
-                    It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation that
-                    aims to trigger immediate reaction on performance – cumulative
-                    adherence
-                    appears as a <strong>heart-shaped progress graphic</strong> leveraging the <strong>cognitive tension
-                        from unfinished tasks</strong>; a
-                    dispense <strong>streak</strong> leverages <strong>loss aversion</strong>. Both encourage adherence
-                    behaviour.
-                    For the caregiver dashboard, a narrative of <strong><em>synopsis</em></strong> is needed – providing
-                    <strong>clear feedback across the three-part
-                        system</strong> of caregiver, client and the IoT platform to drive <strong>caregiver
-                        actions</strong> that help improve clients’
-                    medication adherence. For example, having a daily adherence trend that also shows missed
-                    doses that were later compensated by an ad hoc dispense – completing the <strong>feedback loop</strong> and highlighting the effect of <strong>caregiver intervention</strong>; a chart showing when missed doses most
-                    often occur – feedback on clients’ behaviour that is only made possible by using the IoT platform.
+                        features</strong> that contribute to the product's value proposition.
+                    </p>
+                <p>For instance, I previously designed the primary user's mobile dashboard to function as a 
+                    <strong>progress hub</strong> at the home screen.
+                    
+                    It has a narrative of <strong><em>encouragement</em></strong> that uses simple data presentation to trigger
+                    immediate reaction on performance.
+                    
+                    Cumulative adherence appears as a <strong>heart-shaped progress graphic</strong> leveraging the <strong>cognitive tension
+                    from unfinished tasks</strong>; a dispense <strong>streak</strong> leverages <strong>loss aversion</strong>.
+                    
+                    Both encourage adherence behaviour.
+                </p>
+
+                <p>
+                    For the caregiver dashboard, a narrative of <strong><em>synopsis</em></strong> is needed, providing
+                    <strong>clear feedback across the three-part system</strong> of caregiver, client and the IoT platform
+                    to drive <strong>caregiver actions</strong> that help improve clients' medication adherence.
+
+                    For example, having a daily adherence trend that also shows missed
+                    doses that were later compensated by an ad hoc dispense, completing the <strong>feedback loop</strong>
+                    and highlighting the effect of <strong>caregiver intervention</strong>.
+                    
+                    Another example is a chart showing when missed doses most
+                    often occur, providing feedback on clients' behaviour that is only made possible by using the IoT platform.
                 </p>
 
                 <p>Based on user research, although the caregivers have more <strong>ability</strong> to explore data
@@ -105,8 +112,7 @@
                     they do not necessarily have the time for lengthy data discovery in their daily work. Therefore,
                     while they can handle multivariate plots, the data visualisation should be simple, highlight
                     <strong>straightforward patterns and trends</strong>, and show a <strong>limited number of
-                        widgets</strong> compared to typical
-                    analytical dashboard.
+                        widgets</strong> compared to typical analytical dashboards.
                 </p>
 
             </section>
@@ -152,22 +158,24 @@
                     <strong>WCAG</strong>.
                 </p>
 
-                <p>To improve <strong>distinguishability</strong>, I audited <strong>colour contrast</strong> for text and graphics
-                    was using <strong>WebAIM</strong> and adjusted to meet WCAG 2.1 AA. When
-                    colour contrast was deemed insufficient, I used <strong>borders</strong> to improve accessibility
+                <p>To improve <strong>distinguishability</strong>, I audited the <strong>colour contrast</strong> of text and graphics
+                    using <strong>WebAIM Contrast Checker</strong>, then adjusted the colours to meet WCAG 2.1 AA. When
+                    the colour contrast was deemed insufficient, I used <strong>borders</strong> to improve accessibility
                     of graphics. <strong>Interactive dynamic features</strong> were incorporated in charts to enable
                     <strong>isolating datasets</strong> for <strong>clarity</strong>.
                 </p>
 
                 <p>I also ensured there is a consistent <strong>association</strong> between <strong>categorical
-                        variables</strong> and <strong>colours used</strong>. This not only important for visual <strong>coherence</strong> across the interface but
-                    can also improve data <strong>comprehension</strong> as the human brain processes colours much
+                        variables</strong> and <strong>colours used</strong>.
+                        
+                    This is not only important for visual <strong>coherence</strong> across the interface but
+                    also improves data <strong>comprehension</strong> as the human brain processes colours much
                         <strong>faster than words</strong>.</p>
 
-                <p>To improve <strong>understandability</strong>, I included <strong>interactive data labels</strong> for the chars so
-                    that comprehension is not solely reliant on plotting style. This is also crucial for
-                    accessibility
-                    of those with <strong>colour vision deficiency</strong>.
+                <p>To improve <strong>understandability</strong>, I included <strong>interactive data labels</strong> for the charts so
+                    that comprehension is not solely reliant on plotting style.
+                    
+                    This is also crucial for accessibility of those with <strong>colour vision deficiency</strong>.
                 </p>
 
                 <ZoomableImage
@@ -193,9 +201,9 @@
                     are made up of distinct data categories, in either a bar chart, pie chart, or donut chart. The goal
                     of this particular data visualisation is to <strong>show the proportions of the categories in order
                         to
-                        highlight edge cases</strong>s, some of which are undesirable behaviour outcomes of primary
-                    users. A priori,
-                    with optimal usage of our product, I anticipated that the dataset would be <strong>heavily skewed
+                        highlight edge cases</strong>, some of which are undesirable behaviour outcomes of primary
+                    users.
+                    A priori, with optimal usage of our product, I anticipated that the dataset would be <strong>heavily skewed
                         towards
                         one category</strong>. In this case, the <strong>circular chart type trumps the bar
                         chart</strong> for two reasons:</p>
@@ -254,17 +262,21 @@
 
                 <h3>From logs to insights</h3>
                 <p>I have also <strong>anticipated the log data</strong> that can be used to generate insights on client
-                    behaviour. For
-                    example, the caregivers wanted to know more about <strong>when their clients usually miss
-                        medications</strong>. The
-                    answer to this is <strong>twofold</strong>. The features of the IoT system enable missed doses from
-                    a previously
-                    scheduled dispense (Scheduled Dispense) to be <strong>compensated later</strong> via an ad-hoc
-                    dispense (Missed-dose
-                    Dispense) within a pharmacologically suitable timeframe. Therefore, it is feasible for a scheduled
+                    behaviour.
+                    For example, the caregivers wanted to know more about <strong>when their clients usually miss
+                        medications</strong>.
+                    The answer to this is <strong>twofold</strong>.
+                    The features of the IoT system enable missed doses from
+                    a previously scheduled dispense (Scheduled Dispense) to be <strong>compensated later</strong> via an ad-hoc
+                    dispense (Missed-dose Dispense) within a pharmacologically suitable timeframe.
+                    Therefore, it is feasible for a scheduled
                     dispense event to have a final status of <em>dispensed</em> with a <strong>historical
-                        status</strong> of <em>medications missed</em>.
+                    status</strong> of <em>medications missed</em>.
                     Thus, the <strong>initial missed doses do not always correspond to the final missed doses</strong>.
+                    
+                </p>
+
+                <p>
                     To provide
                     behaviour insights, <strong>both the datasets are of equal importance</strong>. I therefore needed
                     to present them
@@ -330,7 +342,7 @@
                 </p>
 
                 <p>I addressed this by introducing a <strong>retractable sidebar</strong> to contain operational status
-                    widgets – a
+                    widgets, a
                     feature that is distinct from the dashboard but visually integrated as part of it. The enforced
                     <strong>perceptual grouping</strong>, as the result of creating boundaries between the two sets of
                     content, makes
@@ -401,9 +413,13 @@
                     presented is but one solution to the complex caregiving context. The <strong>hero use case</strong> provided a
                     <strong>proof-of-concept</strong> suited to the purpose of the project. Nonetheless, during the design process, I
                     came to realise that the <strong>mode of usage</strong> of the IoT product is an important factor in determining the
-                    suitable data visualisation for the dashboard. For instance, in scenarios where the clients have
+                    suitable data visualisation for the dashboard.
+                </p>
+
+                <p>
+                    For instance, in scenarios where the clients have
                     regimens that are mainly <strong>PRN/as needed</strong>, the caregivers would benefit from having a dashboard that is
-                    <strong>medication-centric</strong> — grouping data such as quantity, time, frequency and adherence by medications.
+                    <strong>medication-centric</strong>, grouping data such as quantity, time, frequency and adherence by medications.
                     PRN often faces the challenge of under- or overuse, incorrect timing and lack of documentation. Such
                     a layout has the advantage of <strong>highlighting crucial information</strong> about the medications that caregivers should know when assisting
                     their clients via the platform. This finding means a <strong>restructuring of
