@@ -9018,7 +9018,7 @@ export default {
 .about-line {
     position: absolute;
     left: calc(var(--portfolio-decor-line-x) - var(--hero-decor-line-stroke-x));
-    top: calc(140px - var(--about-gap));
+    top: calc(var(--about-top-pad) + 60px - var(--about-gap));
     z-index: 2;
     width: var(--hero-squiggle-width);
     height: calc(var(--about-photo-h) - 40px);
@@ -10167,6 +10167,7 @@ export default {
     .about {
         --about-bio-cta-gap: 58px;
         --about-bottom-pad-base: clamp(239px, calc(239px + (100vw - 997px) * 100 / 457), 280px);
+        --about-top-pad: var(--about-bottom-pad);
     }
 
     .about-heading {
