@@ -63,6 +63,18 @@
     />
     <span
       v-if="eligible"
+      class="hero-intro-cursor-ball hero-intro-cursor-glass-ball cs-footer-glass"
+      :class="{
+        'hero-intro-cursor-ball--visible': glassVisible,
+        'cs-footer-glass--from-disk': glassFromDisk,
+        'cs-footer-glass--in-range': glassInRange,
+        'cs-footer-glass--in-range-tight': rangeTight,
+      }"
+      :style="glassStyle"
+      aria-hidden="true"
+    />
+    <span
+      v-if="eligible"
       class="hero-intro-cursor-ball hero-intro-cursor-ball--dot"
       :class="{
         'hero-intro-cursor-ball--visible': visible,
@@ -75,6 +87,8 @@
 </template>
 
 <script>
+import { applyPointerCharShift, clearPointerCharShift, distanceToRect, parseCssPx } from '../utils/pushText.js'
+
 const CURSOR_MAGNIFY_BOOST = 0.25
 const CURSOR_LAYER_Z = 10002
 const CURSOR_HOVER_LOCK_PAD = 8
@@ -85,6 +99,13 @@ const CURSOR_HOLLOW_END = 0.28
 const CURSOR_HOVER_LERP = 0.3
 const CURSOR_HOVER_DISK_EXPAND_IN = 0.1
 const CURSOR_HOVER_DOT_RING_OUT = 0.22
+/** In-text glass morph — same curve as the portfolio cursor over “Drop me a line”. */
+const CURSOR_RANGE_END_SIZE = 32
+const CURSOR_RANGE_POP = 1.5
+const CURSOR_RANGE_DOT_PEAK = 1.85
+const CURSOR_RANGE_EXPAND_END = 0.34
+const CURSOR_INTRO_GLASS_ON = 0.04
+const CURSOR_INTRO_GLASS_OFF = 0.008
 const CURSOR_FINE_POINTER_MQ = '(hover: hover) and (pointer: fine)'
 const CURSOR_DOC_CLASS = 'portfolio-hero-cursor'
 
@@ -145,6 +166,60 @@ function hoverDiskForward(hoverMix) {
 function rangeSmoothstep(t) {
   const x = Math.min(1, Math.max(0, t))
   return x * x * (3 - 2 * x)
+}
+
+function rangeBounceOut(t) {
+  const n1 = 7.5625
+  const d1 = 2.75
+  if (t < 1 / d1) return n1 * t * t
+  if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75
+  if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375
+  return n1 * (t -= 2.625 / d1) * t + 0.984375
+}
+
+function rangeExpandEase(t) {
+  const c1 = 2.9
+  const c3 = c1 + 1
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+}
+
+function rangeGlassSize(outSize, rangeMix) {
+  if (rangeMix <= 0.001) return outSize
+  if (rangeMix >= 1) return CURSOR_RANGE_END_SIZE
+
+  const peakSize = outSize * CURSOR_RANGE_POP
+  if (rangeMix <= CURSOR_RANGE_EXPAND_END) {
+    const t = rangeMix / CURSOR_RANGE_EXPAND_END
+    return outSize + (peakSize - outSize) * rangeExpandEase(t)
+  }
+
+  const t = (rangeMix - CURSOR_RANGE_EXPAND_END) / (1 - CURSOR_RANGE_EXPAND_END)
+  const shrink = rangeBounceOut(t)
+  return CURSOR_RANGE_END_SIZE + (peakSize - CURSOR_RANGE_END_SIZE) * (1 - shrink)
+}
+
+function rangeDotVisual(rangeMix) {
+  if (rangeMix <= 0) return { scale: 1, opacity: 1 }
+  if (rangeMix >= 1) return { scale: 0, opacity: 0 }
+
+  const peakScale = CURSOR_RANGE_DOT_PEAK
+  let scale
+  if (rangeMix <= CURSOR_RANGE_EXPAND_END) {
+    const t = rangeMix / CURSOR_RANGE_EXPAND_END
+    scale = 1 + (peakScale - 1) * rangeExpandEase(t)
+  } else {
+    const t = (rangeMix - CURSOR_RANGE_EXPAND_END) / (1 - CURSOR_RANGE_EXPAND_END)
+    scale = peakScale * (1 - rangeBounceOut(t))
+  }
+
+  const fadeStart = CURSOR_RANGE_EXPAND_END * 0.55
+  let opacity = 1
+  if (rangeMix > fadeStart) {
+    const t = (rangeMix - fadeStart) / (1 - fadeStart)
+    opacity = Math.max(0, 1 - rangeBounceOut(t))
+  }
+
+  return { scale, opacity }
 }
 
 function hoverDiskOpacity(hoverMix) {
@@ -233,6 +308,13 @@ export default {
       mirrorAwaitingRefresh: false,
       mirrorHoverTarget: 0,
       fineMq: null,
+      rangeMix: 0,
+      glassHandoff: false,
+      inRange: false,
+      rangeTight: false,
+      footerShiftActive: false,
+      footerShiftPointer: { x: 0, y: 0 },
+      footerShiftScrollY: 0,
     }
   },
   computed: {
@@ -243,7 +325,17 @@ export default {
       return this.eligible && this.active
     },
     dotDiskVisible() {
-      return this.visible
+      return this.visible && !this.glassHandoff
+    },
+    glassVisible() {
+      return this.visible && this.glassHandoff
+    },
+    glassFromDisk() {
+      const mix = this.rangeMix
+      return mix > 0 && mix <= CURSOR_RANGE_EXPAND_END
+    },
+    glassInRange() {
+      return this.rangeMix > CURSOR_RANGE_EXPAND_END && this.inRange
     },
     dotHoverExpand() {
       const hoverMix = this.hoverMix
@@ -256,17 +348,22 @@ export default {
         return { opacity: 0, visibility: 'hidden', pointerEvents: 'none' }
       }
 
-      const hoverMix = this.hoverMix
+      const hoverMix = this.glassHandoff ? 0 : this.hoverMix
       let x = this.pos.x
       let y = this.pos.y
       let size = CURSOR_DOT_SIZE
+      let scale = 1
       let opacity = 1
       let background = '#000aaa'
       let borderWidth = 0
       let hoverExpand = 0
       let useGlassRingBorder = false
 
-      if (hoverMix > 0) {
+      if (this.glassHandoff) {
+        const dotVisual = rangeDotVisual(this.rangeMix)
+        scale = dotVisual.scale
+        opacity = dotVisual.opacity
+      } else if (hoverMix > 0) {
         const { hollow, expand } = hoverMorph(hoverMix)
         if (expand <= 0) {
           background = `rgba(0, 10, 170, ${1 - hollow})`
@@ -289,7 +386,7 @@ export default {
 
       const half = size / 2
       const style = {
-        transform: `translate3d(${x}px, ${y}px, 0)`,
+        transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
         width: `${size}px`,
         height: `${size}px`,
         margin: `${-half}px 0 0 ${-half}px`,
@@ -309,6 +406,25 @@ export default {
       }
 
       return style
+    },
+    glassStyle() {
+      if (!this.glassVisible) {
+        return { opacity: 0, visibility: 'hidden', pointerEvents: 'none' }
+      }
+
+      const { x, y } = this.glassPos
+      const size = rangeGlassSize(CURSOR_GLASS_IDLE_SIZE, this.rangeMix)
+      const half = size / 2
+      return {
+        transform: `translate3d(${x}px, ${y}px, 0)`,
+        '--hero-cursor-range-mix': this.rangeMix,
+        '--hero-cursor-hover-mix': 0,
+        width: `${size}px`,
+        height: `${size}px`,
+        margin: `${-half}px 0 0 ${-half}px`,
+        opacity: 1,
+        visibility: 'visible',
+      }
     },
     dotDiskStyle() {
       if (!this.dotDiskVisible) {
@@ -607,15 +723,26 @@ export default {
         const scrollHoverSuppressed =
           typeof performance !== 'undefined' &&
           performance.now() < this.scrollHoverSuppressUntil
+        const preferEmail = this.isPreferFooterEmailMagnifier(tx, ty)
+        this.syncFooterTextField(tx, ty, preferEmail)
         const hoverTarget =
-          scrollHoverSuppressed || !this.isOverHoverTarget(tx, ty) ? 0 : 1
+          scrollHoverSuppressed ||
+          (this.inRange && !preferEmail) ||
+          !this.isOverHoverTarget(tx, ty)
+            ? 0
+            : 1
         const magnifierVisible = hoverTarget === 1 || this.hoverMix > 0.02
         const { x: gx, y: gy } = this.glassPos
-        const follow = 0.1
+        const transitionBoost = this.rangeMix * (1 - this.rangeMix) * 4
+        const follow = this.inRange
+          ? 0.27 + transitionBoost * 0.46
+          : 0.1 + this.rangeMix * 0.18 + transitionBoost * 0.28
         const nx = gx + (tx - gx) * follow
         const ny = gy + (ty - gy) * follow
 
         if (magnifierVisible) {
+          this.glassPos = { x: tx, y: ty }
+        } else if (this.inRange && Math.hypot(tx - nx, ty - ny) < 0.4) {
           this.glassPos = { x: tx, y: ty }
         } else {
           this.glassPos = { x: nx, y: ny }
@@ -662,6 +789,11 @@ export default {
       this.hoverMix = 0
       this.overHover = false
       this.hoverLockEl = null
+      this.rangeMix = 0
+      this.glassHandoff = false
+      this.inRange = false
+      this.rangeTight = false
+      this.clearFooterShift()
       this.syncDocumentClass()
       this.stopGlassFollow()
     },
@@ -684,6 +816,123 @@ export default {
 
       const { x, y } = this.pos
       this.updatePointer(x, y, { skipHover: true })
+    },
+    getFooterTitle() {
+      return this.getPageSource()?.querySelector('.footer-contact-title--push') ?? null
+    },
+    getFooterEmail() {
+      return this.getPageSource()?.querySelector('a.footer-email') ?? null
+    },
+    footerFieldPads(title) {
+      const styles = getComputedStyle(title)
+      return {
+        outerPad: Math.max(72, parseCssPx(styles, '--push-char-hover-radius', 160) * 0.55),
+        innerPad: 20,
+      }
+    },
+    /** Email magnifier wins over the title glass, same pads as the portfolio cursor. */
+    isPreferFooterEmailMagnifier(x, y) {
+      const email = this.getFooterEmail()
+      if (!email) return false
+      const rect = email.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) return false
+      const padX = 16
+      const padTop = 32
+      const padBottom = 12
+      return (
+        x >= rect.left - padX &&
+        x <= rect.right + padX &&
+        y >= rect.top - padTop &&
+        y <= rect.bottom + padBottom
+      )
+    },
+    isNearFooterPush(x, y) {
+      if (this.isPreferFooterEmailMagnifier(x, y)) return false
+      const title = this.getFooterTitle()
+      if (!title) return false
+      const pad = this.footerFieldPads(title).outerPad
+      const padBottom = Math.min(pad, 14)
+      const rect = title.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) return false
+      return (
+        x >= rect.left - pad &&
+        x <= rect.right + pad &&
+        y >= rect.top - pad &&
+        y <= rect.bottom + padBottom
+      )
+    },
+    getFooterRangeProximityMix(x, y) {
+      if (this.isPreferFooterEmailMagnifier(x, y)) return 0
+      const title = this.getFooterTitle()
+      if (!title) return 0
+      const { outerPad, innerPad } = this.footerFieldPads(title)
+      const rect = title.getBoundingClientRect()
+      if (y > rect.bottom + 14) return 0
+      const distance = distanceToRect(x, y, rect)
+      if (distance >= outerPad) return 0
+      if (distance <= innerPad) return 1
+      const linear = (outerPad - distance) / (outerPad - innerPad)
+      return rangeSmoothstep(linear)
+    },
+    /**
+     * Approach “Drop me a line” the same way the portfolio cursor does:
+     * glass handoff, then the letters part around the ball.
+     */
+    syncFooterTextField(x, y, preferEmail) {
+      if (preferEmail && this.glassHandoff) {
+        this.rangeMix = 0
+        this.glassHandoff = false
+        this.inRange = false
+        this.rangeTight = false
+        this.clearFooterShift()
+        return
+      }
+
+      const proximityTarget = preferEmail ? 0 : this.getFooterRangeProximityMix(x, y)
+      if (proximityTarget <= CURSOR_INTRO_GLASS_OFF) {
+        this.rangeMix += (0 - this.rangeMix) * 0.14
+        if (this.rangeMix < 0.012) {
+          this.rangeMix = 0
+          this.glassHandoff = false
+        }
+      } else {
+        const rangeLerp = proximityTarget >= this.rangeMix ? 0.14 : 0.2
+        this.rangeMix += (proximityTarget - this.rangeMix) * rangeLerp
+        if (!this.glassHandoff && proximityTarget >= CURSOR_INTRO_GLASS_ON) {
+          this.glassHandoff = true
+        }
+      }
+
+      const mix = preferEmail ? 0 : proximityTarget
+      this.inRange = !preferEmail && this.isNearFooterPush(x, y)
+      this.rangeTight = this.inRange && mix >= 0.85
+
+      const title = this.getFooterTitle()
+      if (this.inRange && title) {
+        // Reapply on move or scroll only. Per-frame updates fight the letter
+        // transition and vibrate, which the portfolio cursor does not do.
+        const prev = this.footerShiftPointer
+        const moved =
+          !this.footerShiftActive ||
+          Math.hypot(x - prev.x, y - prev.y) > 0.5 ||
+          this.footerShiftScrollY !== window.scrollY
+        if (moved) {
+          applyPointerCharShift(title, { x, y })
+          this.footerShiftActive = true
+          this.footerShiftPointer = { x, y }
+          this.footerShiftScrollY = window.scrollY
+        }
+      } else if (this.footerShiftActive) {
+        this.clearFooterShift()
+      }
+    },
+    clearFooterShift() {
+      if (!this.footerShiftActive && !this.getFooterTitle()) {
+        this.footerShiftActive = false
+        return
+      }
+      clearPointerCharShift(this.getFooterTitle())
+      this.footerShiftActive = false
     },
     isOverHoverTarget(x, y) {
       return this.getHoverTargetElement(x, y) != null
@@ -1356,6 +1605,90 @@ export default {
   backdrop-filter: blur(2.5px) saturate(1.35);
   opacity: calc(1 - var(--hero-cursor-hover-expand, 0));
   pointer-events: none;
+}
+
+/* Footer title glass — same morph as the portfolio cursor. Scoped so it
+   does not restyle the portfolio page's own glass ball. */
+.cs-footer-glass {
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  z-index: 10002;
+  isolation: isolate;
+}
+
+.cs-footer-glass--from-disk {
+  border: calc(1px - 0.5px * var(--hero-cursor-hover-mix, 0)) solid
+    color-mix(
+      in srgb,
+      rgba(255, 255, 255, 0.8) calc((1 - var(--hero-cursor-hover-mix, 0)) * 100%),
+      rgba(0, 10, 170, 0.7) calc(var(--hero-cursor-hover-mix, 0) * 100%)
+    );
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, calc(0.9 * (1 - var(--hero-cursor-hover-mix, 0)))),
+    inset 0 -1px 1px rgba(0, 10, 170, calc(0.06 * (1 - var(--hero-cursor-hover-mix, 0)))),
+    0 0 4px rgba(0, 10, 170, calc(0.11 * (1 - var(--hero-cursor-hover-mix, 0)))),
+    0 0 8px rgba(0, 10, 170, calc(0.065 * (1 - var(--hero-cursor-hover-mix, 0)))),
+    0 0 13px rgba(0, 10, 170, calc(0.032 * (1 - var(--hero-cursor-hover-mix, 0)))),
+    0 0 18px rgba(0, 10, 170, calc(0.016 * (1 - var(--hero-cursor-hover-mix, 0)))),
+    0 0 calc(2px - 1px * var(--hero-cursor-hover-mix, 0))
+      rgba(0, 10, 170, calc(0.44 * var(--hero-cursor-hover-mix, 0))),
+    0 0 calc(1px + 2px * var(--hero-cursor-hover-mix, 0))
+      rgba(0, 10, 170, calc(0.3 * var(--hero-cursor-hover-mix, 0))),
+    0 0 calc(2px + 3px * var(--hero-cursor-hover-mix, 0))
+      rgba(0, 10, 170, calc(0.16 * var(--hero-cursor-hover-mix, 0))),
+    0 0 calc(3px + 4px * var(--hero-cursor-hover-mix, 0))
+      rgba(0, 10, 170, calc(0.065 * var(--hero-cursor-hover-mix, 0))),
+    0 0 calc(5px + 5px * var(--hero-cursor-hover-mix, 0))
+      rgba(0, 10, 170, calc(0.022 * var(--hero-cursor-hover-mix, 0))),
+    0 0 calc(7px + 6px * var(--hero-cursor-hover-mix, 0))
+      rgba(0, 10, 170, calc(0.007 * var(--hero-cursor-hover-mix, 0)));
+}
+
+.cs-footer-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cs-footer-glass--in-range {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+    0 0 2px rgba(0, 10, 170, 0.2),
+    0 0 4px rgba(0, 10, 170, 0.15),
+    0 0 7px rgba(0, 10, 170, 0.11),
+    0 0 11px rgba(0, 10, 170, 0.078),
+    0 0 16px rgba(0, 10, 170, 0.052),
+    0 0 23px rgba(0, 10, 170, 0.032),
+    0 0 32px rgba(0, 10, 170, 0.018),
+    0 0 44px rgba(0, 10, 170, 0.008);
+}
+
+.cs-footer-glass--in-range.cs-footer-glass--in-range-tight {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(0, 10, 170, 0.06),
+    0 0 3px rgba(0, 10, 170, 0.35),
+    0 0 6px rgba(0, 10, 170, 0.26),
+    0 0 10px rgba(0, 10, 170, 0.19),
+    0 0 16px rgba(0, 10, 170, 0.13),
+    0 0 24px rgba(0, 10, 170, 0.085),
+    0 0 34px rgba(0, 10, 170, 0.055),
+    0 0 48px rgba(0, 10, 170, 0.032),
+    0 0 64px rgba(0, 10, 170, 0.016);
+}
+
+.cs-footer-glass.hero-intro-cursor-ball--visible {
+  opacity: 1;
 }
 
 .hero-intro-cursor-ball--dot {

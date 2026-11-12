@@ -4,7 +4,7 @@
             <span
                 class="cs-corner-disk cs-corner-disk--frost"
                 :class="{
-                    'cs-corner-disk--visible': visible,
+                    'cs-corner-disk--visible': shown,
                     'cs-corner-disk--menu': menuChrome,
                     'cs-corner-disk--pill': menuChrome,
                 }"
@@ -13,12 +13,12 @@
             />
             <span
                 class="cs-corner-disk cs-corner-disk--dot"
-                :class="{ 'cs-corner-disk--visible': visible }"
+                :class="{ 'cs-corner-disk--visible': shown }"
                 :style="dotStyle"
                 aria-hidden="true"
             />
             <nav
-                v-if="expand > 0.08 && visible"
+                v-if="expand > 0.08 && shown"
                 class="cs-corner-disk-menu"
                 :style="menuStyle"
                 aria-label="Portfolio sections"
@@ -33,6 +33,7 @@
                 >{{ item.label }}</router-link>
             </nav>
             <span
+                v-if="shown"
                 class="cs-corner-disk-hit"
                 :style="hitStyle"
                 aria-hidden="true"
@@ -72,6 +73,8 @@ const EXPAND_OVERSHOOT = 1.035
 const FROST_OVERSHOOT = 1.28
 const FROST_DIP_PX = 10
 const FROST_DIP_UNTIL = 0.2
+/** Footer must clear the disk top by this much before the disk fades back in. */
+const STAGE_SHOW_HYSTERESIS_PX = 18
 
 const LABEL_FALLBACK = { Work: 48, About: 58 }
 
@@ -189,12 +192,19 @@ export default {
             outsideCloseBound: false,
             outsideCloseUntil: 0,
             expandRaf: null,
+            stageRaf: null,
+            /** False once the footer covers the corner park — disk fades, not unmounted. */
+            onStage: true,
             mq: null,
         }
     },
     computed: {
         visible() {
             return this.eligible
+        },
+        /** Opacity-faded when the footer reaches the parked disk. */
+        shown() {
+            return this.eligible && this.onStage
         },
         menuChrome() {
             return this.expand > 0.02
@@ -277,6 +287,7 @@ export default {
             const halfH = sizeH / 2
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
+                translate: this.stageShift,
                 width: `${sizeW}px`,
                 height: `${sizeH}px`,
                 margin: `${-halfH}px 0 0 ${marginL}px`,
@@ -289,6 +300,7 @@ export default {
             const half = size / 2
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
+                translate: this.stageShift,
                 width: `${size}px`,
                 height: `${size}px`,
                 margin: `${-half}px 0 0 ${-half}px`,
@@ -299,7 +311,12 @@ export default {
             const { x, y } = this.pos
             return {
                 transform: `translate3d(${x}px, ${y}px, 0)`,
+                translate: this.stageShift,
             }
+        },
+        /** Same 6px sink as the portfolio corner disk when the footer covers it. */
+        stageShift() {
+            return this.onStage ? '0 0' : '0 6px'
         },
         hitStyle() {
             const { x, y } = this.pos
@@ -326,20 +343,25 @@ export default {
         this.fineMq.addEventListener('change', this.onMqChange)
         this.reduceMq.addEventListener('change', this.onMqChange)
         window.addEventListener('resize', this.onResize, { passive: true })
+        window.addEventListener('scroll', this.onStageScroll, { passive: true, capture: true })
         this.labelWidths = measureLabelWidths()
         document.fonts?.ready?.then(() => {
             this.labelWidths = measureLabelWidths()
             this.layoutParkPositions()
+            this.refreshStage()
         })
         this.layoutParkPositions()
+        this.refreshStage()
     },
     beforeUnmount() {
         this.unbindOutsideClose()
         if (this.expandRaf != null) cancelAnimationFrame(this.expandRaf)
+        if (this.stageRaf != null) cancelAnimationFrame(this.stageRaf)
         this.mq?.removeEventListener('change', this.onMqChange)
         this.fineMq?.removeEventListener('change', this.onMqChange)
         this.reduceMq?.removeEventListener('change', this.onMqChange)
         window.removeEventListener('resize', this.onResize)
+        window.removeEventListener('scroll', this.onStageScroll, { capture: true })
     },
     methods: {
         /**
@@ -375,6 +397,7 @@ export default {
             if (next) {
                 this.layoutParkPositions()
                 this.pos = { ...this.idlePos }
+                this.refreshStage()
             } else {
                 this.closeMenu({ instant: true })
             }
@@ -383,6 +406,42 @@ export default {
             if (!this.eligible) return
             this.layoutParkPositions()
             this.syncPosFromTravel()
+            this.refreshStage()
+        },
+        onStageScroll() {
+            if (!this.eligible) return
+            if (this.stageRaf != null) return
+            this.stageRaf = requestAnimationFrame(() => {
+                this.stageRaf = null
+                this.refreshStage()
+            })
+        },
+        /**
+         * False once the footer top reaches the parked disk; true again after
+         * scrolling back up. Matches the portfolio touch-disk stage fade.
+         */
+        computeOnStage() {
+            const footer = document.querySelector('.site-footer')
+            if (!(footer instanceof Element)) return true
+            const rect = footer.getBoundingClientRect()
+            if (rect.height <= 0) return true
+            const vh = window.innerHeight || 0
+            const diskTop = vh - EDGE_GAP_PX - IDLE_SIZE
+            const showLine = diskTop + STAGE_SHOW_HYSTERESIS_PX
+            if (!this.onStage) return rect.top > showLine
+            return rect.top > diskTop
+        },
+        refreshStage() {
+            if (!this.eligible) return
+            const next = this.computeOnStage()
+            if (
+                !next &&
+                this.onStage &&
+                (this.menuOpen || this.expand > 0.02 || this.travel > 0.02)
+            ) {
+                this.closeMenu()
+            }
+            this.onStage = next
         },
         /**
          * Idle disk in the lower-right corner. Open dual pill keeps its right
@@ -656,10 +715,11 @@ export default {
     pointer-events: none;
     visibility: hidden;
     opacity: 0;
-    will-change: transform;
+    will-change: transform, opacity;
     transition:
         opacity 0.32s ease,
-        visibility 0.32s ease;
+        visibility 0.32s ease,
+        translate 0.32s ease;
 }
 
 .cs-corner-disk--visible {
@@ -679,7 +739,6 @@ export default {
         0 0 22px rgba(0, 10, 170, 0.028);
     z-index: 10002;
     isolation: isolate;
-    transition: none;
 }
 
 .cs-corner-disk--frost::before {
@@ -691,10 +750,6 @@ export default {
     -webkit-backdrop-filter: blur(3.5px) saturate(1.4);
     backdrop-filter: blur(3.5px) saturate(1.4);
     pointer-events: none;
-}
-
-.cs-corner-disk--frost.cs-corner-disk--menu {
-    transition: none !important;
 }
 
 .cs-corner-disk--frost.cs-corner-disk--menu::before {

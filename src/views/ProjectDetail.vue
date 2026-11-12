@@ -10,7 +10,7 @@
     <main :class="[$style.main, fullWidthImages && $style.mainFullWidthImages]">
       <slot />
     </main>
-    <PortfolioSiteFooter />
+    <PortfolioSiteFooter :local-pointer-push="false" />
   </div>
 </template>
 

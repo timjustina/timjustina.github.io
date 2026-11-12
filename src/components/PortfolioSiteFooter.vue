@@ -49,7 +49,7 @@ export default {
     },
     data() {
         return {
-            titleText: 'Drop me a line :))',
+            titleText: 'Drop me a line',
             pointer: null,
             lastPointer: null,
             pointerRaf: null,
