@@ -10167,7 +10167,7 @@ export default {
     .about {
         --about-bio-cta-gap: 58px;
         --about-bottom-pad-base: clamp(239px, calc(239px + (100vw - 997px) * 100 / 457), 280px);
-        --about-top-pad: var(--about-bottom-pad);
+        --about-top-pad: calc(var(--about-bottom-pad) * 2 / 3);
     }
 
     .about-heading {
