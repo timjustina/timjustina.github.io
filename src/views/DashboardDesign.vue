@@ -466,7 +466,7 @@ const DASHBOARD_TITLE = 'IoT Adherence Analytics'
 const tldrSummaryItems = [
     {
         lead: 'Sole designer',
-        body: '0-to-1 design of a caregiver-facing dashboard of the web app of an IoT medication platform.',
+        body: '0-to-1 design of a caregiver-facing dashboard of the companion web/desktop app of an IoT medication platform.',
     },
     {
         lead: 'Turned user research into architecture',

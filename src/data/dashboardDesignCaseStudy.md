@@ -4,7 +4,7 @@
 
 ## Summary
 
-- **Sole designer** – 0-to-1 design of a caregiver-facing dashboard of the web app of an IoT medication platform.
+- **Sole designer** – 0-to-1 design of a caregiver-facing dashboard of the companion web/desktop app of an IoT medication platform.
 - **Turned user research into architecture** – Identified two sets of user needs (behavioural insights + operational status) to drive the dashboard layout.
 - **Anticipated and visualised complex data** – Defined data requirements before data pipeline existed. Translated logs, events, and device statuses into simple data visualisation.
 - **Achieved user validation and investor buy-in** – Delivered a pitch-ready prototype used in investor pitches; 100% positive caregiver feedback (n=6) in interview sessions.
