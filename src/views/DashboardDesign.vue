@@ -25,7 +25,7 @@
                         insights</strong> for <strong>caregivers</strong>, helping them better understand their clients' behavioural
                     patterns and providing <strong>better quality of care with less effort</strong>. The task given
                     was to design a pitch-ready <strong>caregiver‑facing dashboard</strong> for the primary user's account within
-                    the web/desktop app. The goal of the design was to help caregivers better understand and assist their clients.
+                    the companion web/desktop app. The goal of the design was to help caregivers better understand and assist their clients.
                 </p>
             </section>
 
