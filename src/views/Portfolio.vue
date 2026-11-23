@@ -10416,6 +10416,13 @@ export default {
         object-position: calc(50% + 35px) center;
     }
 
+    /* Phone: stronger hairline so the crop frame reads on white panels */
+    .project--featured .project-image-link::after {
+        box-shadow:
+            inset 0 0 0 1px rgba(215, 219, 227, 0.2),
+            inset 0 0 10px 2px rgba(215, 219, 227, 0.06);
+    }
+
     .project--offset .project-image {
         object-position: calc(50% + 60px + var(--tilt-x, 0px))
             calc(50% + var(--tilt-y, 0px));
