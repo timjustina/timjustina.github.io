@@ -267,7 +267,7 @@ export default {
     font-family: 'Work Sans', sans-serif;
     font-size: 20px;
     font-weight: 300;
-    line-height: 27px;
+    line-height: 1;
     color: var(--muted);
     white-space: nowrap;
     flex-shrink: 0;
@@ -282,7 +282,6 @@ export default {
     align-items: flex-start;
     /* ~1.5 Work Sans spaces between the address and the icon. */
     gap: 0.14em;
-    line-height: 1;
     text-decoration: none;
 }
 
