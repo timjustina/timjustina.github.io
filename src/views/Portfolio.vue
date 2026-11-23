@@ -9364,6 +9364,10 @@ export default {
     width: var(--project-w);
     max-width: 100%;
     min-width: 0;
+    /* Press dome is a semicircle of this card. A fixed 700px top radius is
+       scaled against the card width and takes the 20px bottom corners with it. */
+    container-type: inline-size;
+    --project-thumb-radius-press: 50% 50% 20px 20px / 50cqi 50cqi 20px 20px;
 }
 
 .project--featured {
@@ -9452,7 +9456,7 @@ export default {
 /* Touch: press feedback via JS class only — :active sticks on some mobile browsers. */
 .project:not(.project--upcoming).project--press-expand .project-image-link,
 .project:not(.project--upcoming).project--press-expand .project-image-wrap {
-    border-radius: 700px 700px 20px 20px;
+    border-radius: var(--project-thumb-radius-press);
     box-shadow: var(--project-thumb-shadow);
 }
 
@@ -9461,7 +9465,7 @@ export default {
 .portfolio-page--touch-disk .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
-    border-radius: 700px 700px 20px 20px;
+    border-radius: var(--project-thumb-radius-press);
     box-shadow: var(--project-thumb-shadow);
 }
 
@@ -9471,7 +9475,7 @@ export default {
     .project:not(.project--upcoming):focus-within .project-image-link,
     .project:not(.project--upcoming):hover .project-image-wrap,
     .project:not(.project--upcoming):focus-within .project-image-wrap {
-        border-radius: 700px 700px 20px 20px;
+        border-radius: var(--project-thumb-radius-press);
         box-shadow: var(--project-thumb-shadow);
     }
 }
@@ -10389,7 +10393,7 @@ export default {
 
     .project--press-expand .project-image-link,
     .project--press-expand .project-image-wrap {
-        border-radius: 700px 700px 20px 20px;
+        border-radius: var(--project-thumb-radius-press);
         box-shadow: var(--project-thumb-shadow);
     }
 
@@ -10398,7 +10402,7 @@ export default {
         .project:not(.project--upcoming):hover .project-image-wrap,
         .project:not(.project--upcoming):focus-within .project-image-link,
         .project:not(.project--upcoming):focus-within .project-image-wrap {
-            border-radius: 700px 700px 20px 20px;
+            border-radius: var(--project-thumb-radius-press);
             box-shadow: var(--project-thumb-shadow);
         }
     }
@@ -11005,7 +11009,7 @@ export default {
 
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-link,
 .hero-intro-cursor-mirror-clone .project:not(.project--upcoming).hero-cursor-mirror-hover .project-image-wrap {
-    border-radius: 700px 700px 20px 20px;
+    border-radius: var(--project-thumb-radius-press);
     box-shadow: var(--project-thumb-shadow);
 }
 
